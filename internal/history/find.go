@@ -291,6 +291,7 @@ func (w *World) unleash(c *Civ, l *Legacy) {
 			w.blast(l.Star, 12, "the failure of "+l.Desc, "Something at %s that held for a billion years lets go.", 2)
 		}
 	case Law:
+		w.tear(0.6)
 		w.log("The %s break something at %s that was not a thing but a rule. The rule reasserts itself.", c.Name, w.star(l.Star))
 		w.blast(l.Star, 5, "a broken law", "Around %s, for a moment, physics is negotiable.", 3)
 	case Artifact:

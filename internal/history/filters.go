@@ -113,7 +113,7 @@ func (w *World) face(c *Civ, key string, diffAdj float64) Outcome {
 		return Overcome
 	}
 	lvl := c.level(f.Levels...)
-	diff := f.Diff + diffAdj + 0.25*float64(len(c.Scars)) + 1.5*(w.Hazard-1) + c.traitDiff(key) + c.miracleDiff(key) + w.lawDiff(key)
+	diff := f.Diff + diffAdj + 0.25*float64(len(c.Scars)) + 1.5*(w.Hazard-1) + c.traitDiff(key) + c.miracleDiff(key) + w.lawDiff(key) + w.thinDiff(key)
 	roll := w.R.NormFloat64() * 1.5
 	margin := lvl + roll - diff
 	if f.Domain != "" {
@@ -397,15 +397,17 @@ func init() {
 		},
 		Scar: func(w *World, c *Civ) {
 			c.Scars[ScarDoor] = true
+			w.tear(0.3)
 			s := w.pick(c.Systems)
 			h := w.spawnHorror(SleeperHorror, s, -1)
 			h.Dormant = true
 			w.log("Something on the other side of the door notices the %s. %s now sleeps near %s. The %s close the door and speak of it seldom.", c.Name, h.Name, w.star(s), c.Name)
 		},
 		Decline: func(w *World, c *Civ) {
+			w.tear(0.6)
 			s := w.pick(c.Systems)
 			h := w.spawnHorror(Beacon, s, c.ID)
-			w.log("What came back through the door at %s speaks. It is called %s.", w.star(s), h.Name)
+			w.log("What came back through the door at %s speaks. It did not cross space to get there. It is called %s.", w.star(s), h.Name)
 		},
 	})
 	// hold together after losing a war's battle

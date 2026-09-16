@@ -34,6 +34,9 @@ func (w *World) gain(c *Civ, key, how string) {
 	if c.Miracles[key] == "" {
 		c.Miracles[key] = how
 	}
+	if causal[key] {
+		w.name(c, key)
+	}
 	if c.Ascended == 0 {
 		c.Ascended = w.Now // the surge comes once
 		c.Renewed = w.Now
@@ -249,9 +252,11 @@ func init() {
 		Scar: func(w *World, c *Civ) {
 			c.Scars[ScarOtherVoices] = true
 			c.Morale -= 1
+			w.tear(0.3)
 			w.log("There are other voices on the line, older, and some of the %s listen. They never quite stop.", c.Name)
 		},
 		Decline: func(w *World, c *Civ) {
+			w.tear(0.6)
 			if w.R.Float64() < 0.65 {
 				w.loseMiracle(c, "ansible")
 				w.contract(c, "heard what else was on the line, closed it, and forgot how to open it")
@@ -298,10 +303,12 @@ func init() {
 				}
 			}
 			c.Scars[ScarBurningSky] = true
+			w.tear(0.3)
 			w.blast(s, 4, "a test of the Unmaking", "The first test of the %s' Unmaking takes a world with it.", 1)
 		},
 		Decline: func(w *World, c *Civ) {
 			home := c.Home
+			w.tear(0.6)
 			w.log("The %s turn the Unmaking on something too close.", c.Name)
 			w.blast(home, 6, "the Unmaking turned inward", "Everything around %s stops being matter for a while.", 2)
 			if c.Active() && contains(c.Systems, home) {
@@ -342,9 +349,11 @@ func init() {
 		Scar: func(w *World, c *Civ) {
 			c.Scars[ScarFatalism] = true
 			c.Morale -= 1
+			w.tear(0.3)
 			w.log("The %s see how it ends. A fatalism settles on them that never lifts.", c.Name)
 		},
 		Decline: func(w *World, c *Civ) {
+			w.tear(1)
 			w.contract(c, "saw what was coming and sat down to wait for it")
 		},
 	})

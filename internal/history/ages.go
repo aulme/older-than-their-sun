@@ -60,10 +60,16 @@ var artifactDescs = []string{
 	"a cradle for something that was never put in it",
 }
 
+// law legacies are places where the state beneath shows through; the
+// first is special (see mindDead).
 var lawDescs = []string{
 	"a region where minds do not work",
 	"a standing signal that repeats one number",
 	"a corridor along which ships arrive before they leave",
+	"a volume where light arrives before it is sent",
+	"a shore where the sky is thin, and things are seen in it that are not there",
+	"a drift of dust that is in the same place wherever you go",
+	"a star whose light is always a day old, from any distance",
 }
 
 // artifact nodes: which discoveries an elder artifact can stand for

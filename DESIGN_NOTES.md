@@ -377,6 +377,20 @@ What the survey shows (`-map`): going inward from the Sun the stars crowd, the s
 
 **Traps found.** Arm azimuth ranges must include the Sun's azimuth or an arm vanishes from the near side. GRB rate scaled with youth uncapped makes the Core sterile forever (a burst every 300 kyr wipes complex life faster than it can return). Crowd uncapped makes the Bulge a place where nothing lives past half a million years. A brown dwarf host from the exoplanet archive with no spectrum and no magnitude reads as a naked-eye K star unless the tool says otherwise.
 
+### The state beneath
+
+Agreed 2026-09-16, built in `internal/history/beneath.go`. Lore: every miracle that breaks causality (the Door, the Voice, the Sight, the Unmaking) reaches into the same thing. It is not a place but a state, the one the universe is in underneath this one, where distance and sequence are not features. The Flesh and the Chorus are not part of it; they are biology and language pushed very far, which keeps "very advanced" distinct from "wrong".
+
+Rules, all from the user:
+
+- Nobody born to this age understands it, and the code enforces that: there is no name for it anywhere, only the word each people coins on first reaching in (the Grain, the Quiet, the Lull, the Absence...). The legends use the finder's word. The only comprehension there ever was is elder; the law legacies are places where the state shows through, and the corridor along which ships arrive before they leave is one of them.
+- Nobody is ever consciously inside it, not while staying alive and sane. A crossing has no duration from inside: one moment here, the next there. No one can say what it was like. The ones who tried to stay awake for it did not come back as one person.
+- Perceiving it as something real is always bad. It means something is leaking through.
+
+Mechanic: the wall. Holding a causal miracle wears it (the Door most), and every scar, fall, broken law and unmade world tears it; it heals with a half-life of a few hundred thousand years. It is one number for the whole field, so a people's use of the Door thins the wall for everyone. The stages are whole, worn, thin, torn; each first crossing gets a line nobody in the field could have written. A thin wall raises the galactic hazard, makes the four causal filters harder, and leaks: some of a holder's people begin to see their word for it as a place with a shore and a weather, and face the miracle's filter again; a sleeper wakes because the wall is thin near it; or something speaks from an empty star in a voice that did not cross space to get there. A born miracle never leaks; what is evolved is not a reaching-in.
+
+Tuning: the first cut tore the wall two million years into every age and doubled the horror count. The balance is a few leaks per age and a wall that is worn or thin through the middle of the age and whole again by the present.
+
 ### The cycle
 
 Agreed 2026-09-16. The age separator is attrition, not catastrophe.
@@ -462,6 +476,7 @@ Known oddities to look at next, none of them blocking:
 - 2026-09-16: Research is a pursuit with steep prices by depth and momentum by domain, so civilisations specialise and nobody climbs the whole tree; necessity steers a stranded people toward propulsion. Era 4 deepened with a spine per domain. See "Tech tree".
 - 2026-09-16: The science-fiction powers are miracles, a class apart: gamechanger effects, a surge on gaining one, their own filters, three ways in (leap, find, born) with the elder find the common one and the born exempt from the filter. "Miracle" is the word in the legends. An end-game empire without one holds its own; a young people with one becomes a regional power. See "Miracles".
 - 2026-09-16: The real Milky Way is the map: a structural model with laws by geography (density, youth, metals, glare, crowd, exotic), a catalogue of named features, real stars and known planets within 150 ly from HYG and the Exoplanet Archive, and every star with a system of worlds the species' home is drawn from. A history runs in one field placed anywhere (`-at`); the whole map is printed by `-map`. See "The galaxy as a map".
+- 2026-09-16: The causality-breaking miracles all reach into one state beneath the universe, never understood, never named in common, never consciously entered; perceiving it as real means a leak. The wall between wears with use for everyone in the field. See "The state beneath". Weird literal consequences of the physics are wanted, not sanitised conventions.
 - 2026-09-16: Ages are attrition-based. Galactic fertility for new species surges at the start of an age and decays every tick; cosmic events only mop up; the cycle repeats with a period of about a billion years; nobody knows why, but a few advanced species learn where in the turn they stand (Deep Time). Replaces the "age-ender" catastrophe. See "The cycle".
 
 ## Next steps (proposed)

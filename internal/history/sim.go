@@ -52,6 +52,7 @@ func (w *World) runAge() {
 		w.life()
 		w.cosmic()
 		w.tickHorrors()
+		w.tickBeneath()
 		w.tickCivs()
 		w.tickLegacies()
 		w.updateHazard()
@@ -141,5 +142,5 @@ func (w *World) updateHazard() {
 			}
 		}
 	}
-	w.Hazard = min(2.5, w.Law.Hazard()+0.005*float64(held)+0.06*float64(beacons))
+	w.Hazard = min(2.5, w.Law.Hazard()+0.005*float64(held)+0.06*float64(beacons)+min(0.5, 0.1*w.Thin))
 }

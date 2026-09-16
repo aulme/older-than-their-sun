@@ -106,7 +106,7 @@ func Write(out io.Writer, w *history.World, full bool) {
 			complex++
 		}
 	}
-	p("at the present: galactic hazard %.2f, %d stars held by horrors, %d worlds with complex life", w.Hazard, held, complex)
+	p("at the present: galactic hazard %.2f, %d stars held by horrors, %d worlds with complex life; the wall between this and what is beneath it is %s", w.Hazard, held, complex, w.ThinWord())
 	cy := w.Cycle
 	if w.Capped {
 		p("WARNING: the age never wound down on its own; stopped after %.0f fades", w.Cfg.MaxFades)
@@ -244,6 +244,9 @@ func Write(out io.Writer, w *history.World, full bool) {
 			}
 			into += " Miracles: " + strings.Join(ms, ", ") + "."
 		}
+		if c.Word != "" {
+			into += " They called it " + c.Word + "."
+		}
 		made := ""
 		if c.Species.Made != "" {
 			made = " (" + c.Species.Made + ")"
@@ -348,9 +351,9 @@ func Stats(out io.Writer, w *history.World) {
 			}
 		}
 	}
-	fmt.Fprintf(out, "%s seed %d: age %.1f Myr, fade %.0f Myr, fertility %.1f%%, %d civs (lived <0.5/<1/<3/<10/10+ Myr: %d/%d/%d/%d/%d), standing %d, remnants %d, knowers %d, whole tree %d, miracles born/leap/found/wielded %d/%d/%d/%d, horrors %d, remains %d (mastered %d, wielded %d, sealed %d, unleashed %d, crumbled %d; still buried abandoned/derelict/wreck/ruin %d/%d/%d/%d), capped %v\n",
+	fmt.Fprintf(out, "%s seed %d: age %.1f Myr, fade %.0f Myr, fertility %.1f%%, %d civs (lived <0.5/<1/<3/<10/10+ Myr: %d/%d/%d/%d/%d), standing %d, remnants %d, knowers %d, whole tree %d, miracles born/leap/found/wielded %d/%d/%d/%d, horrors %d, remains %d (mastered %d, wielded %d, sealed %d, unleashed %d, crumbled %d; still buried abandoned/derelict/wreck/ruin %d/%d/%d/%d), wall %.1f, capped %v\n",
 		w.G.Region.Code,
 		w.Seed, float64(w.Present-w.Cfg.Dawn)/1e6, float64(w.Cycle.Fade)/1e6, 100*w.FertilityNow(), len(w.Civs), b[0], b[1], b[2], b[3], b[4], standing, remnants, knowers, whole, miracles["born"], miracles["leap"], miracles["found"], miracles["wielded"], len(w.Horrors),
 		nRuins, ruins[history.Mastered], ruins[history.Wielded], ruins[history.Sealed], ruins[history.Unleashed], ruins[history.Lost],
-		conds[history.Abandoned], conds[history.Derelict], conds[history.Wreck], conds[history.Ruin], w.Capped)
+		conds[history.Abandoned], conds[history.Derelict], conds[history.Wreck], conds[history.Ruin], w.Thin, w.Capped)
 }

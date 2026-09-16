@@ -79,6 +79,7 @@ type Civ struct {
 	Fate       Fate
 	Cause      string // why it ended
 	Into       string // what it became, if transformed
+	Word       string // the people's word for the state beneath, once they have reached into it
 	Systems    []int
 	Peak       int
 	Voyages    []Voyage
@@ -322,27 +323,29 @@ func DefaultConfig() Config {
 
 // World is the whole simulated history.
 type World struct {
-	Cfg      Config
-	Seed     uint64
-	G        *galaxy.Galaxy
-	Law      galaxy.Law // the laws of the place
-	R        *rand.Rand
-	Now      Year
-	Present  Year    // when the simulation stopped; years are printed relative to this
-	Waning   Year    // when the fine tick began
-	Capped   bool    // the age never ended on its own; stopped at MaxFades
-	dt       float64 // current tick in kyr
-	Bio      []BioState
-	Owner    []int // civ id owning each star, -1 if none
-	Held     []int // horror id holding each star, -1 if none
-	Hazard   float64
-	Civs     []*Civ
-	Horrors  []*Horror
-	Ages     []*AgeRecord
-	Cycle    *Cycle
-	Legacies []*Legacy
-	Traces   []Trace
-	Events   []Event
+	Cfg       Config
+	Seed      uint64
+	G         *galaxy.Galaxy
+	Law       galaxy.Law // the laws of the place
+	R         *rand.Rand
+	Now       Year
+	Present   Year    // when the simulation stopped; years are printed relative to this
+	Waning    Year    // when the fine tick began
+	Capped    bool    // the age never ended on its own; stopped at MaxFades
+	dt        float64 // current tick in kyr
+	Bio       []BioState
+	Owner     []int // civ id owning each star, -1 if none
+	Held      []int // horror id holding each star, -1 if none
+	Hazard    float64
+	Thin      float64 // how worn the wall between this and the state beneath is; see beneath.go
+	ThinStage int
+	Civs      []*Civ
+	Horrors   []*Horror
+	Ages      []*AgeRecord
+	Cycle     *Cycle
+	Legacies  []*Legacy
+	Traces    []Trace
+	Events    []Event
 	scratch
 }
 
