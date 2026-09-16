@@ -166,6 +166,31 @@ A network of hundreds of fairy kingdoms, ranging from cute and whimsical to cree
 
 The shared architecture means a lot of the generator machinery (history simulation, event logging, lazy detail generation, legends browsing) would transfer between them. Worth designing the core with that in mind, without over-abstracting before there is anything working.
 
+## Simulation v0 (what the code does today)
+
+Written 2026-09-16. Go, in `cmd/worldgen` and `internal/`. Run with `go run ./cmd/worldgen -seed N`. A full history takes well under a second.
+
+**Substrate.** A random disc of a few hundred stars around Sol with a realistic spectral class mix. Placeholder until real catalogue data goes in.
+
+**Deep pass.** 3 billion years in 10 million year steps. Life arises by star class, complex life follows, gamma-ray bursts sterilise regions, precursor civilisations rise and vanish off-screen leaving vaults, Dyson remnants or beacons, and elder entities settle in and go dormant.
+
+**Fine pass.** The last 5 million years in 1000 year steps. Civilisations arise from complex life with a random temperament (curious, insular, aggressive, zealous). They grow tech with diminishing returns, reach the stars at tech 1, send sublight colony ships at 0.01c, build Dyson swarms past tech 2, and very rarely discover FTL past tech 3, which sometimes lets something through. Contact happens by proximity and can start slow relativistic wars. A crisis roll each tick, scaled by age, size, galactic hazard and plague, picks a cause: internal collapse, schism, runaway AI (becomes a rogue mind), replicator outbreak, breaking their own star, stagnation, ascension, or sickness.
+
+**Horrors as actors.** Replicator swarms spread and eventually fall silent. Rogue minds spread slowly and absorb. Beacons convert or kill listeners within range, and converted civilisations start broadcasting themselves. Elder entities wake when settled too close, unmake everything within 40 light years, and sleep again. Hazard rises with the number of horror-held systems and beacons, which is what drives the aftermath.
+
+**End states.** Extinct, transformed, or contracted (a remnant with a ruler title on one world, tech decaying toward a floor, which can later fade or be destroyed). Whatever is still active at year 0 is pushed through the Long Dusk.
+
+**Output.** A chronological legends log plus a present-day summary: remnants, horrors, trace counts, and a fate line per civilisation.
+
+### Observations from the first runs
+
+- Around 15 to 35 civilisations per run. Roughly half extinct, a fifth transformed, a third contracted.
+- The Long Dusk still fires for 2 to 4 civilisations per seed. Should be tuned down with rising hazard, not removed.
+- Successor species arising on a dead homeworld happened naturally and is good. Keep accidents like this.
+- Deep time log is dominated by "life arises" lines. Should be summarised into eras rather than listed.
+- Civilisation lifetimes are around half a million to a million years. Expansion is fast relative to that. May want slower ships or slower tech.
+- Sol is protected but nothing else is special about it yet. Nobody has visited.
+
 ## Decision log
 
 - 2026-09-16: Galaxy idea is primary. Fairy idea is backup.
