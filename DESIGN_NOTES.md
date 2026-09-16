@@ -230,11 +230,13 @@ Observations after adding filters (10 seeds):
 - 2026-09-16: Alien horrors organised as categories with per-category simulation rules. Start with a small list, extend over time. Monstrous races are one category among several.
 - 2026-09-16: Language is Go. Reasons: the history sim is a graph of mutually referencing entities, which a garbage collector handles cleanly; performance needs are modest; fast iteration matters more than raw speed. Rust's sum types would have been nicer for event modelling, accepted as a cost.
 - 2026-09-16: "Filters" is the term for anything that may push a civilisation into decline. Three outcomes: overcome, scarred, declined. Early filters like nuclear weapons included. Scars are lasting traits.
+- 2026-09-16: Filter balance is fine for now. The lethality of early filters is accepted; the fix later is scale, not tuning. With hundreds of billions of stars the sim can afford far more civilisations, so a high failure rate still leaves plenty of history. Not for now.
 - 2026-09-16: The present is the aftermath. Every civilisation ends as gone, transformed, or contracted, always with a cause. Sol is protected by fiat.
 
 ## Next steps (proposed)
 
 - Read the v0 legends output and adjust rates until histories feel right: civilisation lifetimes, how many civs, how often each end state occurs.
 - Look at what real Milky Way data is easy to obtain (Gaia, HYG) and replace the random star field with real nearby stars.
+- Later: scale up massively. The real galaxy has hundreds of billions of stars, so civilisation counts should go from dozens to thousands or more. This needs a different simulation structure (regions, statistical treatment of the unremarkable, only instantiating stars where something happens). Design for it, but do not build it yet.
 - Add more horror categories to the sim: plagues as spreading actors, monstrous races as civilisations with alien drives, dimensional anomalies tied to FTL use.
 - Add the lazy detail layer: given a star and its history, generate the system contents (planets, stations, derelicts).
