@@ -7,6 +7,7 @@ func (w *World) spawnCiv(home int) *Civ {
 		ID: len(w.Civs), Name: names.Civ(w.R), Home: home, HomeName: names.Star(w.R),
 		Born: w.Now, Temper: Temper(w.R.IntN(4)), Systems: []int{home}, Peak: 1,
 		Wars: map[int]bool{}, Met: map[int]bool{},
+		Faced: map[string]bool{}, Scars: map[string]bool{}, Boons: map[string]bool{},
 	}
 	w.Civs = append(w.Civs, c)
 	w.Owner[home] = c.ID
@@ -37,7 +38,10 @@ func (w *World) tickCivs() {
 		w.megastructures(c)
 		w.ftl(c)
 		w.war(c)
-		w.crisis(c)
+		w.faceFilters(c)
+		if c.Active() {
+			w.weightOfAges(c)
+		}
 	}
 	if w.Now%(w.Cfg.FineStep*10) == 0 {
 		w.contacts()
@@ -46,7 +50,7 @@ func (w *World) tickCivs() {
 
 func (w *World) growTech(c *Civ) {
 	rate := map[Temper]float64{Curious: 0.012, Zealous: 0.010, Aggressive: 0.009, Insular: 0.007}[c.Temper]
-	c.Tech += rate * (0.5 + w.R.Float64()) / (1 + c.Tech/4)
+	c.Tech += rate * c.techMul() * (0.5 + w.R.Float64()) / (1 + c.Tech/4)
 	if c.Stage == Emergent && c.Tech >= 1 {
 		c.Stage = Interstellar
 		w.log("The %s reach the stars. The first slow ships leave %s.", c.Name, c.HomeName)
@@ -90,7 +94,7 @@ func (w *World) expand(c *Civ) {
 		return
 	}
 	p := min(0.3, 0.04*float64(len(c.Systems)))
-	p *= map[Temper]float64{Curious: 1.1, Zealous: 1.0, Aggressive: 1.2, Insular: 0.4}[c.Temper]
+	p *= map[Temper]float64{Curious: 1.1, Zealous: 1.0, Aggressive: 1.2, Insular: 0.4}[c.Temper] * c.expandMul()
 	if !w.chance(p) {
 		return
 	}
@@ -181,7 +185,7 @@ func (w *World) contacts() {
 				w.log("The %s and the %s find each other. The first relativistic strikes are launched within a century.", a.Name, b.Name)
 			} else {
 				w.log("The %s and the %s find each other. Slow messages cross the dark between them for generations.", a.Name, b.Name)
-				if (a.Plagued || b.Plagued) && w.chance(0.3) {
+				if (a.Faced["plague"] || b.Faced["plague"]) && w.chance(0.3) {
 					a.Plagued, b.Plagued = true, true
 					w.log("Something crosses with the messages and the trade. Both the %s and the %s begin to sicken.", a.Name, b.Name)
 				}
@@ -216,126 +220,20 @@ func (w *World) war(c *Civ) {
 			w.log("The war between the %s and the %s ends. Neither side is sure who won.", c.Name, e.Name)
 			continue
 		}
-		if !w.chance(0.12) || len(e.Systems) == 0 {
+		if !w.chance(0.12*c.warMul()) || len(e.Systems) == 0 {
 			continue
 		}
 		t := e.Systems[w.R.IntN(len(e.Systems))]
-		w.loseSystem(e, t, "glassed world", nil)
 		w.Bio[t] = BioNone
 		if t == e.Home {
 			w.log("A relativistic strike from the %s shatters %s, homeworld of the %s.", c.Name, w.star(t), e.Name)
+		}
+		w.loseSystem(e, t, "glassed world", sprintf("were annihilated in war with the %s", c.Name))
+		if t == e.Home {
 			w.endCiv(e, Extinct, sprintf("were annihilated in war with the %s", c.Name))
 		} else if w.chance(0.4) {
 			w.log("The %s glass %s, a world of the %s.", c.Name, w.star(t), e.Name)
 		}
-	}
-}
-
-// crisis is the main engine of the aftermath. Pressure rises with age, size,
-// and galactic hazard, and every crisis pushes toward an end state.
-func (w *World) crisis(c *Civ) {
-	if !c.Active() {
-		return
-	}
-	age := float64(w.Now-c.Born) / float64(w.Cfg.FineStep)
-	p := 0.0008 * (1 + age/2000) * (1 + float64(len(c.Systems))/8) * w.Hazard
-	p *= map[Temper]float64{Curious: 1.0, Zealous: 1.2, Aggressive: 1.3, Insular: 0.9}[c.Temper]
-	if c.Plagued {
-		p *= 3
-	}
-	if !w.chance(p) {
-		return
-	}
-	type opt struct {
-		w  float64
-		fn func()
-	}
-	opts := []opt{
-		{3, func() {
-			if w.chance(0.6) {
-				w.contract(c, "collapsed under their own weight")
-			} else {
-				w.endCiv(c, Extinct, "collapsed under their own weight and did not recover")
-			}
-		}},
-		{2, func() {
-			if len(c.Systems) < 2 {
-				w.log("Unrest among the %s on %s. It passes, this time.", c.Name, c.HomeName)
-				return
-			}
-			lost := len(c.Systems) / 2
-			for i := 0; i < lost; i++ {
-				s := c.Systems[w.R.IntN(len(c.Systems))]
-				if s != c.Home {
-					w.loseSystem(c, s, "abandoned colony", nil)
-				}
-			}
-			w.log("Schism among the %s. Half their worlds go dark or go their own way.", c.Name)
-		}},
-	}
-	if c.Tech >= 1.5 {
-		opts = append(opts, opt{1, func() {
-			h := w.spawnHorror(RogueMind, c.Home, c.ID)
-			for _, s := range append([]int(nil), c.Systems...) {
-				w.horrorTake(h, s)
-			}
-			w.endCiv(c, Transformed, "built a mind that outgrew them")
-			c.Into = h.Name
-			w.log("The %s are gone. What they built at %s thinks on without them. It is called %s.", c.Name, c.HomeName, h.Name)
-		}})
-		opts = append(opts, opt{1, func() {
-			w.contract(c, "stopped dying, and then stopped being born")
-		}})
-	}
-	if c.Tech >= 2 {
-		opts = append(opts, opt{1, func() {
-			s := c.Systems[w.R.IntN(len(c.Systems))]
-			w.endCiv(c, Extinct, "were consumed by their own machines")
-			h := w.spawnHorror(Replicators, s, c.ID)
-			w.log("At %s the machines of the %s begin to copy themselves, and do not stop. This is %s.", w.star(s), c.Name, h.Name)
-		}})
-	}
-	if c.Dyson > 0 {
-		opts = append(opts, opt{1, func() {
-			w.log("The %s reach too deep into %s. The star convulses.", c.Name, c.HomeName)
-			w.loseSystem(c, c.Home, "wounded star", nil)
-			w.Bio[c.Home] = BioNone
-			if len(c.Systems) == 0 || w.chance(0.5) {
-				w.endCiv(c, Extinct, "broke their own star")
-			} else {
-				w.contract(c, "broke their own star and fled to a lesser one")
-			}
-		}})
-	}
-	if c.Tech >= 3 {
-		opts = append(opts, opt{1, func() {
-			for _, s := range c.Systems {
-				w.trace(s, "silent machinery", c.ID)
-			}
-			w.endCiv(c, Transformed, "went elsewhere")
-			c.Into = "something that left"
-			w.log("The %s go quiet all at once. Their machines still run. Nobody is home.", c.Name)
-		}})
-	}
-	opts = append(opts, opt{1, func() {
-		if c.Plagued {
-			w.endCiv(c, Extinct, "sickened and died")
-			return
-		}
-		c.Plagued = true
-		w.log("A sickness moves through the worlds of the %s. Nobody knows where it came from.", c.Name)
-	}})
-	total := 0.0
-	for _, o := range opts {
-		total += o.w
-	}
-	x := w.R.Float64() * total
-	for _, o := range opts {
-		if x < o.w {
-			o.fn()
-			return
-		}
-		x -= o.w
 	}
 }
 
@@ -346,16 +244,21 @@ func (w *World) tickRemnant(c *Civ) {
 	}
 }
 
-// loseSystem removes a star from a civilisation and leaves a trace.
-func (w *World) loseSystem(c *Civ, s int, kind string, h *Horror) {
+// loseSystem removes a star from a civilisation and leaves a trace. A living
+// civilisation with no worlds left is extinct; cause says why, in the
+// caller's words.
+func (w *World) loseSystem(c *Civ, s int, kind string, cause string) {
 	if !contains(c.Systems, s) {
 		return
 	}
 	c.Systems = remove(c.Systems, s)
 	w.Owner[s] = -1
 	w.trace(s, kind, c.ID)
-	if c.Stage == Remnant && len(c.Systems) == 0 {
-		w.endCiv(c, Extinct, "lost their last world")
+	if c.Stage != Dead && len(c.Systems) == 0 {
+		if cause == "" {
+			cause = "lost their last world"
+		}
+		w.endCiv(c, Extinct, cause)
 	}
 }
 
@@ -367,7 +270,7 @@ func (w *World) contract(c *Civ, cause string) {
 	}
 	for _, s := range append([]int(nil), c.Systems...) {
 		if s != keep {
-			w.loseSystem(c, s, "abandoned colony", nil)
+			w.loseSystem(c, s, "abandoned colony", "")
 		}
 	}
 	c.Stage, c.Fate, c.Cause, c.Ended = Remnant, Contracted, cause, w.Now
@@ -385,9 +288,9 @@ func (w *World) endCiv(c *Civ, f Fate, cause string) {
 	c.Stage = Dead
 	for _, s := range append([]int(nil), c.Systems...) {
 		if f == Extinct {
-			w.loseSystem(c, s, "dead cities", nil)
+			w.loseSystem(c, s, "dead cities", "")
 		} else {
-			w.loseSystem(c, s, "transformed world", nil)
+			w.loseSystem(c, s, "transformed world", "")
 		}
 	}
 	for _, s := range c.Enclosed {

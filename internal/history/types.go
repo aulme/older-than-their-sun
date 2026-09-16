@@ -100,6 +100,12 @@ type Civ struct {
 	Plagued  bool
 	Title    string // ruler title once contracted
 	Voyages  []Voyage
+	Faced    map[string]bool // filters faced
+	Scars    map[string]bool
+	Boons    map[string]bool
+	Record   []string // filter outcomes in order
+	DarkAges int
+	Renewed  Year // last renaissance; age for the Weight of Ages counts from here
 	colonies int // colonies founded, for log throttling
 }
 

@@ -68,10 +68,8 @@ func (w *World) fineCosmic() {
 		w.Bio[s] = BioNone
 		if cid := w.Owner[s]; cid >= 0 {
 			c := w.Civs[cid]
-			w.loseSystem(c, s, "scoured world", nil)
+			w.loseSystem(c, s, "scoured world", "were sterilised by a gamma-ray burst")
 			if s == c.Home {
-				w.endCiv(c, Extinct, "were sterilised by a gamma-ray burst")
-			} else if len(c.Systems) == 0 {
 				w.endCiv(c, Extinct, "were sterilised by a gamma-ray burst")
 			}
 		}

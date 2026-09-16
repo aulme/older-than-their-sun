@@ -17,7 +17,11 @@ func (w *World) horrorTake(h *Horror, s int) {
 		return
 	}
 	if c := w.Owner[s]; c >= 0 {
-		w.loseSystem(w.Civs[c], s, map[HorrorKind]string{Replicators: "stripped world", RogueMind: "absorbed world"}[h.Kind], h)
+		if h.Kind == Replicators {
+			w.loseSystem(w.Civs[c], s, "stripped world", sprintf("were consumed by %s", h.Name))
+		} else {
+			w.loseSystem(w.Civs[c], s, "absorbed world", sprintf("were absorbed into %s", h.Name))
+		}
 	}
 	w.Held[s] = h.ID
 	h.Systems = append(h.Systems, s)
@@ -141,7 +145,7 @@ func (w *World) tickElder(h *Horror) {
 		lost := 0
 		for _, s := range append([]int(nil), c.Systems...) {
 			if w.G.Dist(s, h.Origin) <= 40 {
-				w.loseSystem(c, s, "silent world", h)
+				w.loseSystem(c, s, "silent world", sprintf("were unmade by %s", h.Name))
 				lost++
 			}
 		}

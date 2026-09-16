@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"sort"
+	"strings"
 
 	"worldgen/internal/history"
 )
@@ -25,6 +26,15 @@ func systems(n int) string {
 		return "a single world"
 	}
 	return fmt.Sprintf("%d systems", n)
+}
+
+func keysOf(m map[string]bool) []string {
+	var out []string
+	for k := range m {
+		out = append(out, k)
+	}
+	sort.Strings(out)
+	return out
 }
 
 func commas(n int64) string {
@@ -77,7 +87,11 @@ func Write(out io.Writer, w *history.World) {
 			continue
 		}
 		any = true
-		p("  The %s on %s, ruled by %s. Once %s, now tech %.1f. They %s (%s).", c.Name, w.G.Stars[c.Systems[0]].Name, c.Title, systems(c.Peak), c.Tech, c.Cause, year(c.Ended))
+		sc := ""
+		if scars := keysOf(c.Scars); len(scars) > 0 {
+			sc = " They live under " + strings.Join(scars, " and ") + "."
+		}
+		p("  The %s on %s, ruled by %s. Once %s, now tech %.1f. They %s (%s).%s", c.Name, w.G.Stars[c.Systems[0]].Name, c.Title, systems(c.Peak), c.Tech, c.Cause, year(c.Ended), sc)
 	}
 	if !any {
 		p("  none")
@@ -125,5 +139,11 @@ func Write(out io.Writer, w *history.World) {
 			into = " Became " + c.Into + "."
 		}
 		p("  %-14s %-11s %s from %s, %s, peak %d systems, tech %.1f. They %s.%s", c.Name, c.Fate, c.Temper, c.HomeName, year(c.Born), c.Peak, c.Tech, c.Cause, into)
+		if len(c.Record) > 0 {
+			p("  %-14s filters: %s", "", strings.Join(c.Record, "; "))
+		}
+		if scars := keysOf(c.Scars); len(scars) > 0 {
+			p("  %-14s scars: %s", "", strings.Join(scars, ", "))
+		}
 	}
 }

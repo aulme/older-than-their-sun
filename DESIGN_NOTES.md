@@ -213,6 +213,15 @@ Written 2026-09-16. Go, in `cmd/worldgen` and `internal/`. Run with `go run ./cm
 - Civilisation lifetimes are around half a million to a million years. Expansion is fast relative to that. May want slower ships or slower tech.
 - Sol is protected but nothing else is special about it yet. Nobody has visited.
 
+Observations after adding filters (10 seeds):
+
+- The early filters do most of the killing. Roughly a third of civilisations fall to the Atomic Age or Overshoot, and about a third of those falls are fatal. That matches the Great Filter idea: most intelligences never leave their world.
+- The Long Silence produces most remnants. "Stopped dying, and then stopped being born" is the most common way a civilisation ends up contracted. Worth diversifying the contraction causes.
+- Around 60 percent of civilisations end extinct, 10 percent transformed, 25 to 30 percent contracted. Five to fifteen dark ages per run.
+- Scars stack: remnants living under two or three creeds are common, which is exactly the Dune flavour wanted.
+- Filters arrive fast, within a few hundred thousand years of a civilisation arising. Plausible given thousand-year ticks, but a civilisation's whole story can be over in 300 ticks. Slowing tech growth would spread it out.
+- The Weight of Ages rarely gets to act because the named filters catch most civilisations first. It matters mostly for the survivors of everything else.
+
 ## Decision log
 
 - 2026-09-16: Galaxy idea is primary. Fairy idea is backup.
