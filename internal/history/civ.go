@@ -121,11 +121,16 @@ func (w *World) targeted(c *Civ, t int) bool {
 }
 
 func (w *World) megastructures(c *Civ) {
-	if c.Tech >= 2.2 && w.chance(0.004) {
-		c.Dyson++
-		s := c.Systems[w.R.IntN(len(c.Systems))]
-		w.log("The %s enclose %s in a swarm of collectors. The star dims from outside.", c.Name, w.star(s))
+	if c.Tech < 2.2 || !w.chance(0.004) {
+		return
 	}
+	s := c.Systems[w.R.IntN(len(c.Systems))]
+	if contains(c.Enclosed, s) {
+		return
+	}
+	c.Dyson++
+	c.Enclosed = append(c.Enclosed, s)
+	w.log("The %s enclose %s in a swarm of collectors. The star dims from outside.", c.Name, w.star(s))
 }
 
 // FTL is rare, and using it is not free.
@@ -254,6 +259,10 @@ func (w *World) crisis(c *Civ) {
 			}
 		}},
 		{2, func() {
+			if len(c.Systems) < 2 {
+				w.log("Unrest among the %s on %s. It passes, this time.", c.Name, c.HomeName)
+				return
+			}
 			lost := len(c.Systems) / 2
 			for i := 0; i < lost; i++ {
 				s := c.Systems[w.R.IntN(len(c.Systems))]
@@ -288,9 +297,10 @@ func (w *World) crisis(c *Civ) {
 	}
 	if c.Dyson > 0 {
 		opts = append(opts, opt{1, func() {
-			w.trace(c.Home, "wounded star", c.ID)
 			w.log("The %s reach too deep into %s. The star convulses.", c.Name, c.HomeName)
-			if w.chance(0.5) {
+			w.loseSystem(c, c.Home, "wounded star", nil)
+			w.Bio[c.Home] = BioNone
+			if len(c.Systems) == 0 || w.chance(0.5) {
 				w.endCiv(c, Extinct, "broke their own star")
 			} else {
 				w.contract(c, "broke their own star and fled to a lesser one")
@@ -380,8 +390,8 @@ func (w *World) endCiv(c *Civ, f Fate, cause string) {
 			w.loseSystem(c, s, "transformed world", nil)
 		}
 	}
-	for i := 0; i < c.Dyson; i++ {
-		w.trace(c.Home, "dyson remnant", c.ID)
+	for _, s := range c.Enclosed {
+		w.trace(s, "dyson remnant", c.ID)
 	}
 	if wasRemnant {
 		cause = c.Cause + ", and long after " + cause

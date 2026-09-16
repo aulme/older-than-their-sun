@@ -20,6 +20,13 @@ func year(y history.Year) string {
 	}
 }
 
+func systems(n int) string {
+	if n == 1 {
+		return "a single world"
+	}
+	return fmt.Sprintf("%d systems", n)
+}
+
 func commas(n int64) string {
 	s := fmt.Sprint(n)
 	out := ""
@@ -70,7 +77,7 @@ func Write(out io.Writer, w *history.World) {
 			continue
 		}
 		any = true
-		p("  The %s on %s, ruled by %s. Once %d systems, now tech %.1f. They %s (%s).", c.Name, w.G.Stars[c.Systems[0]].Name, c.Title, c.Peak, c.Tech, c.Cause, year(c.Ended))
+		p("  The %s on %s, ruled by %s. Once %s, now tech %.1f. They %s (%s).", c.Name, w.G.Stars[c.Systems[0]].Name, c.Title, systems(c.Peak), c.Tech, c.Cause, year(c.Ended))
 	}
 	if !any {
 		p("  none")

@@ -94,6 +94,7 @@ type Civ struct {
 	Peak     int
 	HasFTL   bool
 	Dyson    int
+	Enclosed []int // stars with Dyson swarms
 	Wars     map[int]bool
 	Met      map[int]bool
 	Plagued  bool
