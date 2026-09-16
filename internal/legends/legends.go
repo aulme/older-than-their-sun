@@ -74,7 +74,29 @@ func Write(out io.Writer, w *history.World, full bool) {
 
 	present = w.Present
 	p("=== THE GALAXY ===")
-	p("seed %d, %d stars within %.0f ly of Sol", w.Seed, len(w.G.Stars), w.Cfg.Radius)
+	p("seed %d: %d stars within %.0f ly of %s", w.Seed, len(w.G.Stars), w.G.Radius, w.G.Anchor())
+	p("The place: %s.", w.G.Region.Describe())
+	for _, line := range history.LawsInWords(w.G) {
+		p("  %s", line)
+	}
+	real := 0
+	for i := range w.G.Stars {
+		if w.G.Stars[i].Real {
+			real++
+		}
+	}
+	if real > 0 {
+		p("  %d of the stars are real, with the worlds Earth knows of; the rest are drawn to the laws of the place.", real)
+	}
+	if near := history.NearFeatures(w.G, 14); len(near) > 0 {
+		p("Near:")
+		for _, n := range near {
+			p("  %s", n)
+		}
+	}
+	if sky := history.SkyFeatures(w.G); sky != "" {
+		p("Beyond: %s.", sky)
+	}
 	held, complex := 0, 0
 	for i := range w.G.Stars {
 		if w.Held[i] >= 0 {
@@ -170,6 +192,8 @@ func Write(out io.Writer, w *history.World, full bool) {
 		}
 		p("  %s, a %s, %s%s.", h.Name, h.Kind, state, made)
 	}
+	p("")
+	gazetteer(p, w)
 	p("")
 	p("Legacies of the elder ages:")
 	for _, l := range w.Legacies {
@@ -324,7 +348,8 @@ func Stats(out io.Writer, w *history.World) {
 			}
 		}
 	}
-	fmt.Fprintf(out, "seed %d: age %.1f Myr, fade %.0f Myr, fertility %.1f%%, %d civs (lived <0.5/<1/<3/<10/10+ Myr: %d/%d/%d/%d/%d), standing %d, remnants %d, knowers %d, whole tree %d, miracles born/leap/found/wielded %d/%d/%d/%d, horrors %d, remains %d (mastered %d, wielded %d, sealed %d, unleashed %d, crumbled %d; still buried abandoned/derelict/wreck/ruin %d/%d/%d/%d), capped %v\n",
+	fmt.Fprintf(out, "%s seed %d: age %.1f Myr, fade %.0f Myr, fertility %.1f%%, %d civs (lived <0.5/<1/<3/<10/10+ Myr: %d/%d/%d/%d/%d), standing %d, remnants %d, knowers %d, whole tree %d, miracles born/leap/found/wielded %d/%d/%d/%d, horrors %d, remains %d (mastered %d, wielded %d, sealed %d, unleashed %d, crumbled %d; still buried abandoned/derelict/wreck/ruin %d/%d/%d/%d), capped %v\n",
+		w.G.Region.Code,
 		w.Seed, float64(w.Present-w.Cfg.Dawn)/1e6, float64(w.Cycle.Fade)/1e6, 100*w.FertilityNow(), len(w.Civs), b[0], b[1], b[2], b[3], b[4], standing, remnants, knowers, whole, miracles["born"], miracles["leap"], miracles["found"], miracles["wielded"], len(w.Horrors),
 		nRuins, ruins[history.Mastered], ruins[history.Wielded], ruins[history.Sealed], ruins[history.Unleashed], ruins[history.Lost],
 		conds[history.Abandoned], conds[history.Derelict], conds[history.Wreck], conds[history.Ruin], w.Capped)

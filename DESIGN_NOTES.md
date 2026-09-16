@@ -41,7 +41,7 @@ Base the star map on actual knowledge as much as practical:
 - Beyond the catalogued stars, fill in statistically plausible stars using known stellar population distributions (mostly red dwarfs, and so on). Distant regions are more statistical, nearby regions more real.
 - Quasars are extragalactic, so they belong in the "sky" rather than the map. Could still matter as things civilisations observe or worship.
 
-Open question: how much of the galaxy is "in play"? A few thousand light years around Sol is already enormous. Options include a full-galaxy sparse map with a denser local bubble, or restricting the play area outright.
+Decided 2026-09-16: the whole galaxy is the map, but a history runs in one *field* of a few hundred stars at a chosen place in it. See "The galaxy as a map" under Simulation v1.
 
 ### Semi-hard science fiction constraints
 
@@ -350,6 +350,33 @@ Agreed and built 2026-09-16. The science-fiction powers (an ansible, directed ev
 
 **Tuning lessons.** Costs alone cannot make a finite tree rare; with the pursuit model the first cut let half of all civilisations leap, and the fix was steep prices plus one leap per people. Miracle holders that leapt at the end of life just died of the Weight, hence the renewal. Elder miracle artifacts were being unleashed by young finders into beacons, and beacons feed hazard, which fails more filters, which spawns more beacons; wielding had to be easy and the beacon weight on hazard was lowered. Ordinary expansion collapsed when specialists stopped learning propulsion in a star field where a people needs about 20 light years of reach to have any neighbour; necessity now steers pursuit. A zero-weight fallback in the chooser was quietly handing miracles to civilisations that had exhausted their tree.
 
+### The galaxy as a map
+
+Built 2026-09-16 in `internal/galaxy` (milky.go, features.go, catalog.go, system.go, field.go).
+
+**The model.** The Milky Way is a fixed substrate in galactocentric coordinates (kpc; the Sun at X = -8.2). It is the textbook picture, not a survey fit: a boxy bulge and a long bar at about 30 degrees, four logarithmic arms (Scutum-Centaurus and Perseus rooted at the bar's ends, Sagittarius-Carina and Norma-Outer as the minor pair) plus the Local arm the Sun rides the inner edge of, a thin disc that flares outward, a thick disc, a thin halo, and the central molecular zone around Sagittarius A*. Zones by position: the Heart, the Core, the Bulge, the Bar, the Inner Disc, the Middle Disc, the Outer Disc, the Rim, the Halo.
+
+**The laws.** Every place has a `Law`, all values relative to the Sun's neighbourhood: density (how close the stars stand), youth (star formation: giants, supernovae, nebulae), metals ([Fe/H], richer inward, poorer outward and in the halo), glare (the hard sky: cosmic rays from young stars, the X-ray glow and outbursts of the centre), crowd (how often other stars pass close), exotic (dead and collapsed stars nearby to learn from). What they do in the engine:
+
+- Density sets the field's radius, so a fixed number of stars stand at the right average distance. The Heart is 400 stars in 38 ly; the Rim is 400 stars in 375 ly. The reach a people needs to find a neighbour follows.
+- Metals set the share of stars with worlds of rock (`Rocky`), which scales the rate life arises and complex life follows. Metals also speed industry.
+- Youth scales the massive share of the class mix (so supernovae), and the gamma-ray burst rate (capped at five times the Sun's; bursts are beamed and rarer than deaths).
+- Glare lowers the rate of life and raises the baseline galactic hazard (1 at the Sun, up to about 1.8 at the Heart), which every filter reads. Near the centre the hole flares now and then and every world in the field faces the burning sky at once. A people born under a hard sky is born hardy and finds the burning sky a smaller thing: the law adapts what it does not kill.
+- Crowd scales the passing-dark-mass rate, capped at thirty times.
+- Exotic speeds research in the exotic domain, up to two and a half times next to a black hole.
+
+What the survey shows (`-map`): going inward from the Sun the stars crowd, the sky hardens, and lives shorten; the Bulge is dense and old and short-lived; the Heart is nearly dead (a couple of civilisations per age, none lasting); the Core has dozens, none past three million years. Going outward the stars thin, the sky softens, metals fall; the Perseus arm and the Outer Disc grow the longest-lived peoples in the galaxy, alone. The Rim and the Halo are lonely, poor and safe. A globular cluster is a ball of ancient metal-poor stars three light years apart with comets shaken loose every few hundred thousand years: a handful of peoples per age, and every one of them meets the others.
+
+**Black holes.** A stellar-mass black hole is a quiet thing unless it is feeding; the law it carries is exotic: the deep physics comes sooner to a people who can study one. A region anchored on a black hole, neutron star or magnetar (`-at "Cygnus X-1"`) has it at the centre of the field as a star of class N, and the legends measure distances from it. Sagittarius A* is different: its glare and flares make the Heart lethal. No tidal or navigational hazards at the field scale; a field is light years across and a hole is kilometres.
+
+**Features.** About seventy named real things with positions and two descriptions each (how a people living near it would tell it, and what is actually known): the centre and its clusters, the bar and the rings, the nurseries of the arms, the doomed giants (Betelgeuse, Eta Carinae, WR 104 with its axis pointed at us), the dead stars near the Sun (Vela, Geminga, RX J1856), the nearest black holes (Gaia BH1, BH3, A0620-00, Cygnus X-1, V404), magnetars, remnants, globular clusters, the Sagittarius stream, the two Clouds and Andromeda. A region lists the features within their reach as "Near" and the extragalactic ones as "Beyond". Dated events (the Vela supernova 11,000 years ago, the Crab in 1054, the magnetar flare of 2004) are added to the legends once the present is known; they are flavour, and only for fields close enough to have seen them.
+
+**The catalogue.** `cmd/mkcatalog` builds `catalog_data.go` from the HYG database and the NASA Exoplanet Archive: about 800 real stars within 150 ly (every proper-named star, every known planet host, everything within 25 ly) with their known planets. The Sun's field seeds 55 percent of its stars from the catalogue (best known first) and fills the rest to the laws; nothing procedural is placed within 20 ly of the Sun. Real stars keep their names when a people arises on them. Nearby regions are real; distant ones are statistical, as the substrate notes always said.
+
+**Star systems.** Every star has a system: known planets from the catalogue, the rest drawn from class, metals and a little astrophysics (snow lines, tidal locking, hot Jupiters where the metals are, small stars making small worlds). The habitable world is a real world in the system, and the species' home archetype (lush, twilight, superterran, floater, iceshell...) is chosen from what the world is: tidally locked worlds around red dwarfs, heavy worlds for super-Earths, cloud decks where there is a warm giant. A world Earth has seen stays the home. At a real star a procedural habitable world is only placed where the surveys would have missed it (no known planet within a factor of two in orbit), and the legends say so. A people seeded on a star with no habitable world gets one made. The legends print each cradle's system when a people arises, and a gazetteer of every star with a history at the end.
+
+**Traps found.** Arm azimuth ranges must include the Sun's azimuth or an arm vanishes from the near side. GRB rate scaled with youth uncapped makes the Core sterile forever (a burst every 300 kyr wipes complex life faster than it can return). Crowd uncapped makes the Bulge a place where nothing lives past half a million years. A brown dwarf host from the exoplanet archive with no spectrum and no magnitude reads as a naked-eye K star unless the tool says otherwise.
+
 ### The cycle
 
 Agreed 2026-09-16. The age separator is attrition, not catastrophe.
@@ -434,13 +461,14 @@ Known oddities to look at next, none of them blocking:
 - 2026-09-16: The Long Dusk is removed. Civilisations still active at the present are reported as still standing. The horror kind formerly called Elder is renamed Sleeper (in code SleeperHorror, as the legacy kind is already Sleeper); "elder" now means only a civilisation of an earlier age.
 - 2026-09-16: Research is a pursuit with steep prices by depth and momentum by domain, so civilisations specialise and nobody climbs the whole tree; necessity steers a stranded people toward propulsion. Era 4 deepened with a spine per domain. See "Tech tree".
 - 2026-09-16: The science-fiction powers are miracles, a class apart: gamechanger effects, a surge on gaining one, their own filters, three ways in (leap, find, born) with the elder find the common one and the born exempt from the filter. "Miracle" is the word in the legends. An end-game empire without one holds its own; a young people with one becomes a regional power. See "Miracles".
+- 2026-09-16: The real Milky Way is the map: a structural model with laws by geography (density, youth, metals, glare, crowd, exotic), a catalogue of named features, real stars and known planets within 150 ly from HYG and the Exoplanet Archive, and every star with a system of worlds the species' home is drawn from. A history runs in one field placed anywhere (`-at`); the whole map is printed by `-map`. See "The galaxy as a map".
 - 2026-09-16: Ages are attrition-based. Galactic fertility for new species surges at the start of an age and decays every tick; cosmic events only mop up; the cycle repeats with a period of about a billion years; nobody knows why, but a few advanced species learn where in the turn they stand (Deep Time). Replaces the "age-ender" catastrophe. See "The cycle".
 
 ## Next steps (proposed)
 
 - Fix the known oddities from the first v1 runs: level saturation, tree cross-prerequisites, remnant fade, a short legends mode.
 - Read many seeds and adjust until histories feel right: how often each filter is the killer, how often the Find goes each way, whether wars and enslavement read well.
-- Look at what real Milky Way data is easy to obtain (Gaia, HYG) and replace the random star field with real nearby stars.
+- Real stars are in (HYG, Exoplanet Archive). Next for the map: fit the arms to Reid et al. 2019 rather than the textbook picture; more features (the Gum nebula, the Cepheus bubble, the Vela molecular ridge); let several fields share one history.
 - Later: scale up massively. The real galaxy has hundreds of billions of stars, so civilisation counts should go from dozens to thousands or more. This needs a different simulation structure (regions, statistical treatment of the unremarkable, only instantiating stars where something happens). Design for it, but do not build it yet.
 - Add more horror categories to the sim: plagues as spreading actors, monstrous races as civilisations with alien drives, dimensional anomalies tied to FTL use.
 - Add the lazy detail layer: given a star and its history, generate the system contents (planets, stations, derelicts).

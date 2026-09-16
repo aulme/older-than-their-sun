@@ -3,8 +3,10 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 
+	"worldgen/internal/galaxy"
 	"worldgen/internal/history"
 	"worldgen/internal/legends"
 )
@@ -15,9 +17,21 @@ func main() {
 	full := flag.Bool("full", false, "print known tech per civilisation")
 	debug := flag.Bool("debug", false, "log the state of the galaxy every million years")
 	stats := flag.Bool("stats", false, "print one line of numbers instead of the legends")
+	at := flag.String("at", "sol", "where in the galaxy: a named place, a feature such as \"Cygnus X-1\", or x,y,z in kpc (see -map)")
+	mapOnly := flag.Bool("map", false, "print a chart of the galaxy, the laws from centre to rim, and the named places, then exit")
 	flag.Parse()
 
+	rg, err := galaxy.RegionByName(*at)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(2)
+	}
+	if *mapOnly {
+		legends.Map(os.Stdout, rg)
+		return
+	}
 	cfg := history.DefaultConfig()
+	cfg.Region = *at
 	cfg.Stars = *stars
 	cfg.Debug = *debug
 	w := history.Generate(*seed, cfg)

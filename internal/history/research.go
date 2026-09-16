@@ -68,6 +68,14 @@ func (c *Civ) rateMul(w *World) float64 {
 	if c.miracle("ansible") {
 		m *= 1.5 // every mind in one room
 	}
+	if n := tech.Get(c.Pursuit); n != nil {
+		switch n.Domain {
+		case tech.Exotic:
+			m *= w.Law.ExoticMul() // dead stars nearby to learn from
+		case tech.Industry:
+			m *= w.Law.IndustryMul() // metals are ore
+		}
+	}
 	for p := range c.Trade {
 		if w.Civs[p].Living() {
 			m *= 1.15

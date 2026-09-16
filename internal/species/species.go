@@ -81,6 +81,16 @@ type Archetype struct {
 	Unlock        string // tech node key that removes the lock
 }
 
+// ArchetypeByKey finds an archetype, or nil.
+func ArchetypeByKey(key string) *Archetype {
+	for _, a := range Archetypes {
+		if a.Key == key {
+			return a
+		}
+	}
+	return nil
+}
+
 // Archetypes is the home world table, lush most common, extreme rare.
 var Archetypes = []*Archetype{
 	{Key: "lush", Desc: "a temperate, lush world", Weight: 30, Mil: 1, Sur: 2, Soc: 2},
@@ -212,12 +222,19 @@ func pickGroup(r *rand.Rand, group string) *Trait {
 func Pick(r *rand.Rand, group string) *Trait { return pickGroup(r, group) }
 
 // Generate rolls a species. mult is the home star's multiplicity.
-func Generate(r *rand.Rand, mult int) *Species {
+func Generate(r *rand.Rand, mult int) *Species { return GenerateOn(r, mult, "") }
+
+// GenerateOn generates a species for a home world of a given archetype
+// key, or a random one if the key is empty.
+func GenerateOn(r *rand.Rand, mult int, arch string) *Species {
 	s := &Species{Name: names.Civ(r)}
 	s.Kind = Kind(pickWeighted(r, []int{0, 1, 2, 3, 4, 5}, func(i int) float64 { return kindWeights[i] }))
-	s.World = pickWeighted(r, Archetypes, func(a *Archetype) float64 { return a.Weight })
-	if s.Kind == PlanetaryMind && r.Float64() < 0.6 {
-		s.World = Archetypes[1] // living oceans are the usual planetary mind
+	s.World = ArchetypeByKey(arch)
+	if s.World == nil {
+		s.World = pickWeighted(r, Archetypes, func(a *Archetype) float64 { return a.Weight })
+		if s.Kind == PlanetaryMind && r.Float64() < 0.6 {
+			s.World = Archetypes[1] // living oceans are the usual planetary mind
+		}
 	}
 	if s.World.Trait != "" {
 		s.Add(s.World.Trait)

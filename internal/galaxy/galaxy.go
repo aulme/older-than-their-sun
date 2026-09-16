@@ -1,10 +1,13 @@
-// Package galaxy holds the fixed substrate: stars and their positions.
+// Package galaxy holds the fixed substrate: the Milky Way, its laws, its
+// named features, the real stars near the Sun, and the star field a
+// history runs in.
 //
-// v1 is still a random star field around Sol with a realistic spectral class
-// mix, but stars now carry multiplicity, a main-sequence lifetime and a
-// scheduled death, so the history can face civilisations with supernovae
-// and dying suns. Positions are in light years, Sol at the origin, Z through
-// the galactic disc.
+// A field is a few hundred stars around a point in the galaxy (see
+// field.go). Positions within it are in light years from the field's
+// centre, x toward the galactic centre, y along rotation, z north. Stars
+// carry multiplicity, a main-sequence lifetime and a scheduled death, so
+// the history can face civilisations with supernovae and dying suns, and
+// each has a system of worlds (see system.go).
 package galaxy
 
 import (
@@ -29,6 +32,12 @@ type Star struct {
 	Lifetime float64 // main-sequence lifetime in years
 	DiesAt   int64   // year relative to the dawn of the current age when the star leaves the main sequence
 	Failing  bool    // the star has begun to die; its worlds are degrading
+	Real     bool    // a catalogued star, or a named feature
+	Alt      string  // another designation
+	Mag      float64 // apparent magnitude from Earth; 99 if not visible or not real
+	Note     string  // giant, supergiant, white dwarf, brown dwarf, subdwarf
+	Remnant  string  // for class N: neutron star, magnetar, black hole
+	cat      *CatStar
 }
 
 // Hostility is how hard the star's worlds are to live on, for the habitable
@@ -68,17 +77,62 @@ func (s *Star) ClassName() string {
 	case 'W':
 		return "white dwarf"
 	case 'N':
+		if s.Remnant != "" {
+			return s.Remnant
+		}
 		return "stellar remnant"
+	}
+	if s.Note != "" && s.Note != "subdwarf" {
+		return fmt.Sprintf("%c-class %s", s.Class, s.Note)
 	}
 	return fmt.Sprintf("%c-class %s", s.Class, m)
 }
 
 // Galaxy is the star field plus precomputed pairwise distances.
 type Galaxy struct {
-	Stars  []Star
-	Sol    int
-	Radius float64
-	dist   []float64 // n*n
+	Stars     []Star
+	Sys       []*System
+	Sol       int // index of Sol, or -1 if the field is elsewhere
+	Radius    float64
+	Thickness float64
+	Region    Region
+	Law       Law
+	dist      []float64 // n*n
+}
+
+// Anchor names the field's centre: Sol, or the feature or place it is at.
+func (g *Galaxy) Anchor() string {
+	if g.Sol >= 0 {
+		return "Sol"
+	}
+	if g.Region.Anchor != nil {
+		return g.Region.Anchor.Name
+	}
+	return "the centre of the field"
+}
+
+// FromCentre is a star's distance from the field's centre in light years.
+func (g *Galaxy) FromCentre(id int) float64 {
+	s := &g.Stars[id]
+	return math.Sqrt(sq(s.X) + sq(s.Y) + sq(s.Z))
+}
+
+// Position of a star in the galaxy.
+func (g *Galaxy) Position(id int) Vec {
+	s := &g.Stars[id]
+	return g.Region.Pos.Add(Vec{s.X / LyPerKpc, s.Y / LyPerKpc, s.Z / LyPerKpc})
+}
+
+func (g *Galaxy) index() {
+	n := len(g.Stars)
+	g.dist = make([]float64, n*n)
+	for a := 0; a < n; a++ {
+		for b := a + 1; b < n; b++ {
+			d := math.Sqrt(sq(g.Stars[a].X-g.Stars[b].X) + sq(g.Stars[a].Y-g.Stars[b].Y) + sq(g.Stars[a].Z-g.Stars[b].Z))
+			g.dist[a*n+b] = d
+			g.dist[b*n+a] = d
+		}
+	}
 }
 
 // Approximate fraction of main-sequence stars by class, a habitability
@@ -125,45 +179,10 @@ func diesAt(r *rand.Rand, class byte, life float64) int64 {
 	return 1e15
 }
 
-// Generate builds a random disc-shaped star field. Real stellar density near
-// Sol is about 0.004 stars per cubic light year, which would be far too many
-// to simulate individually; the field is sparse on purpose.
+// Generate builds the field of the Sun's neighbourhood.
 func Generate(r *rand.Rand, n int, radius, thickness float64) *Galaxy {
-	g := &Galaxy{Radius: radius}
-	g.Stars = make([]Star, 0, n)
-	g.Stars = append(g.Stars, Star{ID: 0, Name: "Sol", Class: 'G', Hab: 1.0, Mult: 1, Lifetime: 1e10, DiesAt: 5e9})
-	g.Sol = 0
-	for i := 1; i < n; i++ {
-		rr := radius * math.Sqrt(r.Float64())
-		th := r.Float64() * 2 * math.Pi
-		z := (r.NormFloat64()) * thickness / 2
-		c, hab, life := pickClass(r)
-		mult := 1
-		switch x := r.Float64(); {
-		case x < 0.07:
-			mult = 3
-		case x < 0.45:
-			mult = 2
-		}
-		s := Star{
-			ID: i, Name: fmt.Sprintf("HIP-%d", 1000+r.IntN(90000)),
-			Class: c, X: rr * math.Cos(th), Y: rr * math.Sin(th), Z: z, Hab: hab,
-			Mult: mult, Lifetime: life, DiesAt: diesAt(r, c, life),
-		}
-		if s.DiesAt < -Age {
-			s.Kill()
-		}
-		g.Stars = append(g.Stars, s)
-	}
-	g.dist = make([]float64, n*n)
-	for a := 0; a < n; a++ {
-		for b := a + 1; b < n; b++ {
-			d := math.Sqrt(sq(g.Stars[a].X-g.Stars[b].X) + sq(g.Stars[a].Y-g.Stars[b].Y) + sq(g.Stars[a].Z-g.Stars[b].Z))
-			g.dist[a*n+b] = d
-			g.dist[b*n+a] = d
-		}
-	}
-	return g
+	rg, _ := RegionByName("sol")
+	return GenerateAt(r, rg, n, radius, thickness)
 }
 
 func sq(x float64) float64 { return x * x }
@@ -189,5 +208,5 @@ func (g *Galaxy) Describe(id int) string {
 	if id == g.Sol {
 		return "Sol"
 	}
-	return fmt.Sprintf("%s (%s, %.0f ly from Sol)", s.Name, s.ClassName(), g.Dist(id, g.Sol))
+	return fmt.Sprintf("%s (%s, %.0f ly from %s)", s.Name, s.ClassName(), g.FromCentre(id), g.Anchor())
 }

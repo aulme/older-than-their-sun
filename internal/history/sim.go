@@ -10,8 +10,12 @@ import (
 // Generate runs the whole history for a seed and returns the world at the present.
 func Generate(seed uint64, cfg Config) *World {
 	r := rand.New(rand.NewPCG(seed, seed^0x9E3779B97F4A7C15))
-	g := galaxy.Generate(r, cfg.Stars, cfg.Radius, cfg.Thickness)
-	w := &World{Cfg: cfg, Seed: seed, G: g, R: r, Hazard: 1}
+	rg, err := galaxy.RegionByName(cfg.Region)
+	if err != nil {
+		rg, _ = galaxy.RegionByName("sol")
+	}
+	g := galaxy.GenerateAt(r, rg, cfg.Stars, cfg.Radius, cfg.Thickness)
+	w := &World{Cfg: cfg, Seed: seed, G: g, R: r, Law: g.Law, Hazard: g.Law.Hazard()}
 	n := len(g.Stars)
 	w.Bio = make([]BioState, n)
 	w.Owner = make([]int, n)
@@ -19,12 +23,15 @@ func Generate(seed uint64, cfg Config) *World {
 	for i := range n {
 		w.Owner[i], w.Held[i] = -1, -1
 	}
-	w.Bio[g.Sol] = BioSimple
+	if g.Sol >= 0 {
+		w.Bio[g.Sol] = BioSimple
+	}
 
 	w.makeCycle()
 	w.runDeep()
 	w.runAges()
 	w.runAge()
+	w.skyEvents()
 	sort.SliceStable(w.Events, func(i, j int) bool { return w.Events[i].Year < w.Events[j].Year })
 	return w
 }
@@ -102,11 +109,11 @@ func (w *World) life() {
 	for i, b := range w.Bio {
 		switch b {
 		case BioNone:
-			if w.G.Stars[i].Hab > 0 && w.chance(w.G.Stars[i].Hab*0.000002) {
+			if w.G.Stars[i].Hab > 0 && w.chance(w.G.Stars[i].Hab*0.000002*w.Law.Life()) {
 				w.Bio[i] = BioSimple
 			}
 		case BioSimple:
-			if w.chance(0.00005) {
+			if w.chance(0.00005 * w.Law.Life()) {
 				w.Bio[i] = BioComplex
 			}
 		case BioComplex:
@@ -134,5 +141,5 @@ func (w *World) updateHazard() {
 			}
 		}
 	}
-	w.Hazard = min(2.5, 1+0.005*float64(held)+0.06*float64(beacons))
+	w.Hazard = min(2.5, w.Law.Hazard()+0.005*float64(held)+0.06*float64(beacons))
 }

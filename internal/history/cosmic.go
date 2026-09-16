@@ -6,11 +6,12 @@ package history
 
 func (w *World) cosmic() {
 	w.starDeaths()
-	if w.chance(0.00015) {
+	w.flares()
+	if w.chance(0.00015 * min(w.Law.Youth, 5)) {
 		origin := w.R.IntN(len(w.G.Stars))
 		w.blast(origin, 15+w.R.Float64()*15, "a gamma-ray burst", "A gamma-ray burst lights the sky near %s.", 0)
 	}
-	if w.chance(0.00003) {
+	if w.chance(0.00003 * min(w.Law.Crowd, 30)) {
 		origin := w.R.IntN(len(w.G.Stars))
 		w.blast(origin, 6, "a passing dark mass", "Something heavy and unlit passes through the worlds of %s, and orbits come apart.", 1)
 	}

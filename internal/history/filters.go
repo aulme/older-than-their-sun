@@ -113,7 +113,7 @@ func (w *World) face(c *Civ, key string, diffAdj float64) Outcome {
 		return Overcome
 	}
 	lvl := c.level(f.Levels...)
-	diff := f.Diff + diffAdj + 0.25*float64(len(c.Scars)) + 1.5*(w.Hazard-1) + c.traitDiff(key) + c.miracleDiff(key)
+	diff := f.Diff + diffAdj + 0.25*float64(len(c.Scars)) + 1.5*(w.Hazard-1) + c.traitDiff(key) + c.miracleDiff(key) + w.lawDiff(key)
 	roll := w.R.NormFloat64() * 1.5
 	margin := lvl + roll - diff
 	if f.Domain != "" {

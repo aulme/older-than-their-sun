@@ -286,6 +286,7 @@ type Trace struct {
 
 // Config tunes the simulation.
 type Config struct {
+	Region    string // where in the galaxy: a preset, a feature name, or x,y,z in kpc
 	Stars     int
 	Radius    float64
 	Thickness float64
@@ -324,6 +325,7 @@ type World struct {
 	Cfg      Config
 	Seed     uint64
 	G        *galaxy.Galaxy
+	Law      galaxy.Law // the laws of the place
 	R        *rand.Rand
 	Now      Year
 	Present  Year    // when the simulation stopped; years are printed relative to this

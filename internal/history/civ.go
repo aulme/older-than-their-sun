@@ -10,8 +10,13 @@ import (
 // made species pass their own and the maker's id.
 func (w *World) spawnCiv(home int, sp *species.Species, maker int) *Civ {
 	st := &w.G.Stars[home]
+	sys := w.G.Sys[home]
+	sys.EnsureHome(w.R, st)
 	if sp == nil {
-		sp = species.Generate(w.R, st.Mult)
+		sp = species.GenerateOn(w.R, st.Mult, sys.Arch)
+		if w.Law.Glare > 3 && !sp.Has("hardy") && !sp.Has("skyless") {
+			sp.Add("hardy") // born under a hard sky
+		}
 	}
 	c := &Civ{
 		ID: len(w.Civs), Name: sp.Name, Species: sp, Home: home, HomeName: names.Star(w.R),
@@ -21,13 +26,18 @@ func (w *World) spawnCiv(home int, sp *species.Species, maker int) *Civ {
 		Wars: map[int]bool{}, Met: map[int]bool{}, Trade: map[int]bool{},
 		Faced: map[string]bool{}, Scars: map[string]bool{}, Boons: map[string]bool{}, Miracles: map[string]string{},
 	}
+	if st.Real {
+		c.HomeName = st.Name // a real star keeps the name Earth knows it by
+	}
 	for _, d := range sp.World.Locked {
 		c.Locked[d] = true
 	}
 	w.Civs = append(w.Civs, c)
 	w.Owner[home] = c.ID
 	old := st.Name
-	st.Name = c.HomeName
+	if !st.Real {
+		st.Name = c.HomeName
+	}
 	c.CradleName = c.HomeName
 	prior := ""
 	for _, o := range w.Civs {
@@ -37,8 +47,9 @@ func (w *World) spawnCiv(home int, sp *species.Species, maker int) *Civ {
 	}
 	w.recompute(c)
 	if maker < 0 {
-		w.log("The %s arise on %s, %s of %s%s, %.0f ly from Sol. They are %s.",
-			c.Name, c.HomeName, sp.World.Desc, old, prior, w.G.Dist(home, w.G.Sol), sp.Describe())
+		w.log("The %s arise on %s, %s, around %s%s, %.0f ly from %s. They are %s.",
+			c.Name, sys.HomeName(c.HomeName), sp.World.Desc, w.starDetail(home, old), prior, w.G.FromCentre(home), w.G.Anchor(), sp.Describe())
+		w.log("%s", w.systemLine(home))
 	}
 	if f := sp.Kind.Flavour(); f.Portrait != "" {
 		w.log("%s", f.Portrait)
