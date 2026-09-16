@@ -89,6 +89,28 @@ Each category should eventually have, in the simulation:
 - **Effect rules.** What it does to a civilisation it touches: extinction, transformation, absorption, subjugation, isolation.
 - **Trace rules.** What it leaves for the player: derelicts, dead worlds, warning beacons, corrupted archives, survivors' myths.
 
+### Filters
+
+A **filter** is any event that may or may not force a civilisation into decline. The name is from the Great Filter idea in Fermi paradox discussion: the steps between dead matter and a galaxy-spanning civilisation, any of which most candidates might fail. Here the term covers everything from a nuclear age to a memetic beacon.
+
+**Every filter has three possible outcomes:**
+
+1. **Overcome.** Passed cleanly. Sometimes leaves a boon: a civilisation that aligned its machine minds grows faster afterwards.
+2. **Scarred.** Survived, but changed for good. The scar is a permanent trait that alters behaviour and the odds of later filters. Dune is the model: a civilisation living under a total prohibition on thinking machines, or an atomic taboo, or a quarantine creed that keeps it from ever fully trusting contact.
+3. **Declined.** Forced into one or more decline scenarios. Not always terminal: a **dark age** sets a civilisation back and can be climbed out of, though a third one is fatal. The terminal scenarios are the end states: extinct, transformed, contracted. Which scenarios are possible depends on the filter: failing the thinking machines filter produces a rogue mind, failing self-replication produces a swarm, failing transcendence produces silent machinery.
+
+**Filters by era** (starting list, extend as we go):
+
+- *Early, single world:* the Atomic Age (weapons that can end the world), Overshoot (ecological and resource collapse), Plague.
+- *Middle, interstellar:* Thinking Machines (AI emergence), The Distance (colonies diverge across light years and generations), The Long Silence (immortality and stagnation), Contact (another civilisation, handled by the war and peace rules), Plague again.
+- *Late, megastructural:* Self-Replication (nanotech and von Neumann machines), Stellar Engineering, Transcendence, FTL (which can let something through).
+- *Ambient, always:* The Weight of Ages. The old crisis roll, scaled by age, size, galactic hazard and prior scars. It is what makes even a civilisation that passes every named filter eventually decline.
+- *External:* horrors, cosmic events, and war are also filters in this sense, but they are driven by their own actors rather than rolled by the civilisation.
+
+**Odds** depend on temperament (curious civilisations handle technology filters better, zealous ones handle stagnation better and machines worse), on prior scars (a scarred civilisation is more brittle, so each scar nudges later filters toward decline), and on galactic hazard.
+
+**Why this matters for the aftermath.** The remnants the player meets are defined by their scars as much as by their fall. An emperor on a single world whose people abandoned machine minds four million years ago is a different encounter from one whose people are under a quarantine creed. The filter record of each civilisation is part of its legend.
+
 ### The present is the aftermath
 
 The game's "now" is defined as the aftermath of galactic history. This is a hard rule for the simulation, not a mood:
@@ -174,7 +196,7 @@ Written 2026-09-16. Go, in `cmd/worldgen` and `internal/`. Run with `go run ./cm
 
 **Deep pass.** 3 billion years in 10 million year steps. Life arises by star class, complex life follows, gamma-ray bursts sterilise regions, precursor civilisations rise and vanish off-screen leaving vaults, Dyson remnants or beacons, and elder entities settle in and go dormant.
 
-**Fine pass.** The last 5 million years in 1000 year steps. Civilisations arise from complex life with a random temperament (curious, insular, aggressive, zealous). They grow tech with diminishing returns, reach the stars at tech 1, send sublight colony ships at 0.01c, build Dyson swarms past tech 2, and very rarely discover FTL past tech 3, which sometimes lets something through. Contact happens by proximity and can start slow relativistic wars. A crisis roll each tick, scaled by age, size, galactic hazard and plague, picks a cause: internal collapse, schism, runaway AI (becomes a rogue mind), replicator outbreak, breaking their own star, stagnation, ascension, or sickness.
+**Fine pass.** The last 5 million years in 1000 year steps. Civilisations arise from complex life with a random temperament (curious, insular, aggressive, zealous). They grow tech with diminishing returns, reach the stars at tech 1, send sublight colony ships at 0.01c, build Dyson swarms past tech 2, and very rarely discover FTL past tech 3, which sometimes lets something through. Contact happens by proximity and can start slow relativistic wars. Civilisations face filters (see the Filters section) as they cross thresholds: the Atomic Age, Overshoot, Thinking Machines, the Distance, the Long Silence, Self-Replication, Stellar Engineering, Transcendence, Plague, and the ambient Weight of Ages. Each is overcome, leaves a scar, or forces a decline scenario. Scars change tech growth, expansion, war, and the odds of later filters.
 
 **Horrors as actors.** Replicator swarms spread and eventually fall silent. Rogue minds spread slowly and absorb. Beacons convert or kill listeners within range, and converted civilisations start broadcasting themselves. Elder entities wake when settled too close, unmake everything within 40 light years, and sleep again. Hazard rises with the number of horror-held systems and beacons, which is what drives the aftermath.
 
@@ -198,6 +220,7 @@ Written 2026-09-16. Go, in `cmd/worldgen` and `internal/`. Run with `go run ./cm
 - 2026-09-16: Two-pass history simulation agreed: coarse deep-time pass, then fine recent-history pass.
 - 2026-09-16: Alien horrors organised as categories with per-category simulation rules. Start with a small list, extend over time. Monstrous races are one category among several.
 - 2026-09-16: Language is Go. Reasons: the history sim is a graph of mutually referencing entities, which a garbage collector handles cleanly; performance needs are modest; fast iteration matters more than raw speed. Rust's sum types would have been nicer for event modelling, accepted as a cost.
+- 2026-09-16: "Filters" is the term for anything that may push a civilisation into decline. Three outcomes: overcome, scarred, declined. Early filters like nuclear weapons included. Scars are lasting traits.
 - 2026-09-16: The present is the aftermath. Every civilisation ends as gone, transformed, or contracted, always with a cause. Sol is protected by fiat.
 
 ## Next steps (proposed)
