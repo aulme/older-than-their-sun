@@ -2,6 +2,7 @@ package history
 
 import (
 	"math/rand/v2"
+	"sort"
 
 	"worldgen/internal/galaxy"
 )
@@ -20,57 +21,44 @@ func Generate(seed uint64, cfg Config) *World {
 	}
 	w.Bio[g.Sol] = BioSimple
 
+	w.runAges()
 	w.runDeep()
-	w.runFine()
+	w.runEngine(cfg.MidStart, cfg.FineStart, cfg.MidStep)
+	w.runEngine(cfg.FineStart, 0, cfg.FineStep)
 	w.Now = 0
-	w.settle()
+	w.dt = 1
+	w.longDusk()
+	sort.SliceStable(w.Events, func(i, j int) bool { return w.Events[i].Year < w.Events[j].Year })
 	return w
 }
 
-// runFine is the recent-history pass: agents act every FineStep years.
-func (w *World) runFine() {
-	for y := w.Cfg.DeepEnd; y < 0; y += w.Cfg.FineStep {
+// runEngine is the civilisation engine, run at whatever grain is asked for.
+func (w *World) runEngine(from, to, step Year) {
+	w.dt = float64(step) / 1000
+	for y := from; y < to; y += step {
 		w.Now = y
-		w.fineLife()
-		w.fineCosmic()
+		w.life()
+		w.cosmic()
 		w.tickHorrors()
 		w.tickCivs()
 		w.updateHazard()
 	}
 }
 
-func (w *World) fineLife() {
+func (w *World) life() {
 	for i, b := range w.Bio {
 		switch b {
+		case BioNone:
+			if w.G.Stars[i].Hab > 0 && w.chance(w.G.Stars[i].Hab*0.000002) {
+				w.Bio[i] = BioSimple
+			}
 		case BioSimple:
-			if w.chance(0.00002) {
+			if w.chance(0.00005) {
 				w.Bio[i] = BioComplex
 			}
 		case BioComplex:
-			if i != w.G.Sol && w.Owner[i] < 0 && w.Held[i] < 0 && w.chance(0.00016) {
-				w.spawnCiv(i)
-			}
-		}
-	}
-}
-
-func (w *World) fineCosmic() {
-	if !w.chance(0.00015) {
-		return
-	}
-	origin := w.R.IntN(len(w.G.Stars))
-	radius := 15.0 + w.R.Float64()*15
-	w.log("A gamma-ray burst lights the sky near %s.", w.star(origin))
-	for _, s := range append(w.G.Near(origin, radius), origin) {
-		if s == w.G.Sol {
-			continue
-		}
-		w.Bio[s] = BioNone
-		if cid := w.Owner[s]; cid >= 0 {
-			c := w.Civs[cid]
-			w.loseSystem(c, s, "scoured world", "were sterilised by a gamma-ray burst")
-			if s == c.Home {
-				w.endCiv(c, Extinct, "were sterilised by a gamma-ray burst")
+			if i != w.G.Sol && w.Owner[i] < 0 && w.Held[i] < 0 && !w.G.Stars[i].Dead() && w.chance(0.00016) {
+				w.spawnCiv(i, nil, -1)
 			}
 		}
 	}
@@ -84,23 +72,27 @@ func (w *World) updateHazard() {
 	for _, h := range w.Horrors {
 		switch h.Kind {
 		case Replicators, RogueMind:
-			held += len(h.Systems)
+			if !h.Dormant {
+				held += len(h.Systems)
+			}
 		case Beacon:
-			beacons++
+			if !h.Dormant {
+				beacons++
+			}
 		}
 	}
-	w.Hazard = 1 + 0.01*float64(held) + 0.15*float64(beacons)
+	w.Hazard = min(2.5, 1+0.005*float64(held)+0.08*float64(beacons))
 }
 
-// settle enforces the aftermath rule at the present. Anything still active
+// longDusk enforces the aftermath rule at the present. Anything still active
 // is pushed into decline by the Long Dusk. Ideally this rarely fires.
-func (w *World) settle() {
+func (w *World) longDusk() {
 	for _, c := range w.Civs {
 		if !c.Active() {
 			continue
 		}
 		w.Dusk++
-		if w.chance(0.7) {
+		if w.R.Float64() < 0.7 {
 			w.contract(c, "dwindled through the Long Dusk")
 		} else {
 			w.endCiv(c, Extinct, "did not survive the Long Dusk")

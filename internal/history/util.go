@@ -1,8 +1,49 @@
 package history
 
-import "fmt"
+import (
+	"fmt"
+	"math"
+)
 
 func sprintf(format string, args ...any) string { return fmt.Sprintf(format, args...) }
+
+func (w *World) log(format string, args ...any) {
+	w.Events = append(w.Events, Event{Year: w.Now, Text: sprintf(format, args...)})
+}
+
+func (w *World) logAt(y Year, format string, args ...any) {
+	w.Events = append(w.Events, Event{Year: y, Text: sprintf(format, args...)})
+}
+
+func (w *World) trace(star int, kind string, civ int) {
+	w.Traces = append(w.Traces, Trace{Star: star, Kind: kind, Civ: civ, Year: w.Now})
+}
+
+func (w *World) star(id int) string { return w.G.Stars[id].Name }
+
+// chance rolls a probability given per thousand years, scaled to the
+// current tick so the middle and fine passes share one set of rates.
+func (w *World) chance(p float64) bool {
+	if p <= 0 {
+		return false
+	}
+	if p >= 1 {
+		return true
+	}
+	return w.R.Float64() < 1-math.Pow(1-p, w.dt)
+}
+
+// count draws how many times a per-kyr rate fires in the current tick.
+func (w *World) count(rate float64) int {
+	x := rate * w.dt
+	n := int(x)
+	if w.R.Float64() < x-float64(n) {
+		n++
+	}
+	return n
+}
+
+func (w *World) pick(xs []int) int { return xs[w.R.IntN(len(xs))] }
 
 func remove(xs []int, v int) []int {
 	for i, x := range xs {
@@ -27,4 +68,24 @@ func systems(n int) string {
 		return "a single world"
 	}
 	return sprintf("%d systems", n)
+}
+
+func clamp(x, lo, hi float64) float64 { return math.Max(lo, math.Min(hi, x)) }
+
+// LevelName turns a level into words.
+func LevelName(x float64) string {
+	switch {
+	case x < 1.5:
+		return "negligible"
+	case x < 3:
+		return "weak"
+	case x < 5:
+		return "modest"
+	case x < 7:
+		return "strong"
+	case x < 8.5:
+		return "formidable"
+	default:
+		return "overwhelming"
+	}
 }

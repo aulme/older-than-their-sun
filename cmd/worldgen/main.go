@@ -12,10 +12,11 @@ import (
 func main() {
 	seed := flag.Uint64("seed", 1, "world seed")
 	stars := flag.Int("stars", 400, "number of stars")
+	full := flag.Bool("full", false, "print known tech per civilisation")
 	flag.Parse()
 
 	cfg := history.DefaultConfig()
 	cfg.Stars = *stars
 	w := history.Generate(*seed, cfg)
-	legends.Write(os.Stdout, w)
+	legends.Write(os.Stdout, w, *full)
 }

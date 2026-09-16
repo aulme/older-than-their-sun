@@ -1,25 +1,51 @@
 package history
 
-import "worldgen/internal/names"
+import (
+	"worldgen/internal/names"
+	"worldgen/internal/species"
+	"worldgen/internal/tech"
+)
 
-func (w *World) spawnCiv(home int) *Civ {
+// spawnCiv raises a civilisation at a star. sp is nil for a natural species;
+// made species pass their own and the maker's id.
+func (w *World) spawnCiv(home int, sp *species.Species, maker int) *Civ {
+	st := &w.G.Stars[home]
+	if sp == nil {
+		sp = species.Generate(w.R, st.Mult)
+	}
 	c := &Civ{
-		ID: len(w.Civs), Name: names.Civ(w.R), Home: home, HomeName: names.Star(w.R),
-		Born: w.Now, Temper: Temper(w.R.IntN(4)), Systems: []int{home}, Peak: 1,
-		Wars: map[int]bool{}, Met: map[int]bool{},
+		ID: len(w.Civs), Name: sp.Name, Species: sp, Home: home, HomeName: names.Star(w.R),
+		Cradle: home, Born: w.Now, Renewed: w.Now, Systems: []int{home}, Peak: 1, Master: maker,
+		Known: map[string]bool{}, Focus: map[string]float64{}, Locked: map[string]bool{},
+		Structures: map[string]int{}, Found: map[int]bool{}, Heard: map[int]bool{},
+		Wars: map[int]bool{}, Met: map[int]bool{}, Trade: map[int]bool{},
 		Faced: map[string]bool{}, Scars: map[string]bool{}, Boons: map[string]bool{},
+	}
+	for _, d := range sp.World.Locked {
+		c.Locked[d] = true
 	}
 	w.Civs = append(w.Civs, c)
 	w.Owner[home] = c.ID
-	old := w.G.Stars[home].Name
-	w.G.Stars[home].Name = c.HomeName
+	old := st.Name
+	st.Name = c.HomeName
+	c.CradleName = c.HomeName
 	prior := ""
 	for _, o := range w.Civs {
 		if o != c && o.Home == home {
 			prior = sprintf(", among the ruins of the %s", o.Name)
 		}
 	}
-	w.log("The %s arise on a world of %s%s. They call it %s. They are %s.", c.Name, old, prior, c.HomeName, c.Temper)
+	w.recompute(c)
+	if maker < 0 {
+		w.log("The %s arise on %s, %s of %s%s, %.0f ly from Sol. They are %s.",
+			c.Name, c.HomeName, sp.World.Desc, old, prior, w.G.Dist(home, w.G.Sol), sp.Describe())
+	}
+	if f := sp.Kind.Flavour(); f.Portrait != "" {
+		w.log("%s", f.Portrait)
+	}
+	if st.Failing {
+		w.log("Their sun is already failing. They were born under a dying star.")
+	}
 	return c
 }
 
@@ -32,32 +58,28 @@ func (w *World) tickCivs() {
 			w.tickRemnant(c)
 			continue
 		}
-		w.growTech(c)
-		w.arrivals(c)
-		w.expand(c)
-		w.megastructures(c)
-		w.ftl(c)
-		w.war(c)
-		w.faceFilters(c)
+		if len(c.Systems) == 0 {
+			panic(sprintf("active civ %s with no worlds: record %v, cause %q, last events: %v", c.Name, c.Record, c.Cause, w.Events[len(w.Events)-4:]))
+		}
+		w.recompute(c)
+		for _, step := range []func(*Civ){w.arrivals, w.research, w.expand, w.build, w.dyingSun, w.find, w.war, w.revolt, w.ambientFilters, w.uplift} {
+			if !c.Active() {
+				break
+			}
+			step(c)
+		}
 		if c.Active() {
-			w.weightOfAges(c)
+			// morale drifts back toward zero in peace
+			if len(c.Wars) == 0 {
+				c.Morale *= 1 - 0.02*w.dt
+			}
+			for d, f := range c.Focus {
+				c.Focus[d] = 1 + (f-1)*(1-0.01*w.dt)
+			}
 		}
 	}
-	if w.Now%(w.Cfg.FineStep*10) == 0 {
+	if w.count(0.1) > 0 {
 		w.contacts()
-	}
-}
-
-func (w *World) growTech(c *Civ) {
-	rate := map[Temper]float64{Curious: 0.012, Zealous: 0.010, Aggressive: 0.009, Insular: 0.007}[c.Temper]
-	c.Tech += rate * c.techMul() * (0.5 + w.R.Float64()) / (1 + c.Tech/4)
-	if c.Stage == Emergent && c.Tech >= 1 {
-		c.Stage = Interstellar
-		w.log("The %s reach the stars. The first slow ships leave %s.", c.Name, c.HomeName)
-	}
-	if c.Stage == Interstellar && len(c.Systems) >= 6 && c.Tech >= 2 {
-		c.Stage = Zenith
-		w.log("The %s enter their zenith: %d systems, and no rival in sight.", c.Name, len(c.Systems))
 	}
 }
 
@@ -69,48 +91,71 @@ func (w *World) arrivals(c *Civ) {
 			continue
 		}
 		if w.Owner[v.Target] >= 0 || w.Held[v.Target] >= 0 {
-			w.trace(v.Target, "derelict colony ship", c.ID)
-			w.log("A colony ship of the %s arrives at %s to find it already taken. It is never heard from again.", c.Name, w.star(v.Target))
+			w.trace(v.Target, "derelict "+c.Species.Kind.Flavour().Ship, c.ID)
+			w.log("A %s of the %s arrives at %s to find it already taken. It is never heard from again.", c.Species.Kind.Flavour().Ship, c.Name, w.star(v.Target))
 			continue
 		}
-		w.Owner[v.Target] = c.ID
-		c.Systems = append(c.Systems, v.Target)
-		c.colonies++
-		if len(c.Systems) > c.Peak {
-			c.Peak = len(c.Systems)
-		}
-		switch n := len(c.Systems); {
-		case c.colonies == 1:
-			w.log("The %s settle %s, their first world beyond %s.", c.Name, w.star(v.Target), c.HomeName)
-		case n == 5 || n == 10 || n == 20 || n == 40:
-			w.log("The %s now hold %d systems.", c.Name, n)
-		}
+		w.settle(c, v.Target)
 	}
 	c.Voyages = keep
 }
 
+func (w *World) settle(c *Civ, t int) {
+	w.Owner[t] = c.ID
+	c.Systems = append(c.Systems, t)
+	c.colonies++
+	if len(c.Systems) > c.Peak {
+		c.Peak = len(c.Systems)
+	}
+	switch n := len(c.Systems); {
+	case c.colonies == 1:
+		w.log("The %s settle %s, their first %s beyond %s.", c.Name, w.star(t), c.Species.Kind.Flavour().Colony, c.HomeName)
+	case n == 5 || n == 10 || n == 20 || n == 40:
+		w.log("The %s now hold %d systems.", c.Name, n)
+	}
+	if len(c.Systems) >= 6 && c.Era >= 3 && c.Stage == Interstellar {
+		c.Stage = Zenith
+		w.log("The %s enter their zenith: %d systems, and no rival in sight.", c.Name, len(c.Systems))
+	}
+}
+
+// canLive says whether a star is inside the civilisation's habitable envelope.
+func (w *World) canLive(c *Civ, t int) bool {
+	s := &w.G.Stars[t]
+	if s.Dead() {
+		return c.Envelope >= 3
+	}
+	return s.Hostility() <= c.Envelope && !w.mindDead(t)
+}
+
+// mindDead is true inside a "region where minds do not work" law.
+func (w *World) mindDead(t int) bool {
+	for _, l := range w.Legacies {
+		if l.Kind == Law && l.Desc == lawDescs[0] && l.State != Mastered && w.G.Dist(l.Star, t) <= 8 {
+			return true
+		}
+	}
+	return false
+}
+
+// expand launches colony ships within reach. A target must be within reach
+// of home and within a ship's hop of a held system.
 func (w *World) expand(c *Civ) {
-	if c.Stage < Interstellar {
+	if c.Reach < 1 || !c.Free() && !c.Vassal {
 		return
 	}
-	p := min(0.3, 0.04*float64(len(c.Systems)))
-	p *= map[Temper]float64{Curious: 1.1, Zealous: 1.0, Aggressive: 1.2, Insular: 0.4}[c.Temper] * c.expandMul()
+	p := min(0.3, 0.04*float64(len(c.Systems))) * c.expandMul()
 	if !w.chance(p) {
 		return
 	}
-	rng := 6 + c.Tech*4
-	speed := 100.0 // years per light year, 0.01c
-	if c.HasFTL {
-		rng = 60
-		speed = 1
-	}
-	from := c.Systems[w.R.IntN(len(c.Systems))]
-	for _, t := range w.G.Near(from, rng) {
-		if w.Owner[t] >= 0 || w.Held[t] >= 0 || w.targeted(c, t) {
+	hop := min(c.Reach, 20)
+	from := w.pick(c.Systems)
+	for _, t := range w.G.Near(from, hop) {
+		if w.Owner[t] >= 0 || w.Held[t] >= 0 || w.targeted(c, t) || w.G.Dist(c.Home, t) > c.Reach || !w.canLive(c, t) {
 			continue
 		}
 		d := w.G.Dist(from, t)
-		c.Voyages = append(c.Voyages, Voyage{Target: t, Arrive: w.Now + Year(d*speed)})
+		c.Voyages = append(c.Voyages, Voyage{Target: t, Arrive: w.Now + Year(d*c.Speed)})
 		return
 	}
 }
@@ -124,129 +169,47 @@ func (w *World) targeted(c *Civ, t int) bool {
 	return false
 }
 
-func (w *World) megastructures(c *Civ) {
-	if c.Tech < 2.2 || !w.chance(0.004) {
+// build raises a structure within reach.
+func (w *World) build(c *Civ) {
+	if !w.chance(0.01) {
 		return
 	}
-	s := c.Systems[w.R.IntN(len(c.Systems))]
-	if contains(c.Enclosed, s) {
+	var can []string
+	for k := range c.Known {
+		if s := tech.Get(k).Structure; s != "" && c.Structures[s] < 3 {
+			can = append(can, s)
+		}
+	}
+	if len(can) == 0 {
 		return
 	}
-	c.Dyson++
-	c.Enclosed = append(c.Enclosed, s)
-	w.log("The %s enclose %s in a swarm of collectors. The star dims from outside.", c.Name, w.star(s))
-}
-
-// FTL is rare, and using it is not free.
-func (w *World) ftl(c *Civ) {
-	if c.HasFTL || c.Tech < 3 || !w.chance(0.0006) {
-		return
+	key := can[w.R.IntN(len(can))]
+	st := tech.Structures[key]
+	s := w.pick(c.Systems)
+	if key == "dyson" {
+		if contains(c.Enclosed, s) {
+			return
+		}
+		c.Enclosed = append(c.Enclosed, s)
 	}
-	c.HasFTL = true
-	w.log("The %s tear a door in space. Faster-than-light travel is theirs.", c.Name)
-	if w.chance(0.3) {
-		s := c.Systems[w.R.IntN(len(c.Systems))]
-		if w.chance(0.5) {
-			h := w.spawnHorror(Elder, s, -1)
-			h.Dormant = true
-			w.log("Something on the other side of the door notices. %s now sleeps near %s.", h.Name, w.star(s))
+	c.Structures[key]++
+	if c.Structures[key] == 1 || key == "dyson" {
+		if key == "shipyard" {
+			w.log(st.Text, w.star(s), c.Name)
 		} else {
-			h := w.spawnHorror(Beacon, s, c.ID)
-			w.log("What came back through the door at %s speaks. It is called %s.", w.star(s), h.Name)
-		}
-	}
-}
-
-func (w *World) contacts() {
-	for i, a := range w.Civs {
-		if !a.Active() {
-			continue
-		}
-		for j := i + 1; j < len(w.Civs); j++ {
-			b := w.Civs[j]
-			if !b.Living() || a.Met[b.ID] {
-				continue
-			}
-			rng := 10 + max(a.Tech, b.Tech)*5
-			if !w.within(a, b, rng) {
-				continue
-			}
-			a.Met[b.ID], b.Met[a.ID] = true, true
-			pw := 0.1
-			for _, t := range []Temper{a.Temper, b.Temper} {
-				if t == Aggressive {
-					pw = max(pw, 0.6)
-				} else if t == Zealous {
-					pw = max(pw, 0.4)
-				}
-			}
-			if w.chance(pw) {
-				a.Wars[b.ID], b.Wars[a.ID] = true, true
-				w.log("The %s and the %s find each other. The first relativistic strikes are launched within a century.", a.Name, b.Name)
-			} else {
-				w.log("The %s and the %s find each other. Slow messages cross the dark between them for generations.", a.Name, b.Name)
-				if (a.Faced["plague"] || b.Faced["plague"]) && w.chance(0.3) {
-					a.Plagued, b.Plagued = true, true
-					w.log("Something crosses with the messages and the trade. Both the %s and the %s begin to sicken.", a.Name, b.Name)
-				}
-			}
-		}
-	}
-}
-
-func (w *World) within(a, b *Civ, rng float64) bool {
-	for _, s := range a.Systems {
-		for _, t := range b.Systems {
-			if w.G.Dist(s, t) <= rng {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-// War between stars is slow and strange: strikes launched decades ahead,
-// answered after the attacker may already be gone.
-func (w *World) war(c *Civ) {
-	for eid := range c.Wars {
-		e := w.Civs[eid]
-		if !e.Living() {
-			delete(c.Wars, eid)
-			continue
-		}
-		if w.chance(0.03) {
-			delete(c.Wars, eid)
-			delete(e.Wars, c.ID)
-			w.log("The war between the %s and the %s ends. Neither side is sure who won.", c.Name, e.Name)
-			continue
-		}
-		if !w.chance(0.12*c.warMul()) || len(e.Systems) == 0 {
-			continue
-		}
-		t := e.Systems[w.R.IntN(len(e.Systems))]
-		w.Bio[t] = BioNone
-		if t == e.Home {
-			w.log("A relativistic strike from the %s shatters %s, homeworld of the %s.", c.Name, w.star(t), e.Name)
-		}
-		w.loseSystem(e, t, "glassed world", sprintf("were annihilated in war with the %s", c.Name))
-		if t == e.Home {
-			w.endCiv(e, Extinct, sprintf("were annihilated in war with the %s", c.Name))
-		} else if w.chance(0.4) {
-			w.log("The %s glass %s, a world of the %s.", c.Name, w.star(t), e.Name)
+			w.log(st.Text, c.Name, w.star(s))
 		}
 	}
 }
 
 func (w *World) tickRemnant(c *Civ) {
-	c.Tech = max(0.5, c.Tech-0.001)
-	if w.chance(0.0001) {
+	if w.chance(0.00003) {
 		w.endCiv(c, Extinct, "faded away, the last of them unremarked")
 	}
 }
 
 // loseSystem removes a star from a civilisation and leaves a trace. A living
-// civilisation with no worlds left is extinct; cause says why, in the
-// caller's words.
+// civilisation with no worlds left is extinct; cause says why.
 func (w *World) loseSystem(c *Civ, s int, kind string, cause string) {
 	if !contains(c.Systems, s) {
 		return
@@ -259,23 +222,48 @@ func (w *World) loseSystem(c *Civ, s int, kind string, cause string) {
 			cause = "lost their last world"
 		}
 		w.endCiv(c, Extinct, cause)
+		return
 	}
+	if s == c.Home && c.Stage != Dead {
+		w.reseat(c)
+	}
+}
+
+// reseat moves the home to the nearest remaining world after the old one is lost.
+func (w *World) reseat(c *Civ) {
+	old := c.Home
+	best, bd := -1, 1e9
+	for _, x := range c.Systems {
+		if d := w.G.Dist(old, x); d < bd {
+			best, bd = x, d
+		}
+	}
+	if best < 0 {
+		return
+	}
+	c.Home = best
+	c.HomeName = w.star(best)
+	c.Dying = false
+	w.log("What is left of the %s gathers on %s. It is home now.", c.Name, c.HomeName)
 }
 
 // contract shrinks a civilisation to its home (or one world) as a remnant.
 func (w *World) contract(c *Civ, cause string) {
 	keep := c.Home
 	if !contains(c.Systems, keep) && len(c.Systems) > 0 {
-		keep = c.Systems[w.R.IntN(len(c.Systems))]
+		keep = w.pick(c.Systems)
 	}
 	for _, s := range append([]int(nil), c.Systems...) {
 		if s != keep {
-			w.loseSystem(c, s, "abandoned colony", "")
+			w.loseSystem(c, s, "abandoned "+c.Species.Kind.Flavour().Colony, "")
 		}
 	}
 	c.Stage, c.Fate, c.Cause, c.Ended = Remnant, Contracted, cause, w.Now
+	c.Fell = w.Now
 	c.Title = names.Title(w.R)
 	c.Voyages = nil
+	c.Wars = map[int]bool{}
+	w.dropWielded(c, 0.5)
 	w.log("The %s %s. What remains of them lives on %s under %s. Once they held %s.", c.Name, cause, w.star(keep), c.Title, systems(c.Peak))
 }
 
@@ -300,10 +288,143 @@ func (w *World) endCiv(c *Civ, f Fate, cause string) {
 		cause = c.Cause + ", and long after " + cause
 	}
 	c.Fate, c.Cause, c.Ended = f, cause, w.Now
+	if !wasRemnant {
+		c.Fell = w.Now
+	}
 	c.Voyages = nil
+	c.Wars = map[int]bool{}
+	w.dropWielded(c, 1)
 	if f == Extinct && wasRemnant {
 		w.log("The last of the %s are gone from %s. They %s.", c.Name, c.HomeName, cause)
 	} else if f == Extinct {
 		w.log("The %s %s. They held %s at their height.", c.Name, cause, systems(c.Peak))
 	}
+}
+
+// darkAge is a non-terminal decline: tech and reach are lost. A third one is fatal.
+func (w *World) darkAge(c *Civ, why string) {
+	if !c.Active() {
+		return
+	}
+	c.DarkAges++
+	c.Morale -= 1
+	c.Voyages = nil
+	w.forget(c, 0.3)
+	lost := 0
+	for _, s := range append([]int(nil), c.Systems...) {
+		if s != c.Home && w.R.Float64() < 0.5 {
+			w.loseSystem(c, s, "abandoned "+c.Species.Kind.Flavour().Colony, "")
+			lost++
+		}
+	}
+	w.dropWielded(c, 0.5)
+	w.recompute(c)
+	if c.Reach < 10 {
+		c.Stage = Emergent
+	} else if c.Stage == Zenith {
+		c.Stage = Interstellar
+	}
+	if c.DarkAges >= 3 {
+		w.endCiv(c, Extinct, why+", and a third dark age was one too many")
+		return
+	}
+	if lost > 0 {
+		w.log("The %s %s. A dark age follows. %d %ss go silent.", c.Name, why, lost, c.Species.Kind.Flavour().Colony)
+	} else {
+		w.log("The %s %s. A dark age follows.", c.Name, why)
+	}
+}
+
+// forget drops a fraction of known nodes, leaves first, so the tree stays consistent.
+func (w *World) forget(c *Civ, frac float64) {
+	n := int(float64(len(c.Known))*frac + 0.5)
+	for i := 0; i < n; i++ {
+		var leaves []string
+		for k := range c.Known {
+			if tech.Get(k).Era == 0 {
+				continue
+			}
+			leaf := true
+			for o := range c.Known {
+				for _, p := range tech.Get(o).Prereqs {
+					if p == k {
+						leaf = false
+					}
+				}
+			}
+			if leaf {
+				leaves = append(leaves, k)
+			}
+		}
+		if len(leaves) == 0 {
+			return
+		}
+		delete(c.Known, leaves[w.R.IntN(len(leaves))])
+	}
+}
+
+func (w *World) schism(c *Civ) {
+	if c.Has("hive") {
+		w.log("The %s cannot split; a hive has no factions. The pressure goes elsewhere.", c.Name)
+		c.Morale -= 1
+		return
+	}
+	if len(c.Systems) < 2 {
+		w.log("Unrest among the %s on %s. It passes, this time.", c.Name, c.HomeName)
+		c.Morale -= 0.5
+		return
+	}
+	lost := len(c.Systems) / 2
+	var gone []int
+	for i := 0; i < lost; i++ {
+		s := w.pick(c.Systems)
+		if s != c.Home {
+			w.loseSystem(c, s, "abandoned "+c.Species.Kind.Flavour().Colony, "")
+			gone = append(gone, s)
+		}
+	}
+	// a branch of the people goes its own way, if the split was clean
+	if len(gone) > 0 && w.R.Float64() < 0.4 && !c.Has("hive") {
+		sp := *c.Species
+		sp.Name = names.Civ(w.R)
+		sp.Traits = append([]*species.Trait(nil), c.Species.Traits...)
+		sp.Add("branch")
+		sp.Made = "a branch of the " + c.Name
+		nc := w.spawnCiv(gone[0], &sp, -1)
+		nc.Master = -1
+		for k := range c.Known {
+			nc.Known[k] = true
+		}
+		w.forget(nc, 0.2)
+		w.recompute(nc)
+		w.log("Schism among the %s. Half their worlds go dark, and at %s the %s declare themselves a new people.", c.Name, w.star(gone[0]), nc.Name)
+		return
+	}
+	w.log("Schism among the %s. Half their worlds go dark or go their own way.", c.Name)
+}
+
+func (c *Civ) expandMul() float64 {
+	m := 1.0
+	if c.Has("expansionist") {
+		m *= 1.3
+	}
+	if c.Has("contemplative") || c.Has("cautious") {
+		m *= 0.7
+	}
+	if c.Scars[ScarStewardship] {
+		m *= 0.6
+	}
+	if c.Scars[ScarCentralism] {
+		m *= 0.7
+	}
+	if c.Scars[ScarQuarantine] {
+		m *= 0.5
+	}
+	if c.Boons[BoonSwarm] {
+		m *= 1.4
+	}
+	if c.Dying {
+		m *= 3
+	}
+	return m
 }

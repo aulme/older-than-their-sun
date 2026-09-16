@@ -252,9 +252,9 @@ Observations after adding filters (10 seeds):
 - Filters arrive fast, within a few hundred thousand years of a civilisation arising. Plausible given thousand-year ticks, but a civilisation's whole story can be over in 300 ticks. Slowing tech growth would spread it out.
 - The Weight of Ages rarely gets to act because the named filters catch most civilisations first. It matters mostly for the survivors of everything else.
 
-## Simulation v1 (proposed model, not yet built)
+## Simulation v1 (built 2026-09-16)
 
-Discussed 2026-09-16. This replaces the scalar "tech" and the hand-weighted filter odds of v0 with a small set of interlocking systems. Nothing here is coded yet.
+Discussed and built 2026-09-16. This replaces the scalar "tech" and the hand-weighted filter odds of v0 with a small set of interlocking systems. The sections below are the design; "What the first v1 runs showed" at the end of this section records how the build went and what the first runs look like.
 
 ### Species and home worlds
 
@@ -329,6 +329,10 @@ A node has: domain, prerequisites, effects on the three levels and on reach and 
 
 **Structures** are built within reach, require nodes, and give levels: orbital defences give military, arcologies and closed ecologies give survival, an ansible net gives social across distance, a Dyson swarm multiplies energy and so discovery. Flavour by kind.
 
+### The seat and the cradle
+
+A species is fixed at birth. Its traits, body plan and home-world archetype come from the world it arose on (the **cradle**) and never change afterwards. If the cradle is lost (a dying sun, a burning sky, a broken star) and the people survive on their colonies, the civilisation is re-seated on the nearest remaining world, but nothing about the species changes: an aquatic people stays aquatic on a desert world, and the legends say so ("from Kesh, an ocean world, later seated on Vaurr"). What the new world does to them is a matter of levels and morale, not of traits. A new species only appears through the explicit paths: schism branch, uplift, breeding, transformation.
+
 ### Order of building
 
 1. Species and home world generator with traits, levels and reach as data; legends print a species portrait.
@@ -337,6 +341,28 @@ A node has: domain, prerequisites, effects on the three levels and on reach and 
 4. Contact, war, submission, enslavement, revolt, uplift.
 5. Cosmic filters with blast radii. Pairs well with ingesting the real catalogue, since star lifetimes come with it.
 6. Kinds as flavour tables, then the few hard kind rules.
+
+### What the first v1 runs showed
+
+Built in one pass as a rewrite of the history package plus two new packages, `species` and `tech`. Everything in the design above exists in some form: species from home worlds with traits in tiers and six kinds; three levels plus reach derived every tick from species, tech, structures, wielded artifacts, scars and morale; filters as level tests with margin bands (overcome at +0.5, declined below -2, scarred between) and a per-trait difficulty table; a 56-node tree in eight domains with filters attached to nodes; contact by reach overlap with peace, submission, war, extermination, enslavement, revolt and uplift; cosmic filters with blast radii, scheduled star deaths and the dying sun as a slow filter; the age generator with elder portraits, five legacy kinds and the Find with its four outcomes; horrors adapted to tests (beacon tests Social, incursions test Military, a waking tests Survival). One engine runs the middle pass (60 to 5 Myr ago, 20 kyr ticks) and the fine pass (last 5 Myr, 1 kyr ticks); every rate is given per thousand years and scaled to the tick.
+
+Tuning findings, in the order they were found:
+
+- **The early age used to burn everything.** Sterilised worlds never recovered, so the late age was empty. Now a blast or a glassing leaves microbial life, which climbs back to complex life in tens of millions of years, and the late age has 15 to 25 new civilisations per run.
+- **Beacons chain-reacted.** Each listener that fell became a new beacon and every listener was tested every tick. Now a civilisation faces each beacon once, and hazard is capped.
+- **Uplift ran at a hundred times the intended rate** and consumed every world with complex life. Now it is rare and capped at two per civilisation.
+- **Immortal giants.** High-Social civilisations overcame every Weight of Ages test and lived the whole 60 Myr. Two causes: a v0 bug (the renaissance timestamp defaulted to zero, so the age term was negative until the end of history), and no cumulative cost of age. Now the Weight's difficulty grows with total age and with every renaissance, and the Distance recurs each time an empire doubles. Lifetimes now spread from under half a million years (about 35 percent, mostly the early filters, wars and being found young) through 1 to 3 Myr to a 3 to 10 Myr tail; almost nothing lives past 10 Myr.
+- **Found young.** An empire with 90 ly of reach finds every new species at the stone age. Contact with a pre-atomic species is now its own event: a xenophobic elder occasionally scours the world, an expansionist or martial one sometimes takes them, everyone else watches from orbit and meets them properly later.
+- **Star deaths are a fudge.** About 14 percent of F, G and K stars are scheduled to die within a few hundred million years of the present so that supernovae and dying suns happen inside the window. Documented in `galaxy.diesAt`; replace when the real catalogue comes in.
+
+Known oddities to look at next, none of them blocking:
+
+- Levels saturate at 10 for every exotic-era civilisation, so the legends say "overwhelming" three times for all of them and late filters lose their bite. The scale wants either a softer cap or smaller tech contributions.
+- The tree lets Life Extension arrive before the Atomic Age because the two branches do not touch. Either add a cross-prerequisite or accept it as an alien research order.
+- Remnants persist for tens of millions of years; a remnant that contracted 57 Myr ago is still there at the present. The fade rate should scale with era or the middle pass should end them.
+- The myth section is padded with "life arises" lines; the age events should probably print alone.
+- Mastery of legacies is more common than "very hard" suggests, because of the level saturation above.
+- A run produces 250 to 300 civilisations in 60 Myr and 12 to 18 thousand lines of legends. The middle pass should log less, or the legends should have a "short" mode that prints only rises, falls and filters.
 
 ## Decision log
 
@@ -351,11 +377,14 @@ A node has: domain, prerequisites, effects on the three levels and on reach and 
 - 2026-09-16: Simulation v1 model sketched (species from home worlds, three levels plus reach, filters as level tests attached to tech nodes, war with enslavement, high-level tech tree, exotic kinds as flavour). See "Simulation v1". Not built yet.
 - 2026-09-16: Galactic history is a series of ages with interregna. Prior ages are coarse myth that leaves legacies (artifacts, structures, threats, sleepers, laws) on the substrate; the fine sim is the current age and its aftermath is the age ending. See "Ages of the galaxy".
 - 2026-09-16: Three passes: previous ages extremely coarse, early to mid current age medium, late current age fine. The Find has four outcomes chosen by traits and tested by levels: mastered, wielded, sealed, unleashed.
+- 2026-09-16: Simulation v1 built (species, levels, reach, tech tree, tests, contact, cosmic, ages, the Find). Tuned until lifetimes spread and the late age is populated. See "What the first v1 runs showed".
+- 2026-09-16: A species never changes because its seat moves. Cradle and seat are separate; traits and archetype are fixed at birth. See "The seat and the cradle".
 - 2026-09-16: The present is the aftermath. Every civilisation ends as gone, transformed, or contracted, always with a cause. Sol is protected by fiat.
 
 ## Next steps (proposed)
 
-- Read the v0 legends output and adjust rates until histories feel right: civilisation lifetimes, how many civs, how often each end state occurs.
+- Fix the known oddities from the first v1 runs: level saturation, tree cross-prerequisites, remnant fade, a short legends mode.
+- Read many seeds and adjust until histories feel right: how often each filter is the killer, how often the Find goes each way, whether wars and enslavement read well.
 - Look at what real Milky Way data is easy to obtain (Gaia, HYG) and replace the random star field with real nearby stars.
 - Later: scale up massively. The real galaxy has hundreds of billions of stars, so civilisation counts should go from dozens to thousands or more. This needs a different simulation structure (regions, statistical treatment of the unremarkable, only instantiating stars where something happens). Design for it, but do not build it yet.
 - Add more horror categories to the sim: plagues as spreading actors, monstrous races as civilisations with alien drives, dimensional anomalies tied to FTL use.

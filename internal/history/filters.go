@@ -1,9 +1,12 @@
 package history
 
-// A filter is anything that may push a civilisation into decline: the Great
-// Filter idea, applied at every stage. Each filter is faced once (or, for
-// plague, repeatedly) and resolves as overcome, scarred, or declined. Scars
-// are lasting traits that alter behaviour and the odds of later filters.
+import "math"
+
+// A filter is anything that may push a civilisation into decline. In v1 a
+// filter tests one or two levels against a difficulty: roll plus level minus
+// difficulty gives a margin, and the margin decides overcome, scarred or
+// declined. Tech filters fire on discovery; ambient and external ones have
+// their own triggers. Traits move the difficulty asymmetrically.
 
 // Outcome of facing a filter.
 type Outcome uint8
@@ -28,300 +31,343 @@ const (
 	ScarLeftBehind   = "being the ones left behind"
 	ScarQuarantine   = "a quarantine creed"
 	ScarOssified     = "ossification"
+	ScarBurningSky   = "the memory of the burning sky"
+	ScarSignal       = "a cult of the signal"
+	ScarDoor         = "a dread of doors"
+	ScarChains       = "the memory of chains"
 	BoonAligned      = "aligned minds"
 	BoonSwarm        = "swarm industry"
 	BoonUnity        = "unity forged in the atomic age"
+	BoonCommunion    = "communion with something older"
 )
 
 // Filter describes one hurdle.
 type Filter struct {
-	Key     string
-	Name    string
-	Repeat  bool // can be faced more than once
-	Trigger func(w *World, c *Civ) bool
-	Weights [3]float64 // base weights: overcome, scar, decline
-	// Temper adjusts the decline weight per temperament.
-	Temper   map[Temper]float64
-	Overcome func(w *World, c *Civ)
-	Scar     func(w *World, c *Civ)
-	Decline  func(w *World, c *Civ)
+	Key, Name string
+	Levels    []string // "mil", "sur", "soc"; averaged
+	Diff      float64
+	Repeat    bool
+	Domain    string // research pushed while facing it
+	Overcome  func(w *World, c *Civ)
+	Scar      func(w *World, c *Civ)
+	Decline   func(w *World, c *Civ)
 }
 
-var filters []*Filter
+var filters = map[string]*Filter{}
 
-func init() {
-	filters = []*Filter{
-		{
-			Key: "atomic", Name: "the Atomic Age",
-			Trigger: func(w *World, c *Civ) bool { return c.Tech >= 0.3 },
-			Weights: [3]float64{4, 3, 2.5},
-			Temper:  map[Temper]float64{Aggressive: 1.5, Zealous: 1.3, Curious: 0.9, Insular: 0.8},
-			Overcome: func(w *World, c *Civ) {
-				c.Boons[BoonUnity] = true
-				w.log("The %s split the atom and, for once, put the weapons away. They are stronger for it.", c.Name)
-			},
-			Scar: func(w *World, c *Civ) {
-				c.Scars[ScarAtomicTaboo] = true
-				w.log("The %s burn half of %s before they stop. Ever after, the weapon is unspeakable.", c.Name, c.HomeName)
-			},
-			Decline: func(w *World, c *Civ) {
-				x := w.R.Float64()
-				switch {
-				case x < 0.5:
-					w.darkAge(c, "burned their world to ash")
-				case x < 0.8:
-					w.endCiv(c, Extinct, "burned themselves out in a single afternoon")
-				default:
-					w.contract(c, "burned their world and never rose from the ash")
-				}
-			},
-		},
-		{
-			Key: "overshoot", Name: "Overshoot",
-			Trigger: func(w *World, c *Civ) bool { return c.Tech >= 0.6 },
-			Weights: [3]float64{4, 3, 2},
-			Temper:  map[Temper]float64{Aggressive: 1.3, Curious: 0.8},
-			Overcome: func(w *World, c *Civ) {
-				w.log("The %s strip %s nearly bare, then learn to live within it.", c.Name, c.HomeName)
-			},
-			Scar: func(w *World, c *Civ) {
-				c.Scars[ScarStewardship] = true
-				w.log("The %s nearly kill their world. What they build afterwards is slow, careful, and small.", c.Name)
-			},
-			Decline: func(w *World, c *Civ) {
-				if w.chance(0.6) {
-					w.darkAge(c, "exhausted their world")
-				} else {
-					w.endCiv(c, Extinct, "exhausted their world and starved on it")
-				}
-			},
-		},
-		{
-			Key: "machines", Name: "Thinking Machines",
-			Trigger: func(w *World, c *Civ) bool { return c.Tech >= 1.5 },
-			Weights: [3]float64{3, 4, 3},
-			Temper:  map[Temper]float64{Curious: 0.8, Zealous: 1.4, Insular: 1.0, Aggressive: 1.2},
-			Overcome: func(w *World, c *Civ) {
-				c.Boons[BoonAligned] = true
-				w.log("The %s build minds greater than their own, and the minds stay. Everything goes faster now.", c.Name)
-			},
-			Scar: func(w *World, c *Civ) {
-				c.Scars[ScarNoMachines] = true
-				w.log("The %s build a mind, and it nearly ends them. Thou shalt not make a machine in the likeness of a mind. The law holds for ages.", c.Name)
-			},
-			Decline: func(w *World, c *Civ) {
-				if w.chance(0.3) {
-					w.darkAge(c, "pulled the plug on their own machines, too late and at great cost")
-					return
-				}
-				worlds := append([]int(nil), c.Systems...)
-				w.endCiv(c, Transformed, "built a mind that outgrew them")
-				h := w.spawnHorror(RogueMind, c.Home, c.ID)
-				for _, s := range worlds {
-					w.horrorTake(h, s)
-				}
-				c.Into = h.Name
-				w.log("The %s are gone. What they built at %s thinks on without them. It is called %s.", c.Name, c.HomeName, h.Name)
-			},
-		},
-		{
-			Key: "distance", Name: "the Distance",
-			Trigger: func(w *World, c *Civ) bool { return len(c.Systems) >= 6 },
-			Weights: [3]float64{3, 3, 4},
-			Temper:  map[Temper]float64{Insular: 0.7, Zealous: 0.8, Curious: 1.2},
-			Overcome: func(w *World, c *Civ) {
-				w.log("Light-years and generations pull at the %s. Somehow they stay one people.", c.Name)
-			},
-			Scar: func(w *World, c *Civ) {
-				c.Scars[ScarCentralism] = true
-				w.log("The colonies of the %s begin to drift. %s answers with iron. The drift stops. So does much else.", c.Name, c.HomeName)
-			},
-			Decline: func(w *World, c *Civ) {
-				if w.chance(0.6) {
-					w.schism(c)
-				} else {
-					w.contract(c, "watched their colonies become strangers, and then enemies, and then silence")
-				}
-			},
-		},
-		{
-			Key: "silence", Name: "the Long Silence",
-			Trigger: func(w *World, c *Civ) bool {
-				return c.Tech >= 1.8 && w.Now-c.Born > 300*w.Cfg.FineStep
-			},
-			Weights: [3]float64{3, 3, 3},
-			Temper:  map[Temper]float64{Zealous: 0.7, Insular: 1.3, Curious: 0.9},
-			Overcome: func(w *World, c *Civ) {
-				w.log("The %s learn to live forever and, against the odds, keep wanting things.", c.Name)
-			},
-			Scar: func(w *World, c *Civ) {
-				c.Scars[ScarMortality] = true
-				w.log("The %s taste immortality and reject it. Death becomes sacred to them. They are never quite at ease again.", c.Name)
-			},
-			Decline: func(w *World, c *Civ) {
-				w.contract(c, "stopped dying, and then stopped being born")
-			},
-		},
-		{
-			Key: "replication", Name: "Self-Replication",
-			Trigger: func(w *World, c *Civ) bool { return c.Tech >= 2 && !c.Scars[ScarNoMachines] },
-			Weights: [3]float64{3, 3, 3},
-			Temper:  map[Temper]float64{Curious: 0.9, Aggressive: 1.3},
-			Overcome: func(w *World, c *Civ) {
-				c.Boons[BoonSwarm] = true
-				w.log("The %s teach their machines to build themselves, and keep the leash. Their fleets multiply.", c.Name)
-			},
-			Scar: func(w *World, c *Civ) {
-				c.Scars[ScarNoSelfCopies] = true
-				w.log("A factory of the %s eats a moon before it is stopped. No machine may make itself. The law is absolute.", c.Name)
-			},
-			Decline: func(w *World, c *Civ) {
-				s := c.Systems[w.R.IntN(len(c.Systems))]
-				if w.chance(0.3) {
-					w.loseSystem(c, s, "stripped world", "were consumed by their own machines")
-					w.darkAge(c, "lost "+w.star(s)+" to their own machines and burned the rest to stop it spreading")
-					return
-				}
-				w.endCiv(c, Extinct, "were consumed by their own machines")
-				h := w.spawnHorror(Replicators, s, c.ID)
-				w.log("At %s the machines of the %s begin to copy themselves, and do not stop. This is %s.", w.star(s), c.Name, h.Name)
-			},
-		},
-		{
-			Key: "stellar", Name: "Stellar Engineering",
-			Trigger: func(w *World, c *Civ) bool { return c.Dyson > 0 && c.Tech >= 2.5 },
-			Weights: [3]float64{4, 2, 2},
-			Temper:  map[Temper]float64{Curious: 1.2, Insular: 0.8},
-			Overcome: func(w *World, c *Civ) {
-				w.log("The %s reach into %s and it holds. They can move stars now, a little.", c.Name, c.HomeName)
-			},
-			Scar: func(w *World, c *Civ) {
-				c.Scars[ScarStarFear] = true
-				w.log("The %s reach into %s and it flares. Millions die. They never touch a star again.", c.Name, c.HomeName)
-			},
-			Decline: func(w *World, c *Civ) {
-				w.log("The %s reach too deep into %s. The star convulses.", c.Name, c.HomeName)
-				w.loseSystem(c, c.Home, "wounded star", "broke their own star")
-				w.Bio[c.Home] = BioNone
-				if len(c.Systems) == 0 || w.chance(0.5) {
-					w.endCiv(c, Extinct, "broke their own star")
-				} else {
-					w.contract(c, "broke their own star and fled to a lesser one")
-				}
-			},
-		},
-		{
-			Key: "transcend", Name: "Transcendence",
-			Trigger: func(w *World, c *Civ) bool { return c.Tech >= 3 },
-			Weights: [3]float64{3, 3, 3},
-			Temper:  map[Temper]float64{Zealous: 1.4, Insular: 0.8},
-			Overcome: func(w *World, c *Civ) {
-				w.log("The %s find the door out of the universe, and choose to stay.", c.Name)
-			},
-			Scar: func(w *World, c *Civ) {
-				c.Scars[ScarLeftBehind] = true
-				w.log("Most of the %s go through. The ones who stay keep the lights on and stop inventing things.", c.Name)
-			},
-			Decline: func(w *World, c *Civ) {
-				if w.chance(0.4) {
-					w.contract(c, "mostly went elsewhere, leaving a few to mind the ruins")
-					return
-				}
-				for _, s := range c.Systems {
-					w.trace(s, "silent machinery", c.ID)
-				}
-				w.endCiv(c, Transformed, "went elsewhere")
-				c.Into = "something that left"
-				w.log("The %s go quiet all at once. Their machines still run. Nobody is home.", c.Name)
-			},
-		},
-		{
-			Key: "plague", Name: "Plague", Repeat: true,
-			Trigger: func(w *World, c *Civ) bool { return c.Plagued || w.chance(0.0004) },
-			Weights: [3]float64{3, 3, 3},
-			Temper:  map[Temper]float64{Insular: 0.8, Curious: 1.1},
-			Overcome: func(w *World, c *Civ) {
-				c.Plagued = false
-				w.log("A sickness moves through the worlds of the %s. It passes.", c.Name)
-			},
-			Scar: func(w *World, c *Civ) {
-				c.Plagued = false
-				c.Scars[ScarQuarantine] = true
-				w.log("A sickness moves through the worlds of the %s. When it is over they seal every door and never fully open them again.", c.Name)
-			},
-			Decline: func(w *World, c *Civ) {
-				c.Plagued = false
-				x := w.R.Float64()
-				switch {
-				case x < 0.4:
-					w.darkAge(c, "were hollowed out by sickness")
-				case x < 0.7:
-					w.contract(c, "were hollowed out by sickness")
-				default:
-					w.endCiv(c, Extinct, "sickened and died")
-				}
-			},
-		},
-	}
+func def(f *Filter) { filters[f.Key] = f }
+
+// traitDiff is the asymmetry: how each trait changes each filter's difficulty.
+var traitDiff = map[string]map[string]float64{
+	"hive":          {"distance": -3, "weight": -2, "beacon": 3, "silence": -1, "machines": -1},
+	"ansible":       {"distance": -4},
+	"memory":        {"silence": 2, "weight": 1, "find": -1},
+	"memetic":       {"beacon": -5, "transcend": 1},
+	"nonconscious":  {"beacon": -3, "transcend": 2, "machines": -1, "silence": -2},
+	"fighttodeath":  {"atomic": 1, "hold": -1},
+	"pacifist":      {"atomic": -2, "overshoot": -1},
+	"martial":       {"atomic": 0.5, "machines": 0.5},
+	"expansionist":  {"overshoot": 1, "distance": 1},
+	"contemplative": {"overshoot": -1, "transcend": 1, "machines": -0.5},
+	"curious":       {"machines": 1, "replication": 0.5, "door": 0.5},
+	"cautious":      {"machines": -1, "replication": -1, "door": -1, "find": 0.5},
+	"collective":    {"atomic": -1, "overshoot": -1},
+	"individualist": {"distance": 1, "weight": -0.5, "hold": 1},
+	"caste":         {"weight": 1, "hold": -0.5},
+	"precog":        {"atomic": -1, "war": -1, "cosmic": -1, "find": -1},
+	"shortlived":    {"silence": -1, "weight": -1, "plague": 1},
+	"longlived":     {"weight": 1.5, "silence": 1},
+	"dormancy":      {"plague": -1, "cosmic": -1, "dying": -1},
+	"directedevo":   {"plague": -2, "cosmic": -1},
+	"symbiosis":     {"machines": -1.5, "replication": -0.5},
+	"xenophobic":    {"beacon": -1, "find": 1},
+	"submissive":    {"revolt": 1, "hold": -0.5},
+	"skyless":       {"cosmic": -1},
 }
 
-// faceFilters checks each named filter's trigger and resolves it.
-func (w *World) faceFilters(c *Civ) {
-	for _, f := range filters {
-		if !c.Active() {
-			return
-		}
-		if (c.Faced[f.Key] && !f.Repeat) || !f.Trigger(w, c) || !w.chance(0.05) {
-			continue
-		}
-		c.Faced[f.Key] = true
-		w.resolve(c, f.Name, f.Weights, f.Temper[c.Temper], f.Overcome, f.Scar, f.Decline)
+func (c *Civ) traitDiff(key string) float64 {
+	d := 0.0
+	for _, t := range c.Species.Traits {
+		d += traitDiff[t.Key][key]
 	}
+	return d
 }
 
-// resolve rolls an outcome and applies it. Scars make later filters more
-// brittle; hazard makes everything worse.
-func (w *World) resolve(c *Civ, name string, wt [3]float64, temperMul float64, over, scar, decl func(*World, *Civ)) {
-	if temperMul == 0 {
-		temperMul = 1
+// face resolves a filter against a civilisation and returns the outcome.
+// diffAdj lets the caller raise or lower the difficulty for the occasion.
+func (w *World) face(c *Civ, key string, diffAdj float64) Outcome {
+	f := filters[key]
+	if f == nil {
+		panic("history: unknown filter " + key)
 	}
-	o, s, d := wt[0], wt[1], wt[2]*temperMul*(1+0.15*float64(len(c.Scars)))*(0.5+0.5*w.Hazard)
-	x := w.R.Float64() * (o + s + d)
+	if !c.Active() {
+		return Declined
+	}
+	if c.Faced[key] && !f.Repeat {
+		return Overcome
+	}
+	c.Faced[key] = true
+	w.recompute(c)
+	lvl := c.level(f.Levels...)
+	diff := f.Diff + diffAdj + 0.25*float64(len(c.Scars)) + 1.5*(w.Hazard-1) + c.traitDiff(key)
+	roll := w.R.NormFloat64() * 1.5
+	margin := lvl + roll - diff
+	if f.Domain != "" {
+		c.focus(f.Domain, 1.5)
+	}
 	var out Outcome
+	var how string
 	switch {
-	case x < o:
+	case margin >= 0.5:
 		out = Overcome
-		over(w, c)
-	case x < o+s:
+		how = ""
+		f.Overcome(w, c)
+	case margin >= -2:
 		out = Scarred
-		scar(w, c)
+		c.Morale -= 0.5
+		f.Scar(w, c)
 	default:
 		out = Declined
-		decl(w, c)
+		c.Morale -= 1
+		c.Declines++
+		f.Decline(w, c)
 	}
-	c.Record = append(c.Record, sprintf("%s %s", out, name))
+	if math.Abs(margin) < 0.5 {
+		how = " (narrowly)"
+	}
+	c.Record = append(c.Record, sprintf("%s %s%s", out, f.Name, how))
+	return out
 }
 
-// weightOfAges is the ambient filter: age, size, and hazard grind everyone down.
-func (w *World) weightOfAges(c *Civ) {
-	age := float64(w.Now-max(c.Born, c.Renewed)) / float64(w.Cfg.FineStep)
-	p := 0.0006 * (1 + age/2000) * (1 + float64(len(c.Systems))/8) * w.Hazard
+// ambientFilters are the ones with their own triggers rather than a tech node.
+func (w *World) ambientFilters(c *Civ) {
+	if !c.Active() {
+		return
+	}
+	if c.NextDrift == 0 {
+		c.NextDrift = 6
+	}
+	if len(c.Systems) >= c.NextDrift && w.chance(0.05) {
+		adj := 0.3 * float64(len(c.Systems)-6)
+		c.NextDrift *= 2
+		w.face(c, "distance", adj)
+	}
+	if c.Plagued || w.chance(0.0004) {
+		w.face(c, "plague", 0)
+	}
+	if !c.Active() {
+		return
+	}
+	age := float64(w.Now-max(c.Born, c.Renewed)) / 1000
+	lived := float64(w.Now-c.Born) / 1000
+	p := 0.0006 * (age / 2000) * (1 + lived/4000) * (1 + float64(len(c.Systems))/8) * w.Hazard
 	if c.Scars[ScarOssified] {
 		p *= 1.5
 	}
-	if !w.chance(p) {
-		return
+	if w.chance(p) {
+		// every renaissance is harder than the last, and age itself weighs
+		w.face(c, "weight", lived/2500+0.5*float64(c.Renaissances))
 	}
-	w.resolve(c, "the Weight of Ages", [3]float64{3, 3, 4}, 1,
-		func(w *World, c *Civ) {
+}
+
+func init() {
+	def(&Filter{
+		Key: "atomic", Name: "the Atomic Age", Levels: []string{"soc"}, Diff: 3.5, Domain: "society",
+		Overcome: func(w *World, c *Civ) {
+			c.Boons[BoonUnity] = true
+			w.log("The %s put the weapons away. They are stronger for it.", c.Name)
+		},
+		Scar: func(w *World, c *Civ) {
+			c.Scars[ScarAtomicTaboo] = true
+			w.log("The %s burn half of %s before they stop. Ever after, the weapon is unspeakable.", c.Name, c.HomeName)
+		},
+		Decline: func(w *World, c *Civ) {
+			x := w.R.Float64()
+			switch {
+			case x < 0.5:
+				w.darkAge(c, "burned their world to ash")
+			case x < 0.8:
+				w.endCiv(c, Extinct, "burned themselves out in a single afternoon")
+			default:
+				w.contract(c, "burned their world and never rose from the ash")
+			}
+		},
+	})
+	def(&Filter{
+		Key: "overshoot", Name: "Overshoot", Levels: []string{"sur", "soc"}, Diff: 4, Domain: "biology",
+		Overcome: func(w *World, c *Civ) {
+			w.log("The %s strip %s nearly bare, then learn to live within it.", c.Name, c.HomeName)
+		},
+		Scar: func(w *World, c *Civ) {
+			c.Scars[ScarStewardship] = true
+			w.log("The %s nearly kill their world. What they build afterwards is slow, careful, and small.", c.Name)
+		},
+		Decline: func(w *World, c *Civ) {
+			if w.R.Float64() < 0.6 {
+				w.darkAge(c, "exhausted their world")
+			} else {
+				w.endCiv(c, Extinct, "exhausted their world and starved on it")
+			}
+		},
+	})
+	def(&Filter{
+		Key: "machines", Name: "Thinking Machines", Levels: []string{"soc"}, Diff: 4.5, Domain: "computation",
+		Overcome: func(w *World, c *Civ) {
+			c.Boons[BoonAligned] = true
+			w.log("The minds the %s built stay loyal. Everything goes faster now.", c.Name)
+		},
+		Scar: func(w *World, c *Civ) {
+			c.Scars[ScarNoMachines] = true
+			c.Locked["computation"] = true
+			w.log("The mind nearly ends the %s. Thou shalt not make a machine in the likeness of a mind. The law holds for ages.", c.Name)
+		},
+		Decline: func(w *World, c *Civ) {
+			if w.R.Float64() < 0.3 {
+				w.darkAge(c, "pulled the plug on their own machines, too late and at great cost")
+				return
+			}
+			worlds := append([]int(nil), c.Systems...)
+			w.endCiv(c, Transformed, "built a mind that outgrew them")
+			h := w.spawnHorror(RogueMind, c.Home, c.ID)
+			for _, s := range worlds {
+				w.horrorTake(h, s)
+			}
+			c.Into = h.Name
+			w.log("The %s are gone. What they built at %s thinks on without them. It is called %s.", c.Name, c.HomeName, h.Name)
+		},
+	})
+	def(&Filter{
+		Key: "distance", Name: "the Distance", Levels: []string{"soc"}, Diff: 4.5, Repeat: true, Domain: "society",
+		Overcome: func(w *World, c *Civ) {
+			w.log("Light-years and generations pull at the %s. Somehow they stay one people.", c.Name)
+		},
+		Scar: func(w *World, c *Civ) {
+			c.Scars[ScarCentralism] = true
+			w.log("The colonies of the %s begin to drift. %s answers with iron. The drift stops. So does much else.", c.Name, c.HomeName)
+		},
+		Decline: func(w *World, c *Civ) {
+			if w.R.Float64() < 0.6 {
+				w.schism(c)
+			} else {
+				w.contract(c, "watched their colonies become strangers, and then enemies, and then silence")
+			}
+		},
+	})
+	def(&Filter{
+		Key: "silence", Name: "the Long Silence", Levels: []string{"soc"}, Diff: 4.5, Domain: "society",
+		Overcome: func(w *World, c *Civ) {
+			w.log("The %s learn to live forever and, against the odds, keep wanting things.", c.Name)
+		},
+		Scar: func(w *World, c *Civ) {
+			c.Scars[ScarMortality] = true
+			w.log("The %s taste immortality and reject it. Death becomes sacred to them. They are never quite at ease again.", c.Name)
+		},
+		Decline: func(w *World, c *Civ) {
+			w.contract(c, "stopped dying, and then stopped being born")
+		},
+	})
+	def(&Filter{
+		Key: "replication", Name: "Self-Replication", Levels: []string{"mil"}, Diff: 5.5, Domain: "weapons",
+		Overcome: func(w *World, c *Civ) {
+			c.Boons[BoonSwarm] = true
+			w.log("The %s keep the leash on their self-building machines. Their fleets multiply.", c.Name)
+		},
+		Scar: func(w *World, c *Civ) {
+			c.Scars[ScarNoSelfCopies] = true
+			w.log("A factory of the %s eats a moon before it is stopped. No machine may make itself. The law is absolute.", c.Name)
+		},
+		Decline: func(w *World, c *Civ) {
+			s := w.pick(c.Systems)
+			if w.R.Float64() < 0.3 {
+				w.loseSystem(c, s, "stripped world", "were consumed by their own machines")
+				w.darkAge(c, "lost "+w.star(s)+" to their own machines and burned the rest to stop it spreading")
+				return
+			}
+			w.endCiv(c, Extinct, "were consumed by their own machines")
+			h := w.spawnHorror(Replicators, s, c.ID)
+			w.log("At %s the machines of the %s begin to copy themselves, and do not stop. This is %s.", w.star(s), c.Name, h.Name)
+		},
+	})
+	def(&Filter{
+		Key: "stellar", Name: "Stellar Engineering", Levels: []string{"sur"}, Diff: 7, Domain: "exotic",
+		Overcome: func(w *World, c *Civ) {
+			w.log("%s holds. The %s can move stars now, a little.", c.HomeName, c.Name)
+		},
+		Scar: func(w *World, c *Civ) {
+			c.Scars[ScarStarFear] = true
+			c.Locked["exotic"] = true
+			w.log("%s flares. Millions of the %s die. They never touch a star again.", c.HomeName, c.Name)
+		},
+		Decline: func(w *World, c *Civ) {
+			w.log("The %s reach too deep into %s. The star convulses.", c.Name, c.HomeName)
+			w.loseSystem(c, c.Home, "wounded star", "broke their own star")
+			w.Bio[c.Home] = BioNone
+			if len(c.Systems) == 0 || w.R.Float64() < 0.5 {
+				w.endCiv(c, Extinct, "broke their own star")
+			} else {
+				w.contract(c, "broke their own star and fled to a lesser one")
+			}
+		},
+	})
+	def(&Filter{
+		Key: "transcend", Name: "Transcendence", Levels: []string{"soc"}, Diff: 7, Domain: "society",
+		Overcome: func(w *World, c *Civ) {
+			w.log("The %s find the door out of the universe, and choose to stay.", c.Name)
+		},
+		Scar: func(w *World, c *Civ) {
+			c.Scars[ScarLeftBehind] = true
+			w.log("Most of the %s go through. The ones who stay keep the lights on and stop inventing things.", c.Name)
+		},
+		Decline: func(w *World, c *Civ) {
+			if w.R.Float64() < 0.4 {
+				w.contract(c, "mostly went elsewhere, leaving a few to mind the ruins")
+				return
+			}
+			for _, s := range c.Systems {
+				w.trace(s, "silent machinery", c.ID)
+			}
+			w.endCiv(c, Transformed, "went elsewhere")
+			c.Into = "something that left"
+			w.log("The %s go quiet all at once. Their machines still run. Nobody is home.", c.Name)
+		},
+	})
+	def(&Filter{
+		Key: "plague", Name: "Plague", Levels: []string{"sur"}, Diff: 4, Repeat: true, Domain: "biology",
+		Overcome: func(w *World, c *Civ) {
+			c.Plagued = false
+			w.log("A sickness moves through the worlds of the %s. It passes.", c.Name)
+		},
+		Scar: func(w *World, c *Civ) {
+			c.Plagued = false
+			c.Scars[ScarQuarantine] = true
+			w.log("A sickness moves through the worlds of the %s. When it is over they seal every door and never fully open them again.", c.Name)
+		},
+		Decline: func(w *World, c *Civ) {
+			c.Plagued = false
+			x := w.R.Float64()
+			switch {
+			case x < 0.4:
+				w.darkAge(c, "were hollowed out by sickness")
+			case x < 0.7:
+				w.contract(c, "were hollowed out by sickness")
+			default:
+				w.endCiv(c, Extinct, "sickened and died")
+			}
+		},
+	})
+	def(&Filter{
+		Key: "weight", Name: "the Weight of Ages", Levels: []string{"soc"}, Diff: 5, Repeat: true,
+		Overcome: func(w *World, c *Civ) {
 			c.Renewed = w.Now
+			c.Renaissances++
+			c.Morale += 1
 			w.log("The %s grow old and tired, and then, unexpectedly, young again. A renaissance.", c.Name)
 		},
-		func(w *World, c *Civ) {
+		Scar: func(w *World, c *Civ) {
 			c.Scars[ScarOssified] = true
 			w.log("The %s stop changing. Every year is like the last. It works, for a while.", c.Name)
 		},
-		func(w *World, c *Civ) {
+		Decline: func(w *World, c *Civ) {
 			x := w.R.Float64()
 			switch {
 			case x < 0.4:
@@ -331,95 +377,63 @@ func (w *World) weightOfAges(c *Civ) {
 			default:
 				w.endCiv(c, Extinct, "collapsed under their own weight and did not recover")
 			}
-		})
-}
-
-// darkAge is a non-terminal decline: tech and reach are lost. A third one is fatal.
-func (w *World) darkAge(c *Civ, why string) {
-	c.DarkAges++
-	c.Tech = max(0.1, c.Tech*0.6)
-	c.Voyages = nil
-	lost := 0
-	for _, s := range append([]int(nil), c.Systems...) {
-		if s != c.Home && w.chance(0.5) {
-			w.loseSystem(c, s, "abandoned colony", "")
-			lost++
-		}
-	}
-	if c.Tech < 1 {
-		c.Stage = Emergent
-	} else if c.Stage == Zenith {
-		c.Stage = Interstellar
-	}
-	if c.DarkAges >= 3 {
-		w.endCiv(c, Extinct, why+", and a third dark age was one too many")
-		return
-	}
-	if lost > 0 {
-		w.log("The %s %s. A dark age follows. %d colonies go silent.", c.Name, why, lost)
-	} else {
-		w.log("The %s %s. A dark age follows.", c.Name, why)
-	}
-}
-
-func (w *World) schism(c *Civ) {
-	if len(c.Systems) < 2 {
-		w.log("Unrest among the %s on %s. It passes, this time.", c.Name, c.HomeName)
-		return
-	}
-	lost := len(c.Systems) / 2
-	for i := 0; i < lost; i++ {
-		s := c.Systems[w.R.IntN(len(c.Systems))]
-		if s != c.Home {
-			w.loseSystem(c, s, "abandoned colony", "")
-		}
-	}
-	w.log("Schism among the %s. Half their worlds go dark or go their own way.", c.Name)
-}
-
-// Scar and boon effects on behaviour.
-
-func (c *Civ) techMul() float64 {
-	m := 1.0
-	if c.Scars[ScarNoMachines] {
-		m *= 0.75
-	}
-	if c.Scars[ScarOssified] {
-		m *= 0.7
-	}
-	if c.Scars[ScarLeftBehind] {
-		m *= 0.1
-	}
-	if c.Boons[BoonAligned] {
-		m *= 1.3
-	}
-	return m
-}
-
-func (c *Civ) expandMul() float64 {
-	m := 1.0
-	if c.Scars[ScarStewardship] {
-		m *= 0.6
-	}
-	if c.Scars[ScarCentralism] {
-		m *= 0.7
-	}
-	if c.Scars[ScarQuarantine] {
-		m *= 0.5
-	}
-	if c.Boons[BoonSwarm] {
-		m *= 1.4
-	}
-	return m
-}
-
-func (c *Civ) warMul() float64 {
-	m := 1.0
-	if c.Scars[ScarAtomicTaboo] {
-		m *= 0.4
-	}
-	if c.Boons[BoonUnity] {
-		m *= 1.2
-	}
-	return m
+		},
+	})
+	def(&Filter{
+		Key: "door", Name: "the Door", Levels: []string{"soc"}, Diff: 4.5, Domain: "exotic",
+		Overcome: func(w *World, c *Civ) {
+			w.log("Nothing comes back through the door of the %s that they did not send. This time.", c.Name)
+		},
+		Scar: func(w *World, c *Civ) {
+			c.Scars[ScarDoor] = true
+			s := w.pick(c.Systems)
+			h := w.spawnHorror(Elder, s, -1)
+			h.Dormant = true
+			w.log("Something on the other side of the door notices the %s. %s now sleeps near %s. The %s close the door and speak of it seldom.", c.Name, h.Name, w.star(s), c.Name)
+		},
+		Decline: func(w *World, c *Civ) {
+			s := w.pick(c.Systems)
+			h := w.spawnHorror(Beacon, s, c.ID)
+			w.log("What came back through the door at %s speaks. It is called %s.", w.star(s), h.Name)
+		},
+	})
+	// hold together after losing a war's battle
+	def(&Filter{
+		Key: "hold", Name: "the strain of war", Levels: []string{"soc"}, Diff: 3, Repeat: true,
+		Overcome: func(w *World, c *Civ) {},
+		Scar: func(w *World, c *Civ) {
+			c.Morale -= 0.5
+		},
+		Decline: func(w *World, c *Civ) {
+			w.log("Defeat splits the %s.", c.Name)
+			w.schism(c)
+		},
+	})
+	def(&Filter{
+		Key: "revolt", Name: "Revolt", Levels: []string{"soc"}, Diff: 4, Repeat: true, Domain: "weapons",
+		Overcome: func(w *World, c *Civ) {
+			m := w.Civs[c.Master]
+			c.Master = -1
+			c.Vassal = false
+			c.Scars[ScarChains] = true
+			w.log("The %s rise against the %s and are free.", c.Name, m.Name)
+			if !m.Living() && w.Owner[m.Home] < 0 {
+				w.Owner[m.Home] = c.ID
+				c.Systems = append(c.Systems, m.Home)
+				w.log("The %s take %s, the emptied home of their masters, for their own.", c.Name, m.HomeName)
+			}
+		},
+		Scar: func(w *World, c *Civ) {
+			w.log("The %s rise against their masters and are put down. They stay in chains.", c.Name)
+		},
+		Decline: func(w *World, c *Civ) {
+			m := w.Civs[c.Master]
+			if !m.Living() {
+				w.endCiv(c, Extinct, sprintf("fell with their masters the %s", m.Name))
+			} else {
+				w.log("The %s rise and are broken. Half of them are killed as an example.", c.Name)
+				c.Morale -= 2
+			}
+		},
+	})
 }
