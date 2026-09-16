@@ -104,6 +104,7 @@ func (w *World) settle(c *Civ, t int) {
 	w.Owner[t] = c.ID
 	c.Systems = append(c.Systems, t)
 	c.colonies++
+	w.takeOver(c, t)
 	if len(c.Systems) > c.Peak {
 		c.Peak = len(c.Systems)
 	}
@@ -186,12 +187,20 @@ func (w *World) build(c *Civ) {
 	key := can[w.R.IntN(len(can))]
 	st := tech.Structures[key]
 	s := w.pick(c.Systems)
-	if key == "dyson" {
-		if contains(c.Enclosed, s) {
-			return
+	node := ""
+	for k := range c.Known {
+		if tech.Get(k).Structure == key {
+			node = k
 		}
-		c.Enclosed = append(c.Enclosed, s)
 	}
+	if key == "dyson" {
+		for _, wk := range c.Works {
+			if wk.Key == "dyson" && wk.Star == s {
+				return
+			}
+		}
+	}
+	c.Works = append(c.Works, Work{Key: key, Node: node, Star: s, Legacy: -1})
 	c.Structures[key]++
 	if c.Structures[key] == 1 || key == "dyson" {
 		if key == "shipyard" {
@@ -217,6 +226,16 @@ func (w *World) loseSystem(c *Civ, s int, kind string, cause string) {
 	c.Systems = remove(c.Systems, s)
 	w.Owner[s] = -1
 	w.trace(s, kind, c.ID)
+	keep := c.Works[:0]
+	for _, wk := range c.Works {
+		if wk.Star == s {
+			c.Structures[wk.Key]--
+			w.leaveRuin(c, wk)
+		} else {
+			keep = append(keep, wk)
+		}
+	}
+	c.Works = keep
 	if c.Stage != Dead && len(c.Systems) == 0 {
 		if cause == "" {
 			cause = "lost their last world"
@@ -274,15 +293,15 @@ func (w *World) endCiv(c *Civ, f Fate, cause string) {
 	}
 	wasRemnant := c.Stage == Remnant
 	c.Stage = Dead
+	if f == Extinct && len(c.Systems) > 0 && w.R.Float64() < 0.4 {
+		w.leaveRelic(c, w.lateNode(c), c.Home)
+	}
 	for _, s := range append([]int(nil), c.Systems...) {
 		if f == Extinct {
 			w.loseSystem(c, s, "dead cities", "")
 		} else {
 			w.loseSystem(c, s, "transformed world", "")
 		}
-	}
-	for _, s := range c.Enclosed {
-		w.trace(s, "dyson remnant", c.ID)
 	}
 	if wasRemnant {
 		cause = c.Cause + ", and long after " + cause
@@ -309,7 +328,17 @@ func (w *World) darkAge(c *Civ, why string) {
 	c.DarkAges++
 	c.Morale -= 1
 	c.Voyages = nil
-	w.forget(c, 0.3)
+	forgotten := w.forget(c, 0.3)
+	// what is forgotten is not always destroyed: a relic of the lost art may wait at home
+	if len(forgotten) > 0 && w.R.Float64() < 0.6 {
+		best := forgotten[0]
+		for _, k := range forgotten {
+			if tech.Get(k).Era > tech.Get(best).Era {
+				best = k
+			}
+		}
+		w.leaveRelic(c, best, c.Home)
+	}
 	lost := 0
 	for _, s := range append([]int(nil), c.Systems...) {
 		if s != c.Home && w.R.Float64() < 0.5 {
@@ -335,8 +364,10 @@ func (w *World) darkAge(c *Civ, why string) {
 	}
 }
 
-// forget drops a fraction of known nodes, leaves first, so the tree stays consistent.
-func (w *World) forget(c *Civ, frac float64) {
+// forget drops a fraction of known nodes, leaves first, so the tree stays
+// consistent. It returns what was forgotten.
+func (w *World) forget(c *Civ, frac float64) []string {
+	var forgotten []string
 	n := int(float64(len(c.Known))*frac + 0.5)
 	for i := 0; i < n; i++ {
 		var leaves []string
@@ -357,10 +388,13 @@ func (w *World) forget(c *Civ, frac float64) {
 			}
 		}
 		if len(leaves) == 0 {
-			return
+			break
 		}
-		delete(c.Known, leaves[w.R.IntN(len(leaves))])
+		k := leaves[w.R.IntN(len(leaves))]
+		delete(c.Known, k)
+		forgotten = append(forgotten, k)
 	}
+	return forgotten
 }
 
 func (w *World) schism(c *Civ) {

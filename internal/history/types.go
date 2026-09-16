@@ -99,7 +99,7 @@ type Civ struct {
 
 	// structures and works
 	Structures map[string]int // structure key -> count
-	Enclosed   []int          // stars with Dyson swarms
+	Works      []Work         // where the structures stand
 	Wielded    []*Legacy
 	Found      map[int]bool // legacies attempted
 	Heard      map[int]bool // beacons already faced
@@ -209,6 +209,7 @@ type Legacy struct {
 	ID     int
 	Age    int // index into World.Ages, or -1 for the current age
 	Elder  *Elder
+	Maker  int // civ that made it, -1 for the elder ages
 	Kind   LegacyKind
 	Star   int
 	Node   string // tech node, for artifacts and structures
@@ -237,6 +238,14 @@ type AgeRecord struct {
 	End    Year   // fertility below the floor
 	Ender  string // what swept up the remains
 	Elders []*Elder
+}
+
+// Work is one structure standing at a star. Legacy is set if it was inherited.
+type Work struct {
+	Key    string
+	Node   string
+	Star   int
+	Legacy int
 }
 
 // Trace is something left behind for the player to find.

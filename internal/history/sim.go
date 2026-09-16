@@ -46,6 +46,7 @@ func (w *World) runAge() {
 		w.cosmic()
 		w.tickHorrors()
 		w.tickCivs()
+		w.tickLegacies()
 		w.updateHazard()
 		active := w.activeCount()
 		f := w.fertility()

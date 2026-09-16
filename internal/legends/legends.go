@@ -162,15 +162,33 @@ func Write(out io.Writer, w *history.World, full bool) {
 			made = fmt.Sprintf(", made by the %s", w.Civs[h.FromCiv].Name)
 		} else if h.Legacy >= 0 {
 			l := w.Legacies[h.Legacy]
-			made = fmt.Sprintf(", a legacy of %s", elderName(l))
+			if l.Maker >= 0 {
+				made = fmt.Sprintf(", from a relic of the %s", w.Civs[l.Maker].Name)
+			} else {
+				made = fmt.Sprintf(", a legacy of %s", elderName(l))
+			}
 		}
 		p("  %s, a %s, %s%s.", h.Name, h.Kind, state, made)
 	}
 	p("")
 	p("Legacies of the elder ages:")
 	for _, l := range w.Legacies {
-		p("  %-10s %-12s %s, at %s, %s.", l.Kind, l.State, l.Desc, w.G.Stars[l.Star].Name, elderName(l))
+		if l.Maker < 0 {
+			p("  %-10s %-12s %s, at %s, %s.", l.Kind, l.State, l.Desc, w.G.Stars[l.Star].Name, elderName(l))
+		}
 	}
+	p("")
+	p("Ruins and relics of this age:")
+	ruins := map[history.LegacyState]int{}
+	for _, l := range w.Legacies {
+		if l.Maker >= 0 {
+			ruins[l.State]++
+			if l.State != history.Lost {
+				p("  %-10s %-12s %s, at %s.", l.Kind, l.State, l.Desc, w.G.Stars[l.Star].Name)
+			}
+		}
+	}
+	p("  (%d more have crumbled)", ruins[history.Lost])
 	p("")
 	kinds := map[string]int{}
 	for _, t := range w.Traces {
@@ -264,6 +282,15 @@ func Stats(out io.Writer, w *history.World) {
 			knowers++
 		}
 	}
-	fmt.Fprintf(out, "seed %d: age %.1f Myr, fade %.0f Myr, fertility %.1f%%, %d civs (lived <0.5/<1/<3/<10/10+ Myr: %d/%d/%d/%d/%d), standing %d, remnants %d, knowers %d, horrors %d, capped %v\n",
-		w.Seed, float64(w.Present-w.Cfg.Dawn)/1e6, float64(w.Cycle.Fade)/1e6, 100*w.FertilityNow(), len(w.Civs), b[0], b[1], b[2], b[3], b[4], standing, remnants, knowers, len(w.Horrors), w.Capped)
+	ruins := map[history.LegacyState]int{}
+	nRuins := 0
+	for _, l := range w.Legacies {
+		if l.Maker >= 0 {
+			ruins[l.State]++
+			nRuins++
+		}
+	}
+	fmt.Fprintf(out, "seed %d: age %.1f Myr, fade %.0f Myr, fertility %.1f%%, %d civs (lived <0.5/<1/<3/<10/10+ Myr: %d/%d/%d/%d/%d), standing %d, remnants %d, knowers %d, horrors %d, ruins %d (mastered %d, wielded %d, sealed %d, unleashed %d, crumbled %d), capped %v\n",
+		w.Seed, float64(w.Present-w.Cfg.Dawn)/1e6, float64(w.Cycle.Fade)/1e6, 100*w.FertilityNow(), len(w.Civs), b[0], b[1], b[2], b[3], b[4], standing, remnants, knowers, len(w.Horrors),
+		nRuins, ruins[history.Mastered], ruins[history.Wielded], ruins[history.Sealed], ruins[history.Unleashed], ruins[history.Lost], w.Capped)
 }
