@@ -54,7 +54,9 @@ var flavours = [...]Flavour{
 // Flavour returns the kind's vocabulary.
 func (k Kind) Flavour() Flavour { return flavours[k] }
 
-var kindWeights = [...]float64{Standard: 74, Swarm: 7, PlanetaryMind: 4, Parasite: 4, MachineBorn: 3, Evolver: 8}
+// Machine-born peoples never arise on their own: they are what is left when
+// someone else builds a mind that outgrows them.
+var kindWeights = [...]float64{Standard: 74, Swarm: 7, PlanetaryMind: 4, Parasite: 4, MachineBorn: 0, Evolver: 8}
 
 // kind modifiers: levels and domain tilt
 var kindMods = [...]struct {
@@ -74,11 +76,9 @@ type Archetype struct {
 	Key           string
 	Desc          string // "a temperate, lush world"
 	Weight        float64
-	Mil, Sur, Soc float64 // base levels
-	Domains       M       // research tilt
-	Trait         string  // base trait key, "" if none
-	Locked        []string
-	Unlock        string // tech node key that removes the lock
+	Mil, Sur, Soc float64  // base levels
+	Domains       M        // research tilt
+	Traits        []string // traits every species from this world gets
 }
 
 // ArchetypeByKey finds an archetype, or nil.
@@ -94,16 +94,16 @@ func ArchetypeByKey(key string) *Archetype {
 // Archetypes is the home world table, lush most common, extreme rare.
 var Archetypes = []*Archetype{
 	{Key: "lush", Desc: "a temperate, lush world", Weight: 30, Mil: 1, Sur: 2, Soc: 2},
-	{Key: "ocean", Desc: "an ocean world with scattered islands", Weight: 15, Mil: 0.5, Sur: 2, Soc: 3, Domains: M{"industry": 0.6, "propulsion": 0.7, "biology": 1.3}, Trait: "cooperative"},
+	{Key: "ocean", Desc: "an ocean world with scattered islands", Weight: 15, Mil: 0.5, Sur: 2, Soc: 3, Domains: M{"industry": 0.6, "propulsion": 0.7, "biology": 1.3}, Traits: []string{"cooperative"}},
 	{Key: "arid", Desc: "an arid world of salt flats and canyons", Weight: 12, Mil: 1.5, Sur: 3, Soc: 1.5, Domains: M{"energy": 1.2, "biology": 0.8}},
-	{Key: "twilight", Desc: "a tidally locked world, habitable only along its twilight band", Weight: 10, Mil: 1, Sur: 3, Soc: 2, Domains: M{"society": 1.2, "energy": 1.1}, Trait: "hardy"},
-	{Key: "superterran", Desc: "a heavy world of crushing gravity", Weight: 8, Mil: 2, Sur: 3.5, Soc: 2, Domains: M{"propulsion": 0.5, "industry": 1.2}, Trait: "robust"},
-	{Key: "lowg", Desc: "a small, light world with a thin sky", Weight: 6, Mil: 0.5, Sur: 1, Soc: 2, Domains: M{"propulsion": 1.5, "exotic": 1.1}, Trait: "fragile"},
+	{Key: "twilight", Desc: "a tidally locked world, habitable only along its twilight band", Weight: 10, Mil: 1, Sur: 3, Soc: 2, Domains: M{"society": 1.2, "energy": 1.1}, Traits: []string{"hardy"}},
+	{Key: "superterran", Desc: "a heavy world of crushing gravity", Weight: 8, Mil: 2, Sur: 3.5, Soc: 2, Domains: M{"propulsion": 0.5, "industry": 1.2}, Traits: []string{"robust"}},
+	{Key: "lowg", Desc: "a small, light world with a thin sky", Weight: 6, Mil: 0.5, Sur: 1, Soc: 2, Domains: M{"propulsion": 1.5, "exotic": 1.1}, Traits: []string{"fragile"}},
 	{Key: "hothouse", Desc: "a hothouse world under a crushing, poisonous sky", Weight: 5, Mil: 1, Sur: 3.5, Soc: 2, Domains: M{"biology": 1.2, "exotic": 0.8, "propulsion": 0.7}},
-	{Key: "iceshell", Desc: "an ocean sealed beneath a shell of ice", Weight: 5, Mil: 0.5, Sur: 3, Soc: 2.5, Domains: M{"exotic": 0.4, "propulsion": 0.4, "biology": 1.3, "society": 1.2}, Trait: "skyless"},
-	{Key: "floater", Desc: "the cloud decks of a gas giant", Weight: 3, Mil: 0.5, Sur: 2, Soc: 2, Domains: M{"biology": 1.4, "energy": 0.6}, Trait: "fireless", Locked: []string{"industry", "weapons"}, Unlock: "cold_chemistry"},
-	{Key: "volcanic", Desc: "a moon kneaded by tides, all fire and sulphur", Weight: 3, Mil: 1.5, Sur: 3, Soc: 1.5, Domains: M{"energy": 1.3, "industry": 1.2}, Trait: "hardy"},
-	{Key: "dim", Desc: "a dim world huddled close to a brown dwarf companion", Weight: 3, Mil: 0.5, Sur: 3.5, Soc: 2.5, Domains: M{"exotic": 1.2, "energy": 0.8}, Trait: "hardy"},
+	{Key: "iceshell", Desc: "an ocean sealed beneath a shell of ice", Weight: 5, Mil: 0.5, Sur: 3, Soc: 2.5, Domains: M{"exotic": 0.4, "propulsion": 0.4, "biology": 1.3, "society": 1.2}, Traits: []string{"skyless", "fireless"}},
+	{Key: "floater", Desc: "the cloud decks of a gas giant", Weight: 3, Mil: 0.5, Sur: 2, Soc: 2, Domains: M{"biology": 1.4, "energy": 0.6}, Traits: []string{"fireless"}},
+	{Key: "volcanic", Desc: "a moon kneaded by tides, all fire and sulphur", Weight: 3, Mil: 1.5, Sur: 3, Soc: 1.5, Domains: M{"energy": 1.3, "industry": 1.2}, Traits: []string{"hardy"}},
+	{Key: "dim", Desc: "a dim world huddled close to a brown dwarf companion", Weight: 3, Mil: 0.5, Sur: 3.5, Soc: 2.5, Domains: M{"exotic": 1.2, "energy": 0.8}, Traits: []string{"hardy"}},
 }
 
 // Trait is one facet of a species.
@@ -125,8 +125,10 @@ type Trait struct {
 // on it.
 var Traits = []*Trait{
 	// social organisation
-	{Key: "individualist", Name: "individualists", Group: "org", Weight: 30, Soc: -1, Mil: 0.5, Domains: M{"computation": 1.1, "energy": 1.1}},
+	{Key: "solitary", Name: "solitary by nature", Group: "org", Weight: 6, Soc: -1.5, Mil: 0.5, Domains: M{"society": 0.7, "computation": 1.1}},
+	{Key: "individualist", Name: "individualists", Group: "org", Weight: 26, Soc: -1, Mil: 0.5, Domains: M{"computation": 1.1, "energy": 1.1}},
 	{Key: "collective", Name: "a collective people", Group: "org", Weight: 30, Soc: 1, Domains: M{"society": 1.1}},
+	{Key: "herd", Name: "a herd people, who move as one", Group: "org", Weight: 10, Soc: 1.5, Mil: -0.5, Domains: M{"society": 1.1, "weapons": 0.9}},
 	{Key: "caste", Name: "a caste society", Group: "org", Weight: 15, Soc: 1, Mil: 0.5, Domains: M{"biology": 1.1, "computation": 0.9}},
 	{Key: "hive", Name: "a hive mind", Group: "org", Weight: 10, Soc: 2.5, Mil: 0.5, Domains: M{"society": 0.6, "computation": 0.8}},
 	{Key: "nonconscious", Name: "an intelligence without consciousness", Group: "org", Weight: 5, Soc: 1.5, Sur: 1, Mil: -0.5, Domains: M{"exotic": 0.6, "society": 0.4, "biology": 1.3}},
@@ -153,6 +155,14 @@ var Traits = []*Trait{
 	{Key: "eusocial", Name: "eusocial", Group: "bio", Weight: 10, Soc: 0.5, Mil: 0.5},
 	{Key: "symbiosis", Name: "bonded to their machines", Group: "bio", Weight: 8, Mil: 0.5, Domains: M{"computation": 1.5}},
 	{Key: "memory", Name: "of unbroken memory across generations", Group: "bio", Weight: 8, Soc: 1, Domains: M{"society": 1.2}},
+	// senses: what they have beyond, or instead of, the usual five
+	{Key: "eyeless", Name: "eyeless, who see by sound", Group: "sense", Weight: 6, Domains: M{"exotic": 0.8}},
+	{Key: "deaf", Name: "without hearing", Group: "sense", Weight: 4},
+	{Key: "thermal", Name: "who see heat", Group: "sense", Weight: 12},
+	{Key: "magnetic", Name: "who feel the pull of the world", Group: "sense", Weight: 12, Domains: M{"propulsion": 1.1}},
+	{Key: "electric", Name: "who sense the living current", Group: "sense", Weight: 10, Domains: M{"energy": 1.1}},
+	{Key: "radiation", Name: "who feel radiation as warmth", Group: "sense", Weight: 6, Domains: M{"energy": 1.1, "exotic": 1.1}},
+	{Key: "chemical", Name: "who taste the world in the air", Group: "sense", Weight: 12, Domains: M{"biology": 1.1}},
 	// born to a miracle
 	{Key: "born_voice", Name: "minds that speak across any distance", Group: "power", Weight: 25, Miracle: "ansible"},
 	{Key: "born_flesh", Name: "masters of their own flesh", Group: "power", Weight: 25, Miracle: "directed_evolution"},
@@ -236,8 +246,8 @@ func GenerateOn(r *rand.Rand, mult int, arch string) *Species {
 			s.World = Archetypes[1] // living oceans are the usual planetary mind
 		}
 	}
-	if s.World.Trait != "" {
-		s.Add(s.World.Trait)
+	for _, t := range s.World.Traits {
+		s.Add(t)
 	}
 	if mult == 3 {
 		s.Add("threesuns")
@@ -247,6 +257,12 @@ func GenerateOn(r *rand.Rand, mult int, arch string) *Species {
 	s.Traits = append(s.Traits, pickGroup(r, "org"), pickGroup(r, "stance"), pickGroup(r, "drive"))
 	if r.Float64() < 0.5 {
 		s.Traits = append(s.Traits, pickGroup(r, "bio"))
+	}
+	if r.Float64() < 0.4 {
+		s.Traits = append(s.Traits, pickGroup(r, "sense"))
+		if r.Float64() < 0.15 {
+			s.Add(pickGroup(r, "sense").Key)
+		}
 	}
 	if r.Float64() < 0.006 {
 		s.Traits = append(s.Traits, pickGroup(r, "power"))

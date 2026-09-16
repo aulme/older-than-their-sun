@@ -803,9 +803,9 @@ func row(recs []Rec, n *tech.Node) string {
 	reached, eligible := 0, 0
 	var at, life []float64
 	for _, r := range recs {
-		ok := true
+		ok := forMatches(n.For, r)
 		for _, p := range n.Prereqs {
-			if !r.ever[p] {
+			if !r.ever[p] && !anySub(r, p) {
 				ok = false
 			}
 		}
@@ -826,4 +826,33 @@ func row(recs []Rec, n *tech.Node) string {
 		learned = fmt.Sprintf("%.2f Myr", median(at))
 	}
 	return fmt.Sprintf("| %s | %s | %s | %s | %d (%s) | %s | %s | %.2f | %s |", n.Name, n.Domain, names(n.Prereqs), price, reached, pct(reached, N), pct(reached, eligible), learned, median(life), effects(n))
+}
+
+// forMatches says whether a node reserved for some peoples is on this one's tree.
+func forMatches(f string, r Rec) bool {
+	switch {
+	case f == "":
+		return true
+	case strings.HasPrefix(f, "kind:"):
+		return r.Kind == f[5:]
+	case strings.HasPrefix(f, "world:"):
+		return r.World == f[6:]
+	case strings.HasPrefix(f, "trait:"):
+		for _, t := range r.Traits {
+			if t == f[6:] {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// anySub says whether a stand-in for a prerequisite was ever held.
+func anySub(r Rec, p string) bool {
+	for _, s := range tech.Subs[p] {
+		if r.ever[s] {
+			return true
+		}
+	}
+	return false
 }

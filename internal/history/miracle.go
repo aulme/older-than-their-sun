@@ -81,7 +81,7 @@ func (c *Civ) leapWeight(key string) float64 {
 	if len(c.held()) > 0 {
 		return 0 // one miracle is a people's whole shape; nobody reaches for a second
 	}
-	m := 0.25 * (1 + 0.1*float64(len(c.Systems))) // the wide reach for it; the hermits seldom do
+	m := 0.12 * (1 + 0.1*float64(len(c.Systems))) // once the spine is climbed the leap is the obvious next thing; the wide reach for it sooner
 	if c.Has("curious") {
 		m *= 2.5
 	}

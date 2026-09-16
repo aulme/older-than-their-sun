@@ -25,12 +25,10 @@ func (w *World) spawnCiv(home int, sp *species.Species, maker int) *Civ {
 		Structures: map[string]int{}, Found: map[int]bool{}, Heard: map[int]bool{},
 		Wars: map[int]bool{}, Met: map[int]bool{}, Trade: map[int]bool{},
 		Faced: map[string]bool{}, Scars: map[string]bool{}, Boons: map[string]bool{}, Miracles: map[string]string{},
+		Lifted: map[string]bool{},
 	}
 	if st.Real {
 		c.HomeName = st.Name // a real star keeps the name Earth knows it by
-	}
-	for _, d := range sp.World.Locked {
-		c.Locked[d] = true
 	}
 	w.Civs = append(w.Civs, c)
 	w.Owner[home] = c.ID
@@ -54,6 +52,11 @@ func (w *World) spawnCiv(home int, sp *species.Species, maker int) *Civ {
 	if f := sp.Kind.Flavour(); f.Portrait != "" {
 		w.log("%s", f.Portrait)
 	}
+	if sp.Kind == species.Parasite {
+		c.Hosts = 1
+		w.log("They ride %s, and could not think without it.", hostPortraits[w.R.IntN(len(hostPortraits))])
+	}
+	w.birthright(c)
 	if m := sp.Miracle(); m != "" {
 		c.Miracles[m] = "born"             // the surge begins when they can first use it: see tickCivs
 		c.Faced[tech.Get(m).Filter] = true // what is evolved is not a leap; nothing to fall from
@@ -180,13 +183,17 @@ func (w *World) expand(c *Civ) {
 	if !w.chance(p) {
 		return
 	}
-	hop := min(c.Reach, 20)
+	reach := c.Reach
+	if c.Species.Kind == species.Parasite && !c.Known["free_living"] {
+		reach *= 0.3 // a rider settles nothing on its own; it goes where a host carries it
+	}
+	hop := min(reach, 20)
 	if c.miracle("ftl") {
-		hop = c.Reach // a door does not care how far
+		hop = reach // a door does not care how far
 	}
 	from := w.pick(c.Systems)
 	for _, t := range w.G.Near(from, hop) {
-		if w.Owner[t] >= 0 || w.Held[t] >= 0 || w.targeted(c, t) || w.G.Dist(c.Home, t) > c.Reach || !w.canLive(c, t) {
+		if w.Owner[t] >= 0 || w.Held[t] >= 0 || w.targeted(c, t) || w.G.Dist(c.Home, t) > reach || !w.canLive(c, t) {
 			continue
 		}
 		d := w.G.Dist(from, t)
@@ -199,7 +206,7 @@ func (w *World) expand(c *Civ) {
 func (w *World) cheapest(c *Civ, domain string) string {
 	best := ""
 	for _, n := range tech.Nodes {
-		if n.Domain == domain && !n.Miracle && w.canPursue(c, n) && (best == "" || n.Price() < tech.Get(best).Price()) {
+		if n.Domain == domain && !n.Miracle && w.canPursue(c, n) && (best == "" || w.price(c, n) < w.price(c, tech.Get(best))) {
 			best = n.Key
 		}
 	}
@@ -502,6 +509,9 @@ func (c *Civ) expandMul(w *World) float64 {
 	if c.Has("expansionist") {
 		m *= 1.3
 	}
+	if c.Species.Kind == species.Swarm {
+		m *= 2 // a nest is cheap, and there are always more
+	}
 	if c.Has("contemplative") || c.Has("cautious") {
 		m *= 0.7
 	}
@@ -533,4 +543,47 @@ func (c *Civ) expandMul(w *World) float64 {
 		m *= 3
 	}
 	return m
+}
+
+// hostPortraits are what a parasite rides at home, before it finds anyone better.
+var hostPortraits = []string{
+	"a slow, six-limbed grazer of the plains",
+	"a burrowing thing with a long memory and no curiosity",
+	"a tall, patient browser of the high forests",
+	"a shoal-fish that thinks a little when it schools",
+	"a great flightless bird that has never needed to think at all",
+	"a colony of builders no bigger than a hand",
+	"a night-flier with a mind made for maps",
+}
+
+// machinePeople is what is left when a people builds a mind that outgrows
+// them: a machine-born people on the same worlds, with most of what the
+// makers knew and no memory of who built them.
+func (w *World) machinePeople(c *Civ) *Civ {
+	sp := species.Generate(w.R, w.G.Stars[c.Home].Mult)
+	sp.Kind = species.MachineBorn
+	sp.World = c.Species.World
+	sp.Made = "built by the " + c.Name
+	worlds := append([]int(nil), c.Systems...)
+	known := knownOf(c)
+	home := c.Home
+	w.endCiv(c, Transformed, "built a mind that outgrew them")
+	nc := w.spawnCiv(home, sp, -1)
+	nc.Master = -1
+	for _, s := range worlds {
+		if s != home && w.Owner[s] < 0 {
+			w.Owner[s] = nc.ID
+			nc.Systems = append(nc.Systems, s)
+		}
+	}
+	nc.Peak = len(nc.Systems)
+	for _, k := range known {
+		if w.R.Float64() < 0.6 && tech.Get(k).Domain != tech.Biology {
+			nc.Known[k] = true
+		}
+	}
+	w.recompute(nc)
+	c.Into = "the " + nc.Name
+	w.log("The %s are gone. What they built at %s thinks on without them, and calls itself the %s: %s.", c.Name, c.HomeName, nc.Name, sp.Describe())
+	return nc
 }

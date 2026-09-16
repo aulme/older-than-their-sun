@@ -1,6 +1,9 @@
 package history
 
-import "worldgen/internal/tech"
+import (
+	"worldgen/internal/species"
+	"worldgen/internal/tech"
+)
 
 // research is a pursuit: a civilisation picks one node it can reach and
 // banks points toward it until the price is paid. The pick is drawn from
@@ -9,7 +12,14 @@ import "worldgen/internal/tech"
 // whole tree. Deep nodes cost far more than shallow ones, and miracles cost
 // more still and are a conscious choice: the leap.
 func (w *World) research(c *Civ) {
-	rate := 0.12 * c.Species.Rate() * (1 + 0.08*c.Soc) * (1 + 0.03*float64(len(c.Systems)))
+	per := 0.03
+	if c.Species.Kind == species.Swarm {
+		per = 0.015 // a nest is a small thing
+	}
+	rate := 0.12 * c.Species.Rate() * (1 + 0.08*c.Soc) * (1 + per*float64(len(c.Systems)))
+	if c.Species.Kind == species.PlanetaryMind {
+		rate *= 1.3 // one vast mind
+	}
 	rate *= c.rateMul(w)
 	c.Progress += rate * w.dt
 	for c.Active() {
@@ -27,10 +37,11 @@ func (w *World) research(c *Civ) {
 			}
 		}
 		n := tech.Get(c.Pursuit)
-		if c.Progress < n.Price() {
+		price := w.price(c, n)
+		if c.Progress < price {
 			return
 		}
-		c.Progress -= n.Price()
+		c.Progress -= price
 		c.Pursuit = ""
 		if n.Chance > 0 && w.R.Float64() > n.Chance {
 			if n.Miracle {
@@ -55,6 +66,9 @@ func (c *Civ) rateMul(w *World) float64 {
 	}
 	if c.Boons[BoonAligned] {
 		m *= 1.3
+	}
+	if c.Scars[ScarChurch] {
+		m *= 0.9
 	}
 	if c.Structures["dyson"] > 0 {
 		m *= tech.Structures["dyson"].Rate
@@ -94,8 +108,11 @@ func (c *Civ) rateMul(w *World) float64 {
 
 // canPursue says whether a node is open to a civilisation now.
 func (w *World) canPursue(c *Civ, n *tech.Node) bool {
-	if n == nil || c.Known[n.Key] || (c.Locked[n.Domain] && n.Key != c.Species.World.Unlock) {
+	if n == nil || c.Known[n.Key] || c.Locked[n.Domain] {
 		return false
+	}
+	if mode, _ := w.aptitude(c, n); mode != aptDear {
+		return false // innate, moot, never, or blocked by the cradle
 	}
 	if n.Patience > 0 && float64(w.Now-c.Born)/1000 < n.Patience {
 		return false
@@ -104,7 +121,7 @@ func (w *World) canPursue(c *Civ, n *tech.Node) bool {
 		return false // already theirs by birth or by a find
 	}
 	for _, p := range n.Prereqs {
-		if !c.Known[p] {
+		if !w.met(c, p) {
 			return false
 		}
 	}
@@ -130,10 +147,8 @@ func (w *World) choose(c *Civ) string {
 		if f == 0 {
 			f = 1
 		}
-		wt := n.Weight * c.Species.DomainMul(n.Domain) * f * (1 + 0.25*float64(depth[n.Domain]))
-		if c.Locked[n.Domain] {
-			wt = n.Weight
-		}
+		_, mult := w.aptitude(c, n)
+		wt := n.Weight * c.Species.DomainMul(n.Domain) * f * (1 + 0.25*float64(depth[n.Domain])) / mult
 		if n.Miracle {
 			wt = n.Weight * c.leapWeight(n.Key)
 		}
@@ -175,11 +190,6 @@ func (w *World) learn(c *Civ, n *tech.Node, fire bool) {
 			c.Focus[d] = 1
 		}
 		c.Focus[d] *= v
-	}
-	if n.Key == c.Species.World.Unlock {
-		for _, d := range c.Species.World.Locked {
-			delete(c.Locked, d)
-		}
 	}
 	was := c.Stage
 	w.recompute(c)

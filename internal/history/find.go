@@ -169,7 +169,7 @@ func (w *World) attemptMaster(c *Civ, l *Legacy) {
 		}
 		w.finding = true
 		for _, k := range tech.Closure(l.Node) {
-			if !c.Known[k] && c.Active() {
+			if !w.had(c, k) && c.Active() {
 				w.learn(c, tech.Get(k), true)
 			}
 		}

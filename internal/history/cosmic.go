@@ -1,6 +1,10 @@
 package history
 
-import "sort"
+import (
+	"sort"
+
+	"worldgen/internal/species"
+)
 
 // Cosmic filters: supernovae, gamma-ray bursts, passing dark masses, and the
 // slow death of a home star. Each has a blast radius; every civilisation
@@ -135,6 +139,12 @@ func (w *World) dyingSun(c *Civ) {
 		c.Endure = 300 * pow(1+c.Sur, 1.5) * (1 - 0.3*c.traitDiff("dying"))
 		if c.Known["star_lifting"] {
 			c.Endure *= 4
+		}
+		if c.Known["deep_root"] {
+			c.Endure *= 2 // the mind goes down into the crust
+		}
+		if c.Species.Kind == species.MachineBorn {
+			c.Endure *= 3 // cold is only cold
 		}
 		c.focus("propulsion", 2)
 		c.focus("biology", 1.5)

@@ -77,9 +77,11 @@ type Civ struct {
 	Fell       Year // when it stopped being active
 	Stage      Stage
 	Fate       Fate
-	Cause      string // why it ended
-	Into       string // what it became, if transformed
-	Word       string // the people's word for the state beneath, once they have reached into it
+	Cause      string          // why it ended
+	Into       string          // what it became, if transformed
+	Word       string          // the people's word for the state beneath, once they have reached into it
+	Hosts      int             // for parasites: host species ridden, the local one included
+	Lifted     map[string]bool // world blocks lifted by a colony: sea, sky, fire
 	Systems    []int
 	Peak       int
 	Voyages    []Voyage

@@ -3,6 +3,7 @@ package history
 import (
 	"worldgen/internal/names"
 	"worldgen/internal/species"
+	"worldgen/internal/tech"
 )
 
 // Contact happens when reach spheres overlap. What follows depends on stance
@@ -51,7 +52,7 @@ func (w *World) primitives(old, young *Civ) bool {
 		w.Bio[young.Home] = BioSimple
 		w.endCiv(young, Extinct, sprintf("were scoured from %s by the %s before they had looked up", young.HomeName, old.Name))
 		return true
-	case (old.Has("expansionist") || old.Has("martial")) && w.R.Float64() < 0.3:
+	case (old.Has("expansionist") || old.Has("martial")) && young.Species.Kind != species.Swarm && young.Species.Kind != species.PlanetaryMind && w.R.Float64() < 0.3:
 		old.Met[young.ID], young.Met[old.ID] = true, true
 		w.log("The %s find the %s on %s, still at the plough, and take them. There is no war to speak of.", old.Name, young.Name, young.HomeName)
 		w.enslave(old, young)
@@ -155,15 +156,19 @@ func (w *World) infection(a, b *Civ) {
 		w.log("The %s burn %d of their own worlds to stop it. It stops.", h.Name, lost)
 		h.Wars[p.ID], p.Wars[h.ID] = true, true
 	case Declined:
-		worlds := append([]int(nil), h.Systems...)
-		w.endCiv(h, Transformed, sprintf("were taken from within by the %s", p.Name))
-		h.Into = "hosts of the " + p.Name
-		for _, s := range worlds {
-			w.Owner[s] = p.ID
-			p.Systems = append(p.Systems, s)
+		w.enslave(p, h)
+		p.Hosts++
+		gained := 0
+		for _, k := range knownOf(h) {
+			if !p.Known[k] && w.R.Float64() < 0.5 {
+				if mode, _ := w.aptitude(p, tech.Get(k)); mode == aptDear {
+					p.Known[k] = true
+					gained++
+				}
+			}
 		}
-		p.Peak = max(p.Peak, len(p.Systems))
-		w.log("The %s are still there, but they are the %s now.", h.Name, p.Name)
+		w.recompute(p)
+		w.log("The %s are still there, and still themselves, mostly. They do what the %s want now, and what they knew, the %s know.", h.Name, p.Name, p.Name)
 	}
 }
 
@@ -257,6 +262,14 @@ func (w *World) battleWon(c, e *Civ) {
 		w.Bio[e.Home] = BioNone
 		w.log("A relativistic strike from the %s shatters %s, homeworld of the %s. They never surrendered.", c.Name, e.HomeName, e.Name)
 		w.endCiv(e, Extinct, sprintf("were annihilated in war with the %s", c.Name))
+	case e.Species.Kind == species.Swarm:
+		w.Bio[e.Home] = BioSimple
+		w.log("The %s burn out the last nest of the %s. A swarm cannot be held; it can only be ended.", c.Name, e.Name)
+		w.endCiv(e, Extinct, sprintf("were burned out nest by nest by the %s", c.Name))
+	case e.Species.Kind == species.PlanetaryMind:
+		w.Bio[e.Home] = BioSimple
+		w.log("The %s take %s, and there is nothing to rule. The %s were the world, and the world is dead.", c.Name, e.HomeName, e.Name)
+		w.endCiv(e, Extinct, sprintf("died when %s was taken by the %s", e.HomeName, c.Name))
 	case c.Has("pacifist"):
 		w.log("The %s defeat the %s and, having no use for a conquest, leave them be.", c.Name, e.Name)
 	default:
@@ -290,7 +303,12 @@ func (w *World) revolt(c *Civ) {
 // uplift: a strong civilisation makes a new species from complex life
 // within its reach. The client relationship goes the way of vassalage.
 func (w *World) uplift(c *Civ) {
-	if !c.Active() || c.Era < 3 || c.Soc < 5 || !c.Free() || c.Uplifts >= 2 || !(c.Has("curious") || c.Has("collective") || c.Has("contemplative")) || !w.chance(0.0001) {
+	inclined := c.Has("curious") || c.Has("collective") || c.Has("contemplative")
+	p := 0.0001
+	if c.Species.Kind == species.Parasite {
+		inclined, p = true, 0.0003 // a rider makes riders
+	}
+	if !c.Active() || c.Era < 3 || c.Soc < 5 || !c.Free() || c.Uplifts >= 2 || !inclined || !w.chance(p) {
 		return
 	}
 	for _, t := range w.G.Near(c.Home, c.Reach) {

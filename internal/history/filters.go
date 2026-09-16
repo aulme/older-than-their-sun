@@ -1,6 +1,10 @@
 package history
 
-import "math"
+import (
+	"math"
+
+	"worldgen/internal/species"
+)
 
 // A filter is anything that may push a civilisation into decline. In v1 a
 // filter tests one or two levels against a difficulty: roll plus level minus
@@ -22,6 +26,7 @@ func (o Outcome) String() string { return [...]string{"overcame", "scarred by", 
 // Scar and boon keys. Kept as strings so the legends can print them directly.
 const (
 	ScarAtomicTaboo  = "an atomic taboo"
+	ScarChurch       = "a church that outranks the state"
 	ScarStewardship  = "a stewardship creed"
 	ScarNoMachines   = "a prohibition on thinking machines"
 	ScarCentralism   = "iron centralism"
@@ -93,6 +98,9 @@ var traitDiff = map[string]map[string]float64{
 	"caste":         {"weight": 1, "hold": -0.5},
 	"shortlived":    {"silence": -1, "weight": -1, "plague": 1},
 	"longlived":     {"weight": 1.5, "silence": 1},
+	"radiation":     {"atomic": -1},
+	"solitary":      {"distance": -2, "beacon": -2, "weight": 0.5, "hold": 1},
+	"herd":          {"beacon": 2, "atomic": -1, "distance": 1, "hold": -1},
 	"dormancy":      {"plague": -1, "cosmic": -1, "dying": -1},
 	"symbiosis":     {"machines": -1.5, "replication": -0.5},
 	"xenophobic":    {"beacon": -1, "find": 1},
@@ -129,7 +137,7 @@ func (w *World) face(c *Civ, key string, diffAdj float64) Outcome {
 		return Overcome
 	}
 	lvl := c.level(f.Levels...)
-	diff := f.Diff + diffAdj + 0.25*float64(len(c.Scars)) + 1.5*(w.Hazard-1) + c.traitDiff(key) + c.miracleDiff(key) + w.lawDiff(key) + w.thinDiff(key)
+	diff := f.Diff + diffAdj + 0.25*float64(len(c.Scars)) + 1.5*(w.Hazard-1) + c.traitDiff(key) + c.kindDiff(key) + c.miracleDiff(key) + w.lawDiff(key) + w.thinDiff(key)
 	roll := w.R.NormFloat64() * 1.5
 	margin := lvl + roll - diff
 	if f.Domain != "" {
@@ -172,11 +180,11 @@ func (w *World) ambientFilters(c *Civ) {
 	if len(c.Systems) >= c.NextDrift && w.chance(0.05) {
 		adj := 0.3 * float64(len(c.Systems)-6)
 		c.NextDrift *= 2
-		if !c.miracle("ansible") { // nothing drifts when every world is in the room
+		if !c.miracle("ansible") && c.Species.Kind != species.Swarm && c.Species.Kind != species.PlanetaryMind { // nothing drifts when every world is in the room, or there is no centre, or it is all one mind
 			w.face(c, "distance", adj)
 		}
 	}
-	if c.miracle("directed_evolution") {
+	if c.miracle("directed_evolution") || c.Species.Kind == species.MachineBorn {
 		c.Plagued = false // nothing lives in them that they did not put there
 	} else if c.Plagued || w.chance(0.0004) {
 		w.face(c, "plague", 0)
@@ -249,8 +257,13 @@ func init() {
 			w.log("The mind nearly ends the %s. Thou shalt not make a machine in the likeness of a mind. The law holds for ages.", c.Name)
 		},
 		Decline: func(w *World, c *Civ) {
-			if w.R.Float64() < 0.3 {
+			x := w.R.Float64()
+			if x < 0.25 {
 				w.darkAge(c, "pulled the plug on their own machines, too late and at great cost")
+				return
+			}
+			if x < 0.75 {
+				w.machinePeople(c)
 				return
 			}
 			worlds := append([]int(nil), c.Systems...)
@@ -462,6 +475,63 @@ func init() {
 			} else {
 				w.log("The %s rise and are broken. Half of them are killed as an example.", c.Name)
 				c.Morale -= 2
+			}
+		},
+	})
+}
+
+// kindDiff is the asymmetry of the kinds: what being a swarm, a world, a
+// rider, a machine or a self-made thing does to each filter.
+func (c *Civ) kindDiff(key string) float64 {
+	switch c.Species.Kind {
+	case species.Swarm:
+		switch key {
+		case "cosmic":
+			return -1 // they scatter
+		case "beacon":
+			return 2 // gathered, they hear with one ear
+		}
+	case species.PlanetaryMind:
+		if key == "plague" {
+			return 2 // one body to sicken
+		}
+	case species.Parasite:
+		if (key == "silence" || key == "weight") && c.Hosts <= 1 {
+			return 1 // an empty field is a slow death for a rider
+		}
+	case species.MachineBorn:
+		switch key {
+		case "cosmic":
+			return -1
+		case "weight":
+			return 1 // machines ossify
+		case "replication":
+			return -1
+		}
+	case species.Evolver:
+		switch key {
+		case "brood":
+			return -1
+		case "overshoot":
+			return 1 // populations are what they make
+		}
+	}
+	return 0
+}
+
+func init() {
+	def(&Filter{
+		Key: "faith", Name: "the Wars of Faith", Levels: []string{"soc"}, Diff: 2.5, Domain: "society",
+		Overcome: func(w *World, c *Civ) {}, // most peoples manage it; the legends only note the ones that did not
+		Scar: func(w *World, c *Civ) {
+			c.Scars[ScarChurch] = true
+			w.log("A century of burning among the %s, and the church wins. It outranks every state after that.", c.Name)
+		},
+		Decline: func(w *World, c *Civ) {
+			if w.R.Float64() < 0.5 {
+				w.darkAge(c, "tore themselves apart over the nature of god")
+			} else {
+				w.contract(c, "fought over god until there was nothing left to fight with")
 			}
 		},
 	})

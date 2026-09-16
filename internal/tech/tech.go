@@ -37,6 +37,7 @@ type Node struct {
 	Patience          float64 // kyr a civilisation must have lived before it can pursue this
 	Chance            float64 // if set, a finished pursuit only succeeds this often; failure wastes the work
 	Miracle           bool    // a power apart from the tree: rare, potent, dangerous
+	For               string  // only for these: "kind:swarm", "world:iceshell", "trait:fireless"; "" for everyone
 	Mil, Sur, Soc     float64
 	Reach             float64 // reach in light years this node grants; the highest known wins
 	Speed             float64 // colony ship speed in years per light year; the lowest known wins
@@ -57,32 +58,50 @@ var Nodes = []*Node{
 	// era 0
 	{Key: "tools", Name: "Tools", Domain: Industry, Mil: 0.2},
 	{Key: "fire", Name: "Fire", Domain: Energy, Sur: 0.3},
-	{Key: "agriculture", Name: "Agriculture", Domain: Biology, Sur: 0.5, Soc: 0.3},
-	{Key: "writing", Name: "Writing", Domain: Society, Soc: 0.5},
+	{Key: "agriculture", Name: "Agriculture", Domain: Biology, Sur: 0.5, Soc: 0.1},
+	{Key: "writing", Name: "Writing", Domain: Society, Soc: 0.2},
 	{Key: "metallurgy", Name: "Metallurgy", Domain: Industry, Prereqs: []string{"fire", "tools"}, Mil: 0.5},
 	{Key: "mathematics", Name: "Mathematics", Domain: Computation, Prereqs: []string{"writing"}},
-	{Key: "astronomy", Name: "Astronomy", Domain: Exotic, Prereqs: []string{"mathematics"}, Focus: M{Propulsion: 1.2}},
-	{Key: "states", Name: "States", Domain: Society, Prereqs: []string{"agriculture", "writing"}, Soc: 0.5, Mil: 0.5},
+	{Key: "star_gazing", Name: "Star Gazing", Domain: Exotic, Focus: M{Propulsion: 1.2}},
+	{Key: "states", Name: "States", Domain: Society, Prereqs: []string{"agriculture", "writing"}, Soc: 0.3, Mil: 0.5},
 	{Key: "seafaring", Name: "Seafaring", Domain: Propulsion, Prereqs: []string{"tools"}, Focus: M{Society: 1.1}},
-	{Key: "cold_chemistry", Name: "Cold Chemistry", Domain: Exotic, Weight: 0.3, Era: 1,
+	{Key: "burial", Name: "Burial", Domain: Society, Soc: 0.1},
+	{Key: "song", Name: "Song", Domain: Society, Soc: 0.1},
+	{Key: "religion", Name: "Religion", Domain: Society, Prereqs: []string{"burial"}, Soc: 0.2},
+	{Key: "philosophy", Name: "Philosophy", Domain: Computation, Prereqs: []string{"writing"}, Focus: M{Computation: 1.2, Society: 1.2}},
+	{Key: "law", Name: "Law", Domain: Society, Prereqs: []string{"states", "writing"}, Soc: 0.2},
+	{Key: "organised_religion", Name: "Organised Religion", Domain: Society, Prereqs: []string{"religion", "states"}, Soc: 0.2, Mil: 0.2},
+	// era 0, only for some
+	{Key: "gathering", Name: "the Gathering", Domain: Society, For: "kind:swarm", Soc: 0.5, Mil: 0.5,
+		Text: "The %s learn to gather on purpose: a million bodies, one mind, when it is wanted."},
+	{Key: "host_craft", Name: "Host-craft", Domain: Biology, For: "kind:parasite", Sur: 0.5, Soc: 0.5},
+	{Key: "maintenance", Name: "Maintenance", Domain: Industry, For: "kind:machine-born", Sur: 0.5},
+	{Key: "husbandry", Name: "Husbandry of the Self", Domain: Biology, For: "kind:evolver", Sur: 0.5, Focus: M{Biology: 1.2}},
+	{Key: "cold_chemistry", Name: "Cold Chemistry", Domain: Exotic, Era: 1, For: "trait:fireless",
 		Text: "The %s learn to make without burning. What fire did for others, patience does for them."},
 	// era 1
 	{Key: "printing", Name: "Printing", Domain: Society, Era: 1, Prereqs: []string{"writing", "metallurgy"}, Soc: 0.3, Focus: M{Computation: 1.2, Biology: 1.1}},
-	{Key: "scientific_method", Name: "the Scientific Method", Domain: Computation, Era: 1, Prereqs: []string{"mathematics", "astronomy", "printing"},
+	{Key: "scientific_method", Name: "the Scientific Method", Domain: Computation, Era: 1, Prereqs: []string{"mathematics", "philosophy", "printing"},
 		Focus: M{Energy: 1.3, Biology: 1.3, Industry: 1.3, Exotic: 1.3}, Milestone: true,
 		Text: "The %s learn to ask the world questions and to believe the answers."},
+	{Key: "astronomy", Name: "Astronomy", Domain: Exotic, Era: 1, Prereqs: []string{"scientific_method", "star_gazing"}, Focus: M{Propulsion: 1.2, Exotic: 1.1}},
+	{Key: "doubt", Name: "Doubt", Domain: Society, Era: 1, Prereqs: []string{"philosophy", "printing", "organised_religion"}, Soc: 0.1, Filter: "faith"},
 	{Key: "steam", Name: "Steam Power", Domain: Energy, Era: 1, Prereqs: []string{"metallurgy", "scientific_method"}},
+	{Key: "breach", Name: "the Breach", Domain: Industry, Era: 1, For: "world:iceshell", Prereqs: []string{"steam"}, Milestone: true,
+		Text: "The %s drill up through the ice and break the shell of the world. There is a sky. There was always a sky."},
+	{Key: "high_air", Name: "High Air", Domain: Propulsion, Era: 1, For: "world:hothouse", Prereqs: []string{"scientific_method"}, Milestone: true,
+		Text: "A balloon of the %s rises above the poison and, for the first time, someone sees the stars."},
 	{Key: "industrial", Name: "the Industrial Revolution", Domain: Industry, Era: 1, Prereqs: []string{"steam"}, Mil: 0.5, Sur: 0.5, Milestone: true,
 		Text: "Smoke rises over the cities of the %s. Nothing is made by hand for long."},
 	{Key: "chemistry", Name: "Chemistry", Domain: Industry, Era: 1, Prereqs: []string{"scientific_method"}},
 	{Key: "medicine", Name: "Medicine", Domain: Biology, Era: 1, Prereqs: []string{"scientific_method"}, Sur: 0.5},
 	{Key: "firearms", Name: "Firearms", Domain: Weapons, Era: 1, Prereqs: []string{"metallurgy", "chemistry"}, Mil: 0.5},
-	{Key: "mass_politics", Name: "Mass Politics", Domain: Society, Era: 1, Prereqs: []string{"printing", "industrial"}, Soc: 0.5},
+	{Key: "mass_politics", Name: "Mass Politics", Domain: Society, Era: 1, Prereqs: []string{"printing", "industrial", "doubt"}, Soc: 0.5},
 	{Key: "electricity", Name: "Electricity", Domain: Energy, Era: 1, Prereqs: []string{"scientific_method", "industrial"}, Focus: M{Computation: 1.3}},
 	// era 2
 	{Key: "mass_industry", Name: "Mass Industry", Domain: Energy, Era: 2, Prereqs: []string{"industrial", "chemistry"}, Mil: 0.3, Sur: 0.3, Filter: "overshoot"},
 	{Key: "mechanised_war", Name: "Mechanised War", Domain: Weapons, Era: 2, Prereqs: []string{"firearms", "industrial"}, Mil: 0.5},
-	{Key: "physics", Name: "Modern Physics", Domain: Exotic, Era: 2, Prereqs: []string{"electricity", "mathematics"}, Focus: M{Energy: 1.3}},
+	{Key: "physics", Name: "Modern Physics", Domain: Exotic, Era: 2, Prereqs: []string{"electricity", "mathematics", "astronomy"}, Focus: M{Energy: 1.3}},
 	{Key: "atomic", Name: "Atomic Power", Domain: Energy, Era: 2, Prereqs: []string{"physics"}, Mil: 1, Filter: "atomic", Milestone: true,
 		Text: "The %s split the atom."},
 	{Key: "rocketry", Name: "Rocketry", Domain: Propulsion, Era: 2, Prereqs: []string{"chemistry", "mechanised_war"}, Reach: 0.1, Milestone: true,
@@ -95,13 +114,15 @@ var Nodes = []*Node{
 	{Key: "fusion", Name: "Fusion Power", Domain: Energy, Era: 2, Prereqs: []string{"atomic", "computers"}, Mil: 0.3, Sur: 0.3, Milestone: true,
 		Text: "The %s light a small star of their own and keep it burning."},
 	{Key: "neuroscience", Name: "Neuroscience", Domain: Biology, Era: 2, Prereqs: []string{"medicine", "computers"}, Focus: M{Computation: 1.2}},
+	{Key: "broodline", Name: "Broodline", Domain: Biology, Era: 2, For: "kind:parasite", Prereqs: []string{"host_craft", "chemistry"}, Sur: 0.5, Focus: M{Biology: 1.2}},
+	{Key: "forking", Name: "Forking", Domain: Computation, Era: 2, For: "kind:machine-born", Prereqs: []string{"maintenance", "electricity"}, Sur: 0.5, Soc: 0.5},
 	// era 3
 	{Key: "machine_minds", Name: "Machine Minds", Domain: Computation, Era: 3, Prereqs: []string{"computers", "neuroscience"}, Soc: 0.5, Filter: "machines", Milestone: true,
 		Focus: M{Energy: 1.2, Industry: 1.2, Biology: 1.2, Exotic: 1.2, Propulsion: 1.2, Weapons: 1.2},
 		Text:  "The %s build a mind that is not one of theirs."},
 	{Key: "closed_ecologies", Name: "Closed Ecologies", Domain: Biology, Era: 3, Prereqs: []string{"ecology", "genetics"}, Sur: 0.5, Env: 1, Structure: "arcology"},
 	{Key: "orbital_habitats", Name: "Orbital Habitats", Domain: Industry, Era: 3, Prereqs: []string{"rocketry", "closed_ecologies"}, Sur: 0.5, Structure: "shipyard"},
-	{Key: "interplanetary", Name: "Interplanetary Flight", Domain: Propulsion, Era: 3, Prereqs: []string{"rocketry", "fusion"}, Reach: 1},
+	{Key: "interplanetary", Name: "Interplanetary Flight", Domain: Propulsion, Era: 3, Prereqs: []string{"rocketry", "fusion", "astronomy"}, Reach: 1},
 	{Key: "slow_interstellar", Name: "Slow Interstellar Travel", Domain: Propulsion, Era: 3, Prereqs: []string{"interplanetary", "closed_ecologies"}, Reach: 12, Speed: 100, Milestone: true,
 		Text: "The %s reach the stars. The first slow ships leave home, and will not arrive for centuries."},
 	{Key: "self_replication", Name: "Self-Replicating Industry", Domain: Industry, Era: 3, Prereqs: []string{"machine_minds", "orbital_habitats"}, Mil: 0.5, Sur: 0.3, Filter: "replication", Milestone: true,
@@ -122,9 +143,19 @@ var Nodes = []*Node{
 	{Key: "germline", Name: "Germline Engineering", Domain: Biology, Era: 3, Prereqs: []string{"terraforming", "life_extension"}, Env: 1, Sur: 1},
 	{Key: "quantum_computing", Name: "Quantum Computing", Domain: Computation, Era: 3, Prereqs: []string{"computers", "physics"}, Focus: M{Exotic: 1.3, Computation: 1.2}},
 	{Key: "synthetic_biology", Name: "Synthetic Biology", Domain: Biology, Era: 3, Prereqs: []string{"genetics", "closed_ecologies"}, Sur: 0.5, Focus: M{Biology: 1.3}},
-	{Key: "deep_governance", Name: "Deep Governance", Domain: Society, Era: 3, Prereqs: []string{"memetics", "networks"}, Soc: 1},
+	{Key: "deep_governance", Name: "Deep Governance", Domain: Society, Era: 3, Prereqs: []string{"memetics", "networks", "law"}, Soc: 1},
 	{Key: "beamed_sails", Name: "Beamed Sails", Domain: Propulsion, Era: 3, Prereqs: []string{"slow_interstellar", "orbital_habitats"}, Reach: 18, Speed: 30},
 	{Key: "hibernation", Name: "Hibernation", Domain: Biology, Era: 3, Prereqs: []string{"medicine", "slow_interstellar"}, Sur: 0.5, Reach: 5},
+	// era 3, only for some: other ways to the stars, other ways to last
+	{Key: "seed_clouds", Name: "Seed-clouds", Domain: Propulsion, Era: 3, For: "kind:swarm", Prereqs: []string{"interplanetary", "gathering"}, Reach: 12, Speed: 300, Milestone: true,
+		Text: "The %s reach the stars as spores: clouds of seed cast into the dark, and most of it lost, and enough of it not."},
+	{Key: "living_ships", Name: "Living Ships", Domain: Propulsion, Era: 3, For: "kind:evolver", Prereqs: []string{"interplanetary", "synthetic_biology"}, Reach: 12, Speed: 100, Milestone: true,
+		Text: "The %s breed the vacuum-whale: a body that crosses the dark on its own, with them asleep inside it."},
+	{Key: "grafting", Name: "Grafting", Domain: Biology, Era: 3, For: "kind:planetary mind", Prereqs: []string{"slow_interstellar", "synthetic_biology"}, Sur: 0.5, Milestone: true,
+		Text: "The %s learn to grow a piece of themselves on another world. It is the same mind. It always was."},
+	{Key: "deep_root", Name: "Deep Root", Domain: Biology, Era: 3, For: "kind:planetary mind", Prereqs: []string{"closed_ecologies"}, Sur: 1},
+	{Key: "free_living", Name: "Free-living", Domain: Biology, Era: 3, Cost: 60, For: "kind:parasite", Prereqs: []string{"broodline", "closed_ecologies"}, Sur: 0.5, Milestone: true,
+		Text: "The %s learn to live without a host. It is a poorer life, and it can be lived anywhere."},
 	// era 4: the deep tree. Each domain has a spine that costs a great deal
 	// to climb, and no one climbs all of them.
 	{Key: "stellar_engineering", Name: "Stellar Engineering", Domain: Exotic, Era: 4, Prereqs: []string{"dyson", "physics"}, Sur: 1, Mil: 1, Filter: "stellar", Milestone: true,
@@ -153,17 +184,17 @@ var Nodes = []*Node{
 	// miracles: powers apart from the tree. Reached by a conscious leap
 	// after a deep spine, or found and mastered, or born with. Each carries
 	// its own filter, faced on the leap or the find but never by the born.
-	{Key: "ansible", Name: "the Voice", Domain: Exotic, Era: 4, Miracle: true, Cost: 1500, Prereqs: []string{"causal_physics", "substrate_minds"}, Structure: "ansible", Filter: "openline", Milestone: true,
+	{Key: "ansible", Name: "the Voice", Domain: Exotic, Era: 4, Miracle: true, Cost: 600, Prereqs: []string{"causal_physics", "substrate_minds"}, Structure: "ansible", Filter: "openline", Milestone: true,
 		Text: "The %s make the leap. They can speak across any distance without delay. Their worlds are one world, and every mind among them is in the room."},
-	{Key: "directed_evolution", Name: "the Flesh", Domain: Biology, Era: 4, Miracle: true, Cost: 1500, Prereqs: []string{"panspermia", "life_extension"}, Filter: "brood", Milestone: true,
+	{Key: "directed_evolution", Name: "the Flesh", Domain: Biology, Era: 4, Miracle: true, Cost: 600, Prereqs: []string{"panspermia", "life_extension"}, Filter: "brood", Milestone: true,
 		Text: "The %s make the leap. They can remake themselves in a generation, and they do: for every world, a body."},
-	{Key: "ftl", Name: "the Door", Domain: Propulsion, Era: 4, Miracle: true, Cost: 1500, Prereqs: []string{"exotic_matter", "near_light"}, Reach: 45, Speed: 0.3, Filter: "door", Milestone: true,
+	{Key: "ftl", Name: "the Door", Domain: Propulsion, Era: 4, Miracle: true, Cost: 600, Prereqs: []string{"exotic_matter", "near_light"}, Reach: 45, Speed: 0.3, Filter: "door", Milestone: true,
 		Text: "The %s make the leap. They tear a door in space, and the stars are next door."},
-	{Key: "unmaking", Name: "the Unmaking", Domain: Weapons, Era: 4, Miracle: true, Cost: 1500, Prereqs: []string{"exotic_matter", "stellar_weapons"}, Filter: "unmaking", Milestone: true,
+	{Key: "unmaking", Name: "the Unmaking", Domain: Weapons, Era: 4, Miracle: true, Cost: 600, Prereqs: []string{"exotic_matter", "stellar_weapons"}, Filter: "unmaking", Milestone: true,
 		Text: "The %s make the leap. They can unmake matter at any distance they can see. Nothing can be defended against them."},
-	{Key: "chorus", Name: "the Chorus", Domain: Society, Era: 4, Miracle: true, Cost: 1500, Prereqs: []string{"long_thought", "memetics"}, Filter: "chorus", Milestone: true,
+	{Key: "chorus", Name: "the Chorus", Domain: Society, Era: 4, Miracle: true, Cost: 600, Prereqs: []string{"long_thought", "memetics"}, Filter: "chorus", Milestone: true,
 		Text: "The %s make the leap. Their thought takes root in any mind that hears it. Whoever meets them joins them."},
-	{Key: "foresight", Name: "the Sight", Domain: Exotic, Era: 4, Miracle: true, Cost: 1500, Prereqs: []string{"causal_physics", "long_thought"}, Filter: "sight", Milestone: true,
+	{Key: "foresight", Name: "the Sight", Domain: Exotic, Era: 4, Miracle: true, Cost: 600, Prereqs: []string{"causal_physics", "long_thought"}, Filter: "sight", Milestone: true,
 		Text: "The %s make the leap. They see what is coming, and they are never surprised again."},
 }
 
@@ -176,6 +207,17 @@ func (n *Node) Price() float64 {
 		return n.Cost
 	}
 	return EraCosts[n.Era]
+}
+
+// Subs are the stand-ins: a prerequisite is met by the node itself or by
+// any of these. Cold Chemistry does what Fire does for the fireless; the
+// swarm's Gathering is its state; a spore cloud or a living ship is a ship.
+var Subs = map[string][]string{
+	"fire":              {"cold_chemistry"},
+	"states":            {"gathering"},
+	"slow_interstellar": {"seed_clouds", "living_ships"},
+	"genetics":          {"broodline", "forking"},
+	"neuroscience":      {"forking"},
 }
 
 // Miracles lists the miracle nodes.

@@ -3,6 +3,7 @@ package history
 import (
 	"sort"
 
+	"worldgen/internal/species"
 	"worldgen/internal/tech"
 )
 
@@ -111,6 +112,18 @@ func (w *World) recompute(c *Civ) {
 		}
 	}
 	mil += min(2, 0.5*float64(slaves))
+	switch c.Species.Kind {
+	case species.Parasite:
+		soc += min(2, 0.5*float64(c.Hosts+slaves)) // a parasite is as rich as its hosts
+	case species.PlanetaryMind:
+		if c.Known["grafting"] {
+			reach /= 0.3 // the kind's reach is a third until it learns to graft
+		}
+	case species.MachineBorn:
+		env += 2 // rock and vacuum are enough
+	case species.Evolver:
+		env++ // they change themselves instead of the world
+	}
 	soc += c.Morale
 	c.Mil, c.Sur, c.Soc = clamp(mil, 0, 10), clamp(sur, 0, 10), clamp(soc, 0, 10)
 	reach *= c.Species.ReachMul()
