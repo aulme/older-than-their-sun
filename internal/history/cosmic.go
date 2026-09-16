@@ -1,5 +1,7 @@
 package history
 
+import "sort"
+
 // Cosmic filters: supernovae, gamma-ray bursts, passing dark masses, and the
 // slow death of a home star. Each has a blast radius; every civilisation
 // inside faces the filter at once. Overcoming can mean migration.
@@ -67,7 +69,13 @@ func (w *World) blast(origin int, radius float64, what, text string, adj float64
 			hit[cid] = append(hit[cid], s)
 		}
 	}
-	for cid, worlds := range hit {
+	var cids []int
+	for cid := range hit {
+		cids = append(cids, cid)
+	}
+	sort.Ints(cids)
+	for _, cid := range cids {
+		worlds := hit[cid]
 		c := w.Civs[cid]
 		if !c.Living() {
 			continue

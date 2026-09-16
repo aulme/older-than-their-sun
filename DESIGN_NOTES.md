@@ -454,6 +454,12 @@ Known oddities to look at next, none of them blocking:
 - Mastery of legacies is more common than "very hard" suggests, because of the level saturation above.
 - A run produces 250 to 300 civilisations in 60 Myr and 12 to 18 thousand lines of legends. The middle pass should log less, or the legends should have a "short" mode that prints only rises, falls and filters.
 
+### Reading the tree in use
+
+`go run ./cmd/techstats -seeds 10 -out reports/tech` runs a batch of worlds and writes three files: `report.md` (every node with its one-line meaning from `internal/tech/desc.go`, how often it is reached overall and among those holding its prerequisites, when in a people's life it comes, what its filter did; the common builds by domain pair and by frontier; what the long-lived held), `civs.jsonl` (one record per civilisation for later questions: every node ever held and when, miracles and their route, filters faced, scars, fate) and `stats.txt` (the tuning line per seed). The committed `reports/tech` is the reference batch for seeds 1 to 10 at Sol. Ten worlds is a small sample: the same code with different random paths moved the share of very short lives by six points, so read the percentages as rough.
+
+The first batch found that seeds did not reproduce. Go's map iteration order is random per run, and several loops ranged over a map and drew from the RNG inside (blast victims, wars, forgetting, uplift, remaking). Every such loop now walks a sorted or tree-ordered list (`knownOf`, `sortedInts` in `util.go`), and a seed gives byte-identical legends. Rule: never range over a map in a path that draws from the RNG or picks an element.
+
 ## Decision log
 
 - 2026-09-16: Galaxy idea is primary. Fairy idea is backup.
@@ -477,6 +483,7 @@ Known oddities to look at next, none of them blocking:
 - 2026-09-16: The science-fiction powers are miracles, a class apart: gamechanger effects, a surge on gaining one, their own filters, three ways in (leap, find, born) with the elder find the common one and the born exempt from the filter. "Miracle" is the word in the legends. An end-game empire without one holds its own; a young people with one becomes a regional power. See "Miracles".
 - 2026-09-16: The real Milky Way is the map: a structural model with laws by geography (density, youth, metals, glare, crowd, exotic), a catalogue of named features, real stars and known planets within 150 ly from HYG and the Exoplanet Archive, and every star with a system of worlds the species' home is drawn from. A history runs in one field placed anywhere (`-at`); the whole map is printed by `-map`. See "The galaxy as a map".
 - 2026-09-16: The causality-breaking miracles all reach into one state beneath the universe, never understood, never named in common, never consciously entered; perceiving it as real means a leak. The wall between wears with use for everyone in the field. See "The state beneath". Weird literal consequences of the physics are wanted, not sanitised conventions.
+- 2026-09-16: Every node in the tree has a one-line description (`tech.Node.Desc`) and a batch tool reads the tree in use over many seeds (`cmd/techstats`, reference batch in `reports/tech`). Seeds must reproduce: no map iteration on any path that draws from the RNG. See "Reading the tree in use".
 - 2026-09-16: Ages are attrition-based. Galactic fertility for new species surges at the start of an age and decays every tick; cosmic events only mop up; the cycle repeats with a period of about a billion years; nobody knows why, but a few advanced species learn where in the turn they stand (Deep Time). Replaces the "age-ender" catastrophe. See "The cycle".
 
 ## Next steps (proposed)

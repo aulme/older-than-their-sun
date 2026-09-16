@@ -3,7 +3,33 @@ package history
 import (
 	"fmt"
 	"math"
+	"sort"
+
+	"worldgen/internal/tech"
 )
+
+// knownOf lists what a civilisation knows in tree order. Ranging over the
+// map directly would let Go's map order into the random stream and make a
+// seed irreproducible; every loop that draws from the RNG uses this.
+func knownOf(c *Civ) []string {
+	var out []string
+	for _, n := range tech.Nodes {
+		if c.Known[n.Key] {
+			out = append(out, n.Key)
+		}
+	}
+	return out
+}
+
+// sortedInts lists the keys of an int set in order, for the same reason.
+func sortedInts(m map[int]bool) []int {
+	out := make([]int, 0, len(m))
+	for k := range m {
+		out = append(out, k)
+	}
+	sort.Ints(out)
+	return out
+}
 
 func sprintf(format string, args ...any) string { return fmt.Sprintf(format, args...) }
 

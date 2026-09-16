@@ -198,7 +198,7 @@ func (w *World) vassal(m, s *Civ) {
 // war: each side has a chance per tick to win a battle and take a world.
 // Losing the last colony puts the home at stake and ends the war.
 func (w *World) war(c *Civ) {
-	for eid := range c.Wars {
+	for _, eid := range sortedInts(c.Wars) {
 		e := w.Civs[eid]
 		if !e.Active() {
 			delete(c.Wars, eid)
@@ -302,7 +302,7 @@ func (w *World) uplift(c *Civ) {
 			nc := w.spawnCiv(t, sp, c.ID)
 			nc.Vassal = true
 			nc.Seen = c.Declines
-			for k := range c.Known {
+			for _, k := range knownOf(c) {
 				if w.R.Float64() < 0.5 {
 					nc.Known[k] = true
 				}

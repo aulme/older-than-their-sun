@@ -306,7 +306,11 @@ func Stats(out io.Writer, w *history.World) {
 	var b [5]int
 	standing, remnants, knowers := 0, 0, 0
 	for _, c := range w.Civs {
-		lived := float64(c.Fell-c.Born) / 1e6
+		end := c.Fell
+		if c.Active() {
+			end = w.Present
+		}
+		lived := float64(end-c.Born) / 1e6
 		switch {
 		case lived < 0.5:
 			b[0]++

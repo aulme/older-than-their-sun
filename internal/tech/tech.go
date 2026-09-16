@@ -46,6 +46,7 @@ type Node struct {
 	Structure         string  // structure key unlocked
 	Milestone         bool    // worth a line in the legends
 	Text              string  // legend text; %s is the civilisation name
+	Desc              string  // what it is, in one line; see desc.go
 }
 
 // EraNames label the derived era of a civilisation.

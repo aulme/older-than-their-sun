@@ -58,6 +58,22 @@ type Filter struct {
 
 var filters = map[string]*Filter{}
 
+// FilterName is how the legends say a filter, or the key if unknown.
+func FilterName(key string) string {
+	if f := filters[key]; f != nil {
+		return f.Name
+	}
+	return key
+}
+
+// FilterDiff is the base difficulty of a filter and the levels it tests.
+func FilterDiff(key string) (float64, []string) {
+	if f := filters[key]; f != nil {
+		return f.Diff, f.Levels
+	}
+	return 0, nil
+}
+
 func def(f *Filter) { filters[f.Key] = f }
 
 // traitDiff is the asymmetry: how each trait changes each filter's difficulty.

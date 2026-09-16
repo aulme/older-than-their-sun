@@ -153,7 +153,7 @@ func (w *World) leaveRelic(c *Civ, node string, star int) {
 func (w *World) lateNode(c *Civ) string {
 	var best []string
 	era := -1
-	for k := range c.Known {
+	for _, k := range knownOf(c) {
 		n := tech.Get(k)
 		if n.Era > era {
 			best, era = nil, n.Era

@@ -21,7 +21,7 @@ func (w *World) spawnCiv(home int, sp *species.Species, maker int) *Civ {
 	c := &Civ{
 		ID: len(w.Civs), Name: sp.Name, Species: sp, Home: home, HomeName: names.Star(w.R),
 		Cradle: home, Born: w.Now, Renewed: w.Now, Systems: []int{home}, Peak: 1, Master: maker,
-		Known: map[string]bool{}, Focus: map[string]float64{}, Locked: map[string]bool{},
+		Known: map[string]bool{}, Learned: map[string]Year{}, Focus: map[string]float64{}, Locked: map[string]bool{},
 		Structures: map[string]int{}, Found: map[int]bool{}, Heard: map[int]bool{},
 		Wars: map[int]bool{}, Met: map[int]bool{}, Trade: map[int]bool{},
 		Faced: map[string]bool{}, Scars: map[string]bool{}, Boons: map[string]bool{}, Miracles: map[string]string{},
@@ -232,7 +232,7 @@ func (w *World) build(c *Civ) {
 		return
 	}
 	var can []string
-	for k := range c.Known {
+	for _, k := range knownOf(c) {
 		if s := tech.Get(k).Structure; s != "" && c.Structures[s] < 2 {
 			can = append(can, s)
 		}
@@ -244,7 +244,7 @@ func (w *World) build(c *Civ) {
 	st := tech.Structures[key]
 	s := w.pick(c.Systems)
 	node := ""
-	for k := range c.Known {
+	for _, k := range knownOf(c) {
 		if tech.Get(k).Structure == key {
 			node = k
 		}
@@ -431,7 +431,7 @@ func (w *World) forget(c *Civ, frac float64) []string {
 	n := int(float64(len(c.Known))*frac + 0.5)
 	for i := 0; i < n; i++ {
 		var leaves []string
-		for k := range c.Known {
+		for _, k := range knownOf(c) {
 			if tech.Get(k).Era == 0 {
 				continue
 			}

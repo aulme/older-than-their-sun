@@ -1,6 +1,20 @@
 package history
 
-import "worldgen/internal/tech"
+import (
+	"sort"
+
+	"worldgen/internal/tech"
+)
+
+// structureKeys is a fixed order for summing structures, so float sums do not depend on map order.
+var structureKeys = func() []string {
+	var out []string
+	for k := range tech.Structures {
+		out = append(out, k)
+	}
+	sort.Strings(out)
+	return out
+}()
 
 // recompute derives the three levels, reach, speed, envelope and era from
 // species, known tech, structures, wielded artifacts, scars and morale.
@@ -8,7 +22,7 @@ func (w *World) recompute(c *Civ) {
 	mil, sur, soc := c.Species.Base()
 	reach, speed, env, era := 0.0, 100.0, 0, 0
 	ansible := c.miracle("ansible")
-	for k := range c.Known {
+	for _, k := range knownOf(c) {
 		n := tech.Get(k)
 		mil, sur, soc = mil+n.Mil, sur+n.Sur, soc+n.Soc
 		reach = max(reach, n.Reach)
@@ -18,7 +32,11 @@ func (w *World) recompute(c *Civ) {
 		env += n.Env
 		era = max(era, n.Era)
 	}
-	for key, cnt := range c.Structures {
+	for _, key := range structureKeys {
+		cnt := c.Structures[key]
+		if cnt == 0 {
+			continue
+		}
 		s := tech.Structures[key]
 		m := 1 + 0.25*float64(min(cnt-1, 2))
 		mil, sur, soc = mil+s.Mil*m, sur+s.Sur*m, soc+s.Soc*m

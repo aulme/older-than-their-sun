@@ -157,6 +157,9 @@ func (w *World) choose(c *Civ) string {
 // learn adds a node, applies its side effects and fires its filter.
 func (w *World) learn(c *Civ, n *tech.Node, fire bool) {
 	c.Known[n.Key] = true
+	if _, ok := c.Learned[n.Key]; !ok {
+		c.Learned[n.Key] = w.Now
+	}
 	if c.Pursuit == n.Key {
 		c.Pursuit = ""
 	}

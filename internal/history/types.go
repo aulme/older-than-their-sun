@@ -87,6 +87,7 @@ type Civ struct {
 
 	// research
 	Known    map[string]bool
+	Learned  map[string]Year // when each node was learned by pursuit or find; inherited nodes are absent
 	Era      int
 	Focus    map[string]float64 // temporary research tilt, decays to 1
 	Locked   map[string]bool    // domains closed by world or scar

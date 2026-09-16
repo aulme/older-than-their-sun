@@ -212,10 +212,7 @@ func (w *World) remake(c *Civ, why string) *Civ {
 	}
 	sp.Made = "what the " + c.Name + " made of themselves"
 	worlds := append([]int(nil), c.Systems...)
-	known := map[string]bool{}
-	for k := range c.Known {
-		known[k] = true
-	}
+	known := knownOf(c)
 	home := c.Home
 	w.endCiv(c, Transformed, why)
 	nc := w.spawnCiv(home, sp, -1)
@@ -227,7 +224,7 @@ func (w *World) remake(c *Civ, why string) *Civ {
 		}
 	}
 	nc.Peak = len(nc.Systems)
-	for k := range known {
+	for _, k := range known {
 		if w.R.Float64() < 0.6 || tech.Get(k).Miracle {
 			nc.Known[k] = true
 		}
