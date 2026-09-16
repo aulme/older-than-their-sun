@@ -55,6 +55,9 @@ func (w *World) discover(c *Civ) {
 		if c.Known[n.Key] || (c.Locked[n.Domain] && n.Key != c.Species.World.Unlock) {
 			continue
 		}
+		if n.Patience > 0 && float64(w.Now-c.Born)/1000 < n.Patience {
+			continue
+		}
 		ok := true
 		for _, p := range n.Prereqs {
 			if !c.Known[p] {
@@ -92,6 +95,9 @@ func (w *World) discover(c *Civ) {
 	if n == nil {
 		n = avail[len(avail)-1]
 	}
+	if n.Chance > 0 && w.R.Float64() > n.Chance {
+		return
+	}
 	w.learn(c, n, true)
 }
 
@@ -113,6 +119,11 @@ func (w *World) learn(c *Civ, n *tech.Node, fire bool) {
 	w.recompute(c)
 	if n.Milestone && n.Text != "" {
 		w.log(n.Text, c.Name)
+	}
+	if n.Key == "deep_time" {
+		c.KnowsCycle = true
+		w.log("The %s find their place in the turn: the galaxy woke %.0f million years ago, its fertility is %s of what it was, and it will wake again in %.0f million years. They will not see it.",
+			c.Name, float64(w.Now-w.Cycle.Surges[len(w.Cycle.Surges)-1])/1e6, percent(w.fertility()), float64(w.NextSurge()-w.Now)/1e6)
 	}
 	if was == Emergent && c.Stage == Interstellar && !n.Milestone {
 		w.log("The %s reach the stars.", c.Name)

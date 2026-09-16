@@ -160,7 +160,8 @@ func (w *World) ambientFilters(c *Civ) {
 	}
 	age := float64(w.Now-max(c.Born, c.Renewed)) / 1000
 	lived := float64(w.Now-c.Born) / 1000
-	p := 0.0006 * (age / 2000) * (1 + lived/4000) * (1 + float64(len(c.Systems))/8) * w.Hazard
+	// the fading of the age weighs on everyone still alive in it
+	p := 0.0006 * (age / 2000) * (1 + lived/4000) * (1 + float64(len(c.Systems))/8) * w.Hazard * (1 + 2*(1-w.fertility()))
 	if c.Scars[ScarOssified] {
 		p *= 1.5
 	}

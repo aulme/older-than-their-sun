@@ -33,6 +33,8 @@ type Node struct {
 	Era               int
 	Prereqs           []string
 	Weight            float64 // discovery weight, 0 means 1
+	Patience          float64 // kyr a civilisation must have lived before it can find this
+	Chance            float64 // if set, a chosen discovery only succeeds this often per attempt
 	Mil, Sur, Soc     float64
 	Reach             float64 // reach in light years this node grants; the highest known wins
 	Speed             float64 // colony ship speed in years per light year; the lowest known wins
@@ -128,6 +130,8 @@ var Nodes = []*Node{
 	{Key: "transcendence", Name: "Transcendence", Domain: Exotic, Era: 4, Prereqs: []string{"uploading", "wormhole_physics", "memetics"}, Weight: 0.5, Filter: "transcend"},
 	{Key: "star_lifting", Name: "Star Lifting", Domain: Exotic, Era: 4, Prereqs: []string{"stellar_engineering"}, Weight: 0.5, Sur: 1, Milestone: true,
 		Text: "The %s learn to feed and drain their star. They will never need to fear it again."},
+	{Key: "deep_time", Name: "Deep Time", Domain: Exotic, Era: 4, Prereqs: []string{"star_lifting", "wormhole_physics", "ansible"}, Patience: 3000, Chance: 0.002, Soc: 0.5, Milestone: true,
+		Text: "The %s read the ages in the ash of dead stars and learn that the galaxy has done this before."},
 	{Key: "mind_shaping", Name: "Mind Shaping", Domain: Society, Era: 4, Prereqs: []string{"memetics", "uploading"}, Soc: 1.5},
 }
 

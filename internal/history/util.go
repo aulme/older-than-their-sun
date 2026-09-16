@@ -89,3 +89,10 @@ func LevelName(x float64) string {
 		return "overwhelming"
 	}
 }
+
+func percent(x float64) string {
+	if x < 0.01 {
+		return "less than a hundredth"
+	}
+	return sprintf("%.0f%%", x*100)
+}

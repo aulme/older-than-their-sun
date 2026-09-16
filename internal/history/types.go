@@ -120,6 +120,7 @@ type Civ struct {
 	Boons        map[string]bool
 	Record       []string
 	DarkAges     int
+	KnowsCycle   bool // learned the shape of the cycle
 	Renewed      Year
 	Renaissances int
 	NextDrift    int // size at which the Distance is faced again
@@ -232,9 +233,9 @@ type ElderCiv struct {
 // AgeRecord is one earlier age of the galaxy.
 type AgeRecord struct {
 	Index  int
-	Start  Year
-	End    Year
-	Ender  string
+	Start  Year   // the surge
+	End    Year   // fertility below the floor
+	Ender  string // what swept up the remains
 	Elders []*ElderCiv
 }
 
@@ -283,6 +284,7 @@ type World struct {
 	Civs     []*Civ
 	Horrors  []*Horror
 	Ages     []*AgeRecord
+	Cycle    *Cycle
 	Legacies []*Legacy
 	Traces   []Trace
 	Events   []Event

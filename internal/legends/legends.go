@@ -80,6 +80,9 @@ func Write(out io.Writer, w *history.World, full bool) {
 		}
 	}
 	p("at the present: galactic hazard %.2f, %d stars held by horrors, %d worlds with complex life", w.Hazard, held, complex)
+	cy := w.Cycle
+	p("the cycle: period %.0f Myr, fade %.0f Myr; the current age woke %s, fertility now %.1f%% of the surge, next surge in %.0f Myr",
+		float64(cy.Period)/1e6, float64(cy.Fade)/1e6, year(cy.Surges[len(cy.Surges)-1]), 100*w.FertilityNow(), float64(w.NextSurge())/1e6)
 	p("")
 	p("=== THE AGES OF MYTH (%s to %s) ===", year(w.Cfg.DeepStart), year(w.Cfg.MidStart))
 	events(w.Cfg.DeepStart, w.Cfg.MidStart)
@@ -169,6 +172,9 @@ func Write(out io.Writer, w *history.World, full bool) {
 		into := ""
 		if c.Into != "" {
 			into = " Became " + c.Into + "."
+		}
+		if c.KnowsCycle {
+			into += " They knew the shape of the cycle."
 		}
 		made := ""
 		if c.Species.Made != "" {

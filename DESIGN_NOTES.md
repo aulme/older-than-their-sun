@@ -128,7 +128,7 @@ The game's "now" is defined as the aftermath of galactic history. This is a hard
 
 Discussed 2026-09-16. The galaxy's history is a series of **ages**, each a burst of civilisations rising and falling, separated by **interregna** of hundreds of millions to billions of years in which only natural cosmic events happen. The fine simulation is the current age, and the present is its tail end. Everything before it is myth.
 
-- **Each age ends.** An age has an **age-ender**, a galaxy-wide filter that nothing survives as a civilisation: a great beacon, a replicator wave, an active phase of the galactic core (the real Milky Way's central black hole has had outbursts; the Fermi bubbles are a few million years old), a passage through a dense spiral arm, a change in what physics allows. The horrors accumulating in the current age *are* its age-ender forming. The Long Dusk is literally the age ending. The player arrives knowing, from the legends of prior ages, that ending is the rule.
+- **Each age ends by attrition, not by a blow.** (Revised 2026-09-16, superseding the earlier "age-ender" idea.) See "The cycle" under Simulation v1. The galaxy's fertility for new spacefaring species surges at the start of an age, then declines a little every tick until it is near zero. Cosmic events and horrors only mop up what the fading leaves. The Long Dusk is a fallback that should almost never fire. The player arrives knowing, from the legends of prior ages, that ending is the rule.
 - **Prior ages are played very coarse.** One tick per rise, one per fall. Each age produces a handful of **elder civilisations** with a vague portrait rather than traits: something that thought in the convection cells of a red giant, a mind spread through the magnetic field of a nebula, a species that lived in the dark between stars. They are deliberately weirder than the weirdest current alien, and they left no trace of themselves, only their works. First age no earlier than about 7 billion years ago, when the galaxy had enough heavy elements for worlds.
 - **Names are given by the finders.** Elder civilisations have no surviving name. The current age calls them by what was found: the Ones Who Moved the Star, the Makers of the Hollow Sun. Two current civilisations may name the same legacy differently. Optional but cheap.
 - **Legacies** are what an age leaves, placed on the real substrate. Kinds:
@@ -329,6 +329,19 @@ A node has: domain, prerequisites, effects on the three levels and on reach and 
 
 **Structures** are built within reach, require nodes, and give levels: orbital defences give military, arcologies and closed ecologies give survival, an ansible net gives social across distance, a Dyson swarm multiplies energy and so discovery. Flavour by kind.
 
+### The cycle
+
+Agreed 2026-09-16. The age separator is attrition, not catastrophe.
+
+- At any time there is a chance that a complex biosphere produces a spacefaring species. That chance is scaled by the galaxy's **fertility**.
+- When an age begins there is a sudden, unexplained **surge**: fertility is 1. Many civilisations arise almost at once, many fail, everything happens at once. From the surge on, fertility decays every tick (exponential, e-folding time the **fade**, 16–30 Myr per world) until it is close to zero. Cosmic events, horrors and wars only sweep up the remains. The actual age ender is the galaxy becoming less fertile and the remaining civilisations gradually declining: the fading also weighs on the living, as a multiplier on how often the Weight of Ages is faced (up to ×3 at zero fertility).
+- After a very long time (the **period**, 0.9–1.8 Gyr per world, with ±10% jitter per turn) the surge happens again and history repeats. The current age's surge is at MidStart, 60 Myr ago; the present sits at 3–13% fertility depending on the world's fade, so the aftermath now emerges from the model rather than being forced.
+- Nobody knows why. A few very advanced species learn *that* it happens and where in the turn they stand: the tech node **Deep Time** (prereqs star lifting, wormhole physics, the ansible; needs 3 Myr of existence and lands with 0.2% per attempt, so one to three species per run). Its legend line reports how long ago the galaxy woke, the fertility now, and when the next surge comes, "they will not see it". Elder civilisations in the myth occasionally learn the same thing.
+- Myth ages are the earlier turns of the same cycle: each is a surge whose elders rise early and fade, an "age wanes" line, and a mop-up event. Legacies erode with deep time (survival exp(−age/5 Gyr)), so old ages leave less.
+- The legends header reports the cycle: period, fade, when the age woke, fertility now, time to the next surge.
+
+Observed in the first runs with the cycle: spawn histogram falls from ~100 per 10 Myr at the surge to ~10 in the last 10 Myr; total still ~220–300 per run; the Long Dusk fires 0–1 times per run instead of 2–17. When the fade is short (16 Myr) the late age is very thin (under a hundred events in 5 Myr), which is the intended feel of an aftermath but may want a floor if it reads as empty.
+
 ### The seat and the cradle
 
 A species is fixed at birth. Its traits, body plan and home-world archetype come from the world it arose on (the **cradle**) and never change afterwards. If the cradle is lost (a dying sun, a burning sky, a broken star) and the people survive on their colonies, the civilisation is re-seated on the nearest remaining world, but nothing about the species changes: an aquatic people stays aquatic on a desert world, and the legends say so ("from Kesh, an ocean world, later seated on Vaurr"). What the new world does to them is a matter of levels and morale, not of traits. A new species only appears through the explicit paths: schism branch, uplift, breeding, transformation.
@@ -380,6 +393,7 @@ Known oddities to look at next, none of them blocking:
 - 2026-09-16: Simulation v1 built (species, levels, reach, tech tree, tests, contact, cosmic, ages, the Find). Tuned until lifetimes spread and the late age is populated. See "What the first v1 runs showed".
 - 2026-09-16: A species never changes because its seat moves. Cradle and seat are separate; traits and archetype are fixed at birth. See "The seat and the cradle".
 - 2026-09-16: The present is the aftermath. Every civilisation ends as gone, transformed, or contracted, always with a cause. Sol is protected by fiat.
+- 2026-09-16: Ages are attrition-based. Galactic fertility for new species surges at the start of an age and decays every tick; cosmic events only mop up; the cycle repeats with a period of about a billion years; nobody knows why, but a few advanced species learn where in the turn they stand (Deep Time). Replaces the "age-ender" catastrophe. See "The cycle".
 
 ## Next steps (proposed)
 

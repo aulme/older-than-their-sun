@@ -1,6 +1,8 @@
 package history
 
 import (
+	"math"
+
 	"worldgen/internal/tech"
 )
 
@@ -24,12 +26,18 @@ var elderPortraits = []string{
 }
 
 var ageEnders = []string{
-	"a beacon that spoke to every mind at once, and left none of them",
-	"a wave of self-copying machines that ate every world with metal in it",
-	"the galactic core waking and scouring the disc with light",
-	"a passage through a dense arm, and a rain of supernovae",
-	"a change in what physics allowed, after which nothing that had worked still worked",
-	"a war between two elder powers that used stars as ammunition",
+	"a beacon that spoke to every mind still listening",
+	"a wave of self-copying machines let loose by someone with no successors to stop it",
+	"a passage through a dense arm, and a rain of supernovae on worlds already half empty",
+	"a war between the last two powers, fought over nothing either still needed",
+	"a long silence, in which the remaining few forgot each other",
+	"the slow failure of everything that had been built to outlast its builders",
+}
+
+var ageKnowers = []string{
+	"It learned that the galaxy had done this before, and would again.",
+	"It counted the dead ages and knew its own for what it was.",
+	"It measured the fading and built accordingly, for no one.",
 }
 
 var structureDescs = []string{
@@ -67,38 +75,46 @@ var artifactNodes = []string{
 
 var structureNodes = []string{"stellar_engineering", "dyson", "wormhole_physics", "star_lifting"}
 
-// runAges writes the myth. Each age is a burst of elder civilisations and
-// their works between long interregna; the current age begins at MidStart.
+// runAges writes the myth. Each earlier turn of the cycle is an age: a
+// surge of elder civilisations that fades as the galaxy's fertility fades,
+// with a cosmic event to sweep up what is left. The current age's surge is
+// the last one and belongs to the engine.
 func (w *World) runAges() {
-	y := w.Cfg.DeepStart + Year(3e8+w.R.Float64()*5e8)
-	last := w.Cfg.MidStart - Year(2e8)
-	nAges := 2 + w.R.IntN(3)
-	for i := 0; i < nAges && y < last-Year(3e8); i++ {
-		age := &AgeRecord{Index: i, Start: y}
-		length := Year(1e8 + w.R.Float64()*3e8)
-		age.End = min(age.Start+length, last)
+	surges := w.Cycle.Surges
+	for i, s := range surges[:len(surges)-1] {
+		age := &AgeRecord{Index: i, Start: s, End: w.ageEnd(s)}
 		w.Ages = append(w.Ages, age)
-		w.logAt(age.Start, "An age begins. Something rises somewhere in the disc.")
+		w.logAt(age.Start, "An age begins. Everywhere at once, things start to think.")
 		nElders := 2 + w.R.IntN(4)
 		for j := 0; j < nElders; j++ {
 			e := &ElderCiv{Age: i, Portrait: elderPortraits[w.R.IntN(len(elderPortraits))]}
-			e.Rose = age.Start + Year(w.R.Float64()*float64(age.End-age.Start)*0.7)
-			e.Fell = e.Rose + Year(w.R.Float64()*float64(age.End-e.Rose))
+			// the earlier in the age, the likelier to rise: fertility is falling
+			span := float64(age.End - age.Start)
+			e.Rose = age.Start + Year(span*w.R.Float64()*w.R.Float64()*0.8)
+			e.Fell = e.Rose + Year(w.R.Float64()*float64(age.End-e.Rose)*1.3)
 			age.Elders = append(age.Elders, e)
 			w.logAt(e.Rose, "Somewhere, %s rises.", e.Portrait)
-			nLeg := 1 + w.R.IntN(3)
-			for k := 0; k < nLeg; k++ {
-				w.leaveLegacy(e, e.Rose+Year(w.R.Float64()*float64(e.Fell-e.Rose)))
+			if w.R.Float64() < 0.2 {
+				w.logAt(e.Rose+Year(float64(e.Fell-e.Rose)*0.6), "%s", ageKnowers[w.R.IntN(len(ageKnowers))])
 			}
-			if w.R.Float64() < 0.35 {
+			nLeg := 1 + w.R.IntN(4)
+			for k := 0; k < nLeg; k++ {
+				at := e.Rose + Year(w.R.Float64()*float64(e.Fell-e.Rose))
+				// what is left erodes with deep time
+				if w.R.Float64() < math.Exp(-float64(-at)/5e9) {
+					w.leaveLegacy(e, at)
+				}
+			}
+			if e.Fell > age.End {
+				w.logAt(e.Fell, "It ends, the last of its age, long after the others.")
+			} else if w.R.Float64() < 0.35 {
 				w.logAt(e.Fell, "It is gone. Its works remain.")
 			} else {
 				w.logAt(e.Fell, "It ends.")
 			}
 		}
 		age.Ender = ageEnders[w.R.IntN(len(ageEnders))]
-		w.logAt(age.End, "The age ends: %s. Nothing that thinks survives it.", age.Ender)
-		y = age.End + Year(3e8+w.R.Float64()*1.2e9)
+		w.logAt(age.End, "The age wanes. Nothing new rises, and what remains dwindles. What is left is swept up by %s.", age.Ender)
 	}
 }
 

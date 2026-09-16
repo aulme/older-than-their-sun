@@ -21,6 +21,7 @@ func Generate(seed uint64, cfg Config) *World {
 	}
 	w.Bio[g.Sol] = BioSimple
 
+	w.makeCycle()
 	w.runAges()
 	w.runDeep()
 	w.runEngine(cfg.MidStart, cfg.FineStart, cfg.MidStep)
@@ -57,7 +58,7 @@ func (w *World) life() {
 				w.Bio[i] = BioComplex
 			}
 		case BioComplex:
-			if i != w.G.Sol && w.Owner[i] < 0 && w.Held[i] < 0 && !w.G.Stars[i].Dead() && w.chance(0.00016) {
+			if i != w.G.Sol && w.Owner[i] < 0 && w.Held[i] < 0 && !w.G.Stars[i].Dead() && w.chance(0.0004*w.fertility()) {
 				w.spawnCiv(i, nil, -1)
 			}
 		}
