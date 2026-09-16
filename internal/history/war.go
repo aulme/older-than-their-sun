@@ -423,7 +423,11 @@ func (w *World) homeFalls(wr *War, c, e *Civ) {
 	case c.hates(e):
 		w.Bio[e.Home] = BioNone
 		w.log("The %s scour %s clean of the %s. They were too different to be let live.", c.Name, e.HomeName, e.Name)
-		w.endCiv(e, Extinct, sprintf("were scoured from %s by the %s", e.HomeName, c.Name))
+		if e.Reach >= 1 && len(e.Systems) == 1 && w.R.Float64() < 0.5 {
+			w.loseSystem(e, e.Home, "scoured world", sprintf("were scoured from %s by the %s", e.HomeName, c.Name))
+		} else {
+			w.endCiv(e, Extinct, sprintf("were scoured from %s by the %s", e.HomeName, c.Name))
+		}
 		w.endWar(wr, "extinction")
 	case e.Has("unyielding"):
 		w.Bio[e.Home] = BioNone

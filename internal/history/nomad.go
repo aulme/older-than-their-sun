@@ -99,6 +99,36 @@ func (w *World) takeSky(c *Civ, why string) {
 	w.recompute(c)
 }
 
+// flee is a settled people whose last world is gone taking to the sky with
+// what escaped: refugees under the nomad rules, without the way. Returns
+// false if nothing could get away.
+func (w *World) flee(c *Civ, lost int, cause string) bool {
+	if c.Reach < 1 || c.Species.Kind == species.PlanetaryMind || c.Aloft {
+		return false
+	}
+	strength := max(0.5, 0.3*(c.Mil+c.Away))
+	base := lost
+	for _, t := range w.G.Near(lost, min(max(c.Reach, 3), 20)) {
+		if w.Owner[t] < 0 && w.Held[t] < 0 {
+			base = t
+			break
+		}
+	}
+	c.Aloft = true
+	c.Dying = false
+	c.Voyages = nil
+	c.Away = 0
+	x := &Expedition{ID: len(w.Expeditions), Owner: c.ID, Target: -1, Kind: Roam, Star: base, From: lost, Mil: strength,
+		Launched: w.Now, Arrive: w.Now, Base: base, Fed: w.Now, Seen: map[int]bool{}}
+	w.Expeditions = append(w.Expeditions, x)
+	c.Record = append(c.Record, "took to the sky")
+	c.Morale -= 1
+	w.log("The %s %s. What got away is a fleet at %s, and it is all of them now.", c.Name, cause, w.star(base))
+	w.seat(c)
+	w.recompute(c)
+	return true
+}
+
 // seat keeps a nomad people's seat where its greatest fleet is.
 func (w *World) seat(c *Civ) {
 	var best *Expedition
@@ -176,6 +206,10 @@ func (w *World) roam(c *Civ) {
 	}
 	w.seat(c)
 	w.carry(c, hop)
+	// refugees want a home; the way does not
+	if !c.Has("nomadic") && w.chance(0.02) {
+		w.rest(c, "the road")
+	}
 }
 
 // nextStar is where a fleet goes next: a star within a hop, not the one it
@@ -358,7 +392,11 @@ func (w *World) rest(c *Civ, why string) {
 	c.Record = append(c.Record, "came to rest")
 	w.takeOver(c, t)
 	w.recompute(c)
-	w.log("The %s come to rest at %s, and are nomads no longer. It was %s that did it.", c.Name, c.HomeName, why)
+	if c.Has("nomadic") {
+		w.log("The %s come to rest at %s, and are nomads no longer. It was %s that did it.", c.Name, c.HomeName, why)
+	} else {
+		w.log("The %s, refugees no longer, settle %s. It is home now.", c.Name, c.HomeName)
+	}
 }
 
 // splitFleets is schism among the aloft: half the fleets go their own way.

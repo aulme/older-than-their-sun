@@ -374,6 +374,8 @@ From then on the people is a set of **fleets**, each with a strength and a base,
 
 At war a nomad people's front is the settled worlds within a hop of its bases, and it strikes with the fleet nearest. A won world is **stripped**: its share of the loser's Military becomes a fleet of the horde and the world is left empty, home included, the loser swallowed by the horde if it was the last. Settled peoples strike at the fleets in their reach and break them by a third at a time; a people is extinct when its last fleet is gone, and cannot be enslaved. A horde's will is half anyone's, and its peace is leaving; a settled loser's capitulation to a horde is stripped worlds and the horde moving on. Schism among the aloft splits the fleets into two peoples. A cosmic blast kills every fleet in its radius.
 
+**Refugees** (2026-09-16): a settled people whose last world is lost while it has any reach takes to the sky under the same rules, without the way: a fleet of a third of what it had, at the nearest empty star, and a people no longer of any world. Swallowed by a horde, sterilised by a failed city, half of those scoured by a xenophobe. Unlike the born nomads they want a home: a refugee people settles the first empty world it can live on at two percent a thousand years, and on any scar at half. In ten worlds three peoples got away this way; the rule is rarely reached because most extinctions leave nothing to get away.
+
 **Coming to rest** is uncommon and comes from a scar: one in five scars taken aloft settles the people on an empty world it can live on at or near its greatest fleet, and it is a nomad no longer, for good. A horde that contracts under the Weight rests the same way if it can, else drifts as a remnant with no world of its own.
 
 **What the batch shows** (ten worlds): 161 born with the way, 47 flew (about three in ten, which is the share that reaches the stars), 27 came to rest (mostly the Weight). Those who flew lived 5.9 Myr at the median against 0.7 for nomads who never got off the ground, because the sky has none of the killers a world has. Strips and broken fleets are still rare, as contact is.
@@ -568,7 +570,7 @@ The first batch found that seeds did not reproduce. Go's map iteration order is 
 ## Next steps (proposed)
 
 - Fix the known oddities from the first v1 runs: level saturation, tree cross-prerequisites, remnant fade, a short legends mode.
-- Refugee fleets: a settled people that loses its home with reach to spare could take to the sky under the nomad rules. Proactive scouting by posture. Tuning of pact acceptance and relief, which are rare because contact is rare.
+- Proactive scouting by posture. Tuning of pact acceptance and relief, which are rare because contact is rare.
 - Read many seeds and adjust until histories feel right: how often each filter is the killer, how often the Find goes each way, whether wars and enslavement read well.
 - Real stars are in (HYG, Exoplanet Archive). Next for the map: fit the arms to Reid et al. 2019 rather than the textbook picture; more features (the Gum nebula, the Cepheus bubble, the Vela molecular ridge); let several fields share one history.
 - Later: scale up massively. The real galaxy has hundreds of billions of stars, so civilisation counts should go from dozens to thousands or more. This needs a different simulation structure (regions, statistical treatment of the unremarkable, only instantiating stars where something happens). Design for it, but do not build it yet.

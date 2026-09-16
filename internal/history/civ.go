@@ -310,6 +310,9 @@ func (w *World) loseSystem(c *Civ, s int, kind string, cause string) {
 		if cause == "" {
 			cause = "lost their last world"
 		}
+		if c.Active() && w.flee(c, s, cause) {
+			return
+		}
 		w.endCiv(c, Extinct, cause)
 		return
 	}
