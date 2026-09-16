@@ -277,6 +277,8 @@ A filter now **tests one or two levels against a difficulty** instead of rolling
 
 **Cosmic filters** are the new external category: a supernova, the death of a home star, a passing black hole, a gamma-ray burst. Each has a blast radius and every civilisation inside it faces the filter at once. Overcome can mean **migration**, a new home world and the old one left as a ruin, which is a legend worth having. With a real star catalogue the supernova candidates and the dying stars are known in advance and can be scheduled rather than rolled.
 
+A dying sun is a **slow filter**, not a single roll. Once the star begins to fail, the home world degrades every tick and the species keeps living there as long as its Survival holds out: a high-Survival species endures under a swelling or fading star for a very long time, a low-Survival one has a few ticks. Survival buys time; reach decides whether the time is enough to leave. A species that endures to the end without leaving is extinct with its star, and its world is a distinctive trace: a burned or frozen cradle around a white dwarf or a giant.
+
 ### War, submission, enslavement
 
 Contact happens when reach overlaps. What follows depends on **stance traits and relative military**:
@@ -315,6 +317,7 @@ A node has: domain, prerequisites, effects on the three levels and on reach and 
 - 2026-09-16: Language is Go. Reasons: the history sim is a graph of mutually referencing entities, which a garbage collector handles cleanly; performance needs are modest; fast iteration matters more than raw speed. Rust's sum types would have been nicer for event modelling, accepted as a cost.
 - 2026-09-16: "Filters" is the term for anything that may push a civilisation into decline. Three outcomes: overcome, scarred, declined. Early filters like nuclear weapons included. Scars are lasting traits.
 - 2026-09-16: Filter balance is fine for now. The lethality of early filters is accepted; the fix later is scale, not tuning. With hundreds of billions of stars the sim can afford far more civilisations, so a high failure rate still leaves plenty of history. Not for now.
+- 2026-09-16: Simulation v1 model agreed in full, including refinements (asymmetric traits, few traits per species, dynamic Social, Survival widens the envelope, kinds as flavour, small tree first). Dying sun is a slow filter: Survival sets how long a species endures it, reach decides whether it can leave.
 - 2026-09-16: Simulation v1 model sketched (species from home worlds, three levels plus reach, filters as level tests attached to tech nodes, war with enslavement, high-level tech tree, exotic kinds as flavour). See "Simulation v1". Not built yet.
 - 2026-09-16: The present is the aftermath. Every civilisation ends as gone, transformed, or contracted, always with a cause. Sol is protected by fiat.
 
