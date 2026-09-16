@@ -388,7 +388,7 @@ func init() {
 		Scar: func(w *World, c *Civ) {
 			c.Scars[ScarDoor] = true
 			s := w.pick(c.Systems)
-			h := w.spawnHorror(Elder, s, -1)
+			h := w.spawnHorror(SleeperHorror, s, -1)
 			h.Dormant = true
 			w.log("Something on the other side of the door notices the %s. %s now sleeps near %s. The %s close the door and speak of it seldom.", c.Name, h.Name, w.star(s), c.Name)
 		},

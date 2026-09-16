@@ -122,7 +122,7 @@ func (w *World) learn(c *Civ, n *tech.Node, fire bool) {
 	}
 	if n.Key == "deep_time" {
 		c.KnowsCycle = true
-		w.log("The %s find their place in the turn: the galaxy woke %.0f million years ago, its fertility is %s of what it was, and it will wake again in %.0f million years. They will not see it.",
+		w.log("The %s find their place in the turn: the age dawned %.0f million years ago, the galaxy is %s as fertile as it was then, and the next dawn is %.0f million years away. They will not see it.",
 			c.Name, float64(w.Now-w.Cycle.Surges[len(w.Cycle.Surges)-1])/1e6, percent(w.fertility()), float64(w.NextSurge()-w.Now)/1e6)
 	}
 	if was == Emergent && c.Stage == Interstellar && !n.Milestone {

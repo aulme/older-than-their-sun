@@ -121,14 +121,14 @@ The game's "now" is defined as the aftermath of galactic history. This is a hard
   - **Transformed.** Became something weird. Uploaded into a rogue intelligence, ascended and left machinery behind, devolved into a monstrous race, became a cult of a memetic signal. The transformed thing may still be active in the galaxy, but it is no longer a civilisation in the ordinary sense. Often it becomes one of the alien horror categories.
   - **Contracted.** Still alive but shrunk to one planet or a handful. Signs of old grandeur: an "emperor" ruling a single world that once ruled hundreds, crumbling megastructures, ceremonial titles that no longer mean anything. These remnants are the living civilisations the player can actually meet.
 - **Every end has a cause.** War, an encounter with one of the horror categories, a doomed technology, a cosmic event, internal decay, or a combination. The cause is part of the legend and determines what traces are left.
-- **The simulation guarantees it.** Rising hazard over time (horrors accumulate, they do not go away) should push most civilisations to an end naturally. Any civilisation still active at the present is pushed through a final decline pass, the "Long Dusk", so the rule always holds. Better to tune the sim so this rarely triggers, but the guarantee stays.
+- **The simulation produces it, not a guard.** (Revised 2026-09-16.) The cycle's fading fertility and the weight of the age push nearly every civilisation to an end on their own. The few still standing at the present (one to five per run) are reported as such: the last ones, in the waning of the age. The earlier "Long Dusk" pass that forced them into decline has been removed; if many stand at the present, tune the fading, do not bring the guard back.
 - **Humanity is young and late.** Humans never saw the galaxy alive. Sol is special-cased: the simulation cannot sterilise it or let a horror consume it, because the player must exist. Other civilisations can still have visited Sol and left traces, which is a feature.
 
 ### Ages of the galaxy
 
 Discussed 2026-09-16. The galaxy's history is a series of **ages**, each a burst of civilisations rising and falling, separated by **interregna** of hundreds of millions to billions of years in which only natural cosmic events happen. The fine simulation is the current age, and the present is its tail end. Everything before it is myth.
 
-- **Each age ends by attrition, not by a blow.** (Revised 2026-09-16, superseding the earlier "age-ender" idea.) See "The cycle" under Simulation v1. The galaxy's fertility for new spacefaring species surges at the start of an age, then declines a little every tick until it is near zero. Cosmic events and horrors only mop up what the fading leaves. The Long Dusk is a fallback that should almost never fire. The player arrives knowing, from the legends of prior ages, that ending is the rule.
+- **Each age ends by attrition, not by a blow.** (Revised 2026-09-16, superseding the earlier "age-ender" idea.) See "The cycle" under Simulation v1. The galaxy's fertility for new spacefaring species surges at the start of an age, then declines a little every tick until it is near zero. Cosmic events and horrors only mop up what the fading leaves. The Long Dusk guard is gone. The player arrives knowing, from the legends of prior ages, that ending is the rule.
 - **Prior ages are played very coarse.** One tick per rise, one per fall. Each age produces a handful of **elder civilisations** with a vague portrait rather than traits: something that thought in the convection cells of a red giant, a mind spread through the magnetic field of a nebula, a species that lived in the dark between stars. They are deliberately weirder than the weirdest current alien, and they left no trace of themselves, only their works. First age no earlier than about 7 billion years ago, when the galaxy had enough heavy elements for worlds.
 - **Names are given by the finders.** Elder civilisations have no surviving name. The current age calls them by what was found: the Ones Who Moved the Star, the Makers of the Hollow Sun. Two current civilisations may name the same legacy differently. Optional but cheap.
 - **Legacies** are what an age leaves, placed on the real substrate. Kinds:
@@ -230,7 +230,7 @@ Written 2026-09-16. Go, in `cmd/worldgen` and `internal/`. Run with `go run ./cm
 
 **Horrors as actors.** Replicator swarms spread and eventually fall silent. Rogue minds spread slowly and absorb. Beacons convert or kill listeners within range, and converted civilisations start broadcasting themselves. Elder entities wake when settled too close, unmake everything within 40 light years, and sleep again. Hazard rises with the number of horror-held systems and beacons, which is what drives the aftermath.
 
-**End states.** Extinct, transformed, or contracted (a remnant with a ruler title on one world, tech decaying toward a floor, which can later fade or be destroyed). Whatever is still active at year 0 is pushed through the Long Dusk.
+**End states.** Extinct, transformed, or contracted (a remnant with a ruler title on one world, tech decaying toward a floor, which can later fade or be destroyed). Whatever is still active at year 0 was pushed through the Long Dusk (removed 2026-09-16).
 
 **Output.** A chronological legends log plus a present-day summary: remnants, horrors, trace counts, and a fate line per civilisation.
 
@@ -338,9 +338,10 @@ Agreed 2026-09-16. The age separator is attrition, not catastrophe.
 - After a very long time (the **period**, 0.9–1.8 Gyr per world, with ±10% jitter per turn) the surge happens again and history repeats. The current age's surge is at MidStart, 60 Myr ago; the present sits at 3–13% fertility depending on the world's fade, so the aftermath now emerges from the model rather than being forced.
 - Nobody knows why. A few very advanced species learn *that* it happens and where in the turn they stand: the tech node **Deep Time** (prereqs star lifting, wormhole physics, the ansible; needs 3 Myr of existence and lands with 0.2% per attempt, so one to three species per run). Its legend line reports how long ago the galaxy woke, the fertility now, and when the next surge comes, "they will not see it". Elder civilisations in the myth occasionally learn the same thing.
 - Myth ages are the earlier turns of the same cycle: each is a surge whose elders rise early and fade, an "age wanes" line, and a mop-up event. Legacies erode with deep time (survival exp(−age/5 Gyr)), so old ages leave less.
-- The legends header reports the cycle: period, fade, when the age woke, fertility now, time to the next surge.
+- The legends header reports the cycle: period, fade, when the age dawned, fertility now, time to the next dawn.
+- **Words.** In the code the moment is a *surge* and the decline is the *fade*. In the fiction, the civilisations that discover it call the surge the **dawn of the age** and its early part the **youth of the age**; the present is the **waning**. The legends use the fiction words.
 
-Observed in the first runs with the cycle: spawn histogram falls from ~100 per 10 Myr at the surge to ~10 in the last 10 Myr; total still ~220–300 per run; the Long Dusk fires 0–1 times per run instead of 2–17. When the fade is short (16 Myr) the late age is very thin (under a hundred events in 5 Myr), which is the intended feel of an aftermath but may want a floor if it reads as empty.
+Observed in the first runs with the cycle: spawn histogram falls from ~100 per 10 Myr at the surge to ~10 in the last 10 Myr; total still ~220–300 per run; one to five civilisations still stand at the present instead of 2–17 (the Long Dusk guard was then removed). When the fade is short (16 Myr) the late age is very thin (under a hundred events in 5 Myr), which is the intended feel of an aftermath but may want a floor if it reads as empty.
 
 ### The seat and the cradle
 
@@ -393,6 +394,7 @@ Known oddities to look at next, none of them blocking:
 - 2026-09-16: Simulation v1 built (species, levels, reach, tech tree, tests, contact, cosmic, ages, the Find). Tuned until lifetimes spread and the late age is populated. See "What the first v1 runs showed".
 - 2026-09-16: A species never changes because its seat moves. Cradle and seat are separate; traits and archetype are fixed at birth. See "The seat and the cradle".
 - 2026-09-16: The present is the aftermath. Every civilisation ends as gone, transformed, or contracted, always with a cause. Sol is protected by fiat.
+- 2026-09-16: The Long Dusk is removed. Civilisations still active at the present are reported as still standing. The horror kind formerly called Elder is renamed Sleeper (in code SleeperHorror, as the legacy kind is already Sleeper); "elder" now means only a civilisation of an earlier age.
 - 2026-09-16: Ages are attrition-based. Galactic fertility for new species surges at the start of an age and decays every tick; cosmic events only mop up; the cycle repeats with a period of about a billion years; nobody knows why, but a few advanced species learn where in the turn they stand (Deep Time). Replaces the "age-ender" catastrophe. See "The cycle".
 
 ## Next steps (proposed)

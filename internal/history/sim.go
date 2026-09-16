@@ -27,8 +27,6 @@ func Generate(seed uint64, cfg Config) *World {
 	w.runEngine(cfg.MidStart, cfg.FineStart, cfg.MidStep)
 	w.runEngine(cfg.FineStart, 0, cfg.FineStep)
 	w.Now = 0
-	w.dt = 1
-	w.longDusk()
 	sort.SliceStable(w.Events, func(i, j int) bool { return w.Events[i].Year < w.Events[j].Year })
 	return w
 }
@@ -83,20 +81,4 @@ func (w *World) updateHazard() {
 		}
 	}
 	w.Hazard = min(2.5, 1+0.005*float64(held)+0.08*float64(beacons))
-}
-
-// longDusk enforces the aftermath rule at the present. Anything still active
-// is pushed into decline by the Long Dusk. Ideally this rarely fires.
-func (w *World) longDusk() {
-	for _, c := range w.Civs {
-		if !c.Active() {
-			continue
-		}
-		w.Dusk++
-		if w.R.Float64() < 0.7 {
-			w.contract(c, "dwindled through the Long Dusk")
-		} else {
-			w.endCiv(c, Extinct, "did not survive the Long Dusk")
-		}
-	}
 }

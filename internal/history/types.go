@@ -146,14 +146,14 @@ func (c *Civ) Has(trait string) bool { return c.Species.Has(trait) }
 type HorrorKind uint8
 
 const (
-	Replicators HorrorKind = iota // self-copying machines
-	Beacon                        // memetic hazard broadcast
-	Elder                         // dormant elder entity
-	RogueMind                     // machine intelligence that outgrew its makers
+	Replicators   HorrorKind = iota // self-copying machines
+	Beacon                          // memetic hazard broadcast
+	SleeperHorror                   // an elder that withdrew and went still; the legacy kind is Sleeper
+	RogueMind                       // machine intelligence that outgrew its makers
 )
 
 func (k HorrorKind) String() string {
-	return [...]string{"replicator swarm", "memetic beacon", "elder entity", "rogue intelligence"}[k]
+	return [...]string{"replicator swarm", "memetic beacon", "sleeper", "rogue intelligence"}[k]
 }
 
 // Horror is a non-civilisation actor.
@@ -208,7 +208,7 @@ func (s LegacyState) String() string {
 type Legacy struct {
 	ID     int
 	Age    int // index into World.Ages, or -1 for the current age
-	Elder  *ElderCiv
+	Elder  *Elder
 	Kind   LegacyKind
 	Star   int
 	Node   string // tech node, for artifacts and structures
@@ -221,7 +221,7 @@ type Legacy struct {
 }
 
 // Elder is a civilisation of an earlier age. No traits, only a portrait.
-type ElderCiv struct {
+type Elder struct {
 	Age      int
 	Portrait string
 	Name     string // given by finders, "" until found
@@ -236,7 +236,7 @@ type AgeRecord struct {
 	Start  Year   // the surge
 	End    Year   // fertility below the floor
 	Ender  string // what swept up the remains
-	Elders []*ElderCiv
+	Elders []*Elder
 }
 
 // Trace is something left behind for the player to find.
@@ -288,7 +288,6 @@ type World struct {
 	Legacies []*Legacy
 	Traces   []Trace
 	Events   []Event
-	Dusk     int // civs forced to end by the Long Dusk
 	scratch
 }
 

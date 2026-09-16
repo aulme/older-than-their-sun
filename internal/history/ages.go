@@ -84,10 +84,10 @@ func (w *World) runAges() {
 	for i, s := range surges[:len(surges)-1] {
 		age := &AgeRecord{Index: i, Start: s, End: w.ageEnd(s)}
 		w.Ages = append(w.Ages, age)
-		w.logAt(age.Start, "An age begins. Everywhere at once, things start to think.")
+		w.logAt(age.Start, "The dawn of an age. Everywhere at once, things start to think.")
 		nElders := 2 + w.R.IntN(4)
 		for j := 0; j < nElders; j++ {
-			e := &ElderCiv{Age: i, Portrait: elderPortraits[w.R.IntN(len(elderPortraits))]}
+			e := &Elder{Age: i, Portrait: elderPortraits[w.R.IntN(len(elderPortraits))]}
 			// the earlier in the age, the likelier to rise: fertility is falling
 			span := float64(age.End - age.Start)
 			e.Rose = age.Start + Year(span*w.R.Float64()*w.R.Float64()*0.8)
@@ -118,7 +118,7 @@ func (w *World) runAges() {
 	}
 }
 
-func (w *World) leaveLegacy(e *ElderCiv, at Year) {
+func (w *World) leaveLegacy(e *Elder, at Year) {
 	s := w.R.IntN(len(w.G.Stars))
 	if s == w.G.Sol {
 		return
@@ -169,7 +169,7 @@ func (w *World) leaveLegacy(e *ElderCiv, at Year) {
 	case x < 0.92:
 		l.Kind = Sleeper
 		w.Now = at
-		h := w.spawnHorror(Elder, s, -1)
+		h := w.spawnHorror(SleeperHorror, s, -1)
 		h.Dormant = true
 		h.Legacy = l.ID
 		l.Horror = h.ID

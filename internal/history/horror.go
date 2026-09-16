@@ -48,7 +48,7 @@ func (w *World) tickHorrors() {
 			w.tickRogueMind(h)
 		case Beacon:
 			w.tickBeacon(h)
-		case Elder:
+		case SleeperHorror:
 			w.tickElder(h)
 		}
 	}

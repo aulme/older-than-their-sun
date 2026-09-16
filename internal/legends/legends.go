@@ -81,7 +81,7 @@ func Write(out io.Writer, w *history.World, full bool) {
 	}
 	p("at the present: galactic hazard %.2f, %d stars held by horrors, %d worlds with complex life", w.Hazard, held, complex)
 	cy := w.Cycle
-	p("the cycle: period %.0f Myr, fade %.0f Myr; the current age woke %s, fertility now %.1f%% of the surge, next surge in %.0f Myr",
+	p("the cycle: period %.0f Myr, fade %.0f Myr; the current age dawned %s, fertility now %.1f%% of its dawn, next dawn in %.0f Myr",
 		float64(cy.Period)/1e6, float64(cy.Fade)/1e6, year(cy.Surges[len(cy.Surges)-1]), 100*w.FertilityNow(), float64(w.NextSurge())/1e6)
 	p("")
 	p("=== THE AGES OF MYTH (%s to %s) ===", year(w.Cfg.DeepStart), year(w.Cfg.MidStart))
@@ -99,8 +99,19 @@ func Write(out io.Writer, w *history.World, full bool) {
 		fates[c.Fate]++
 	}
 	p("Civilisations: %d arose. %d extinct, %d transformed, %d contracted.", len(w.Civs), fates[history.Extinct], fates[history.Transformed], fates[history.Contracted])
-	if w.Dusk > 0 {
-		p("  (%d were still active at the present and were pushed into the Long Dusk)", w.Dusk)
+	standing := 0
+	for _, c := range w.Civs {
+		if c.Active() {
+			standing++
+		}
+	}
+	if standing > 0 {
+		p("Still standing in the waning of the age: %d.", standing)
+		for _, c := range w.Civs {
+			if c.Active() {
+				p("  The %s on %s, %s, holding %s. %s. Now: %s.", c.Name, c.HomeName, tech.EraNames[c.Era], systems(len(c.Systems)), c.Species.Describe(), levels(c))
+			}
+		}
 	}
 	p("")
 	p("Remnant civilisations still living:")
@@ -135,7 +146,7 @@ func Write(out io.Writer, w *history.World, full bool) {
 			} else {
 				state = fmt.Sprintf("broadcasting from %s, %d listeners lost", w.G.Stars[h.Origin].Name, h.Victims)
 			}
-		case history.Elder:
+		case history.SleeperHorror:
 			state = fmt.Sprintf("sleeping near %s, woke %d times", w.G.Stars[h.Origin].Name, h.Wakings)
 		}
 		made := ""
