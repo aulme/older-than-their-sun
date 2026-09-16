@@ -37,6 +37,7 @@ const (
 	MsgPact MsgKind = iota
 	MsgCall
 	MsgIntel
+	MsgNews // a fact, with the teller's slant
 )
 
 // Message is one thing said across the dark.
@@ -50,6 +51,8 @@ type Message struct {
 	Target   int      // the enemy, for proposals and calls
 	About    int      // the subject of a report
 	Intel    *Intel
+	Fact     int  // for news
+	Slant    int8 // the teller's regard for the other party in it
 }
 
 // Betrayal is a promise broken, or with negative weight, kept at a cost.
@@ -82,10 +85,12 @@ func (w *World) tickMessages() {
 			continue
 		}
 		from, to := w.Civs[m.From], w.Civs[m.To]
-		if !to.Active() || !from.Living() {
+		if !to.Active() || (!from.Living() && m.Kind != MsgNews) {
 			continue
 		}
 		switch m.Kind {
+		case MsgNews:
+			w.news(to, from, m)
 		case MsgIntel:
 			to.receive(m.About, m.Intel)
 		case MsgPact:
@@ -329,6 +334,7 @@ func (w *World) formPact(c, f *Civ, kind PactKind, target int, pid int) {
 		against = "the " + w.Civs[target].Name
 	}
 	w.log("The %s and the %s swear a pact of %s against %s.", c.Name, f.Name, kind, against)
+	w.factOf(FPact, c, f, -1, kind.String())
 	if target >= 0 && c.Wars[target] {
 		w.answerCall(f, c, w.Civs[target])
 	}
@@ -413,6 +419,7 @@ func (w *World) answerCall(m, v, a *Civ) {
 // betray records a promise broken.
 func (w *World) betray(by, against *Civ, shape string, weight float64) {
 	w.Betrayals = append(w.Betrayals, Betrayal{By: by.ID, Against: against.ID, Year: w.Now, Shape: shape, Weight: weight})
+	w.factOf(FBetrayal, by, against, -1, shape)
 	by.Tally.Betrayals++
 	against.Grudge[by.ID] += 2 * weight
 }

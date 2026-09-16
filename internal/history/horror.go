@@ -5,6 +5,9 @@ import "worldgen/internal/names"
 func (w *World) spawnHorror(kind HorrorKind, origin int, fromCiv int) *Horror {
 	h := &Horror{ID: len(w.Horrors), Kind: kind, Name: names.Horror(w.R), Origin: origin, Born: w.Now, FromCiv: fromCiv, Legacy: -1}
 	w.Horrors = append(w.Horrors, h)
+	if fromCiv >= 0 {
+		w.factH(FHorrorMade, w.Civs[fromCiv], origin, h)
+	}
 	if kind == Replicators || kind == RogueMind {
 		w.horrorTake(h, origin)
 	}
@@ -29,6 +32,7 @@ func (w *World) horrorTake(h *Horror, s int) {
 				return // resolved otherwise
 			}
 		}
+		w.factH(FHorrorStrike, c, s, h)
 		if h.Kind == Replicators {
 			w.loseSystem(c, s, "stripped world", sprintf("were consumed by %s", h.Name))
 		} else {
@@ -171,6 +175,7 @@ func (w *World) wakeElder(h *Horror) {
 		h.Victims++
 		if !c.Active() {
 			for _, s := range worlds {
+				w.factH(FHorrorStrike, c, s, h)
 				w.loseSystem(c, s, "silent world", sprintf("were unmade by %s", h.Name))
 			}
 			continue
@@ -217,6 +222,7 @@ func init() {
 			if w.R.Float64() < 0.3 {
 				w.log("%s reaches %s and is burned off it by the %s.", w.incursionBy.Name, w.star(w.incursionAt), c.Name)
 			}
+			w.factH(FHorrorBeaten, c, w.incursionAt, w.incursionBy)
 		},
 		Scar: func(w *World, c *Civ) {
 			c.Morale -= 0.5

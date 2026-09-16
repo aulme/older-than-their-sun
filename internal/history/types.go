@@ -141,6 +141,10 @@ type Civ struct {
 	Starfaring Year            // when reach first touched another star; 0 if never
 	Pacts      []int
 	Tally      Tally
+	Lore       []*Tale      // what this people knows of what happened; see lore.go
+	LoreDials  Dials        // what the telling does to the temperament
+	lore       map[int]bool // facts held, forgotten or not
+	monsters   map[int]bool // peoples remembered as things that do harm
 	LastDark   Year
 	Summoned   bool    // an event calls the council this tick
 	Aloft      bool    // a nomad people living as fleets, with no worlds
@@ -175,6 +179,9 @@ type Tally struct {
 	FindSurvey, FindSettle, FindChance, FindOwn int
 	MetTouch, MetHeard, MetSurvey, MetShip      int
 	Searched, Sighted                           float64 // kyr with the Sight turned outward; kyr holding it
+	// tellings
+	Tales, Witnessed, Told, Read, Inherited              int
+	Forgot, Myths, Revised, Blamed, Testaments, Restored int
 }
 
 // Living is true for active and remnant civilisations.
@@ -274,21 +281,22 @@ type Wreckage struct {
 // Legacy is something an earlier age left on the substrate. The current age
 // writes the same record type for what it leaves.
 type Legacy struct {
-	ID     int
-	Age    int // index into World.Ages, or -1 for the current age
-	Elder  *Elder
-	Maker  int // civ that made it, -1 for the elder ages
-	Kind   LegacyKind
-	Star   int
-	Node   string // tech node, for artifacts and structures
-	Desc   string // "a ring of black metal around a dead star"
-	Name   string // given by the finder
-	State  LegacyState
-	Horror int    // horror id for threats and sleepers, -1 if none
-	Finder int    // civ that last acted on it, -1 if none
-	Level  string // for wielded artifacts: which level it lifts, or "miracle"
-	Cond   Condition
-	Hardy  float64 // multiplier on the rate of decay; 0 never decays
+	ID        int
+	Age       int // index into World.Ages, or -1 for the current age
+	Elder     *Elder
+	Maker     int // civ that made it, -1 for the elder ages
+	Kind      LegacyKind
+	Star      int
+	Node      string // tech node, for artifacts and structures
+	Desc      string // "a ring of black metal around a dead star"
+	Name      string // given by the finder
+	State     LegacyState
+	Horror    int    // horror id for threats and sleepers, -1 if none
+	Finder    int    // civ that last acted on it, -1 if none
+	Level     string // for wielded artifacts: which level it lifts, or "miracle"
+	Cond      Condition
+	Hardy     float64       // multiplier on the rate of decay; 0 never decays
+	Testament []Inscription // what its makers told of their age, as they left it
 }
 
 // Elder is a civilisation of an earlier age. No traits, only a portrait.
@@ -388,6 +396,8 @@ type World struct {
 	Legacies  []*Legacy
 	Traces    []Trace
 	Events    []Event
+	Facts     []*Fact       // what happened, as it happened; see lore.go
+	factsAt   map[int][]int // facts by star
 	// war and diplomacy
 	Wars        []*War
 	Expeditions []*Expedition

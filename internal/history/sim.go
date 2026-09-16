@@ -15,7 +15,7 @@ func Generate(seed uint64, cfg Config) *World {
 		rg, _ = galaxy.RegionByName("sol")
 	}
 	g := galaxy.GenerateAt(r, rg, cfg.Stars, cfg.Radius, cfg.Thickness)
-	w := &World{Cfg: cfg, Seed: seed, G: g, R: r, Law: g.Law, Hazard: g.Law.Hazard()}
+	w := &World{Cfg: cfg, Seed: seed, G: g, R: r, Law: g.Law, Hazard: g.Law.Hazard(), factsAt: map[int][]int{}}
 	n := len(g.Stars)
 	w.Bio = make([]BioState, n)
 	w.Owner = make([]int, n)

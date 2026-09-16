@@ -203,6 +203,8 @@ func Write(out io.Writer, w *history.World, full bool) {
 	p("")
 	wars(p, w)
 	p("")
+	tellings(p, w, full)
+	p("")
 	gazetteer(p, w)
 	p("")
 	p("Legacies of the elder ages:")
@@ -218,7 +220,16 @@ func Write(out io.Writer, w *history.World, full bool) {
 		if l.Maker >= 0 {
 			ruins[l.State]++
 			if l.State != history.Lost {
-				p("  %-10s %-12s %s, at %s.", l.Kind, l.State, l.Describe(), w.G.Stars[l.Star].Name)
+				carries := ""
+				if n := len(l.Testament); n > 0 {
+					carries = fmt.Sprintf(" It carries a telling of %d things.", n)
+				}
+				p("  %-10s %-12s %s, at %s.%s", l.Kind, l.State, l.Describe(), w.G.Stars[l.Star].Name, carries)
+				if full {
+					for _, in := range l.Testament {
+						p("  %-10s %-12s   \"%s\"", "", "", in.Text)
+					}
+				}
 			}
 		}
 	}

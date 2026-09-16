@@ -1,0 +1,417 @@
+package history
+
+import (
+	"sort"
+	"strings"
+	"unicode"
+)
+
+// Telling a tale: the fact's plain line with the teller's names for the
+// parties, then the slant, then the wear. The same fact told by two
+// peoples is two different stories, and the same people tells it
+// differently as the ages pass.
+
+// templates are the plain lines. S and O are the parties, T the star, H
+// the horror, L the remain, X the word, N the count.
+var templates = [...]string{
+	FArise:        "{S} arose on {T}.",
+	FStars:        "{S} reached the stars.",
+	FSettle:       "{S} settled {T}.",
+	FZenith:       "{S} held {N} and feared no one.",
+	FDarkAge:      "{S} {X}, and a dark age followed.",
+	FSchism:       "{S} split, and {O} went their own way.",
+	FFall:         "{S} {X}, and were a remnant after.",
+	FEnd:          "{S} {X}.",
+	FWar:          "{S} made war on {O}, over {X}.",
+	FTaken:        "{S} took {T} from {O}.",
+	FBurned:       "{S} burned {T}, a world of {O}.",
+	FHomeBroken:   "{S} broke {T}, the home of {O}.",
+	FScoured:      "{S} scoured {O} from {T}, and left none.",
+	FYield:        "{O} yielded to {s}.",
+	FPeace:        "{S} and {O} made peace.",
+	FEnslaved:     "{S} took {O} and kept {o}.",
+	FVassal:       "{O} bent the knee to {s}.",
+	FFreed:        "{S} rose against {O} and were free.",
+	FCrushed:      "{S} put down the rising of {O}.",
+	FMet:          "{S} and {O} found each other.",
+	FTrade:        "{S} and {O} traded across the dark.",
+	FPact:         "{S} and {O} swore a pact of {X}.",
+	FBetrayal:     "{S} {X}, and {O} paid for it.",
+	FRelief:       "{S} stood with {O} at {T}.",
+	FDefeat:       "{P} fleet was broken at {T} by {O}.",
+	FFind:         "{S} found {L} at {T}.",
+	FMastered:     "{S} understood {L}, and how it was made.",
+	FSealed:       "{S} sealed {L} at {T} and set a watch on it.",
+	FUnleashed:    "{S} opened {L} at {T}, and {H} came out.",
+	FHorrorStrike: "{H} fell upon {s} at {T}.",
+	FHorrorBeaten: "{S} burned {H} off {T}.",
+	FHorrorMade:   "{S} made {H}, and it got loose.",
+	FOvercome:     "{S} faced {X} and came through.",
+	FScarred:      "{S} faced {X} and were marked by it.",
+	FDeclined:     "{X} broke {s}.",
+	FMiracle:      "{S} gained {X}.",
+	FUplift:       "{S} raised {O} from the beasts of {T}.",
+	FBred:         "{S} remade {O} into something else.",
+	FCosmic:       "{X}",
+	FDoom:         "{P} sun began to fail.",
+	FExodus:       "{S} left {T} and took to the sky.",
+	FRest:         "{S} came to rest at {T}.",
+	FStripped:     "{S} stripped {T} of its ships and its people, and {O} with it.",
+	FCycle:        "{S} learned that the galaxy had done all this before, and would again.",
+	FSurveyLost:   "{P} surveyors did not come back from {T}. {H} is there.",
+}
+
+// archetypes are what a people calls an enemy whose name it has lost.
+var archetypes = []string{"the ones from the dark", "the eaters of worlds", "the faithless ones", "the old enemy", "the ones who came in ships"}
+
+// Tell renders a tale in its teller's voice.
+func (w *World) Tell(c *Civ, t *Tale) string { return w.tell(c, t) }
+
+func (w *World) tell(c *Civ, t *Tale) string {
+	f := w.Facts[t.Fact]
+	subj, obj := f.Subject, f.Object
+	if t.Blamed >= 0 {
+		subj = t.Blamed
+	}
+	line := templates[f.Kind]
+	if strings.Contains(f.What, "{S}") {
+		line = f.What
+	}
+	sort := f.sort()
+	if sort == Bond && obj == c.ID {
+		subj, obj = obj, subj // we come first in what we did together
+	}
+	we := 0 // 1 subject, 2 object
+	switch c.ID {
+	case subj:
+		we = 1
+	case obj:
+		we = 2
+	}
+	sl := t.Slant
+	if f.Kind == FArise && we == 1 && t.Wear >= 2 {
+		return "In the beginning we were on " + w.star(f.Star) + ", and there was nothing else."
+	}
+	what := f.What
+	if we == 1 {
+		what = ours(what)
+	}
+	// the object of our own crime, at myth, is no longer a people
+	oName := w.partyName(c, t, obj, false)
+	if we == 1 && sort == Crime && t.Wear >= 2 && obj >= 0 {
+		oName = "the ones who deserved it"
+	}
+	n := f.N
+	switch {
+	case we == 1 && sort == Deed, we == 2 && sort == Crime && sl < 0:
+		n *= 1 + int(t.Wear)
+	case we != 1 && sort == Deed && sl < 0:
+		n = max(1, n/2)
+	}
+	sName := w.partyName(c, t, subj, true)
+	poss := sName + "'s"
+	if we == 1 {
+		poss = "our"
+	}
+	r := strings.NewReplacer(
+		"{S}", sName,
+		"{s}", w.partyName(c, t, subj, false),
+		"{P}", poss,
+		"{O}", oName,
+		"{o}", pronoun(we == 2),
+		"{T}", w.starName(c, t, f.Star),
+		"{H}", w.horrorName(f),
+		"{L}", w.remainName(f),
+		"{X}", what,
+		"{N}", systems(n),
+	)
+	s := r.Replace(line)
+	s = w.frame(c, t, f, s, we, sort, sl)
+	return sentences(s)
+}
+
+func pronoun(us bool) string {
+	if us {
+		return "us"
+	}
+	return "them"
+}
+
+// achievement says whether a deed is the kind an enemy would belittle.
+func achievement(k FactKind) bool {
+	switch k {
+	case FArise, FSettle, FRest, FVassal, FRelief:
+		return false
+	}
+	return true
+}
+
+// ours turns a cause written of a people into one told by it.
+func ours(s string) string {
+	r := strings.NewReplacer(" themselves", " ourselves", " their ", " our ", " they ", " we ", " them", " us")
+	return r.Replace(s)
+}
+
+// sentences capitalises the first letter of each sentence.
+func sentences(s string) string {
+	s = capitalise(s)
+	for i := 0; i+2 < len(s); i++ {
+		if s[i] == '.' && s[i+1] == ' ' && s[i+2] >= 'a' && s[i+2] <= 'z' {
+			s = s[:i+2] + strings.ToUpper(s[i+2:i+3]) + s[i+3:]
+		}
+	}
+	return s
+}
+
+// frame adds what the teller thinks of it.
+func (w *World) frame(c *Civ, t *Tale, f *Fact, s string, we int, sort Sort, sl int8) string {
+	wear := t.Wear
+	switch sort {
+	case Deed:
+		switch {
+		case we == 1 && f.Kind == FArise:
+		case we == 1 && wear == 1:
+			s += " It was a great thing."
+		case we == 1 && wear >= 2:
+			s = "in the age of heroes, " + lower(s)
+		case we == 0 && sl > 0 && wear >= 1:
+			s += " They were good friends to us then."
+		case we != 1 && sl < 0 && !achievement(f.Kind):
+		case we != 1 && sl < 0 && wear == 0:
+			s += " They had help."
+		case we != 1 && sl < 0:
+			s = "it is said that " + lower(s) + " Few believe it."
+		}
+	case Crime:
+		switch {
+		case we == 1 && wear == 0:
+			s += " There was no other way."
+		case we == 1 && wear == 1:
+			s += " They had it coming."
+		case we == 1:
+			s += " It was necessary."
+		case we == 2 && sl < 0 && wear == 0:
+			s += " We had done nothing to deserve it."
+		case we == 2 && sl < 0 && wear == 1:
+			s += " It is not forgotten."
+		case we == 2 && sl < 0:
+			s += " Every child knows it."
+		case we == 2 && sl > 0:
+			s += " It was long ago, and they have made it right."
+		case we == 2 && wear >= 1:
+			s += " Nobody now remembers why."
+		case sl < 0 && wear >= 1:
+			s += " That is what they are."
+		case sl > 0 && wear >= 1:
+			s += " It was a hard time, and they had no choice."
+		}
+	case Woe:
+		switch {
+		case we == 1 && f.Object >= 0 && sl < 0 && wear == 0:
+			s += " We had done nothing to deserve it."
+		case we == 1 && f.Object >= 0 && sl < 0:
+			s += " It is not forgotten."
+		case we == 1 && f.Object < 0 && wear == 1:
+			s += " Those were dark years."
+		case we == 1 && f.Object < 0 && wear >= 2:
+			s += " The old songs are about it."
+		case we == 0 && sl < 0 && wear >= 1:
+			s += " It was no more than they deserved."
+		}
+	case Bond:
+		switch {
+		case (we != 0) && sl < 0 && wear >= 1:
+			s += " That was before we knew them."
+		case (we != 0) && sl > 0 && wear >= 1:
+			s += " It has held."
+		}
+	case Folly:
+		switch {
+		case t.Blamed >= 0 && t.Blamed != c.ID:
+			s += " That is what they are."
+		case we == 1 && wear == 0:
+			s += " It was a mistake."
+		case we == 1:
+			s += " Nobody now knows why."
+		case sl < 0:
+			s += " That is what they are."
+		case sl > 0 && wear >= 1:
+			s += " It was a hard time."
+		}
+	}
+	return s
+}
+
+// partyName is what the teller calls a people, by regard and by wear.
+func (w *World) partyName(c *Civ, t *Tale, id int, subject bool) string {
+	if id < 0 {
+		return "someone"
+	}
+	if id == c.ID {
+		if subject {
+			return "we"
+		}
+		return "us"
+	}
+	e := w.Civs[id]
+	name := "the " + e.Name
+	sl := t.Slant
+	if t.Blamed == id {
+		sl = -1
+	}
+	arch := archetypes[(t.Fact+id)%len(archetypes)]
+	switch {
+	case sl >= 1 && t.Wear == 0:
+		return "our friends " + name
+	case sl >= 1 && t.Wear == 1:
+		return "our old friends " + name
+	case sl >= 1:
+		return name // the sentence says what they were to us
+	case sl == -1 && t.Wear == 1:
+		return "the faithless " + e.Name
+	case sl == -1 && t.Wear >= 2:
+		return "the treacherous " + e.Name
+	case sl <= -2 && t.Wear == 0:
+		return "the monstrous " + e.Name
+	case sl <= -2 && t.Wear == 1:
+		return "the monsters of the " + e.Name
+	case sl <= -2:
+		if c.Met[id] && e.Active() {
+			return arch + " who call themselves the " + e.Name
+		}
+		return arch
+	case sl == 0 && t.Wear == 1 && !c.Met[id]:
+		return "a people called the " + e.Name
+	case sl == 0 && t.Wear >= 2 && !(c.Met[id] && e.Living()):
+		return "a people whose name is lost"
+	}
+	return name
+}
+
+// starName is what the teller calls a star: its own it never forgets.
+func (w *World) starName(c *Civ, t *Tale, star int) string {
+	if star < 0 {
+		return "somewhere"
+	}
+	if t.Wear >= 2 && star != c.Home && star != c.Cradle && !contains(c.Systems, star) && w.Owner[star] != c.ID {
+		return "a star whose name is lost"
+	}
+	return w.star(star)
+}
+
+func (w *World) horrorName(f *Fact) string {
+	if f.Horror < 0 {
+		return "something"
+	}
+	return w.Horrors[f.Horror].Name
+}
+
+func (w *World) remainName(f *Fact) string {
+	if f.Legacy < 0 {
+		return "something"
+	}
+	return w.Legacies[f.Legacy].Desc
+}
+
+// mythOf is a short name for a fact, for the chronicle's note that it has
+// become a story.
+func (w *World) mythOf(c *Civ, f *Fact) string {
+	name := func(id int) string {
+		if id < 0 {
+			return "someone"
+		}
+		return "the " + w.Civs[id].Name
+	}
+	switch f.Kind {
+	case FEnd, FFall:
+		return "the fall of " + name(f.Subject)
+	case FHomeBroken, FScoured:
+		return "the breaking of " + w.star(f.Star)
+	case FEnslaved:
+		return "the taking of " + name(f.Object)
+	case FFreed:
+		return "the rising against " + name(f.Object)
+	case FBetrayal:
+		return "the betrayal by " + name(f.Subject)
+	case FUnleashed, FHorrorMade:
+		return "what was let loose at " + w.star(f.Star)
+	case FDarkAge:
+		return "the dark age"
+	case FSchism:
+		return "the schism"
+	case FExodus:
+		return "the leaving of " + w.star(f.Star)
+	case FBred:
+		return "the remaking of " + name(f.Object)
+	}
+	if f.Star >= 0 {
+		return "what happened at " + w.star(f.Star)
+	}
+	return "the matter of " + name(f.Object)
+}
+
+// deedOf is a fact as a verb phrase, for the note that blame has moved.
+func (w *World) deedOf(f *Fact) string {
+	switch f.Kind {
+	case FBurned:
+		return "burned " + w.star(f.Star)
+	case FTaken:
+		return "took " + w.star(f.Star)
+	case FScoured, FHomeBroken:
+		return "broke " + w.star(f.Star)
+	case FEnslaved:
+		return "took the " + w.Civs[f.Object].Name
+	case FBetrayal:
+		return f.What
+	case FStripped:
+		return "stripped " + w.star(f.Star)
+	case FUnleashed, FHorrorMade:
+		return "let it loose"
+	}
+	return "did it"
+}
+
+// Telling is a people's tales as it would tell them: the ones it holds
+// dearest, up to a limit, in the order it believes they happened.
+func (w *World) Telling(c *Civ, limit int) []*Tale {
+	var out []*Tale
+	for _, t := range c.Lore {
+		if !t.Forgot {
+			out = append(out, t)
+		}
+	}
+	sort.SliceStable(out, func(i, j int) bool {
+		fi, fj := w.Facts[out[i].Fact], w.Facts[out[j].Fact]
+		di, dj := w.dearness(c, fi, out[i]), w.dearness(c, fj, out[j])
+		if di != dj {
+			return di > dj
+		}
+		return fi.Year > fj.Year
+	})
+	if len(out) > limit {
+		out = out[:limit]
+	}
+	sort.SliceStable(out, func(i, j int) bool { return w.Facts[out[i].Fact].Year < w.Facts[out[j].Fact].Year })
+	return out
+}
+
+func capitalise(s string) string {
+	if s == "" {
+		return s
+	}
+	r := []rune(s)
+	r[0] = unicode.ToUpper(r[0])
+	return string(r)
+}
+
+func lower(s string) string {
+	if s == "" {
+		return s
+	}
+	r := []rune(s)
+	// keep a name's capital: only "The", "We", "A", "It", "In" go down
+	if strings.HasPrefix(s, "The ") || strings.HasPrefix(s, "We ") || strings.HasPrefix(s, "A ") || strings.HasPrefix(s, "It ") || strings.HasPrefix(s, "In ") || strings.HasPrefix(s, "Our ") {
+		r[0] = unicode.ToLower(r[0])
+	}
+	return string(r)
+}

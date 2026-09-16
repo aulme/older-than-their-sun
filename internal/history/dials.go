@@ -83,6 +83,8 @@ func (w *World) setDials(c *Civ) {
 		}
 	}
 	d.Aggression += 0.1 * clamp(c.Morale, -2, 2)
+	c.LoreDials = w.loreDials(c)
+	d.add(c.LoreDials)
 	d.Aggression = clamp(d.Aggression, 0.05, 0.95)
 	d.Risk = clamp(d.Risk, 0.05, 0.95)
 	d.Greed = clamp(d.Greed, 0.05, 0.95)

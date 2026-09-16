@@ -68,6 +68,7 @@ func (w *World) chart(c *Civ, t int, how string) {
 	visit := how != ""
 	if visit {
 		delete(c.Marked, t)
+		w.readRuins(c, t)
 	}
 	for _, l := range w.Legacies {
 		if l.Star != t || (l.State != Buried && l.State != Sealed) || c.Found[l.ID] {
@@ -154,7 +155,7 @@ func (w *World) sightMode(c *Civ) {
 	if want && c.Dials.Fear > 0.6 {
 		for _, eid := range sortedInts(c.Met) {
 			e := w.Civs[eid]
-			if e.Active() && e.Free() && (e.hostile() || c.Grudge[eid] > 0.5) && w.inReach(e, c.Home) {
+			if e.Active() && e.Free() && (e.hostile() || c.Grudge[eid] > 0.5 || w.monster(c, e)) && w.inReach(e, c.Home) {
 				want = false
 				break
 			}
@@ -262,7 +263,7 @@ func (w *World) surveyTarget(c *Civ, from int) int {
 	}
 	best, stale := -1, -1
 	for _, t := range w.G.Near(origin, within) {
-		if w.G.Dist(c.Home, t) > c.Reach || w.surveyBound(c, t) {
+		if w.G.Dist(c.Home, t) > c.Reach || w.surveyBound(c, t) || w.dread(c, t) {
 			continue
 		}
 		if c.Marked[t] {
@@ -305,6 +306,7 @@ func (w *World) surveyArrive(x *Expedition) {
 	}
 	if h := w.Held[t]; h >= 0 && w.R.Float64() < 0.5 {
 		w.log("The surveyors of the %s do not come back from %s. What they sent before the end says enough: %s is there.", c.Name, w.star(t), w.Horrors[h].Name)
+		w.factH(FSurveyLost, c, t, w.Horrors[h])
 		c.Away = max(0, c.Away-x.Mil)
 		c.Morale -= 0.3
 		x.Over = true

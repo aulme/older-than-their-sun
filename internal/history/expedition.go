@@ -209,6 +209,7 @@ func (w *World) arrive(x *Expedition) {
 		}
 		w.faith(c, h, 0.5)
 		w.log("A fleet of the %s arrives at %s to stand with the %s.", c.Name, w.star(x.Base), h.Name)
+		w.fact(FRelief, c, h, x.Base)
 	}
 }
 
@@ -265,6 +266,7 @@ func (w *World) campaign(x *Expedition) {
 			wr.Will[1-i] += 0.1
 			if x.Mil < 1 {
 				w.log("The fleet of the %s is broken at %s.", c.Name, w.star(t))
+				w.fact(FDefeat, c, e, t)
 				w.resolve(x)
 				return
 			}

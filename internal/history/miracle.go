@@ -33,6 +33,7 @@ var miracleNames = map[string]string{
 func (w *World) gain(c *Civ, key, how string) {
 	if c.Miracles[key] == "" {
 		c.Miracles[key] = how
+		w.factOf(FMiracle, c, nil, -1, miracleNames[key])
 	}
 	if causal[key] {
 		w.name(c, key)

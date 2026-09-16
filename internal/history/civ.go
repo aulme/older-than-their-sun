@@ -48,6 +48,7 @@ func (w *World) spawnCiv(home int, sp *species.Species, maker int) *Civ {
 		}
 	}
 	w.recompute(c)
+	w.fact(FArise, c, nil, home)
 	if maker < 0 {
 		w.log("The %s arise on %s, %s, around %s%s, %.0f ly from %s. They are %s.",
 			c.Name, sys.HomeName(c.HomeName), sp.World.Desc, w.starDetail(home, old), prior, w.G.FromCentre(home), w.G.Anchor(), sp.Describe())
@@ -79,6 +80,7 @@ func (w *World) tickCivs() {
 		}
 		if c.Stage == Remnant {
 			w.tickRemnant(c)
+			w.wear(c) // a remnant's memory goes the same way as everything else of theirs
 			continue
 		}
 		if len(c.Systems) == 0 && !c.Aloft {
@@ -88,7 +90,7 @@ func (w *World) tickCivs() {
 		if c.Ascended == 0 && c.Reach >= 1 && len(c.held()) > 0 {
 			c.Ascended = w.Now // the born reach the stars, and the miracle begins to matter
 		}
-		for _, step := range []func(*Civ){w.arrivals, w.research, w.wander, w.expand, w.build, w.dyingSun, w.find, w.explore, w.intelStep, w.council, w.wartime, w.revolt, w.ambientFilters, w.uplift} {
+		for _, step := range []func(*Civ){w.arrivals, w.research, w.wander, w.expand, w.build, w.dyingSun, w.find, w.explore, w.loreStep, w.intelStep, w.council, w.wartime, w.revolt, w.ambientFilters, w.uplift} {
 			if !c.Active() {
 				break
 			}
@@ -154,12 +156,15 @@ func (w *World) settle(c *Civ, t int) {
 	switch n := len(c.Systems); {
 	case c.colonies == 1:
 		w.log("The %s settle %s, their first %s beyond %s.", c.Name, w.star(t), c.Species.Kind.Flavour().Colony, c.HomeName)
+		w.fact(FSettle, c, nil, t)
 	case n == 5 || n == 10 || n == 20 || n == 40:
 		w.log("The %s now hold %d systems.", c.Name, n)
+		w.fact(FSettle, c, nil, t)
 	}
 	if len(c.Systems) >= 6 && c.Era >= 3 && c.Stage == Interstellar {
 		c.Stage = Zenith
 		w.log("The %s enter their zenith: %d systems, and no rival in sight.", c.Name, len(c.Systems))
+		w.factN(FZenith, c, nil, -1, len(c.Systems))
 	}
 	w.chart(c, t, "settle")
 }
@@ -223,7 +228,7 @@ func (w *World) expand(c *Civ) {
 	from := w.pick(c.Systems)
 	blind := -1
 	for _, t := range w.G.Near(from, hop) {
-		if w.targeted(c, t) || w.G.Dist(c.Home, t) > reach || w.knownTaken(c, t) {
+		if w.targeted(c, t) || w.G.Dist(c.Home, t) > reach || w.knownTaken(c, t) || w.dread(c, t) {
 			continue
 		}
 		if !w.read(c, t) {
@@ -403,6 +408,7 @@ func (w *World) contract(c *Civ, cause string) {
 			w.loseSystem(c, s, "abandoned "+c.Species.Kind.Flavour().Colony, "")
 		}
 	}
+	w.factOf(FFall, c, nil, keep, cause)
 	c.Stage, c.Fate, c.Cause, c.Ended = Remnant, Contracted, cause, w.Now
 	c.Fell = w.Now
 	c.Title = names.Title(w.R)
@@ -441,6 +447,7 @@ func (w *World) endCiv(c *Civ, f Fate, cause string) {
 	w.endWars(c, "the fall of a side")
 	c.Wars = map[int]bool{}
 	w.dropWielded(c, 1)
+	w.factOf(FEnd, c, nil, c.Home, cause)
 	if f == Extinct && wasRemnant {
 		w.log("The last of the %s are gone from %s. They %s.", c.Name, c.HomeName, cause)
 	} else if f == Extinct {
@@ -462,6 +469,8 @@ func (w *World) darkAge(c *Civ, why string) {
 		defer func() { w.wreck = nil }()
 	}
 	forgotten := w.forget(c, 0.3)
+	w.forgetting(c)
+	w.factOf(FDarkAge, c, nil, c.Home, why)
 	// what is forgotten is not always destroyed: a relic of the lost art may wait at home
 	if len(forgotten) > 0 && w.R.Float64() < 0.6 {
 		best := forgotten[0]
@@ -569,9 +578,12 @@ func (w *World) schism(c *Civ) {
 		w.forget(nc, 0.2)
 		w.recompute(nc)
 		w.log("Schism among the %s. Half their worlds go dark, and at %s the %s declare themselves a new people.", c.Name, w.star(gone[0]), nc.Name)
+		w.fact(FSchism, c, nc, gone[0])
+		w.inherit(nc, c, 0)
 		return
 	}
 	w.log("Schism among the %s. Half their worlds go dark or go their own way.", c.Name)
+	w.fact(FSchism, c, nil, c.Home)
 }
 
 func (c *Civ) expandMul(w *World) float64 {
@@ -655,5 +667,6 @@ func (w *World) machinePeople(c *Civ) *Civ {
 	w.recompute(nc)
 	c.Into = "the " + nc.Name
 	w.log("The %s are gone. What they built at %s thinks on without them, and calls itself the %s: %s.", c.Name, c.HomeName, nc.Name, sp.Describe())
+	w.inherit(nc, c, 0)
 	return nc
 }

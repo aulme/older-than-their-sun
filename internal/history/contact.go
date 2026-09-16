@@ -143,6 +143,8 @@ func (w *World) hearing(a, b *Civ) {
 	if len(a.Met) == 1 || len(b.Met) == 1 || w.R.Float64() < 0.15 {
 		w.log("The %s hear the %s across %.0f light years: a signal, then a conversation %.0f years to the answer. Neither can reach the other yet.", a.Name, b.Name, d, 2*d)
 	}
+	w.fact(FMet, a, b, -1)
+	w.exchange(a, b)
 	if a.Has("mindrider") || b.Has("mindrider") {
 		w.infection(a, b) // an idea needs no ship
 		return
@@ -153,7 +155,11 @@ func (w *World) hearing(a, b *Civ) {
 	if w.consider(a, b) || w.consider(b, a) {
 		return
 	}
+	if w.monster(a, b) || w.monster(b, a) {
+		return
+	}
 	a.Trade[b.ID], b.Trade[a.ID] = true, true
+	w.fact(FTrade, a, b, -1)
 }
 
 // primitives: an old civilisation finds a pre-atomic one. Returns true if
@@ -163,6 +169,7 @@ func (w *World) primitives(old, young *Civ) bool {
 	case old.hates(young) && w.R.Float64() < 0.3:
 		old.Met[young.ID], young.Met[old.ID] = true, true
 		w.log("The %s find the %s on %s before they have looked up, and scour the world clean. They are thorough.", old.Name, young.Name, young.HomeName)
+		w.fact(FScoured, old, young, young.Home)
 		w.Bio[young.Home] = BioSimple
 		w.endCiv(young, Extinct, sprintf("were scoured from %s by the %s before they had looked up", young.HomeName, old.Name))
 		return true
@@ -234,13 +241,19 @@ func (w *World) encounter(a, b *Civ, watched, heard bool, at int) {
 	default:
 		w.log("The %s and the %s find each other.", a.Name, b.Name)
 	}
+	w.fact(FMet, finder, found, at)
+	w.exchange(a, b)
 	if a.Wars[b.ID] {
 		return // already at war by fleet; now there is a front
 	}
 	if w.consider(a, b) || w.consider(b, a) {
 		return
 	}
+	if w.monster(a, b) || w.monster(b, a) {
+		return // what is remembered of them is not traded with
+	}
 	a.Trade[b.ID], b.Trade[a.ID] = true, true
+	w.fact(FTrade, a, b, -1)
 	w.log("Slow messages cross the dark between the %s and the %s for generations, and then trade.", a.Name, b.Name)
 	if (a.Faced["plague"] || b.Faced["plague"]) && w.R.Float64() < 0.3 {
 		a.Plagued, b.Plagued = true, true
@@ -301,6 +314,7 @@ func (w *World) enslave(m, s *Civ) {
 	m.Peak = max(m.Peak, len(m.Systems))
 	s.Morale -= 1
 	w.log("The %s are enslaved by the %s. They keep %s and little else.", s.Name, m.Name, s.HomeName)
+	w.fact(FEnslaved, m, s, s.Home)
 }
 
 func (w *World) vassal(m, s *Civ) {
@@ -309,6 +323,7 @@ func (w *World) vassal(m, s *Civ) {
 	s.Seen = m.Declines
 	delete(m.Wars, s.ID)
 	delete(s.Wars, m.ID)
+	w.fact(FVassal, m, s, s.Home)
 }
 
 // revolt: slaves and vassals watch their master. A master's decline is the
@@ -364,6 +379,8 @@ func (w *World) uplift(c *Civ) {
 			w.forget(nc, 0.3)
 			w.recompute(nc)
 			w.log("The %s raise the %s from the beasts of %s. They are %s, and grateful, for now.", c.Name, nc.Name, w.star(t), sp.Describe())
+			w.fact(FUplift, c, nc, t)
+			w.inherit(nc, c, 1)
 			return
 		}
 	}
@@ -382,6 +399,8 @@ func (w *World) breed(m, s *Civ) {
 	nc := w.spawnCiv(home, &sp, m.ID)
 	nc.Seen = m.Declines
 	w.log("The %s remake the %s into the %s: %s.", m.Name, s.Name, nc.Name, sp.Describe())
+	w.fact(FBred, m, s, home)
+	w.inherit(nc, s, 1)
 }
 
 func init() {

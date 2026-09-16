@@ -126,6 +126,7 @@ func (w *World) leaveRuin(c *Civ, wk Work, kind string) {
 	l := &Legacy{ID: len(w.Legacies), Age: -1, Maker: c.ID, Kind: Structure, Star: wk.Star, Node: wk.Node, Horror: -1, Finder: -1, Cond: wr.Leave, Hardy: st.Hardy}
 	l.Desc = sprintf(remainDescs[wk.Key], c.Name)
 	w.Legacies = append(w.Legacies, l)
+	w.testament(c, l)
 }
 
 // leaveRelic leaves an artifact of one late thing a civilisation knew, at a
@@ -147,6 +148,7 @@ func (w *World) leaveRelic(c *Civ, node string, star int) {
 		l.Hardy = 0.5
 	}
 	w.Legacies = append(w.Legacies, l)
+	w.testament(c, l)
 }
 
 // lateNode picks something a civilisation knows from its highest era.

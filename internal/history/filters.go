@@ -133,7 +133,9 @@ func (w *World) face(c *Civ, key string, diffAdj float64) Outcome {
 	if c.Faced[key] && !f.Repeat {
 		return Overcome
 	}
+	again := c.Faced[key]
 	c.Faced[key] = true
+	master := c.Master
 	w.recompute(c)
 	if c.miracle("foresight") && key != "sight" && w.R.Float64() < 0.5 {
 		w.log("The %s see %s coming and step around it.", c.Name, f.Name)
@@ -173,7 +175,40 @@ func (w *World) face(c *Civ, key string, diffAdj float64) Outcome {
 		how = " (narrowly)"
 	}
 	c.Record = append(c.Record, sprintf("%s %s%s", out, f.Name, how))
+	if !again || out == Declined || key == "revolt" {
+		w.recordFilter(c, key, f, out, master) // a filter faced again is not a new story unless it wins
+	}
 	return out
+}
+
+// recordFilter is the tale of a filter faced: the outcome, and for a
+// revolt who rose against whom, and for the horrors' filters what came.
+func (w *World) recordFilter(c *Civ, key string, f *Filter, out Outcome, master int) {
+	if key == "revolt" && master >= 0 {
+		m := w.Civs[master]
+		if out == Overcome {
+			w.fact(FFreed, c, m, c.Home)
+		} else {
+			w.fact(FCrushed, m, c, c.Home)
+		}
+		return
+	}
+	kind := FOvercome
+	switch out {
+	case Scarred:
+		kind = FScarred
+	case Declined:
+		kind = FDeclined
+	}
+	var h *Horror
+	switch key {
+	case "beacon":
+		h = w.beacon
+	case "incursion":
+		h = w.incursionBy
+	}
+	ff := w.factH(kind, c, c.Home, h)
+	ff.What = f.Name
 }
 
 // ambientFilters are the ones with their own triggers rather than a tech node.

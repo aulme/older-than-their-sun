@@ -108,6 +108,13 @@ func (w *World) discover(c *Civ, l *Legacy, how string) {
 			w.log("%s find %s %s. They do not know who the %s were. They call them %s.", who, l.Describe(), where, m.Name, l.Name)
 		}
 	}
+	if ff := w.factL(FFind, c, l); l.Elder != nil {
+		ff.What = l.Elder.Name
+	}
+	w.readTestament(c, l)
+	if !c.Active() {
+		return
+	}
 
 	// what to attempt
 	master, wield, seal := 1.0, 1.5, 1.0
@@ -171,6 +178,7 @@ func (w *World) attemptMaster(c *Civ, l *Legacy) {
 	if c.level("mil", "sur", "soc")+w.R.NormFloat64()*1.5 >= diff {
 		l.State = Mastered
 		c.Record = append(c.Record, "mastered a legacy of "+w.makerName(l))
+		w.factL(FMastered, c, l)
 		if l.Kind == Sleeper {
 			c.Boons[BoonCommunion] = true
 			w.log("The %s speak with what sleeps at %s, and it answers, and they are changed but not ended. They are more than they were.", c.Name, w.star(l.Star))
@@ -287,6 +295,7 @@ func (w *World) attemptSeal(c *Civ, l *Legacy) {
 	if c.Soc+w.R.NormFloat64()*1.5 >= 3+c.traitDiff("find")+min(l.condAdj(), 0) {
 		l.State = Sealed
 		c.Record = append(c.Record, "sealed a legacy of "+w.makerName(l))
+		w.factL(FSealed, c, l)
 		w.log("The %s seal it, and post a watch, and the watch holds.", c.Name)
 		return
 	}
@@ -298,6 +307,7 @@ func (w *World) attemptSeal(c *Civ, l *Legacy) {
 func (w *World) unleash(c *Civ, l *Legacy) {
 	l.State = Unleashed
 	c.Record = append(c.Record, "unleashed a legacy of "+w.makerName(l))
+	w.factL(FUnleashed, c, l)
 	switch l.Kind {
 	case Sleeper:
 		h := w.Horrors[l.Horror]

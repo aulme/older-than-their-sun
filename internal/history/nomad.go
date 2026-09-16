@@ -90,6 +90,7 @@ func (w *World) takeSky(c *Civ, why string) {
 		w.loseSystem(c, s, "empty cradle of the "+c.Name, "")
 	}
 	c.Record = append(c.Record, "took to the sky")
+	w.fact(FExodus, c, nil, c.Home)
 	if why == "" {
 		w.log("The %s take to the sky. %s is left empty behind them, and everything they are is in the fleets now.", c.Name, c.HomeName)
 	} else {
@@ -124,6 +125,7 @@ func (w *World) flee(c *Civ, lost int, cause string) bool {
 	c.Record = append(c.Record, "took to the sky")
 	c.Morale -= 1
 	w.log("The %s %s. What got away is a fleet at %s, and it is all of them now.", c.Name, cause, w.star(base))
+	w.fact(FExodus, c, nil, lost)
 	w.seat(c)
 	w.recompute(c)
 	return true
@@ -306,6 +308,7 @@ func (w *World) strip(wr *War, c, e *Civ, t int) {
 	e.Morale -= 0.5
 	wr.Will[i] += 0.3
 	wr.Will[1-i] -= 0.3
+	w.fact(FStripped, c, e, t)
 	if home {
 		w.log("The horde of the %s strips %s, the home of the %s, of its ships and its people.", c.Name, w.star(t), e.Name)
 	} else {
@@ -392,6 +395,7 @@ func (w *World) rest(c *Civ, why string) {
 	c.Record = append(c.Record, "came to rest")
 	w.takeOver(c, t)
 	w.recompute(c)
+	w.fact(FRest, c, nil, t)
 	if c.Has("nomadic") {
 		w.log("The %s come to rest at %s, and are nomads no longer. It was %s that did it.", c.Name, c.HomeName, why)
 	} else {

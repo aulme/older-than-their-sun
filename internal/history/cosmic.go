@@ -44,6 +44,7 @@ func (w *World) starDeaths() {
 				if i == c.Home && c.Active() {
 					w.leaveHome(c, sprintf("the death of %s", c.HomeName))
 				} else {
+					w.factOf(FCosmic, c, nil, i, "{T} died, and the worlds of {S} with it.")
 					w.loseSystem(c, i, "frozen world", sprintf("lost their last world to the death of %s", w.star(i)))
 				}
 			} else if w.Bio[i] != BioNone {
@@ -128,6 +129,7 @@ func (w *World) leaveHome(c *Civ, why string) {
 	c.Dying = false
 	c.Morale -= 1
 	w.log("The %s leave %s to %s. %s is home now, and always a little less than the one before.", c.Name, oldName, why, c.HomeName)
+	w.factOf(FCosmic, c, nil, old, "{S} left {T} to "+why+".")
 }
 
 // dyingSun is the slow filter: a failing home star degrades the world every
@@ -155,6 +157,7 @@ func (w *World) dyingSun(c *Civ) {
 		c.focus("propulsion", 2)
 		c.focus("biology", 1.5)
 		w.log("The sun of the %s is failing. %s grows harsher with every century. They have, perhaps, %d thousand years.", c.Name, c.HomeName, int(c.Endure))
+		w.fact(FDoom, c, nil, c.Home)
 	}
 	if c.Known["star_lifting"] && !c.Boons["star kept"] {
 		c.Boons["star kept"] = true

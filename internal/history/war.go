@@ -123,6 +123,9 @@ func (w *World) initialWill(c, e *Civ, attacker bool) float64 {
 	if c.hates(e) {
 		will += 1.5
 	}
+	if w.monster(c, e) {
+		will += 1 // what is remembered of them
+	}
 	if !attacker && w.inReach(e, c.Home) {
 		will += 0.7 // the home is at stake
 	}
@@ -158,6 +161,7 @@ func (w *World) declare(c, e *Civ, cause string) *War {
 	e.Focus[tech.Weapons] = max(e.Focus[tech.Weapons], 2)
 	w.observe(c, e, e.Home, 0.5)
 	w.observe(e, c, c.Home, 0.5)
+	w.factOf(FWar, c, e, -1, cause)
 	switch {
 	case cause == "infection":
 		// the infection line is already written
@@ -325,18 +329,21 @@ func (w *World) takeWorld(wr *War, c, e *Civ, t int) {
 		w.loseSystem(e, t, "unmade world", "")
 		wr.Glassed[i]++
 		w.log("The %s unmake %s, a %s of the %s. There is nothing left to glass.", c.Name, w.star(t), colony, e.Name)
+		w.fact(FBurned, c, e, t)
 	case wr.Burn && e.Species.Kind == species.Parasite:
 		w.Bio[t] = BioSimple
 		w.loseSystem(e, t, "burned host-world", "")
 		wr.Glassed[i]++
 		wr.Will[1-i] -= 0.4
 		w.log("The %s burn %s to be rid of what the %s put there.", c.Name, w.star(t), e.Name)
+		w.fact(FBurned, c, e, t)
 	case c.Species.Kind == species.Parasite:
 		w.loseSystem(e, t, "host-world", "")
 		w.Owner[t] = c.ID
 		c.Systems = append(c.Systems, t)
 		wr.Taken[i]++
 		converted = true
+		w.fact(FTaken, c, e, t)
 		if !c.Ridden[e.ID] {
 			c.Ridden[e.ID] = true
 			c.Hosts = 1 + len(c.Ridden)
@@ -348,6 +355,7 @@ func (w *World) takeWorld(wr *War, c, e *Civ, t int) {
 		c.Systems = append(c.Systems, t)
 		wr.Taken[i]++
 		converted = true
+		w.fact(FTaken, c, e, t)
 		if first {
 			w.log("The %s overrun %s. Where the %s were there is a nest.", c.Name, w.star(t), e.Name)
 		}
@@ -355,6 +363,7 @@ func (w *World) takeWorld(wr *War, c, e *Civ, t int) {
 		w.Bio[t] = BioSimple
 		w.loseSystem(e, t, "glassed world", "")
 		wr.Glassed[i]++
+		w.fact(FBurned, c, e, t)
 		if first || w.R.Float64() < 0.3 {
 			w.log("The %s glass %s, a %s of the %s.", c.Name, w.star(t), colony, e.Name)
 		}
@@ -363,6 +372,7 @@ func (w *World) takeWorld(wr *War, c, e *Civ, t int) {
 		w.Owner[t] = c.ID
 		c.Systems = append(c.Systems, t)
 		wr.Taken[i]++
+		w.fact(FTaken, c, e, t)
 		if first || w.R.Float64() < 0.3 {
 			w.log("The %s take %s from the %s.", c.Name, w.star(t), e.Name)
 		}
@@ -420,11 +430,13 @@ func (w *World) homeFalls(wr *War, c, e *Civ) {
 	case c.miracle("unmaking") && !c.Has("pacifist") && (e.Has("unyielding") || w.R.Float64() < 0.5):
 		w.Bio[e.Home] = BioNone
 		w.log("The %s unmake %s, homeworld of the %s. It is not there any more.", c.Name, e.HomeName, e.Name)
+		w.fact(FHomeBroken, c, e, e.Home)
 		w.endCiv(e, Extinct, sprintf("were unmade by the %s", c.Name))
 		w.endWar(wr, "extinction")
 	case c.hates(e):
 		w.Bio[e.Home] = BioNone
 		w.log("The %s scour %s clean of the %s. They were too different to be let live.", c.Name, e.HomeName, e.Name)
+		w.fact(FScoured, c, e, e.Home)
 		if e.Reach >= 1 && len(e.Systems) == 1 && w.R.Float64() < 0.5 {
 			w.loseSystem(e, e.Home, "scoured world", sprintf("were scoured from %s by the %s", e.HomeName, c.Name))
 		} else {
@@ -434,20 +446,24 @@ func (w *World) homeFalls(wr *War, c, e *Civ) {
 	case e.Has("unyielding"):
 		w.Bio[e.Home] = BioNone
 		w.log("A relativistic strike from the %s shatters %s, homeworld of the %s. They never surrendered.", c.Name, e.HomeName, e.Name)
+		w.fact(FHomeBroken, c, e, e.Home)
 		w.endCiv(e, Extinct, sprintf("were annihilated in war with the %s", c.Name))
 		w.endWar(wr, "extinction")
 	case e.Species.Kind == species.Swarm:
 		w.Bio[e.Home] = BioSimple
 		w.log("The %s burn out the last nest of the %s. A swarm cannot be held; it can only be ended.", c.Name, e.Name)
+		w.fact(FScoured, c, e, e.Home)
 		w.endCiv(e, Extinct, sprintf("were burned out nest by nest by the %s", c.Name))
 		w.endWar(wr, "extinction")
 	case e.Species.Kind == species.PlanetaryMind:
 		w.Bio[e.Home] = BioSimple
 		w.log("The %s take %s, and there is nothing to rule. The %s were the world, and the world is dead.", c.Name, e.HomeName, e.Name)
+		w.fact(FHomeBroken, c, e, e.Home)
 		w.endCiv(e, Extinct, sprintf("died when %s was taken by the %s", e.HomeName, c.Name))
 		w.endWar(wr, "extinction")
 	case c.Has("pacifist"):
 		w.log("The %s defeat the %s and, having no use for a conquest, leave them be.", c.Name, e.Name)
+		w.fact(FYield, c, e, e.Home)
 		w.endWar(wr, "peace")
 	case c.Species.Kind == species.Parasite:
 		w.log("The %s break the last defences of %s.", c.Name, e.HomeName)
@@ -559,17 +575,20 @@ func (w *World) capitulate(wr *War, l, v *Civ) {
 	}
 	if !w.canStrikeHome(v, l) {
 		w.log("The %s yield to the %s and cede %s, after %s.", l.Name, v.Name, worlds(ceded), w.warSpan(wr))
+		w.factN(FYield, v, l, -1, ceded)
 		w.endWar(wr, "capitulation")
 		return
 	}
 	switch {
 	case v.hates(l):
 		w.log("The %s yield to the %s, who want no terms. %s is scoured clean of them; they were too different to be let live.", l.Name, v.Name, l.HomeName)
+		w.fact(FScoured, v, l, l.Home)
 		w.Bio[l.Home] = BioNone
 		w.endCiv(l, Extinct, sprintf("were scoured from %s by the %s", l.HomeName, v.Name))
 		w.endWar(wr, "extinction")
 	case v.Has("pacifist"):
 		w.log("The %s yield to the %s, who take %s and want nothing more, after %s.", l.Name, v.Name, worlds(ceded), w.warSpan(wr))
+		w.factN(FYield, v, l, -1, ceded)
 		w.endWar(wr, "capitulation")
 	case v.Species.Kind == species.Parasite:
 		w.log("The %s yield to the %s, after %s.", l.Name, v.Name, w.warSpan(wr))
@@ -597,6 +616,7 @@ func (w *World) peace(wr *War, why string) {
 		terms = sprintf("The %s keep what they took.", b.Name)
 	}
 	w.log("The %s and the %s make peace, %s, after %s. %s", a.Name, b.Name, why, w.warSpan(wr), terms)
+	w.fact(FPeace, a, b, -1)
 	w.endWar(wr, "peace")
 }
 

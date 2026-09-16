@@ -67,6 +67,10 @@ type Rec struct {
 	Cycle     bool               `json:"knows_cycle"`
 	DarkAges  int                `json:"dark_ages"`
 	Renaiss   int                `json:"renaissances"`
+	Held      int                `json:"held"`     // tales held at the end
+	Myth      int                `json:"myth"`     // of them myth
+	Monsters  int                `json:"monsters"` // peoples remembered as monsters at the end
+	LoreDials history.Dials      `json:"lore_dials"`
 	ever      map[string]bool
 	frontier  string
 	signature string
@@ -131,6 +135,7 @@ func main() {
 	report(f, recs, *seeds, *from, *at, ageSum/float64(*seeds))
 	warReport(f, recs, wars, *seeds)
 	exploreReport(f, recs)
+	loreReport(f, recs)
 	fmt.Printf("%d civilisations over %d worlds; wrote %s\n", len(recs), *seeds, *out)
 }
 
@@ -169,6 +174,8 @@ func flatten(w *history.World) []Rec {
 		}
 		r.Tally = c.Tally
 		r.Met = len(c.Met)
+		r.LoreDials = c.LoreDials
+		r.Held, r.Myth, r.Monsters = history.LoreCounts(w, c)
 		r.Nomad = c.Has("nomadic")
 		r.Stars = c.Starfaring > 0
 		r.Rested = c.Rested
