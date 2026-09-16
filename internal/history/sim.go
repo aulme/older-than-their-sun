@@ -24,26 +24,79 @@ func Generate(seed uint64, cfg Config) *World {
 	w.makeCycle()
 	w.runAges()
 	w.runDeep()
-	w.runEngine(cfg.MidStart, cfg.FineStart, cfg.MidStep)
-	w.runEngine(cfg.FineStart, 0, cfg.FineStep)
-	w.Now = 0
+	w.runAge()
 	sort.SliceStable(w.Events, func(i, j int) bool { return w.Events[i].Year < w.Events[j].Year })
 	return w
 }
 
-// runEngine is the civilisation engine, run at whatever grain is asked for.
-func (w *World) runEngine(from, to, step Year) {
+// runAge is the civilisation engine. It runs from the dawn at the coarse
+// tick, switches to the fine tick when the waning sets in, and stops when
+// decline has truly set in: few enough still active, fertility low enough,
+// and then a little longer so the present lands somewhere in the waning.
+func (w *World) runAge() {
+	cfg := w.Cfg
+	step := cfg.MidStep
 	w.dt = float64(step) / 1000
-	for y := from; y < to; y += step {
+	y := cfg.Dawn
+	var stopAt Year
+	ended := false
+	for {
 		w.Now = y
 		w.life()
 		w.cosmic()
 		w.tickHorrors()
 		w.tickCivs()
 		w.updateHazard()
+		active := w.activeCount()
+		f := w.fertility()
+		if w.Cfg.Debug && (y-cfg.Dawn)%1_000_000 == 0 {
+			w.log("[debug: %d active, %d remnants, fertility %.2f, hazard %.2f]", active, len(w.Civs)-active-w.deadCount(), f, w.Hazard)
+		}
+		if step != cfg.FineStep && active <= cfg.FineActive && f < cfg.FineFertility {
+			step = cfg.FineStep
+			w.dt = float64(step) / 1000
+			w.Waning = y
+			w.log("The age is waning. Few still rise, and those that stand are old.")
+		}
+		if !ended && active <= cfg.EndActive && f < w.Cycle.Ends {
+			ended = true
+			stopAt = y + Year(w.R.Float64()*float64(cfg.Linger))
+		}
+		if ended && y >= stopAt && active <= cfg.EndActive {
+			break
+		}
+		if float64(y-cfg.Dawn) > cfg.MaxFades*float64(w.Cycle.Fade) {
+			w.Capped = true
+			break
+		}
+		y += step
+	}
+	w.Present = y
+	w.Now = y
+	if w.Waning == 0 {
+		w.Waning = y
 	}
 }
 
+func (w *World) deadCount() int {
+	n := 0
+	for _, c := range w.Civs {
+		if c.Stage == Dead {
+			n++
+		}
+	}
+	return n
+}
+
+func (w *World) activeCount() int {
+	n := 0
+	for _, c := range w.Civs {
+		if c.Active() {
+			n++
+		}
+	}
+	return n
+}
 func (w *World) life() {
 	for i, b := range w.Bio {
 		switch b {

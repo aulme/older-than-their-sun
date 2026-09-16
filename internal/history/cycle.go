@@ -17,6 +17,7 @@ type Cycle struct {
 	Fade   Year    // e-folding time of the decay after a surge
 	Surges []Year  // every surge in the history, oldest first; the last is the current age's
 	Floor  float64 // fertility below which an age is said to have ended
+	Ends   float64 // fertility below which the present may fall, drawn per world
 }
 
 // fertility is the current multiplier on the chance of a new spacefaring
@@ -51,16 +52,17 @@ func (w *World) ageEnd(s Year) Year {
 }
 
 // makeCycle chooses the period and the fade, and places the surges so that
-// the current age's surge falls at MidStart.
+// the current age's surge falls at the dawn.
 func (w *World) makeCycle() {
 	c := &Cycle{
 		Period: Year(9e8 + w.R.Float64()*9e8),
 		Fade:   Year(1.6e7 + w.R.Float64()*1.4e7),
 		Floor:  0.02,
+		Ends:   w.Cfg.EndFertilityLow + w.R.Float64()*(w.Cfg.EndFertility-w.Cfg.EndFertilityLow),
 	}
 	// walk back from the current surge, with a little jitter each turn
 	var surges []Year
-	y := w.Cfg.MidStart
+	y := w.Cfg.Dawn
 	for y > w.Cfg.DeepStart+Year(2e8) {
 		surges = append([]Year{y}, surges...)
 		y -= Year(float64(c.Period) * (0.9 + w.R.Float64()*0.2))
@@ -70,4 +72,4 @@ func (w *World) makeCycle() {
 }
 
 // FertilityNow is the fertility at the present, for the legends.
-func (w *World) FertilityNow() float64 { return w.fertilityAt(0) }
+func (w *World) FertilityNow() float64 { return w.fertilityAt(w.Present) }

@@ -253,19 +253,32 @@ type Config struct {
 	Radius    float64
 	Thickness float64
 	DeepStart Year // substrate begins
-	MidStart  Year // current age begins, medium grain
-	FineStart Year // late current age, fine grain
+	Dawn      Year // the current age dawns; the engine runs from here
 	DeepStep  Year
-	MidStep   Year
-	FineStep  Year
+	MidStep   Year // tick in the youth of the age
+	FineStep  Year // tick in the waning
+	// the waning: switch to the fine tick when this few are active and fertility is this low
+	FineActive    int
+	FineFertility float64
+	// the present: stop when this few are active and fertility is below a threshold drawn
+	// per world between EndFertilityLow and EndFertility, then linger a while
+	EndActive       int
+	EndFertility    float64
+	EndFertilityLow float64
+	Linger          Year
+	MaxFades        float64 // give up after this many fades and flag it
+	Debug           bool    // log the state of the galaxy every million years
 }
 
 // DefaultConfig is a small, fast world.
 func DefaultConfig() Config {
 	return Config{
 		Stars: 400, Radius: 150, Thickness: 40,
-		DeepStart: -galaxy.Age, MidStart: -60_000_000, FineStart: -5_000_000,
+		DeepStart: -galaxy.Age, Dawn: 0,
 		DeepStep: 10_000_000, MidStep: 20_000, FineStep: 1_000,
+		FineActive: 12, FineFertility: 0.5,
+		EndActive: 5, EndFertility: 0.2, EndFertilityLow: 0.05, Linger: 2_000_000,
+		MaxFades: 8,
 	}
 }
 
@@ -276,6 +289,9 @@ type World struct {
 	G        *galaxy.Galaxy
 	R        *rand.Rand
 	Now      Year
+	Present  Year    // when the simulation stopped; years are printed relative to this
+	Waning   Year    // when the fine tick began
+	Capped   bool    // the age never ended on its own; stopped at MaxFades
 	dt       float64 // current tick in kyr
 	Bio      []BioState
 	Owner    []int // civ id owning each star, -1 if none

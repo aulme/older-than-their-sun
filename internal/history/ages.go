@@ -191,7 +191,7 @@ func (l *Legacy) node() *tech.Node { return tech.Get(l.Node) }
 // life arising, gamma-ray bursts, scheduled star deaths.
 func (w *World) runDeep() {
 	w.dt = float64(w.Cfg.DeepStep) / 1000
-	for y := w.Cfg.DeepStart; y < w.Cfg.MidStart; y += w.Cfg.DeepStep {
+	for y := w.Cfg.DeepStart; y < w.Cfg.Dawn; y += w.Cfg.DeepStep {
 		w.Now = y
 		w.deepLife()
 		w.deepBurst()

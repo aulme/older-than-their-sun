@@ -14,7 +14,7 @@ import (
 	"sort"
 )
 
-// Age is how far back the substrate is simulated, in years before present.
+// Age is how far back the substrate is simulated, in years before the dawn of the current age.
 // Stars that died before this are remnants from the start.
 const Age = 7_000_000_000
 
@@ -27,7 +27,7 @@ type Star struct {
 	Hab      float64 // crude habitability weight in [0,1], used to decide where life arises
 	Mult     int     // 1 single, 2 binary, 3 trinary
 	Lifetime float64 // main-sequence lifetime in years
-	DiesAt   int64   // year relative to the present when the star leaves the main sequence
+	DiesAt   int64   // year relative to the dawn of the current age when the star leaves the main sequence
 	Failing  bool    // the star has begun to die; its worlds are degrading
 }
 
@@ -117,8 +117,8 @@ func diesAt(r *rand.Rand, class byte, life float64) int64 {
 		switch {
 		case x < 0.10: // an old star, dead or dying
 			return int64(-3e9 + r.Float64()*3.3e9)
-		case x < 0.14: // dying right about now
-			return int64(-1e8 + r.Float64()*2e8)
+		case x < 0.14: // dying during the current age
+			return int64(-2e7 + r.Float64()*1.2e8)
 		}
 		return int64(life * (0.2 + 0.8*r.Float64()))
 	}

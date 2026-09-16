@@ -11,7 +11,11 @@ import (
 	"worldgen/internal/tech"
 )
 
+// present is set by Write; years are printed relative to it.
+var present history.Year
+
 func year(y history.Year) string {
+	y -= present
 	switch {
 	case y == 0:
 		return "present"
@@ -68,6 +72,7 @@ func Write(out io.Writer, w *history.World, full bool) {
 		}
 	}
 
+	present = w.Present
 	p("=== THE GALAXY ===")
 	p("seed %d, %d stars within %.0f ly of Sol", w.Seed, len(w.G.Stars), w.Cfg.Radius)
 	held, complex := 0, 0
@@ -81,17 +86,20 @@ func Write(out io.Writer, w *history.World, full bool) {
 	}
 	p("at the present: galactic hazard %.2f, %d stars held by horrors, %d worlds with complex life", w.Hazard, held, complex)
 	cy := w.Cycle
+	if w.Capped {
+		p("WARNING: the age never wound down on its own; stopped after %.0f fades", w.Cfg.MaxFades)
+	}
 	p("the cycle: period %.0f Myr, fade %.0f Myr; the current age dawned %s, fertility now %.1f%% of its dawn, next dawn in %.0f Myr",
-		float64(cy.Period)/1e6, float64(cy.Fade)/1e6, year(cy.Surges[len(cy.Surges)-1]), 100*w.FertilityNow(), float64(w.NextSurge())/1e6)
+		float64(cy.Period)/1e6, float64(cy.Fade)/1e6, year(cy.Surges[len(cy.Surges)-1]), 100*w.FertilityNow(), float64(w.NextSurge()-w.Present)/1e6)
 	p("")
-	p("=== THE AGES OF MYTH (%s to %s) ===", year(w.Cfg.DeepStart), year(w.Cfg.MidStart))
-	events(w.Cfg.DeepStart, w.Cfg.MidStart)
+	p("=== THE AGES OF MYTH (%s to %s) ===", year(w.Cfg.DeepStart), year(w.Cfg.Dawn))
+	events(w.Cfg.DeepStart, w.Cfg.Dawn)
 	p("")
-	p("=== THE CURRENT AGE, EARLY (%s to %s) ===", year(w.Cfg.MidStart), year(w.Cfg.FineStart))
-	events(w.Cfg.MidStart, w.Cfg.FineStart)
+	p("=== THE YOUTH OF THE AGE (%s to %s) ===", year(w.Cfg.Dawn), year(w.Waning))
+	events(w.Cfg.Dawn, w.Waning)
 	p("")
-	p("=== THE CURRENT AGE, LATE (%s to present) ===", year(w.Cfg.FineStart))
-	events(w.Cfg.FineStart, 1)
+	p("=== THE WANING (%s to present) ===", year(w.Waning))
+	events(w.Waning, w.Present+1)
 	p("")
 	p("=== THE PRESENT: AFTERMATH ===")
 	fates := map[history.Fate]int{}
@@ -226,4 +234,36 @@ func elderName(l *history.Legacy) string {
 		return "makers unnamed, " + l.Elder.Portrait
 	}
 	return l.Elder.Name + ", " + l.Elder.Portrait
+}
+
+// Stats prints one line of numbers about a world, for tuning across seeds.
+func Stats(out io.Writer, w *history.World) {
+	var b [5]int
+	standing, remnants, knowers := 0, 0, 0
+	for _, c := range w.Civs {
+		lived := float64(c.Fell-c.Born) / 1e6
+		switch {
+		case lived < 0.5:
+			b[0]++
+		case lived < 1:
+			b[1]++
+		case lived < 3:
+			b[2]++
+		case lived < 10:
+			b[3]++
+		default:
+			b[4]++
+		}
+		if c.Active() {
+			standing++
+		}
+		if c.Stage == history.Remnant {
+			remnants++
+		}
+		if c.KnowsCycle {
+			knowers++
+		}
+	}
+	fmt.Fprintf(out, "seed %d: age %.1f Myr, fade %.0f Myr, fertility %.1f%%, %d civs (lived <0.5/<1/<3/<10/10+ Myr: %d/%d/%d/%d/%d), standing %d, remnants %d, knowers %d, horrors %d, capped %v\n",
+		w.Seed, float64(w.Present-w.Cfg.Dawn)/1e6, float64(w.Cycle.Fade)/1e6, 100*w.FertilityNow(), len(w.Civs), b[0], b[1], b[2], b[3], b[4], standing, remnants, knowers, len(w.Horrors), w.Capped)
 }
