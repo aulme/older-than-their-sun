@@ -137,11 +137,22 @@ Discussed 2026-09-16. The galaxy's history is a series of **ages**, each a burst
   - *Threats.* What ended an age, or the weapons of its wars, still around. Some of the current horrors originate here.
   - *Sleepers.* Elder civilisations that did not die but withdrew into slumber. More or less lovecraftian gods. This is now the backstory of the dormant elder entities the sim already has, and some wake in the current age.
   - *Laws.* Things an age left in the universe itself: a jump network, a standing signal, a region where minds do not work. Rare.
-- **Legacies act on the current age through the Find**, a filter that fires when a civilisation's reach touches a legacy. Overcome is a boon (the node, the structure put to use). Scarred is a cult or a taboo around the thing. Declined wakes what was sleeping or unleashes the threat.
+- **Legacies act on the current age through the Find**, a filter that fires when a civilisation's reach touches a legacy. Unlike other filters it has four outcomes, and the species chooses which one to attempt:
+  - *Mastered.* Very hard. The finder understands the thing and gains the entire tech tree up to that node. Every tech filter attached to the nodes gained fires, so mastering a late artifact cashes in several filters in quick succession. A shortcut with the bill attached.
+  - *Wielded.* Moderate. Only this artifact is usable, as a level bonus (an artifact weapon adds military, an artifact engine adds reach) with no node gained. They do not know how it works: if it is lost or broken it stays broken. The node's own filter still fires, because the thing is in use.
+  - *Sealed.* Easier. The artifact is left dormant, and it stays on the substrate to be found again by a successor, by the same species after a dark age, or by the player. The only outcome that triggers nothing. Requires social cohesion to hold: someone always wants to poke it.
+  - *Unleashed.* The failure. The artifact acts uncontrolled and forces a worse filter: the legacy's own threat, at raised difficulty. A sleeper wakes, a replicator wave starts, a law is broken locally.
+  - Which outcome a species attempts depends on traits (curious and expansionist species reach for mastery, cautious and xenophobic ones seal, pragmatic ones wield). Whether it succeeds depends on levels, and failure slides down the list: a failed mastery becomes a wielding or an unleashing, a failed sealing is an unleashing.
 - **The current age becomes the next myth.** The legacies of current civilisations (Dyson remnants, beacons, rogue minds, made species) are exactly what an elder age leaves, at finer grain. One legacy model at two granularities: the coarse age generator and the fine sim should write the same record type, so a later age generator could run on this age's output.
 - **Interregna** are pure substrate time: star deaths, supernovae, a gamma-ray burst, a nebula born from an elder war, drift. The current deep pass (life arising, gamma-ray bursts, precursors, elders) folds into this: precursors become the last elder civilisations of the previous age, elders become sleepers.
 
-**Open question.** The fine pass is five million years, which is short for a whole age. The current age may want to be longer with only its tail simulated finely, or the age simply is short and intense. Decide when the v1 sim is in.
+**Three passes.**
+
+1. *Ages.* Previous ages, extremely coarse: the age generator, one tick per rise and fall, output is legacies on the substrate and the myth log.
+2. *Early to mid current age.* Medium grain. The v1 civilisation engine with large ticks (tens of thousands of years) and rates scaled to match, so civilisations rise, face filters, and end, but ships and wars are not followed in detail. Sets up the world the fine pass inherits: remnants, horrors, legacies of this age.
+3. *Late current age.* Fine grain, thousand-year ticks, the same engine. Everything the legends follow closely happens here, and the aftermath is its end.
+
+The middle and fine passes should be one engine with a tick size, not two engines, so that a civilisation that spans the boundary carries over without translation. How long the current age is, and where the medium/fine boundary sits, is tuning.
 
 ### The player-facing layer
 
@@ -339,6 +350,7 @@ A node has: domain, prerequisites, effects on the three levels and on reach and 
 - 2026-09-16: Simulation v1 model agreed in full, including refinements (asymmetric traits, few traits per species, dynamic Social, Survival widens the envelope, kinds as flavour, small tree first). Dying sun is a slow filter: Survival sets how long a species endures it, reach decides whether it can leave.
 - 2026-09-16: Simulation v1 model sketched (species from home worlds, three levels plus reach, filters as level tests attached to tech nodes, war with enslavement, high-level tech tree, exotic kinds as flavour). See "Simulation v1". Not built yet.
 - 2026-09-16: Galactic history is a series of ages with interregna. Prior ages are coarse myth that leaves legacies (artifacts, structures, threats, sleepers, laws) on the substrate; the fine sim is the current age and its aftermath is the age ending. See "Ages of the galaxy".
+- 2026-09-16: Three passes: previous ages extremely coarse, early to mid current age medium, late current age fine. The Find has four outcomes chosen by traits and tested by levels: mastered, wielded, sealed, unleashed.
 - 2026-09-16: The present is the aftermath. Every civilisation ends as gone, transformed, or contracted, always with a cause. Sol is protected by fiat.
 
 ## Next steps (proposed)
