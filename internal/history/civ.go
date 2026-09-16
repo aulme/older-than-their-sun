@@ -19,7 +19,7 @@ func (w *World) spawnCiv(home int, sp *species.Species, maker int) *Civ {
 		Known: map[string]bool{}, Focus: map[string]float64{}, Locked: map[string]bool{},
 		Structures: map[string]int{}, Found: map[int]bool{}, Heard: map[int]bool{},
 		Wars: map[int]bool{}, Met: map[int]bool{}, Trade: map[int]bool{},
-		Faced: map[string]bool{}, Scars: map[string]bool{}, Boons: map[string]bool{},
+		Faced: map[string]bool{}, Scars: map[string]bool{}, Boons: map[string]bool{}, Miracles: map[string]string{},
 	}
 	for _, d := range sp.World.Locked {
 		c.Locked[d] = true
@@ -43,6 +43,11 @@ func (w *World) spawnCiv(home int, sp *species.Species, maker int) *Civ {
 	if f := sp.Kind.Flavour(); f.Portrait != "" {
 		w.log("%s", f.Portrait)
 	}
+	if m := sp.Miracle(); m != "" {
+		c.Miracles[m] = "born"             // the surge begins when they can first use it: see tickCivs
+		c.Faced[tech.Get(m).Filter] = true // what is evolved is not a leap; nothing to fall from
+		w.log("They are born to a miracle: %s. What others will spend ages reaching for, they have from the first.", miracleNames[m])
+	}
 	if st.Failing {
 		w.log("Their sun is already failing. They were born under a dying star.")
 	}
@@ -62,6 +67,9 @@ func (w *World) tickCivs() {
 			panic(sprintf("active civ %s with no worlds: record %v, cause %q, last events: %v", c.Name, c.Record, c.Cause, w.Events[len(w.Events)-4:]))
 		}
 		w.recompute(c)
+		if c.Ascended == 0 && c.Reach >= 1 && len(c.held()) > 0 {
+			c.Ascended = w.Now // the born reach the stars, and the miracle begins to matter
+		}
 		for _, step := range []func(*Civ){w.arrivals, w.research, w.expand, w.build, w.dyingSun, w.find, w.war, w.revolt, w.ambientFilters, w.uplift} {
 			if !c.Active() {
 				break
@@ -142,14 +150,29 @@ func (w *World) mindDead(t int) bool {
 // expand launches colony ships within reach. A target must be within reach
 // of home and within a ship's hop of a held system.
 func (w *World) expand(c *Civ) {
-	if c.Reach < 1 || !c.Free() && !c.Vassal {
+	if !c.Free() && !c.Vassal {
 		return
 	}
-	p := min(0.3, 0.04*float64(len(c.Systems))) * c.expandMul()
+	// necessity: a people with nowhere to go works on ships, whatever else it was doing
+	if c.Era >= 2 && c.Reach < 40 && w.nothingNear(c) {
+		c.Focus[tech.Propulsion] = max(c.Focus[tech.Propulsion], 4)
+		if p := tech.Get(c.Pursuit); p == nil || (p.Domain != tech.Propulsion && !p.Miracle) {
+			if k := w.cheapest(c, tech.Propulsion); k != "" {
+				c.Pursuit = k
+			}
+		}
+	}
+	if c.Reach < 1 {
+		return
+	}
+	p := min(0.3, 0.04*float64(len(c.Systems))) * c.expandMul(w)
 	if !w.chance(p) {
 		return
 	}
 	hop := min(c.Reach, 20)
+	if c.miracle("ftl") {
+		hop = c.Reach // a door does not care how far
+	}
 	from := w.pick(c.Systems)
 	for _, t := range w.G.Near(from, hop) {
 		if w.Owner[t] >= 0 || w.Held[t] >= 0 || w.targeted(c, t) || w.G.Dist(c.Home, t) > c.Reach || !w.canLive(c, t) {
@@ -159,6 +182,27 @@ func (w *World) expand(c *Civ) {
 		c.Voyages = append(c.Voyages, Voyage{Target: t, Arrive: w.Now + Year(d*c.Speed)})
 		return
 	}
+}
+
+// cheapest returns the cheapest node of a domain open to a people, or "".
+func (w *World) cheapest(c *Civ, domain string) string {
+	best := ""
+	for _, n := range tech.Nodes {
+		if n.Domain == domain && !n.Miracle && w.canPursue(c, n) && (best == "" || n.Price() < tech.Get(best).Price()) {
+			best = n.Key
+		}
+	}
+	return best
+}
+
+// nothingNear is true when no star a people could live on lies within reach.
+func (w *World) nothingNear(c *Civ) bool {
+	for _, t := range w.G.Near(c.Home, max(c.Reach, 1)) {
+		if w.Owner[t] < 0 && w.Held[t] < 0 && w.canLive(c, t) {
+			return false
+		}
+	}
+	return true
 }
 
 func (w *World) targeted(c *Civ, t int) bool {
@@ -442,7 +486,7 @@ func (w *World) schism(c *Civ) {
 	w.log("Schism among the %s. Half their worlds go dark or go their own way.", c.Name)
 }
 
-func (c *Civ) expandMul() float64 {
+func (c *Civ) expandMul(w *World) float64 {
 	m := 1.0
 	if c.Has("expansionist") {
 		m *= 1.3
@@ -461,6 +505,18 @@ func (c *Civ) expandMul() float64 {
 	}
 	if c.Boons[BoonSwarm] {
 		m *= 1.4
+	}
+	if c.Scars[ScarFatalism] {
+		m *= 0.6
+	}
+	if c.miracle("directed_evolution") {
+		m *= 2
+	}
+	if c.miracle("ftl") {
+		m *= 1.5
+	}
+	if c.surging(w.Now) {
+		m *= 2.5
 	}
 	if c.Dying {
 		m *= 3

@@ -69,9 +69,14 @@ var lawDescs = []string{
 // artifact nodes: which discoveries an elder artifact can stand for
 var artifactNodes = []string{
 	"fusion", "machine_minds", "self_replication", "antimatter", "relativistic", "relativistic_weapons",
-	"terraforming", "memetics", "dyson", "stellar_engineering", "ansible", "wormhole_physics",
-	"ftl", "planck_weapons", "transcendence", "star_lifting", "directed_evolution",
+	"terraforming", "memetics", "dyson", "stellar_engineering", "wormhole_physics", "near_light",
+	"transcendence", "star_lifting", "matter_compilers", "substrate_minds", "world_engines", "stellar_weapons",
 }
+
+// miracleShare is the chance an elder artifact stands for a miracle rather
+// than an art. This is the bargain of the elder legacy: what is found may be
+// a better water purifier, or it may be the Door.
+const miracleShare = 0.4
 
 var structureNodes = []string{"stellar_engineering", "dyson", "wormhole_physics", "star_lifting"}
 
@@ -85,7 +90,7 @@ func (w *World) runAges() {
 		age := &AgeRecord{Index: i, Start: s, End: w.ageEnd(s)}
 		w.Ages = append(w.Ages, age)
 		w.logAt(age.Start, "The dawn of an age. Everywhere at once, things start to think.")
-		nElders := 2 + w.R.IntN(4)
+		nElders := 3 + w.R.IntN(4)
 		for j := 0; j < nElders; j++ {
 			e := &Elder{Age: i, Portrait: elderPortraits[w.R.IntN(len(elderPortraits))]}
 			// the earlier in the age, the likelier to rise: fertility is falling
@@ -97,7 +102,7 @@ func (w *World) runAges() {
 			if w.R.Float64() < 0.2 {
 				w.logAt(e.Rose+Year(float64(e.Fell-e.Rose)*0.6), "%s", ageKnowers[w.R.IntN(len(ageKnowers))])
 			}
-			nLeg := 1 + w.R.IntN(4)
+			nLeg := 2 + w.R.IntN(5)
 			for k := 0; k < nLeg; k++ {
 				at := e.Rose + Year(w.R.Float64()*float64(e.Fell-e.Rose))
 				// what is left erodes with deep time
@@ -119,18 +124,35 @@ func (w *World) runAges() {
 }
 
 func (w *World) leaveLegacy(e *Elder, at Year) {
+	// the elders lived where life is: half of what they left lies under
+	// worlds that will be someone's cradle, the rest wherever
 	s := w.R.IntN(len(w.G.Stars))
+	if w.R.Float64() < 0.5 {
+		var living []int
+		for i, b := range w.Bio {
+			if b == BioComplex && i != w.G.Sol {
+				living = append(living, i)
+			}
+		}
+		if len(living) > 0 {
+			s = living[w.R.IntN(len(living))]
+		}
+	}
 	if s == w.G.Sol {
 		return
 	}
 	l := &Legacy{ID: len(w.Legacies), Age: e.Age, Elder: e, Maker: -1, Star: s, Horror: -1, Finder: -1, Cond: Condition(w.R.IntN(2))}
 	x := w.R.Float64()
 	switch {
-	case x < 0.35:
+	case x < 0.5:
 		l.Kind = Artifact
-		l.Node = artifactNodes[w.R.IntN(len(artifactNodes))]
+		if w.R.Float64() < miracleShare {
+			l.Node = tech.Miracles[w.R.IntN(len(tech.Miracles))].Key
+		} else {
+			l.Node = artifactNodes[w.R.IntN(len(artifactNodes))]
+		}
 		l.Desc = artifactDescs[w.R.IntN(len(artifactDescs))]
-	case x < 0.6:
+	case x < 0.72:
 		l.Kind = Structure
 		l.Node = structureNodes[w.R.IntN(len(structureNodes))]
 		l.Desc = structureDescs[w.R.IntN(len(structureDescs))]
@@ -143,7 +165,7 @@ func (w *World) leaveLegacy(e *Elder, at Year) {
 				}
 			}
 		}
-	case x < 0.75:
+	case x < 0.82:
 		l.Kind = Threat
 		w.Now = at
 		if w.R.Float64() < 0.5 {
@@ -166,7 +188,7 @@ func (w *World) leaveLegacy(e *Elder, at Year) {
 				l.State = Unleashed
 			}
 		}
-	case x < 0.92:
+	case x < 0.94:
 		l.Kind = Sleeper
 		w.Now = at
 		h := w.spawnHorror(SleeperHorror, s, -1)

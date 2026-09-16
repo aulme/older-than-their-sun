@@ -213,6 +213,13 @@ func Write(out io.Writer, w *history.World, full bool) {
 		if c.KnowsCycle {
 			into += " They knew the shape of the cycle."
 		}
+		if len(c.Miracles) > 0 {
+			var ms []string
+			for _, k := range keysOf2(c.Miracles) {
+				ms = append(ms, tech.Get(k).Name+" ("+c.Miracles[k]+")")
+			}
+			into += " Miracles: " + strings.Join(ms, ", ") + "."
+		}
 		made := ""
 		if c.Species.Made != "" {
 			made = " (" + c.Species.Made + ")"
@@ -225,7 +232,11 @@ func Write(out io.Writer, w *history.World, full bool) {
 		if c.Home != c.Cradle {
 			seat = ", later seated on " + c.HomeName
 		}
-		p("  %-14s %-11s from %s (%s of a %s)%s%s, %s, lived %.2f Myr, peak %d systems, %s. They %s.%s", c.Name, c.Fate, c.CradleName, c.Species.World.Desc, w.G.Stars[c.Cradle].ClassName(), seat, made, year(c.Born), float64(c.Fell-c.Born)/1e6, c.Peak, tech.EraNames[c.Era], c.Cause, into)
+		ruled := ""
+		if c.Ruled > 0 {
+			ruled = fmt.Sprintf(" and %d peoples", c.Ruled)
+		}
+		p("  %-14s %-11s from %s (%s of a %s)%s%s, %s, lived %.2f Myr, peak %d systems%s, %s. They %s.%s", c.Name, c.Fate, c.CradleName, c.Species.World.Desc, w.G.Stars[c.Cradle].ClassName(), seat, made, year(c.Born), float64(c.Fell-c.Born)/1e6, c.Peak, ruled, tech.EraNames[c.Era], c.Cause, into)
 		p("  %-14s %s%s. At the end: %s.", "", c.Species.Describe(), kind, levels(c))
 		if len(c.Record) > 0 {
 			p("  %-14s filters: %s", "", strings.Join(c.Record, "; "))
@@ -242,6 +253,15 @@ func Write(out io.Writer, w *history.World, full bool) {
 			p("  %-14s known: %s", "", strings.Join(known, " "))
 		}
 	}
+}
+
+func keysOf2(m map[string]string) []string {
+	var out []string
+	for k := range m {
+		out = append(out, k)
+	}
+	sort.Strings(out)
+	return out
 }
 
 func elderName(l *history.Legacy) string {
@@ -282,6 +302,16 @@ func Stats(out io.Writer, w *history.World) {
 			knowers++
 		}
 	}
+	miracles := map[string]int{}
+	whole := 0
+	for _, c := range w.Civs {
+		for _, how := range c.Miracles {
+			miracles[how]++
+		}
+		if len(c.Known) >= len(tech.Nodes)-len(tech.Miracles)-1 {
+			whole++
+		}
+	}
 	ruins := map[history.LegacyState]int{}
 	conds := map[history.Condition]int{}
 	nRuins := 0
@@ -294,8 +324,8 @@ func Stats(out io.Writer, w *history.World) {
 			}
 		}
 	}
-	fmt.Fprintf(out, "seed %d: age %.1f Myr, fade %.0f Myr, fertility %.1f%%, %d civs (lived <0.5/<1/<3/<10/10+ Myr: %d/%d/%d/%d/%d), standing %d, remnants %d, knowers %d, horrors %d, remains %d (mastered %d, wielded %d, sealed %d, unleashed %d, crumbled %d; still buried abandoned/derelict/wreck/ruin %d/%d/%d/%d), capped %v\n",
-		w.Seed, float64(w.Present-w.Cfg.Dawn)/1e6, float64(w.Cycle.Fade)/1e6, 100*w.FertilityNow(), len(w.Civs), b[0], b[1], b[2], b[3], b[4], standing, remnants, knowers, len(w.Horrors),
+	fmt.Fprintf(out, "seed %d: age %.1f Myr, fade %.0f Myr, fertility %.1f%%, %d civs (lived <0.5/<1/<3/<10/10+ Myr: %d/%d/%d/%d/%d), standing %d, remnants %d, knowers %d, whole tree %d, miracles born/leap/found/wielded %d/%d/%d/%d, horrors %d, remains %d (mastered %d, wielded %d, sealed %d, unleashed %d, crumbled %d; still buried abandoned/derelict/wreck/ruin %d/%d/%d/%d), capped %v\n",
+		w.Seed, float64(w.Present-w.Cfg.Dawn)/1e6, float64(w.Cycle.Fade)/1e6, 100*w.FertilityNow(), len(w.Civs), b[0], b[1], b[2], b[3], b[4], standing, remnants, knowers, whole, miracles["born"], miracles["leap"], miracles["found"], miracles["wielded"], len(w.Horrors),
 		nRuins, ruins[history.Mastered], ruins[history.Wielded], ruins[history.Sealed], ruins[history.Unleashed], ruins[history.Lost],
 		conds[history.Abandoned], conds[history.Derelict], conds[history.Wreck], conds[history.Ruin], w.Capped)
 }

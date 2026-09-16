@@ -7,7 +7,7 @@ import "worldgen/internal/tech"
 func (w *World) recompute(c *Civ) {
 	mil, sur, soc := c.Species.Base()
 	reach, speed, env, era := 0.0, 100.0, 0, 0
-	ansible := c.Has("ansible")
+	ansible := c.miracle("ansible")
 	for k := range c.Known {
 		n := tech.Get(k)
 		mil, sur, soc = mil+n.Mil, sur+n.Sur, soc+n.Soc
@@ -17,9 +17,6 @@ func (w *World) recompute(c *Civ) {
 		}
 		env += n.Env
 		era = max(era, n.Era)
-		if k == "ansible" {
-			ansible = true
-		}
 	}
 	for key, cnt := range c.Structures {
 		s := tech.Structures[key]
@@ -39,6 +36,32 @@ func (w *World) recompute(c *Civ) {
 		case "all":
 			mil, sur, soc = mil+1, sur+1, soc+1
 		}
+	}
+	// miracles: the dominant fact about whoever holds one
+	if ansible {
+		soc += 3
+		reach *= 1.5
+	}
+	if c.miracle("directed_evolution") {
+		sur += 3
+		env += 2
+		// they do not build ships; they breed bodies that cross the dark on their own
+		reach = max(reach, 12)
+		speed = min(speed, 100)
+	}
+	if c.miracle("ftl") {
+		reach = max(reach, 45)
+		speed = min(speed, 0.3)
+		mil += 1
+	}
+	if c.miracle("unmaking") {
+		mil += 4
+	}
+	if c.miracle("chorus") {
+		soc += 4
+	}
+	if c.miracle("foresight") {
+		mil, sur, soc = mil+1, sur+1, soc+1
 	}
 	if c.Boons[BoonAligned] {
 		soc += 0.5

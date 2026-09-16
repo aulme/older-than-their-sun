@@ -33,8 +33,10 @@ type Node struct {
 	Era               int
 	Prereqs           []string
 	Weight            float64 // discovery weight, 0 means 1
-	Patience          float64 // kyr a civilisation must have lived before it can find this
-	Chance            float64 // if set, a chosen discovery only succeeds this often per attempt
+	Cost              float64 // research points to reach it; 0 means the era's default
+	Patience          float64 // kyr a civilisation must have lived before it can pursue this
+	Chance            float64 // if set, a finished pursuit only succeeds this often; failure wastes the work
+	Miracle           bool    // a power apart from the tree: rare, potent, dangerous
 	Mil, Sur, Soc     float64
 	Reach             float64 // reach in light years this node grants; the highest known wins
 	Speed             float64 // colony ship speed in years per light year; the lowest known wins
@@ -116,24 +118,67 @@ var Nodes = []*Node{
 	{Key: "uploading", Name: "Mind Uploading", Domain: Computation, Era: 3, Prereqs: []string{"machine_minds", "neuroscience"}, Soc: 0.5, Sur: 0.5},
 	{Key: "dyson", Name: "Dyson Swarms", Domain: Industry, Era: 3, Prereqs: []string{"self_replication", "antimatter"}, Sur: 0.5, Structure: "dyson", Milestone: true,
 		Text: "The %s begin to take their star apart for the light."},
-	{Key: "directed_evolution", Name: "Directed Evolution", Domain: Biology, Era: 3, Prereqs: []string{"terraforming", "life_extension"}, Env: 1, Sur: 1.5},
-	// era 4
+	{Key: "germline", Name: "Germline Engineering", Domain: Biology, Era: 3, Prereqs: []string{"terraforming", "life_extension"}, Env: 1, Sur: 1},
+	{Key: "quantum_computing", Name: "Quantum Computing", Domain: Computation, Era: 3, Prereqs: []string{"computers", "physics"}, Focus: M{Exotic: 1.3, Computation: 1.2}},
+	{Key: "synthetic_biology", Name: "Synthetic Biology", Domain: Biology, Era: 3, Prereqs: []string{"genetics", "closed_ecologies"}, Sur: 0.5, Focus: M{Biology: 1.3}},
+	{Key: "deep_governance", Name: "Deep Governance", Domain: Society, Era: 3, Prereqs: []string{"memetics", "networks"}, Soc: 1},
+	{Key: "beamed_sails", Name: "Beamed Sails", Domain: Propulsion, Era: 3, Prereqs: []string{"slow_interstellar", "orbital_habitats"}, Reach: 18, Speed: 30},
+	{Key: "hibernation", Name: "Hibernation", Domain: Biology, Era: 3, Prereqs: []string{"medicine", "slow_interstellar"}, Sur: 0.5, Reach: 5},
+	// era 4: the deep tree. Each domain has a spine that costs a great deal
+	// to climb, and no one climbs all of them.
 	{Key: "stellar_engineering", Name: "Stellar Engineering", Domain: Exotic, Era: 4, Prereqs: []string{"dyson", "physics"}, Sur: 1, Mil: 1, Filter: "stellar", Milestone: true,
 		Text: "The %s reach into their star."},
-	{Key: "ansible", Name: "the Ansible", Domain: Exotic, Era: 4, Prereqs: []string{"physics", "uploading"}, Weight: 0.15, Soc: 1.5, Structure: "ansible", Milestone: true,
-		Text: "The %s find a way to speak across any distance without delay. Their worlds are one world again."},
-	{Key: "wormhole_physics", Name: "Wormhole Physics", Domain: Exotic, Era: 4, Prereqs: []string{"antimatter", "physics", "computers"}, Weight: 0.4, Milestone: true,
+	{Key: "wormhole_physics", Name: "Wormhole Physics", Domain: Exotic, Era: 4, Prereqs: []string{"antimatter", "physics", "quantum_computing"}, Milestone: true,
 		Text: "The %s prove that space can be folded. It is only a proof, for now."},
-	{Key: "ftl", Name: "Faster-than-light Travel", Domain: Propulsion, Era: 4, Prereqs: []string{"wormhole_physics", "relativistic"}, Weight: 0.5, Reach: 90, Speed: 0.3, Filter: "door", Milestone: true,
-		Text: "The %s tear a door in space. Faster-than-light travel is theirs."},
-	{Key: "planck_weapons", Name: "Planck Weapons", Domain: Weapons, Era: 4, Prereqs: []string{"wormhole_physics", "relativistic_weapons"}, Weight: 0.5, Mil: 2},
-	{Key: "transcendence", Name: "Transcendence", Domain: Exotic, Era: 4, Prereqs: []string{"uploading", "wormhole_physics", "memetics"}, Weight: 0.5, Filter: "transcend"},
-	{Key: "star_lifting", Name: "Star Lifting", Domain: Exotic, Era: 4, Prereqs: []string{"stellar_engineering"}, Weight: 0.5, Sur: 1, Milestone: true,
+	{Key: "exotic_matter", Name: "Exotic Matter", Domain: Exotic, Era: 4, Cost: 500, Prereqs: []string{"wormhole_physics", "antimatter"}, Mil: 0.5, Sur: 0.5},
+	{Key: "causal_physics", Name: "Causal Physics", Domain: Exotic, Era: 4, Cost: 600, Prereqs: []string{"wormhole_physics", "quantum_computing"}, Soc: 0.5, Focus: M{Exotic: 1.3}},
+	{Key: "transcendence", Name: "Transcendence", Domain: Exotic, Era: 4, Cost: 500, Prereqs: []string{"uploading", "wormhole_physics", "memetics"}, Filter: "transcend"},
+	{Key: "star_lifting", Name: "Star Lifting", Domain: Exotic, Era: 4, Cost: 500, Prereqs: []string{"stellar_engineering"}, Sur: 1, Milestone: true,
 		Text: "The %s learn to feed and drain their star. They will never need to fear it again."},
-	{Key: "deep_time", Name: "Deep Time", Domain: Exotic, Era: 4, Prereqs: []string{"star_lifting", "wormhole_physics", "ansible"}, Patience: 4000, Chance: 0.0002, Soc: 0.5, Milestone: true,
+	{Key: "deep_time", Name: "Deep Time", Domain: Exotic, Era: 4, Cost: 600, Prereqs: []string{"star_lifting", "causal_physics"}, Patience: 4000, Chance: 0.3, Soc: 0.5, Milestone: true,
 		Text: "The %s read the ages in the ash of dead stars and learn that the galaxy has done this before."},
-	{Key: "mind_shaping", Name: "Mind Shaping", Domain: Society, Era: 4, Prereqs: []string{"memetics", "uploading"}, Soc: 1.5},
+	{Key: "vacuum_energy", Name: "Vacuum Energy", Domain: Energy, Era: 4, Prereqs: []string{"antimatter", "quantum_computing"}, Sur: 1, Mil: 0.5, Focus: M{Exotic: 1.2}},
+	{Key: "matter_compilers", Name: "Matter Compilers", Domain: Industry, Era: 4, Prereqs: []string{"self_replication", "vacuum_energy"}, Sur: 1, Mil: 1},
+	{Key: "world_engines", Name: "World Engines", Domain: Industry, Era: 4, Cost: 500, Prereqs: []string{"matter_compilers", "terraforming"}, Env: 1, Sur: 1},
+	{Key: "substrate_minds", Name: "Substrate Minds", Domain: Computation, Era: 4, Prereqs: []string{"uploading", "quantum_computing"}, Soc: 1, Sur: 0.5, Focus: M{Society: 1.2}},
+	{Key: "panspermia", Name: "Panspermia", Domain: Biology, Era: 4, Prereqs: []string{"synthetic_biology", "germline"}, Env: 1, Sur: 1},
+	{Key: "posthuman_law", Name: "Posthuman Law", Domain: Society, Era: 4, Prereqs: []string{"deep_governance", "uploading"}, Soc: 1.5},
+	{Key: "long_thought", Name: "the Long Thought", Domain: Society, Era: 4, Cost: 500, Prereqs: []string{"posthuman_law", "substrate_minds"}, Soc: 1},
+	{Key: "near_light", Name: "Near-light Travel", Domain: Propulsion, Era: 4, Prereqs: []string{"relativistic", "vacuum_energy"}, Reach: 35, Speed: 1.5, Milestone: true,
+		Text: "The ships of the %s run so close to light that a voyage is an afternoon inside and a lifetime outside."},
+	{Key: "nova_bombs", Name: "Nova Bombs", Domain: Weapons, Era: 4, Prereqs: []string{"relativistic_weapons", "antimatter"}, Mil: 1.5},
+	{Key: "stellar_weapons", Name: "Stellar Weapons", Domain: Weapons, Era: 4, Cost: 500, Prereqs: []string{"nova_bombs", "stellar_engineering"}, Mil: 2},
+
+	// miracles: powers apart from the tree. Reached by a conscious leap
+	// after a deep spine, or found and mastered, or born with. Each carries
+	// its own filter, faced on the leap or the find but never by the born.
+	{Key: "ansible", Name: "the Voice", Domain: Exotic, Era: 4, Miracle: true, Cost: 1500, Prereqs: []string{"causal_physics", "substrate_minds"}, Structure: "ansible", Filter: "openline", Milestone: true,
+		Text: "The %s make the leap. They can speak across any distance without delay. Their worlds are one world, and every mind among them is in the room."},
+	{Key: "directed_evolution", Name: "the Flesh", Domain: Biology, Era: 4, Miracle: true, Cost: 1500, Prereqs: []string{"panspermia", "life_extension"}, Filter: "brood", Milestone: true,
+		Text: "The %s make the leap. They can remake themselves in a generation, and they do: for every world, a body."},
+	{Key: "ftl", Name: "the Door", Domain: Propulsion, Era: 4, Miracle: true, Cost: 1500, Prereqs: []string{"exotic_matter", "near_light"}, Reach: 45, Speed: 0.3, Filter: "door", Milestone: true,
+		Text: "The %s make the leap. They tear a door in space, and the stars are next door."},
+	{Key: "unmaking", Name: "the Unmaking", Domain: Weapons, Era: 4, Miracle: true, Cost: 1500, Prereqs: []string{"exotic_matter", "stellar_weapons"}, Filter: "unmaking", Milestone: true,
+		Text: "The %s make the leap. They can unmake matter at any distance they can see. Nothing can be defended against them."},
+	{Key: "chorus", Name: "the Chorus", Domain: Society, Era: 4, Miracle: true, Cost: 1500, Prereqs: []string{"long_thought", "memetics"}, Filter: "chorus", Milestone: true,
+		Text: "The %s make the leap. Their thought takes root in any mind that hears it. Whoever meets them joins them."},
+	{Key: "foresight", Name: "the Sight", Domain: Exotic, Era: 4, Miracle: true, Cost: 1500, Prereqs: []string{"causal_physics", "long_thought"}, Filter: "sight", Milestone: true,
+		Text: "The %s make the leap. They see what is coming, and they are never surprised again."},
 }
+
+// EraCosts is the default research cost of a node by era.
+var EraCosts = []float64{0.6, 2, 6, 30, 250}
+
+// Price is the research cost of a node.
+func (n *Node) Price() float64 {
+	if n.Cost > 0 {
+		return n.Cost
+	}
+	return EraCosts[n.Era]
+}
+
+// Miracles lists the miracle nodes.
+var Miracles []*Node
 
 var byKey = map[string]*Node{}
 
@@ -143,6 +188,9 @@ func init() {
 			n.Weight = 1
 		}
 		byKey[n.Key] = n
+		if n.Miracle {
+			Miracles = append(Miracles, n)
+		}
 	}
 	for _, n := range Nodes {
 		for _, p := range n.Prereqs {

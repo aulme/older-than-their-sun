@@ -106,10 +106,13 @@ type Trait struct {
 	Reach         float64 // multiplier, 0 means 1
 	Rate          float64 // research rate multiplier, 0 means 1
 	Domains       M
+	Miracle       string // tech node key of the miracle this species is born to
 }
 
 // Traits is the pool. Groups org, stance and drive are common and every
-// species gets one of each; bio is uncommon; power is rare.
+// species gets one of each; bio is uncommon; power is very rare and means
+// the species is born to a miracle, with no tree beneath it and no filter
+// on it.
 var Traits = []*Trait{
 	// social organisation
 	{Key: "individualist", Name: "individualists", Group: "org", Weight: 30, Soc: -1, Mil: 0.5, Domains: M{"computation": 1.1, "energy": 1.1}},
@@ -138,13 +141,14 @@ var Traits = []*Trait{
 	{Key: "sessile", Name: "sessile as adults", Group: "bio", Weight: 10, Reach: 0.6, Mil: -0.5, Sur: 0.5, Domains: M{"society": 1.2}},
 	{Key: "amphibious", Name: "amphibious", Group: "bio", Weight: 10, Sur: 0.5},
 	{Key: "eusocial", Name: "eusocial", Group: "bio", Weight: 10, Soc: 0.5, Mil: 0.5},
-	// science-fiction powers
-	{Key: "ansible", Name: "minds that speak across any distance", Group: "power", Weight: 15, Soc: 1, Reach: 1.3},
-	{Key: "directedevo", Name: "masters of their own flesh", Group: "power", Weight: 15, Sur: 1.5, Domains: M{"biology": 1.4}},
-	{Key: "precog", Name: "touched by foresight", Group: "power", Weight: 10, Mil: 0.5, Sur: 0.5, Soc: 0.5},
-	{Key: "memetic", Name: "immune to ideas not their own", Group: "power", Weight: 15, Soc: 0.5},
-	{Key: "symbiosis", Name: "bonded to their machines", Group: "power", Weight: 20, Mil: 0.5, Domains: M{"computation": 1.5}},
-	{Key: "memory", Name: "of unbroken memory across generations", Group: "power", Weight: 15, Soc: 1, Domains: M{"society": 1.2}},
+	{Key: "symbiosis", Name: "bonded to their machines", Group: "bio", Weight: 8, Mil: 0.5, Domains: M{"computation": 1.5}},
+	{Key: "memory", Name: "of unbroken memory across generations", Group: "bio", Weight: 8, Soc: 1, Domains: M{"society": 1.2}},
+	// born to a miracle
+	{Key: "born_voice", Name: "minds that speak across any distance", Group: "power", Weight: 25, Miracle: "ansible"},
+	{Key: "born_flesh", Name: "masters of their own flesh", Group: "power", Weight: 25, Miracle: "directed_evolution"},
+	{Key: "born_sight", Name: "touched by foresight", Group: "power", Weight: 20, Miracle: "foresight"},
+	{Key: "born_chorus", Name: "whose thought takes root in any mind", Group: "power", Weight: 15, Miracle: "chorus"},
+	{Key: "born_door", Name: "who walk between the stars", Group: "power", Weight: 15, Miracle: "ftl"},
 	// world-given
 	{Key: "cooperative", Name: "cooperative by necessity", Group: "world", Soc: 0.5},
 	{Key: "hardy", Name: "hardy", Group: "world", Sur: 0.5},
@@ -204,6 +208,9 @@ func pickGroup(r *rand.Rand, group string) *Trait {
 	return pickWeighted(r, pool, func(t *Trait) float64 { return t.Weight })
 }
 
+// Pick draws a trait from a group.
+func Pick(r *rand.Rand, group string) *Trait { return pickGroup(r, group) }
+
 // Generate rolls a species. mult is the home star's multiplicity.
 func Generate(r *rand.Rand, mult int) *Species {
 	s := &Species{Name: names.Civ(r)}
@@ -224,7 +231,7 @@ func Generate(r *rand.Rand, mult int) *Species {
 	if r.Float64() < 0.5 {
 		s.Traits = append(s.Traits, pickGroup(r, "bio"))
 	}
-	if r.Float64() < 0.08 {
+	if r.Float64() < 0.006 {
 		s.Traits = append(s.Traits, pickGroup(r, "power"))
 	}
 	return s
@@ -245,6 +252,16 @@ func (s *Species) Has(key string) bool {
 		}
 	}
 	return false
+}
+
+// Miracle returns the node key of the miracle the species is born to, or "".
+func (s *Species) Miracle() string {
+	for _, t := range s.Traits {
+		if t.Miracle != "" {
+			return t.Miracle
+		}
+	}
+	return ""
 }
 
 // Base returns the base levels from world, kind and traits.

@@ -23,11 +23,12 @@ func (w *World) contacts() {
 				continue
 			}
 			// a young species found by an old one is not a contact between equals
-			if young, old := a, b; young.Era < 2 || old.Era < 2 {
-				if old.Era < 2 {
+			// a people holding a miracle is nobody's primitive, whatever their era
+			if young, old := a, b; (young.Era < 2 && len(young.held()) == 0) || (old.Era < 2 && len(old.held()) == 0) {
+				if old.Era < 2 && len(old.held()) == 0 {
 					young, old = b, a
 				}
-				if young.Era >= 2 || old.Met[young.ID] {
+				if (young.Era >= 2 || len(young.held()) > 0) || old.Met[young.ID] {
 					continue // both young, or already watched
 				}
 				if !w.primitives(old, young) {
@@ -96,6 +97,15 @@ func (w *World) encounter(a, b *Civ) {
 	}
 	gap := a.Mil - b.Mil
 	switch {
+	case a.miracle("chorus") && !b.miracle("chorus") && !b.Has("hive") && !b.Has("nonconscious") && w.R.Float64() < 0.6:
+		w.log("The %s find the %s, and speak. Within a generation the %s ask to be ruled.", a.Name, b.Name, b.Name)
+		w.vassal(a, b)
+	case b.miracle("chorus") && !a.miracle("chorus") && !a.Has("hive") && !a.Has("nonconscious") && w.R.Float64() < 0.6:
+		w.log("The %s find the %s, and the %s speak. Within a generation the %s ask to be ruled.", a.Name, b.Name, b.Name, a.Name)
+		w.vassal(b, a)
+	case a.miracle("unmaking") && hostile(b) && !b.miracle("unmaking"):
+		w.log("The %s meet the %s and learn what they hold. There is no war. The %s bend the knee.", b.Name, a.Name, b.Name)
+		w.vassal(a, b)
 	case b.Has("pacifist") && hostile(a) && gap >= 1:
 		w.log("The %s find the %s, who will not fight. They are taken without a war.", a.Name, b.Name)
 		w.enslave(a, b)
@@ -158,6 +168,7 @@ func (w *World) infection(a, b *Civ) {
 }
 
 func (w *World) enslave(m, s *Civ) {
+	m.Ruled++
 	s.Master, s.Vassal = m.ID, false
 	s.Seen = m.Declines
 	s.Voyages = nil
@@ -177,6 +188,7 @@ func (w *World) enslave(m, s *Civ) {
 }
 
 func (w *World) vassal(m, s *Civ) {
+	m.Ruled++
 	s.Master, s.Vassal = m.ID, true
 	s.Seen = m.Declines
 	delete(m.Wars, s.ID)
@@ -206,7 +218,7 @@ func (w *World) war(c *Civ) {
 		if len(e.Systems) == 1 {
 			home = 1.5 // the last world is defended like the last world
 		}
-		if c.Mil+w.R.NormFloat64()*1.5 < e.Mil+home+w.R.NormFloat64()*1.5 {
+		if c.Mil+c.warBonus()+w.R.NormFloat64()*1.5 < e.Mil+e.warBonus()+home+w.R.NormFloat64()*1.5 {
 			continue // the strike is answered; the other side gets its own turn
 		}
 		w.battleWon(c, e)
@@ -219,10 +231,16 @@ func (w *World) battleWon(c, e *Civ) {
 		if t == e.Home {
 			return
 		}
-		w.Bio[t] = BioSimple
-		w.loseSystem(e, t, "glassed world", "")
-		if w.R.Float64() < 0.4 {
-			w.log("The %s glass %s, a %s of the %s.", c.Name, w.star(t), e.Species.Kind.Flavour().Colony, e.Name)
+		if c.miracle("unmaking") {
+			w.Bio[t] = BioNone
+			w.loseSystem(e, t, "unmade world", "")
+			w.log("The %s unmake %s, a %s of the %s. There is nothing left to glass.", c.Name, w.star(t), e.Species.Kind.Flavour().Colony, e.Name)
+		} else {
+			w.Bio[t] = BioSimple
+			w.loseSystem(e, t, "glassed world", "")
+			if w.R.Float64() < 0.4 {
+				w.log("The %s glass %s, a %s of the %s.", c.Name, w.star(t), e.Species.Kind.Flavour().Colony, e.Name)
+			}
 		}
 		w.face(e, "hold", 0)
 		return
@@ -231,6 +249,10 @@ func (w *World) battleWon(c, e *Civ) {
 	delete(c.Wars, e.ID)
 	delete(e.Wars, c.ID)
 	switch {
+	case c.miracle("unmaking") && !c.Has("pacifist") && (e.Has("fighttodeath") || w.R.Float64() < 0.5):
+		w.Bio[e.Home] = BioNone
+		w.log("The %s unmake %s, homeworld of the %s. It is not there any more.", c.Name, e.HomeName, e.Name)
+		w.endCiv(e, Extinct, sprintf("were unmade by the %s", c.Name))
 	case e.Has("fighttodeath") || (c.Has("xenophobic") && w.R.Float64() < 0.7):
 		w.Bio[e.Home] = BioNone
 		w.log("A relativistic strike from the %s shatters %s, homeworld of the %s. They never surrendered.", c.Name, e.HomeName, e.Name)
@@ -262,7 +284,7 @@ func (w *World) revolt(c *Civ) {
 		adj -= 1
 		w.log("The %s, who held the %s, are gone. The question of freedom answers itself, one way or the other.", m.Name, c.Name)
 	}
-	w.face(c, "revolt", adj)
+	w.face(c, "revolt", adj+w.holdDiff(c))
 }
 
 // uplift: a strong civilisation makes a new species from complex life

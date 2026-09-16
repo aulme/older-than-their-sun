@@ -2,15 +2,43 @@ package history
 
 import "worldgen/internal/tech"
 
-// research rolls discoveries for the tick. The domain is drawn from weights
-// that are species tilt times current focus, then an available node in that
-// domain is taken. Discovering a node can fire its filter.
+// research is a pursuit: a civilisation picks one node it can reach and
+// banks points toward it until the price is paid. The pick is drawn from
+// weights that are species tilt times current focus times momentum in the
+// domains it already knows, so a people specialises and no one climbs the
+// whole tree. Deep nodes cost far more than shallow ones, and miracles cost
+// more still and are a conscious choice: the leap.
 func (w *World) research(c *Civ) {
-	rate := 0.12 * c.Species.Rate() * (1 + 0.08*c.Soc) * (1 + 0.03*float64(len(c.Systems))) / (1 + 0.6*float64(c.Era))
+	rate := 0.12 * c.Species.Rate() * (1 + 0.08*c.Soc) * (1 + 0.03*float64(len(c.Systems)))
 	rate *= c.rateMul(w)
-	n := min(w.count(rate), 8)
-	for i := 0; i < n && c.Active(); i++ {
-		w.discover(c)
+	c.Progress += rate * w.dt
+	for c.Active() {
+		if c.Pursuit != "" && !w.canPursue(c, tech.Get(c.Pursuit)) {
+			c.Pursuit = ""
+		}
+		if c.Pursuit == "" {
+			c.Pursuit = w.choose(c)
+			if c.Pursuit == "" {
+				c.Progress = 0
+				return
+			}
+			if n := tech.Get(c.Pursuit); n.Miracle {
+				w.log("The %s turn everything they have toward %s. It will take ages, and it may not come.", c.Name, n.Name)
+			}
+		}
+		n := tech.Get(c.Pursuit)
+		if c.Progress < n.Price() {
+			return
+		}
+		c.Progress -= n.Price()
+		c.Pursuit = ""
+		if n.Chance > 0 && w.R.Float64() > n.Chance {
+			if n.Miracle {
+				w.log("The %s come close to %s and fall short. The work of ages goes for nothing.", c.Name, n.Name)
+			}
+			continue
+		}
+		w.learn(c, n, true)
 	}
 }
 
@@ -31,6 +59,15 @@ func (c *Civ) rateMul(w *World) float64 {
 	if c.Structures["dyson"] > 0 {
 		m *= tech.Structures["dyson"].Rate
 	}
+	if len(c.held()) > 0 {
+		m *= 1.5 // the miracle pulls everything else along
+		if c.surging(w.Now) {
+			m *= 1.5
+		}
+	}
+	if c.miracle("ansible") {
+		m *= 1.5 // every mind in one room
+	}
 	for p := range c.Trade {
 		if w.Civs[p].Living() {
 			m *= 1.15
@@ -47,63 +84,81 @@ func (c *Civ) rateMul(w *World) float64 {
 	return m
 }
 
-func (w *World) discover(c *Civ) {
+// canPursue says whether a node is open to a civilisation now.
+func (w *World) canPursue(c *Civ, n *tech.Node) bool {
+	if n == nil || c.Known[n.Key] || (c.Locked[n.Domain] && n.Key != c.Species.World.Unlock) {
+		return false
+	}
+	if n.Patience > 0 && float64(w.Now-c.Born)/1000 < n.Patience {
+		return false
+	}
+	if n.Miracle && c.miracle(n.Key) {
+		return false // already theirs by birth or by a find
+	}
+	for _, p := range n.Prereqs {
+		if !c.Known[p] {
+			return false
+		}
+	}
+	return true
+}
+
+// choose picks the next pursuit.
+func (w *World) choose(c *Civ) string {
+	depth := map[string]int{}
+	for k := range c.Known {
+		if n := tech.Get(k); n.Era >= 1 {
+			depth[n.Domain]++
+		}
+	}
 	var avail []*tech.Node
 	var weights []float64
 	total := 0.0
 	for _, n := range tech.Nodes {
-		if c.Known[n.Key] || (c.Locked[n.Domain] && n.Key != c.Species.World.Unlock) {
-			continue
-		}
-		if n.Patience > 0 && float64(w.Now-c.Born)/1000 < n.Patience {
-			continue
-		}
-		ok := true
-		for _, p := range n.Prereqs {
-			if !c.Known[p] {
-				ok = false
-				break
-			}
-		}
-		if !ok {
+		if !w.canPursue(c, n) {
 			continue
 		}
 		f := c.Focus[n.Domain]
 		if f == 0 {
 			f = 1
 		}
-		wt := n.Weight * c.Species.DomainMul(n.Domain) * f
+		wt := n.Weight * c.Species.DomainMul(n.Domain) * f * (1 + 0.25*float64(depth[n.Domain]))
 		if c.Locked[n.Domain] {
 			wt = n.Weight
+		}
+		if n.Miracle {
+			wt = n.Weight * c.leapWeight(n.Key)
 		}
 		avail = append(avail, n)
 		weights = append(weights, wt)
 		total += wt
 	}
-	if len(avail) == 0 {
-		return
+	if len(avail) == 0 || total <= 0 {
+		return ""
 	}
 	x := w.R.Float64() * total
-	var n *tech.Node
 	for i, a := range avail {
 		x -= weights[i]
 		if x < 0 {
-			n = a
-			break
+			return a.Key
 		}
 	}
-	if n == nil {
-		n = avail[len(avail)-1]
-	}
-	if n.Chance > 0 && w.R.Float64() > n.Chance {
-		return
-	}
-	w.learn(c, n, true)
+	return avail[len(avail)-1].Key
 }
 
 // learn adds a node, applies its side effects and fires its filter.
 func (w *World) learn(c *Civ, n *tech.Node, fire bool) {
 	c.Known[n.Key] = true
+	if c.Pursuit == n.Key {
+		c.Pursuit = ""
+	}
+	if n.Miracle {
+		how := "leap"
+		if w.finding {
+			how = "found"
+		}
+		w.gain(c, n.Key, how)
+	}
 	for d, v := range n.Focus {
 		if c.Focus[d] == 0 {
 			c.Focus[d] = 1

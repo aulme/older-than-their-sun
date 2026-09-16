@@ -35,6 +35,9 @@ const (
 	ScarSignal       = "a cult of the signal"
 	ScarDoor         = "a dread of doors"
 	ScarChains       = "the memory of chains"
+	ScarFatalism     = "a fatalist creed"
+	ScarOtherVoices  = "the other voices on the line"
+	ScarChanged      = "having been something else"
 	BoonAligned      = "aligned minds"
 	BoonSwarm        = "swarm industry"
 	BoonUnity        = "unity forged in the atomic age"
@@ -60,9 +63,7 @@ func def(f *Filter) { filters[f.Key] = f }
 // traitDiff is the asymmetry: how each trait changes each filter's difficulty.
 var traitDiff = map[string]map[string]float64{
 	"hive":          {"distance": -3, "weight": -2, "beacon": 3, "silence": -1, "machines": -1},
-	"ansible":       {"distance": -4},
 	"memory":        {"silence": 2, "weight": 1, "find": -1},
-	"memetic":       {"beacon": -5, "transcend": 1},
 	"nonconscious":  {"beacon": -3, "transcend": 2, "machines": -1, "silence": -2},
 	"fighttodeath":  {"atomic": 1, "hold": -1},
 	"pacifist":      {"atomic": -2, "overshoot": -1},
@@ -74,11 +75,9 @@ var traitDiff = map[string]map[string]float64{
 	"collective":    {"atomic": -1, "overshoot": -1},
 	"individualist": {"distance": 1, "weight": -0.5, "hold": 1},
 	"caste":         {"weight": 1, "hold": -0.5},
-	"precog":        {"atomic": -1, "war": -1, "cosmic": -1, "find": -1},
 	"shortlived":    {"silence": -1, "weight": -1, "plague": 1},
 	"longlived":     {"weight": 1.5, "silence": 1},
 	"dormancy":      {"plague": -1, "cosmic": -1, "dying": -1},
-	"directedevo":   {"plague": -2, "cosmic": -1},
 	"symbiosis":     {"machines": -1.5, "replication": -0.5},
 	"xenophobic":    {"beacon": -1, "find": 1},
 	"submissive":    {"revolt": 1, "hold": -0.5},
@@ -108,8 +107,13 @@ func (w *World) face(c *Civ, key string, diffAdj float64) Outcome {
 	}
 	c.Faced[key] = true
 	w.recompute(c)
+	if c.miracle("foresight") && key != "sight" && w.R.Float64() < 0.5 {
+		w.log("The %s see %s coming and step around it.", c.Name, f.Name)
+		c.Record = append(c.Record, "foresaw "+f.Name)
+		return Overcome
+	}
 	lvl := c.level(f.Levels...)
-	diff := f.Diff + diffAdj + 0.25*float64(len(c.Scars)) + 1.5*(w.Hazard-1) + c.traitDiff(key)
+	diff := f.Diff + diffAdj + 0.25*float64(len(c.Scars)) + 1.5*(w.Hazard-1) + c.traitDiff(key) + c.miracleDiff(key)
 	roll := w.R.NormFloat64() * 1.5
 	margin := lvl + roll - diff
 	if f.Domain != "" {
@@ -152,16 +156,20 @@ func (w *World) ambientFilters(c *Civ) {
 	if len(c.Systems) >= c.NextDrift && w.chance(0.05) {
 		adj := 0.3 * float64(len(c.Systems)-6)
 		c.NextDrift *= 2
-		w.face(c, "distance", adj)
+		if !c.miracle("ansible") { // nothing drifts when every world is in the room
+			w.face(c, "distance", adj)
+		}
 	}
-	if c.Plagued || w.chance(0.0004) {
+	if c.miracle("directed_evolution") {
+		c.Plagued = false // nothing lives in them that they did not put there
+	} else if c.Plagued || w.chance(0.0004) {
 		w.face(c, "plague", 0)
 	}
 	if !c.Active() {
 		return
 	}
 	age := float64(w.Now-max(c.Born, c.Renewed)) / 1000
-	lived := float64(w.Now-c.Born) / 1000
+	lived := float64(w.Now-max(c.Born, c.Ascended)) / 1000 // a miracle makes a people young again
 	// the fading of the age weighs on everyone still alive in it
 	p := 0.0006 * (age / 2000) * (1 + lived/4000) * (1 + float64(len(c.Systems))/8) * w.Hazard * (1 + 2*(1-w.fertility()))
 	if c.Scars[ScarOssified] {

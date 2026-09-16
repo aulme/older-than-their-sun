@@ -28,6 +28,9 @@ func (w *World) find(c *Civ) {
 			continue // nothing to learn; a structure is taken over on settling
 		}
 		d := w.G.Dist(c.Home, l.Star)
+		for _, s := range c.Systems {
+			d = min(d, w.G.Dist(s, l.Star))
+		}
 		if (d == 0 && c.Era >= 1) || (d > 0 && d <= c.Reach) {
 			cands = append(cands, l)
 			if own == nil && w.kinship(c, l) == 2 {
@@ -43,7 +46,7 @@ func (w *World) find(c *Civ) {
 	switch {
 	case own != nil && w.chance(0.05):
 		l = own
-	case w.chance(0.0025):
+	case w.chance(0.004):
 		l = cands[w.R.IntN(len(cands))]
 	default:
 		return
@@ -99,6 +102,9 @@ func (w *World) find(c *Civ) {
 	if l.Kind == Sleeper || l.Kind == Threat {
 		wield = 0
 		seal += 2
+	}
+	if n := l.node(); n != nil && n.Miracle && l.Kind == Artifact {
+		wield += 2 // it is plainly a thing to be used, whatever it is
 	}
 	if w.kinship(c, l) == 2 {
 		master += 3
@@ -161,11 +167,13 @@ func (w *World) attemptMaster(c *Civ, l *Legacy) {
 		default:
 			w.log("The %s understand it. Understanding it, they understand everything that led to it.", c.Name)
 		}
+		w.finding = true
 		for _, k := range tech.Closure(l.Node) {
 			if !c.Known[k] && c.Active() {
 				w.learn(c, tech.Get(k), true)
 			}
 		}
+		w.finding = false
 		return
 	}
 	if l.Maker >= 0 && l.Cond == Ruin {
@@ -190,6 +198,9 @@ func (w *World) attemptWield(c *Civ, l *Legacy) {
 		diff -= 1 + 1.5*float64(w.kinship(c, l))
 		diff += l.condAdj()
 	}
+	if n := l.node(); n != nil && n.Miracle {
+		diff -= 1.5 // a miracle is made to be used; that is what makes it a miracle
+	}
 	if c.Mil+w.R.NormFloat64()*1.5 >= diff {
 		l.State = Wielded
 		if l.Maker >= 0 && l.Cond == Wreck {
@@ -213,7 +224,13 @@ func (w *World) attemptWield(c *Civ, l *Legacy) {
 		}
 		c.Wielded = append(c.Wielded, l)
 		l.Level = "all"
-		if n := l.node(); n != nil {
+		if n := l.node(); n != nil && n.Miracle {
+			l.Level = "miracle"
+			w.log("The %s learn to use it without understanding it. It is %s, and it is theirs for as long as it lasts.", c.Name, miracleNames[n.Key])
+			w.gain(c, n.Key, "wielded")
+			w.face(c, n.Filter, 0)
+			return
+		} else if n != nil {
 			switch n.Domain {
 			case tech.Weapons, tech.Industry:
 				l.Level = "mil"
@@ -278,6 +295,12 @@ func (w *World) unleash(c *Civ, l *Legacy) {
 		w.blast(l.Star, 5, "a broken law", "Around %s, for a moment, physics is negotiable.", 3)
 	case Artifact:
 		n := l.node()
+		if n.Miracle {
+			// the miracle's own danger, at its worst
+			w.log("It works, once, in a way nobody chose.")
+			w.face(c, n.Filter, 2)
+			return
+		}
 		switch n.Domain {
 		case tech.Industry, tech.Weapons:
 			h := w.spawnHorror(Replicators, l.Star, -1)

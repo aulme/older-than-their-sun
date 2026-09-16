@@ -22,8 +22,8 @@ func Generate(seed uint64, cfg Config) *World {
 	w.Bio[g.Sol] = BioSimple
 
 	w.makeCycle()
-	w.runAges()
 	w.runDeep()
+	w.runAges()
 	w.runAge()
 	sort.SliceStable(w.Events, func(i, j int) bool { return w.Events[i].Year < w.Events[j].Year })
 	return w
@@ -134,5 +134,5 @@ func (w *World) updateHazard() {
 			}
 		}
 	}
-	w.Hazard = min(2.5, 1+0.005*float64(held)+0.08*float64(beacons))
+	w.Hazard = min(2.5, 1+0.005*float64(held)+0.06*float64(beacons))
 }

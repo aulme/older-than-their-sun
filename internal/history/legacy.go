@@ -76,6 +76,7 @@ var lossWreckage = map[string]Wreckage{
 	"burned cradle":     {1, Ruin},
 	"stripped world":    {1, Ruin},
 	"wounded star":      {1, Ruin},
+	"unmade world":      {1, Ruin},
 	"absorbed world":    {0.5, Derelict},
 	"silent world":      {0.2, Abandoned},
 }
@@ -141,6 +142,10 @@ func (w *World) leaveRelic(c *Civ, node string, star int) {
 	rk := relicKinds[w.R.IntN(len(relicKinds))]
 	l := &Legacy{ID: len(w.Legacies), Age: -1, Maker: c.ID, Kind: Artifact, Star: star, Node: node, Horror: -1, Finder: -1, Cond: wr.Leave, Hardy: rk.Hardy}
 	l.Desc = sprintf(rk.Desc, c.Name)
+	if n.Miracle {
+		l.Desc = sprintf("what the %s left of %s", c.Name, n.Name)
+		l.Hardy = 0.5
+	}
 	w.Legacies = append(w.Legacies, l)
 }
 

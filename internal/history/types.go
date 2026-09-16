@@ -85,10 +85,13 @@ type Civ struct {
 	colonies   int
 
 	// research
-	Known  map[string]bool
-	Era    int
-	Focus  map[string]float64 // temporary research tilt, decays to 1
-	Locked map[string]bool    // domains closed by world or scar
+	Known    map[string]bool
+	Era      int
+	Focus    map[string]float64 // temporary research tilt, decays to 1
+	Locked   map[string]bool    // domains closed by world or scar
+	Pursuit  string             // the node being worked toward
+	Progress float64            // research points banked toward it
+	Miracles map[string]string  // miracle key -> how it was gained: born, leap, found, wielded
 
 	// derived each tick
 	Mil, Sur, Soc float64
@@ -104,6 +107,7 @@ type Civ struct {
 	Found      map[int]bool // legacies attempted
 	Heard      map[int]bool // beacons already faced
 	Uplifts    int
+	Ruled      int // peoples this one has held as slaves or vassals
 
 	// relations
 	Wars     map[int]bool
@@ -121,6 +125,7 @@ type Civ struct {
 	Record       []string
 	DarkAges     int
 	KnowsCycle   bool // learned the shape of the cycle
+	Ascended     Year // when a miracle was last gained; the surge runs from here
 	Renewed      Year
 	Renaissances int
 	NextDrift    int // size at which the Distance is faced again
@@ -239,7 +244,7 @@ type Legacy struct {
 	State  LegacyState
 	Horror int    // horror id for threats and sleepers, -1 if none
 	Finder int    // civ that last acted on it, -1 if none
-	Level  string // for wielded artifacts: which level it lifts
+	Level  string // for wielded artifacts: which level it lifts, or "miracle"
 	Cond   Condition
 	Hardy  float64 // multiplier on the rate of decay; 0 never decays
 }
@@ -347,4 +352,5 @@ type scratch struct {
 	incursionAt int
 	incursionBy *Horror
 	wreck       *Wreckage // set while a filter's outcome runs
+	finding     bool      // set while the Find teaches a civilisation what it mastered
 }
