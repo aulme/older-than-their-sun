@@ -114,13 +114,30 @@ type Civ struct {
 	Ruled      int // peoples this one has held as slaves or vassals
 
 	// relations
-	Wars     map[int]bool
-	Met      map[int]bool
+	Wars     map[int]bool // peoples this one is at war with; the wars themselves are on the World
+	Met      map[int]bool // known of: by touch or by signal
+	Reached  map[int]bool // met in the flesh: territories touched
 	Trade    map[int]bool
 	Master   int // civ that holds this one, -1 if free
 	Vassal   bool
 	Declines int // declines suffered, watched by slaves for revolt
 	Seen     int // master declines this civ has reacted to
+
+	// war and diplomacy: see dials.go, intel.go, war.go, expedition.go, pact.go
+	Away     float64         // Military out with fleets and scouts, subtracted from the level
+	Dials    Dials           // temperament as numbers
+	Intel    map[int]*Intel  // what this people believes about each other people
+	Grudge   map[int]float64 // what each other people has done to them
+	Truce    map[int]Year    // no new war with each before this
+	Fought   map[int]int     // wars fought with each
+	Watched  map[int]bool    // looked at hard and left alone, until beliefs change
+	Asked    map[int]Year    // when each was last offered a pact
+	Scouted  map[int]Year    // when a scout last reported on each
+	Ridden   map[int]bool    // for parasites: peoples taken as hosts
+	Pacts    []int
+	Tally    Tally
+	LastDark Year
+	Summoned bool // an event calls the council this tick
 
 	// filters
 	Faced        map[string]bool
@@ -137,6 +154,14 @@ type Civ struct {
 	Dying        bool    // home star is failing
 	Endure       float64 // kyr left under the failing star
 	Title        string  // ruler title once contracted
+}
+
+// Tally counts what a people did in war and peace, for the batch reports.
+type Tally struct {
+	Declared, Fought, Taken, Lost, Glassed int
+	Fleets, Native, Scouts, Relief         int
+	Pacts, Refused, Betrayals, Called      int
+	Capitulated                            bool
 }
 
 // Living is true for active and remnant civilisations.
@@ -310,6 +335,7 @@ type Config struct {
 	Linger          Year
 	MaxFades        float64 // give up after this many fades and flag it
 	Debug           bool    // log the state of the galaxy every million years
+	TraceAI         bool    // log every council's reasoning
 }
 
 // DefaultConfig is a small, fast world.
@@ -349,6 +375,12 @@ type World struct {
 	Legacies  []*Legacy
 	Traces    []Trace
 	Events    []Event
+	// war and diplomacy
+	Wars        []*War
+	Expeditions []*Expedition
+	Pacts       []*Pact
+	Messages    []*Message
+	Betrayals   []Betrayal // and faith kept, with negative weight
 	scratch
 }
 

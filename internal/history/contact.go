@@ -3,7 +3,6 @@ package history
 import (
 	"worldgen/internal/names"
 	"worldgen/internal/species"
-	"worldgen/internal/tech"
 )
 
 // Contact happens when reach spheres overlap. What follows depends on stance
@@ -17,10 +16,14 @@ func (w *World) contacts() {
 		}
 		for j := i + 1; j < len(w.Civs); j++ {
 			b := w.Civs[j]
-			if !b.Active() || (a.Met[b.ID] && b.Met[a.ID]) {
+			if !b.Active() || (a.Reached[b.ID] && b.Reached[a.ID]) {
 				continue
 			}
-			if w.G.Dist(a.Home, b.Home) > a.Reach+b.Reach || a.Reach+b.Reach < 1 {
+			if !w.touch(a, b) {
+				if !(a.Met[b.ID] && b.Met[a.ID]) && w.hear(a, b) {
+					a.Met[b.ID], b.Met[a.ID] = true, true
+					w.hearing(a, b)
+				}
 				continue
 			}
 			// a young species found by an old one is not a contact between equals
@@ -36,58 +39,122 @@ func (w *World) contacts() {
 					continue // watched from orbit; they will meet properly later
 				}
 			}
+			watched := (a.Met[b.ID] || b.Met[a.ID]) && !(a.Met[b.ID] && b.Met[a.ID])
+			heard := a.Met[b.ID] && b.Met[a.ID]
 			a.Met[b.ID], b.Met[a.ID] = true, true
-			w.encounter(a, b)
+			a.Reached[b.ID], b.Reached[a.ID] = true, true
+			w.encounter(a, b, watched, heard)
 		}
 	}
+}
+
+// touch says whether two peoples' territories overlap: a holding of one
+// within the joint reach of a holding of the other.
+func (w *World) touch(a, b *Civ) bool {
+	r := a.Reach + b.Reach
+	if r < 1 {
+		return false
+	}
+	ea, eb := 0.0, 0.0
+	for _, s := range a.Systems {
+		ea = max(ea, w.G.Dist(a.Home, s))
+	}
+	for _, s := range b.Systems {
+		eb = max(eb, w.G.Dist(b.Home, s))
+	}
+	if w.G.Dist(a.Home, b.Home) > r+ea+eb {
+		return false
+	}
+	for _, sa := range a.Systems {
+		for _, sb := range b.Systems {
+			if w.G.Dist(sa, sb) <= r {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// signal is how far a people's noise carries: radio at the atomic age,
+// louder as it grows.
+func (c *Civ) signal() float64 {
+	switch {
+	case c.Era >= 3:
+		return 40
+	case c.Era >= 2:
+		return 20
+	}
+	return 0
+}
+
+// hear says whether two peoples can detect each other's signals: each
+// must be loud enough to reach the other, from any holding.
+func (w *World) hear(a, b *Civ) bool {
+	if a.signal() == 0 || b.signal() == 0 {
+		return false
+	}
+	for _, sa := range a.Systems {
+		for _, sb := range b.Systems {
+			if d := w.G.Dist(sa, sb); d <= a.signal() && d <= b.signal() {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// hearing is a contact by signal only: each learns the other is there,
+// and what it can, and the councils weigh a war of fleets.
+func (w *World) hearing(a, b *Civ) {
+	w.observe(a, b, b.Home, 0.8)
+	w.observe(b, a, a.Home, 0.8)
+	_, d := w.nearest(a, b.Home)
+	if len(a.Met) == 1 || len(b.Met) == 1 || w.R.Float64() < 0.15 {
+		w.log("The %s hear the %s across %.0f light years: a signal, then a conversation %.0f years to the answer. Neither can reach the other yet.", a.Name, b.Name, d, 2*d)
+	}
+	if a.Species.Kind == species.Parasite || b.Species.Kind == species.Parasite {
+		return
+	}
+	if w.consider(a, b) || w.consider(b, a) {
+		return
+	}
+	a.Trade[b.ID], b.Trade[a.ID] = true, true
 }
 
 // primitives: an old civilisation finds a pre-atomic one. Returns true if
 // something happened that counts as their meeting.
 func (w *World) primitives(old, young *Civ) bool {
 	switch {
-	case old.Has("xenophobic") && w.R.Float64() < 0.15:
+	case old.hates(young) && w.R.Float64() < 0.3:
 		old.Met[young.ID], young.Met[old.ID] = true, true
 		w.log("The %s find the %s on %s before they have looked up, and scour the world clean. They are thorough.", old.Name, young.Name, young.HomeName)
 		w.Bio[young.Home] = BioSimple
 		w.endCiv(young, Extinct, sprintf("were scoured from %s by the %s before they had looked up", young.HomeName, old.Name))
 		return true
-	case (old.Has("expansionist") || old.Has("martial")) && young.Species.Kind != species.Swarm && young.Species.Kind != species.PlanetaryMind && w.R.Float64() < 0.3:
+	case old.hostile() && young.Species.Kind != species.Swarm && young.Species.Kind != species.PlanetaryMind && w.R.Float64() < 0.3*(0.5+old.Dials.Greed):
 		old.Met[young.ID], young.Met[old.ID] = true, true
 		w.log("The %s find the %s on %s, still at the plough, and take them. There is no war to speak of.", old.Name, young.Name, young.HomeName)
-		w.enslave(old, young)
+		if old.Species.Kind == species.Parasite {
+			w.ride(old, young)
+		} else {
+			w.enslave(old, young)
+		}
 		return true
 	}
 	if !old.Met[young.ID] {
 		old.Met[young.ID] = true // one-sided: the old know, the young do not
+		w.observe(old, young, young.Home, 0.2)
 		w.log("The %s find the %s on %s, still young, and watch from orbit.", old.Name, young.Name, young.HomeName)
 	}
 	return false
 }
 
-func hostile(c *Civ) bool { return c.Has("xenophobic") || c.Has("expansionist") || c.Has("martial") }
-
-func warChance(c *Civ) float64 {
-	p := 0.05
-	if c.Has("xenophobic") {
-		p += 0.35
-	}
-	if c.Has("expansionist") {
-		p += 0.2
-	}
-	if c.Has("martial") {
-		p += 0.2
-	}
-	if c.Has("fighttodeath") {
-		p += 0.1
-	}
-	if c.Has("contemplative") || c.Has("submissive") {
-		p -= 0.1
-	}
-	return p
-}
-
-func (w *World) encounter(a, b *Civ) {
+// encounter is a first meeting between equals: the miracles and the
+// postures that settle it without a council, then each side's council on
+// the other, and trade if nobody strikes.
+func (w *World) encounter(a, b *Civ, watched, heard bool) {
+	w.observe(a, b, b.Home, 0.5)
+	w.observe(b, a, a.Home, 0.5)
 	// the stronger side is the one with the initiative
 	if b.Mil > a.Mil {
 		a, b = b, a
@@ -101,35 +168,49 @@ func (w *World) encounter(a, b *Civ) {
 	case a.miracle("chorus") && !b.miracle("chorus") && !b.Has("hive") && !b.Has("nonconscious") && w.R.Float64() < 0.6:
 		w.log("The %s find the %s, and speak. Within a generation the %s ask to be ruled.", a.Name, b.Name, b.Name)
 		w.vassal(a, b)
+		return
 	case b.miracle("chorus") && !a.miracle("chorus") && !a.Has("hive") && !a.Has("nonconscious") && w.R.Float64() < 0.6:
 		w.log("The %s find the %s, and the %s speak. Within a generation the %s ask to be ruled.", a.Name, b.Name, b.Name, a.Name)
 		w.vassal(b, a)
-	case a.miracle("unmaking") && hostile(b) && !b.miracle("unmaking"):
+		return
+	case a.miracle("unmaking") && b.hostile() && !b.miracle("unmaking"):
 		w.log("The %s meet the %s and learn what they hold. There is no war. The %s bend the knee.", b.Name, a.Name, b.Name)
 		w.vassal(a, b)
-	case b.Has("pacifist") && hostile(a) && gap >= 1:
+		return
+	case b.Has("pacifist") && a.hostile() && gap >= 1 && !a.Has("pacifist") && w.inReach(a, b.Home):
 		w.log("The %s find the %s, who will not fight. They are taken without a war.", a.Name, b.Name)
 		w.enslave(a, b)
-	case a.Has("pacifist") && hostile(b) && b.Mil >= a.Mil-1:
-		w.log("The %s find the %s, who will not fight. They are taken without a war.", b.Name, a.Name)
-		w.enslave(b, a)
-	case b.Has("submissive") && hostile(a) && gap >= 2:
+		return
+	case b.Has("submissive") && a.hostile() && gap >= 2 && w.inReach(a, b.Home):
 		w.log("The %s meet the %s, and seeing what they face, bend the knee. They are vassals now.", b.Name, a.Name)
 		w.vassal(a, b)
-	case !a.Has("pacifist") && !b.Has("pacifist") && w.R.Float64() < warChance(a)+warChance(b):
-		a.Wars[b.ID], b.Wars[a.ID] = true, true
-		w.log("The %s and the %s find each other. The first strikes are launched within a century.", a.Name, b.Name)
+		return
+	}
+	switch {
+	case heard:
+		w.log("The %s and the %s, who have heard each other for a long time, at last meet in the flesh.", a.Name, b.Name)
+	case watched:
+		w.log("The %s, long watched from orbit, look up and find the %s.", b.Name, a.Name)
 	default:
-		a.Trade[b.ID], b.Trade[a.ID] = true, true
-		w.log("The %s and the %s find each other. Slow messages cross the dark between them for generations, and then trade.", a.Name, b.Name)
-		if (a.Faced["plague"] || b.Faced["plague"]) && w.R.Float64() < 0.3 {
-			a.Plagued, b.Plagued = true, true
-			w.log("Something crosses with the messages and the trade. Both the %s and the %s begin to sicken.", a.Name, b.Name)
-		}
+		w.log("The %s and the %s find each other.", a.Name, b.Name)
+	}
+	if a.Wars[b.ID] {
+		return // already at war by fleet; now there is a front
+	}
+	if w.consider(a, b) || w.consider(b, a) {
+		return
+	}
+	a.Trade[b.ID], b.Trade[a.ID] = true, true
+	w.log("Slow messages cross the dark between the %s and the %s for generations, and then trade.", a.Name, b.Name)
+	if (a.Faced["plague"] || b.Faced["plague"]) && w.R.Float64() < 0.3 {
+		a.Plagued, b.Plagued = true, true
+		w.log("Something crosses with the messages and the trade. Both the %s and the %s begin to sicken.", a.Name, b.Name)
 	}
 }
 
-// infection: a parasite meets a host species.
+// infection: a parasite meets a host species. The parasite always opens;
+// the host's Infection filter is its first response, and the war that
+// follows is fought by conversion and burning.
 func (w *World) infection(a, b *Civ) {
 	p, h := a, b
 	if p.Species.Kind != species.Parasite {
@@ -140,35 +221,21 @@ func (w *World) infection(a, b *Civ) {
 		return
 	}
 	w.log("The %s find the %s. Within a generation the %s are inside them.", p.Name, h.Name, p.Name)
-	switch w.face(h, "infection", 0) {
+	out := w.face(h, "infection", 0)
+	wr := w.declare(p, h, "infection")
+	if wr == nil {
+		return
+	}
+	hi := wr.side(h.ID)
+	switch out {
 	case Overcome:
-		h.Wars[p.ID], p.Wars[h.ID] = true, true
+		wr.Will[hi] += 1
 	case Scarred:
-		lost := 0
-		for _, s := range append([]int(nil), h.Systems...) {
-			if s != h.Home && w.R.Float64() < 0.5 {
-				w.loseSystem(h, s, "host-world", "")
-				w.Owner[s] = p.ID
-				p.Systems = append(p.Systems, s)
-				lost++
-			}
-		}
-		w.log("The %s burn %d of their own worlds to stop it. It stops.", h.Name, lost)
-		h.Wars[p.ID], p.Wars[h.ID] = true, true
+		wr.Burn = true
+		w.log("The %s cannot cut it out. They will burn what it takes.", h.Name)
 	case Declined:
-		w.enslave(p, h)
-		p.Hosts++
-		gained := 0
-		for _, k := range knownOf(h) {
-			if !p.Known[k] && w.R.Float64() < 0.5 {
-				if mode, _ := w.aptitude(p, tech.Get(k)); mode == aptDear {
-					p.Known[k] = true
-					gained++
-				}
-			}
-		}
-		w.recompute(p)
-		w.log("The %s are still there, and still themselves, mostly. They do what the %s want now, and what they knew, the %s know.", h.Name, p.Name, p.Name)
+		wr.Will[hi] = 0
+		w.log("The %s do not fight it. World by world, they are ridden.", h.Name)
 	}
 }
 
@@ -198,84 +265,6 @@ func (w *World) vassal(m, s *Civ) {
 	s.Seen = m.Declines
 	delete(m.Wars, s.ID)
 	delete(s.Wars, m.ID)
-}
-
-// war: each side has a chance per tick to win a battle and take a world.
-// Losing the last colony puts the home at stake and ends the war.
-func (w *World) war(c *Civ) {
-	for _, eid := range sortedInts(c.Wars) {
-		e := w.Civs[eid]
-		if !e.Active() {
-			delete(c.Wars, eid)
-			continue
-		}
-		c.Morale -= 0.03 * w.dt
-		if w.chance(0.02) && len(c.Systems) > 1 && len(e.Systems) > 1 {
-			delete(c.Wars, eid)
-			delete(e.Wars, c.ID)
-			w.log("The war between the %s and the %s ends. Neither side is sure who won.", c.Name, e.Name)
-			continue
-		}
-		if !w.chance(0.04) {
-			continue
-		}
-		home := 0.0
-		if len(e.Systems) == 1 {
-			home = 1.5 // the last world is defended like the last world
-		}
-		if c.Mil+c.warBonus()+w.R.NormFloat64()*1.5 < e.Mil+e.warBonus()+home+w.R.NormFloat64()*1.5 {
-			continue // the strike is answered; the other side gets its own turn
-		}
-		w.battleWon(c, e)
-	}
-}
-
-func (w *World) battleWon(c, e *Civ) {
-	if len(e.Systems) > 1 {
-		t := e.Systems[w.R.IntN(len(e.Systems))]
-		if t == e.Home {
-			return
-		}
-		if c.miracle("unmaking") {
-			w.Bio[t] = BioNone
-			w.loseSystem(e, t, "unmade world", "")
-			w.log("The %s unmake %s, a %s of the %s. There is nothing left to glass.", c.Name, w.star(t), e.Species.Kind.Flavour().Colony, e.Name)
-		} else {
-			w.Bio[t] = BioSimple
-			w.loseSystem(e, t, "glassed world", "")
-			if w.R.Float64() < 0.4 {
-				w.log("The %s glass %s, a %s of the %s.", c.Name, w.star(t), e.Species.Kind.Flavour().Colony, e.Name)
-			}
-		}
-		w.face(e, "hold", 0)
-		return
-	}
-	// the home is all that is left
-	delete(c.Wars, e.ID)
-	delete(e.Wars, c.ID)
-	switch {
-	case c.miracle("unmaking") && !c.Has("pacifist") && (e.Has("fighttodeath") || w.R.Float64() < 0.5):
-		w.Bio[e.Home] = BioNone
-		w.log("The %s unmake %s, homeworld of the %s. It is not there any more.", c.Name, e.HomeName, e.Name)
-		w.endCiv(e, Extinct, sprintf("were unmade by the %s", c.Name))
-	case e.Has("fighttodeath") || (c.Has("xenophobic") && w.R.Float64() < 0.7):
-		w.Bio[e.Home] = BioNone
-		w.log("A relativistic strike from the %s shatters %s, homeworld of the %s. They never surrendered.", c.Name, e.HomeName, e.Name)
-		w.endCiv(e, Extinct, sprintf("were annihilated in war with the %s", c.Name))
-	case e.Species.Kind == species.Swarm:
-		w.Bio[e.Home] = BioSimple
-		w.log("The %s burn out the last nest of the %s. A swarm cannot be held; it can only be ended.", c.Name, e.Name)
-		w.endCiv(e, Extinct, sprintf("were burned out nest by nest by the %s", c.Name))
-	case e.Species.Kind == species.PlanetaryMind:
-		w.Bio[e.Home] = BioSimple
-		w.log("The %s take %s, and there is nothing to rule. The %s were the world, and the world is dead.", c.Name, e.HomeName, e.Name)
-		w.endCiv(e, Extinct, sprintf("died when %s was taken by the %s", e.HomeName, c.Name))
-	case c.Has("pacifist"):
-		w.log("The %s defeat the %s and, having no use for a conquest, leave them be.", c.Name, e.Name)
-	default:
-		w.log("The %s break the last defences of %s.", c.Name, e.HomeName)
-		w.enslave(c, e)
-	}
 }
 
 // revolt: slaves and vassals watch their master. A master's decline is the

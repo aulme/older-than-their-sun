@@ -104,14 +104,27 @@ func (w *World) recompute(c *Civ) {
 	if n := len(c.Systems); n > 4 && !ansible && !c.Has("hive") {
 		soc -= min(3, 0.15*float64(n-4))
 	}
-	// slaves feed the master's armies
-	slaves := 0
+	// dominion: the held feed the master's armies, works and confidence, and
+	// lose more than the master gains; a vassal gives half and loses half
+	slaves, vassals := 0, 0
 	for _, o := range w.Civs {
-		if o.Living() && o.Master == c.ID && !o.Vassal {
-			slaves++
+		if o.Living() && o.Master == c.ID {
+			if o.Vassal {
+				vassals++
+			} else {
+				slaves++
+			}
 		}
 	}
-	mil += min(2, 0.5*float64(slaves))
+	held := min(4, float64(slaves)+0.5*float64(vassals))
+	mil, sur, soc = mil+0.4*held, sur+0.2*held, soc+0.3*held
+	if !c.Free() {
+		if c.Vassal {
+			mil, sur, soc = mil-0.3, sur-0.1, soc-0.2
+		} else {
+			mil, sur, soc = mil-0.8, sur-0.4, soc-0.6
+		}
+	}
 	switch c.Species.Kind {
 	case species.Parasite:
 		soc += min(2, 0.5*float64(c.Hosts+slaves)) // a parasite is as rich as its hosts
@@ -125,7 +138,9 @@ func (w *World) recompute(c *Civ) {
 		env++ // they change themselves instead of the world
 	}
 	soc += c.Morale
+	mil -= c.Away // what is out with the fleets
 	c.Mil, c.Sur, c.Soc = clamp(mil, 0, 10), clamp(sur, 0, 10), clamp(soc, 0, 10)
+	w.setDials(c)
 	reach *= c.Species.ReachMul()
 	if !c.Free() {
 		if c.Vassal {

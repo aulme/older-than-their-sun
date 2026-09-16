@@ -16,6 +16,7 @@ func main() {
 	stars := flag.Int("stars", 400, "number of stars")
 	full := flag.Bool("full", false, "print known tech per civilisation")
 	debug := flag.Bool("debug", false, "log the state of the galaxy every million years")
+	ai := flag.Bool("ai", false, "log every council's reasoning")
 	stats := flag.Bool("stats", false, "print one line of numbers instead of the legends")
 	at := flag.String("at", "sol", "where in the galaxy: a named place, a feature such as \"Cygnus X-1\", or x,y,z in kpc (see -map)")
 	mapOnly := flag.Bool("map", false, "print a chart of the galaxy, the laws from centre to rim, and the named places, then exit")
@@ -34,6 +35,7 @@ func main() {
 	cfg.Region = *at
 	cfg.Stars = *stars
 	cfg.Debug = *debug
+	cfg.TraceAI = *ai
 	w := history.Generate(*seed, cfg)
 	if *stats {
 		legends.Stats(os.Stdout, w)

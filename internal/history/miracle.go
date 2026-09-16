@@ -102,7 +102,7 @@ func (c *Civ) leapWeight(key string) float64 {
 			m *= 2.5
 		}
 	case "unmaking":
-		if c.Has("martial") || c.Has("xenophobic") {
+		if c.Has("conqueror") || c.Has("xenophobic") {
 			m *= 2.5
 		}
 		if c.Has("pacifist") {

@@ -33,6 +33,10 @@ type Rec struct {
 	Name      string             `json:"name"`
 	Kind      string             `json:"kind"`
 	Traits    []string           `json:"traits"`
+	Posture   string             `json:"posture"`
+	Honour    string             `json:"honour"`
+	Tally     history.Tally      `json:"tally"`
+	Met       int                `json:"met"`
 	World     string             `json:"world"`
 	Made      string             `json:"made,omitempty"`
 	Born      float64            `json:"born_myr"` // Myr after the dawn of the age
@@ -83,6 +87,7 @@ func main() {
 	type run struct {
 		seed  uint64
 		recs  []Rec
+		wars  []WarRec
 		stats string
 		ages  float64
 	}
@@ -98,25 +103,29 @@ func main() {
 			w := history.Generate(seed, cfg)
 			var sb strings.Builder
 			legends.Stats(&sb, w)
-			runs[i] = run{seed: seed, recs: flatten(w), stats: sb.String(), ages: float64(w.Present-w.Cfg.Dawn) / 1e6}
+			runs[i] = run{seed: seed, recs: flatten(w), wars: flattenWars(w), stats: sb.String(), ages: float64(w.Present-w.Cfg.Dawn) / 1e6}
 		}(i)
 	}
 	wg.Wait()
 
 	var recs []Rec
+	var wars []WarRec
 	var stats []string
 	ageSum := 0.0
 	for _, r := range runs {
 		recs = append(recs, r.recs...)
+		wars = append(wars, r.wars...)
 		stats = append(stats, r.stats)
 		ageSum += r.ages
 	}
 	must(writeJSONL(filepath.Join(*out, "civs.jsonl"), recs))
+	must(writeWars(filepath.Join(*out, "wars.jsonl"), wars))
 	must(os.WriteFile(filepath.Join(*out, "stats.txt"), []byte(strings.Join(stats, "")), 0o644))
 	f, err := os.Create(filepath.Join(*out, "report.md"))
 	must(err)
 	defer f.Close()
 	report(f, recs, *seeds, *from, *at, ageSum/float64(*seeds))
+	warReport(f, recs, wars, *seeds)
 	fmt.Printf("%d civilisations over %d worlds; wrote %s\n", len(recs), *seeds, *out)
 }
 
@@ -146,7 +155,15 @@ func flatten(w *history.World) []Rec {
 		}
 		for _, t := range c.Species.Traits {
 			r.Traits = append(r.Traits, t.Key)
+			switch t.Group {
+			case "stance":
+				r.Posture = t.Key
+			case "honour":
+				r.Honour = t.Key
+			}
 		}
+		r.Tally = c.Tally
+		r.Met = len(c.Met)
 		for k := range c.Known {
 			r.Known = append(r.Known, k)
 			r.ever[k] = true

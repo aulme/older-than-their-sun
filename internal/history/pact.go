@@ -1,0 +1,510 @@
+package history
+
+import "math"
+
+// Pacts, messages and reputation. Diplomacy travels at light speed: a
+// proposal, a call for help or a report is a message that arrives after
+// the distance in years, unless the sender holds the Voice. A pact has a
+// kind and a target. Defence is a relief fleet. Betrayal is recorded on the
+// world, and everyone weighs it.
+
+// PactKind is what a pact binds its members to.
+type PactKind uint8
+
+const (
+	Defensive PactKind = iota
+	Aggressive
+	Both
+)
+
+func (k PactKind) String() string { return [...]string{"defence", "war", "defence and war"}[k] }
+
+// Pact is an alliance.
+type Pact struct {
+	ID      int
+	Members []int
+	Kind    PactKind
+	Target  int // the people or horror it is against, -1 for whoever comes
+	Formed  Year
+	Ended   Year
+	Over    bool
+}
+
+// MsgKind is what a message carries.
+type MsgKind uint8
+
+const (
+	MsgPact MsgKind = iota
+	MsgCall
+	MsgIntel
+)
+
+// Message is one thing said across the dark.
+type Message struct {
+	From, To int
+	Kind     MsgKind
+	Sent     Year
+	Arrive   Year
+	Pact     int      // an existing pact to join, -1
+	PactKind PactKind // for proposals
+	Target   int      // the enemy, for proposals and calls
+	About    int      // the subject of a report
+	Intel    *Intel
+}
+
+// Betrayal is a promise broken, or with negative weight, kept at a cost.
+type Betrayal struct {
+	By, Against int
+	Year        Year
+	Shape       string
+	Weight      float64
+}
+
+// send queues a message with the lag of light.
+func (w *World) send(from, to *Civ, m *Message) {
+	m.From, m.To, m.Sent = from.ID, to.ID, w.Now
+	lag := 0.0
+	if !from.miracle("ansible") {
+		_, lag = w.nearest(from, to.Home)
+	}
+	m.Arrive = w.Now + Year(lag)
+	w.Messages = append(w.Messages, m)
+}
+
+// tickMessages delivers what has arrived.
+func (w *World) tickMessages() {
+	pending := w.Messages
+	w.Messages = nil
+	var keep []*Message
+	for _, m := range pending {
+		if m.Arrive > w.Now {
+			keep = append(keep, m)
+			continue
+		}
+		from, to := w.Civs[m.From], w.Civs[m.To]
+		if !to.Active() || !from.Living() {
+			continue
+		}
+		switch m.Kind {
+		case MsgIntel:
+			to.receive(m.About, m.Intel)
+		case MsgPact:
+			w.answerPact(to, from, m)
+		case MsgCall:
+			if m.Target >= 0 {
+				w.answerCall(to, from, w.Civs[m.Target])
+			}
+		}
+	}
+	w.Messages = append(w.Messages, keep...)
+}
+
+// allied says whether two peoples share a pact.
+func (w *World) allied(c, e *Civ) bool {
+	for _, pid := range c.Pacts {
+		p := w.Pacts[pid]
+		if !p.Over && contains(p.Members, e.ID) {
+			return true
+		}
+	}
+	return false
+}
+
+// pactWith finds the pact two peoples share, or nil.
+func (w *World) pactWith(c, e *Civ) *Pact {
+	for _, pid := range c.Pacts {
+		p := w.Pacts[pid]
+		if !p.Over && contains(p.Members, e.ID) {
+			return p
+		}
+	}
+	return nil
+}
+
+// threat is the people c most fears in reach, or nil.
+func (w *World) threat(c *Civ) *Civ {
+	var worst *Civ
+	worstMil := 0.0
+	for _, eid := range sortedInts(c.Met) {
+		e := w.Civs[eid]
+		if !e.Active() || !e.Free() || w.allied(c, e) || e.Master == c.ID {
+			continue
+		}
+		mil, _ := w.believe(c, e)
+		if mil < c.Mil-0.5 {
+			continue
+		}
+		if !(e.hostile() || e.hates(c) || len(e.Wars) > 0 || e.Ruled > 0 || c.Grudge[eid] > 0) {
+			continue
+		}
+		if !w.inReach(e, c.Home) && len(w.front(e, c)) == 0 && w.G.Dist(c.Home, e.Home) > e.Reach+c.Reach+10 {
+			continue
+		}
+		if worst == nil || mil > worstMil {
+			worst, worstMil = e, mil
+		}
+	}
+	return worst
+}
+
+// proposePact is a council's diplomacy: confederates seek defence against
+// a threat both can see, conquerors and the vengeful seek partners in war.
+func (w *World) proposePact(c *Civ) {
+	rate := 0.08
+	kind := Defensive
+	var target *Civ
+	switch c.posture() {
+	case "confederate":
+		rate = 0.5
+	case "defensive":
+		rate = 0.15
+	case "conqueror", "vengeful":
+		rate, kind = 0.2, Aggressive
+	}
+	if w.R.Float64() > rate {
+		return
+	}
+	if kind == Aggressive {
+		for _, eid := range sortedInts(c.Met) {
+			e := w.Civs[eid]
+			if !e.Active() || !e.Free() || w.allied(c, e) || c.Truce[eid] > w.Now {
+				continue
+			}
+			if _, wants, _ := w.bar(c, e); wants {
+				target = e
+				break
+			}
+		}
+	} else {
+		target = w.threat(c)
+	}
+	if target == nil {
+		return
+	}
+	for _, fid := range sortedInts(c.Met) {
+		f := w.Civs[fid]
+		if f == target || !f.Active() || !f.Free() || f.Wars[c.ID] || w.allied(c, f) || c.hates(f) || f.hates(c) {
+			continue
+		}
+		if c.Asked[fid]+30_000 > w.Now {
+			continue
+		}
+		if kind == Aggressive && !(f.hostile() || f.Grudge[target.ID] > 0) {
+			continue
+		}
+		if w.allied(f, target) {
+			continue
+		}
+		c.Asked[fid] = w.Now
+		pid := -1
+		for _, x := range c.Pacts {
+			if p := w.Pacts[x]; !p.Over && p.Kind == kind && p.Target == target.ID {
+				pid = x
+			}
+		}
+		w.send(c, f, &Message{Kind: MsgPact, PactKind: kind, Target: target.ID, Pact: pid})
+		return
+	}
+}
+
+// answerPact is a people weighing an offer: the appraisal with posture on
+// top, less the proposer's infamy.
+func (w *World) answerPact(f, c *Civ, m *Message) {
+	if !f.Active() || !c.Active() || f.hates(c) || c.hates(f) || f.Wars[c.ID] || w.allied(f, c) {
+		return
+	}
+	var e *Civ
+	if m.Target >= 0 {
+		e = w.Civs[m.Target]
+		if !e.Living() {
+			return
+		}
+	}
+	score := 0.0
+	if m.PactKind == Aggressive {
+		switch f.posture() {
+		case "pacifist", "defensive", "submissive":
+			return
+		case "confederate":
+			if e == nil || f.Grudge[e.ID] == 0 {
+				return
+			}
+		}
+		if e != nil && w.allied(f, e) {
+			return
+		}
+		switch f.posture() {
+		case "conqueror":
+			score += 0.3
+		case "opportunist":
+			if mil, _ := w.believe(f, e); mil < f.Mil {
+				score += 0.2
+			} else {
+				score -= 0.2
+			}
+		case "vengeful":
+			if e != nil && f.Grudge[e.ID] > 0 {
+				score += 0.4
+			} else {
+				score -= 0.3
+			}
+		case "unyielding":
+			score += 0.1
+		}
+		score += 0.5 * f.Dials.Greed
+	} else {
+		if e != nil {
+			mil, _ := w.believe(f, e)
+			score += f.Dials.Fear * clamp(0.5+0.25*(mil-f.Mil), 0, 1.5)
+			if f.Met[e.ID] && (w.inReach(e, f.Home) || len(w.front(e, f)) > 0) {
+				score += 0.2
+			}
+			if f.Wars[e.ID] {
+				score += 0.3
+			}
+			if f.Grudge[e.ID] > 0 {
+				score += 0.2
+			}
+		}
+		switch f.posture() {
+		case "confederate":
+			score += 0.3
+		case "defensive":
+			score += 0.2
+		case "pacifist", "submissive", "vengeful":
+			score += 0.1
+		case "opportunist":
+			if c.Mil > f.Mil {
+				score += 0.2
+			} else {
+				score -= 0.2
+			}
+		case "conqueror":
+			score -= 0.1
+		}
+	}
+	score -= 0.1 * difference(f.Species, c.Species)
+	score -= 0.3 * w.infamy(c)
+	score += 0.15 * w.renown(c)
+	score += 0.2 * (f.Dials.Loyalty - 0.5)
+	if w.Cfg.TraceAI {
+		name := "whoever comes"
+		if e != nil {
+			name = "the " + e.Name
+		}
+		w.log("[the %s weigh a pact of %s with the %s against %s: %.2f]", f.Name, m.PactKind, c.Name, name, score)
+	}
+	if score <= 0.45 {
+		c.Tally.Refused++
+		if w.R.Float64() < 0.3 {
+			if e != nil {
+				w.log("The %s ask the %s for a pact against the %s, and are refused.", c.Name, f.Name, e.Name)
+			} else {
+				w.log("The %s ask the %s for a pact, and are refused.", c.Name, f.Name)
+			}
+		}
+		return
+	}
+	w.formPact(c, f, m.PactKind, m.Target, m.Pact)
+}
+
+// formPact makes or joins a pact.
+func (w *World) formPact(c, f *Civ, kind PactKind, target int, pid int) {
+	var p *Pact
+	if pid >= 0 && pid < len(w.Pacts) && !w.Pacts[pid].Over && contains(w.Pacts[pid].Members, c.ID) {
+		p = w.Pacts[pid]
+		p.Members = append(p.Members, f.ID)
+		f.Pacts = append(f.Pacts, p.ID)
+	} else {
+		p = &Pact{ID: len(w.Pacts), Members: []int{c.ID, f.ID}, Kind: kind, Target: target, Formed: w.Now}
+		w.Pacts = append(w.Pacts, p)
+		c.Pacts = append(c.Pacts, p.ID)
+		f.Pacts = append(f.Pacts, p.ID)
+	}
+	c.Tally.Pacts++
+	f.Tally.Pacts++
+	c.Trade[f.ID], f.Trade[c.ID] = true, true
+	against := "whoever comes"
+	if target >= 0 {
+		against = "the " + w.Civs[target].Name
+	}
+	w.log("The %s and the %s swear a pact of %s against %s.", c.Name, f.Name, kind, against)
+	if target >= 0 && c.Wars[target] {
+		w.answerCall(f, c, w.Civs[target])
+	}
+}
+
+// callAllies is the attacked calling on its pacts of defence.
+func (w *World) callAllies(v, a *Civ, wr *War) {
+	for _, pid := range v.Pacts {
+		p := w.Pacts[pid]
+		if p.Over || p.Kind == Aggressive {
+			continue
+		}
+		for _, mid := range p.Members {
+			m := w.Civs[mid]
+			if mid == v.ID || !m.Active() || m.Wars[a.ID] || wr.Called[mid] {
+				continue
+			}
+			wr.Called[mid] = true
+			w.send(v, m, &Message{Kind: MsgCall, Target: a.ID, Pact: pid})
+			v.Tally.Called++
+		}
+	}
+}
+
+// joinAllies is the attacker's pacts of war coming in with it.
+func (w *World) joinAllies(c, e *Civ, wr *War) {
+	for _, pid := range c.Pacts {
+		p := w.Pacts[pid]
+		if p.Over || p.Kind == Defensive || (p.Target >= 0 && p.Target != e.ID) {
+			continue
+		}
+		for _, mid := range p.Members {
+			m := w.Civs[mid]
+			if mid == c.ID || !m.Active() || m.Wars[e.ID] || len(w.front(m, e)) == 0 {
+				continue
+			}
+			if wr2 := w.declare(m, e, "their pact with the "+c.Name); wr2 != nil {
+				wr2.Pact, wr2.Principal = pid, c.ID
+			}
+		}
+	}
+}
+
+// answerCall is an ally deciding whether to come: join at the front if it
+// has one, send relief if that helps and home stays safe, or not come.
+func (w *World) answerCall(m, v, a *Civ) {
+	if !m.Active() || !v.Active() || !a.Active() || m.Wars[a.ID] || !w.allied(m, v) || !v.Wars[a.ID] {
+		return
+	}
+	p := w.pactWith(m, v)
+	if len(w.front(m, a)) > 0 {
+		if wr := w.declare(m, a, "their pact with the "+v.Name); wr != nil && p != nil {
+			wr.Pact, wr.Principal = p.ID, v.ID
+		}
+		return
+	}
+	total := m.Mil + m.Away
+	share := max(0.3*m.Mil, max(0.1*total, 1))
+	milA, _ := w.believe(m, a)
+	helps := share+v.Mil >= milA-1
+	safe := m.Mil-share >= 2 || m.Dials.Fear < 0.3
+	want := m.Dials.Loyalty - 0.6*m.Dials.Fear + 0.3
+	if m.posture() == "confederate" {
+		want += 0.2
+	}
+	if w.betrayed(m, v) {
+		want -= 1
+	}
+	if w.Cfg.TraceAI {
+		w.log("[the %s are called by the %s against the %s: want %.2f, helps %v, safe %v]", m.Name, v.Name, a.Name, want, helps, safe)
+	}
+	if want > 0.4 && helps && safe && share <= m.Mil {
+		w.launch(m, Relief, v, v.Home, share)
+		return
+	}
+	if m.Mil >= 3 {
+		w.betray(m, v, "did not come when called", 0.5)
+		w.log("The %s call on the %s, who do not come.", v.Name, m.Name)
+	}
+}
+
+// betray records a promise broken.
+func (w *World) betray(by, against *Civ, shape string, weight float64) {
+	w.Betrayals = append(w.Betrayals, Betrayal{By: by.ID, Against: against.ID, Year: w.Now, Shape: shape, Weight: weight})
+	by.Tally.Betrayals++
+	against.Grudge[by.ID] += 2 * weight
+}
+
+// faith records a promise kept at a cost.
+func (w *World) faith(by, forWhom *Civ, weight float64) {
+	w.Betrayals = append(w.Betrayals, Betrayal{By: by.ID, Against: forWhom.ID, Year: w.Now, Shape: "came when called", Weight: -weight})
+}
+
+// betrayed says whether one people has broken faith with another.
+func (w *World) betrayed(v, by *Civ) bool {
+	for _, b := range w.Betrayals {
+		if b.By == by.ID && b.Against == v.ID && b.Weight > 0 {
+			return true
+		}
+	}
+	return false
+}
+
+// infamy is what the galaxy remembers against a people, halved every two
+// hundred thousand years.
+func (w *World) infamy(c *Civ) float64 {
+	x := 0.0
+	for _, b := range w.Betrayals {
+		if b.By == c.ID && b.Weight > 0 {
+			x += b.Weight * math.Pow(0.5, float64(w.Now-b.Year)/200_000)
+		}
+	}
+	return x
+}
+
+// renown is faith kept, remembered the same way.
+func (w *World) renown(c *Civ) float64 {
+	x := 0.0
+	for _, b := range w.Betrayals {
+		if b.By == c.ID && b.Weight < 0 {
+			x -= b.Weight * math.Pow(0.5, float64(w.Now-b.Year)/200_000)
+		}
+	}
+	return x
+}
+
+// breakPacts ends every pact two peoples share.
+func (w *World) breakPacts(c, h *Civ) {
+	for _, pid := range c.Pacts {
+		p := w.Pacts[pid]
+		if p.Over || !contains(p.Members, h.ID) {
+			continue
+		}
+		p.Members = remove(p.Members, c.ID)
+		if len(p.Members) < 2 {
+			p.Over, p.Ended = true, w.Now
+		}
+	}
+	delete(c.Trade, h.ID)
+	delete(h.Trade, c.ID)
+}
+
+// warEnded is the pact side of a war's end: a principal's peace binds its
+// allies, and an ally's own peace is a separate peace.
+func (w *World) warEnded(wr *War) {
+	a, b := w.Civs[wr.Sides[0]], w.Civs[wr.Sides[1]]
+	if wr.Principal < 0 {
+		for _, o := range w.Wars {
+			if o.Over || o.Principal < 0 {
+				continue
+			}
+			if (o.Principal == a.ID && (o.Sides[0] == b.ID || o.Sides[1] == b.ID)) || (o.Principal == b.ID && (o.Sides[0] == a.ID || o.Sides[1] == a.ID)) {
+				w.endWar(o, "peace by the pact")
+			}
+		}
+		return
+	}
+	if wr.Result != "peace" && wr.Result != "capitulation" {
+		return
+	}
+	pr := w.Civs[wr.Principal]
+	ally, enemy := a, b
+	if w.pactWith(pr, b) != nil && w.pactWith(pr, a) == nil {
+		ally, enemy = b, a
+	}
+	if pr.Active() && pr.Wars[enemy.ID] {
+		w.betray(ally, pr, "made a separate peace", 0.3)
+		w.log("The %s make their own peace with the %s and leave the %s to fight on.", ally.Name, enemy.Name, pr.Name)
+	}
+}
+
+// endWars closes every war a people is in, when it falls.
+func (w *World) endWars(c *Civ, result string) {
+	for _, wr := range w.Wars {
+		if !wr.Over && (wr.Sides[0] == c.ID || wr.Sides[1] == c.ID) {
+			w.endWar(wr, result)
+		}
+	}
+}

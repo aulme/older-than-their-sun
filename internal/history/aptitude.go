@@ -96,9 +96,9 @@ var aptitudes = []apt{
 	// stance
 	dear("firearms", "pacifist", 2), dear("mechanised_war", "pacifist", 2), dear("orbital_weapons", "pacifist", 2), dear("relativistic_weapons", "pacifist", 3), dear("nova_bombs", "pacifist", 3),
 	never("stellar_weapons", "pacifist", ""), never("unmaking", "pacifist", ""),
-	dear("firearms", "martial", 0.6), dear("mechanised_war", "martial", 0.6), dear("orbital_weapons", "martial", 0.7), dear("defence_grid", "martial", 0.7),
+	dear("firearms", "conqueror", 0.6), dear("mechanised_war", "conqueror", 0.6), dear("orbital_weapons", "conqueror", 0.7), dear("defence_grid", "conqueror", 0.7),
 	dear("defence_grid", "xenophobic", 0.5), dear("memetics", "xenophobic", 1.5),
-	dear("defence_grid", "fighttodeath", 0.7), dear("firearms", "submissive", 1.3),
+	dear("defence_grid", "unyielding", 0.7), dear("firearms", "submissive", 1.3),
 	// drive
 	dear("star_gazing", "curious", 0.7), dear("scientific_method", "curious", 0.7), dear("wormhole_physics", "curious", 0.8),
 	dear("machine_minds", "cautious", 1.5), dear("self_replication", "cautious", 1.5), dear("wormhole_physics", "cautious", 1.3), dear("stellar_engineering", "cautious", 1.5), dear("closed_ecologies", "cautious", 0.8), dear("defence_grid", "cautious", 0.8),

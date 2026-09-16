@@ -96,7 +96,7 @@ func (w *World) find(c *Civ) {
 	if c.Has("xenophobic") || c.Has("contemplative") {
 		seal += 1.5
 	}
-	if c.Has("pragmatic") || c.Has("martial") {
+	if c.Has("pragmatic") || c.Has("conqueror") {
 		wield += 2
 	}
 	if l.Kind == Sleeper || l.Kind == Threat {

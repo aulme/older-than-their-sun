@@ -23,9 +23,12 @@ func (w *World) spawnCiv(home int, sp *species.Species, maker int) *Civ {
 		Cradle: home, Born: w.Now, Renewed: w.Now, Systems: []int{home}, Peak: 1, Master: maker,
 		Known: map[string]bool{}, Learned: map[string]Year{}, Focus: map[string]float64{}, Locked: map[string]bool{},
 		Structures: map[string]int{}, Found: map[int]bool{}, Heard: map[int]bool{},
-		Wars: map[int]bool{}, Met: map[int]bool{}, Trade: map[int]bool{},
+		Wars: map[int]bool{}, Met: map[int]bool{}, Reached: map[int]bool{}, Trade: map[int]bool{},
 		Faced: map[string]bool{}, Scars: map[string]bool{}, Boons: map[string]bool{}, Miracles: map[string]string{},
 		Lifted: map[string]bool{},
+		Intel:  map[int]*Intel{}, Grudge: map[int]float64{}, Truce: map[int]Year{}, Fought: map[int]int{},
+		Watched: map[int]bool{}, Asked: map[int]Year{}, Scouted: map[int]Year{}, Ridden: map[int]bool{},
+		LastDark: -1 << 40,
 	}
 	if st.Real {
 		c.HomeName = st.Name // a real star keeps the name Earth knows it by
@@ -84,7 +87,7 @@ func (w *World) tickCivs() {
 		if c.Ascended == 0 && c.Reach >= 1 && len(c.held()) > 0 {
 			c.Ascended = w.Now // the born reach the stars, and the miracle begins to matter
 		}
-		for _, step := range []func(*Civ){w.arrivals, w.research, w.expand, w.build, w.dyingSun, w.find, w.war, w.revolt, w.ambientFilters, w.uplift} {
+		for _, step := range []func(*Civ){w.arrivals, w.research, w.expand, w.build, w.dyingSun, w.find, w.intelStep, w.council, w.wartime, w.revolt, w.ambientFilters, w.uplift} {
 			if !c.Active() {
 				break
 			}
@@ -344,6 +347,7 @@ func (w *World) contract(c *Civ, cause string) {
 	c.Fell = w.Now
 	c.Title = names.Title(w.R)
 	c.Voyages = nil
+	w.endWars(c, "the fall of a side")
 	c.Wars = map[int]bool{}
 	w.dropWielded(c, 0.5)
 	w.log("The %s %s. What remains of them lives on %s under %s. Once they held %s.", c.Name, cause, w.star(keep), c.Title, systems(c.Peak))
@@ -374,6 +378,7 @@ func (w *World) endCiv(c *Civ, f Fate, cause string) {
 		c.Fell = w.Now
 	}
 	c.Voyages = nil
+	w.endWars(c, "the fall of a side")
 	c.Wars = map[int]bool{}
 	w.dropWielded(c, 1)
 	if f == Extinct && wasRemnant {
@@ -389,6 +394,7 @@ func (w *World) darkAge(c *Civ, why string) {
 		return
 	}
 	c.DarkAges++
+	c.LastDark = w.Now
 	c.Morale -= 1
 	c.Voyages = nil
 	if w.wreck == nil {

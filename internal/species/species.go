@@ -110,17 +110,18 @@ var Archetypes = []*Archetype{
 type Trait struct {
 	Key           string
 	Name          string // how the legends say it
-	Group         string // org, stance, drive, bio, power, world, made
+	Group         string // org, stance, honour, drive, bio, sense, power, world, made
 	Weight        float64
 	Mil, Sur, Soc float64
 	Reach         float64 // multiplier, 0 means 1
 	Rate          float64 // research rate multiplier, 0 means 1
 	Domains       M
 	Miracle       string // tech node key of the miracle this species is born to
+	Quiet         bool   // the common case of its group; the legends do not say it
 }
 
-// Traits is the pool. Groups org, stance and drive are common and every
-// species gets one of each; bio is uncommon; power is very rare and means
+// Traits is the pool. Groups org, stance, honour and drive are common and
+// every species gets one of each; bio is uncommon; power is very rare and means
 // the species is born to a miracle, with no tree beneath it and no filter
 // on it.
 var Traits = []*Trait{
@@ -132,12 +133,19 @@ var Traits = []*Trait{
 	{Key: "caste", Name: "a caste society", Group: "org", Weight: 15, Soc: 1, Mil: 0.5, Domains: M{"biology": 1.1, "computation": 0.9}},
 	{Key: "hive", Name: "a hive mind", Group: "org", Weight: 10, Soc: 2.5, Mil: 0.5, Domains: M{"society": 0.6, "computation": 0.8}},
 	{Key: "nonconscious", Name: "an intelligence without consciousness", Group: "org", Weight: 5, Soc: 1.5, Sur: 1, Mil: -0.5, Domains: M{"exotic": 0.6, "society": 0.4, "biology": 1.3}},
-	// stance toward others
-	{Key: "wary", Name: "wary of strangers", Group: "stance", Weight: 35},
-	{Key: "martial", Name: "a martial people", Group: "stance", Weight: 20, Mil: 1, Domains: M{"weapons": 1.3, "society": 0.9}},
-	{Key: "submissive", Name: "quick to submit", Group: "stance", Weight: 12, Mil: -0.5, Soc: 0.5},
-	{Key: "fighttodeath", Name: "a people who do not surrender", Group: "stance", Weight: 12, Mil: 1, Sur: -0.5},
+	// posture toward others: how a people makes war
 	{Key: "pacifist", Name: "pacifists", Group: "stance", Weight: 12, Mil: -1.5, Soc: 1, Domains: M{"weapons": 0.3, "biology": 1.2, "society": 1.2}},
+	{Key: "defensive", Name: "who keep to themselves", Group: "stance", Weight: 28},
+	{Key: "submissive", Name: "quick to submit", Group: "stance", Weight: 10, Mil: -0.5, Soc: 0.5},
+	{Key: "opportunist", Name: "opportunists, who prey on the weak", Group: "stance", Weight: 13, Mil: 0.5, Domains: M{"weapons": 1.1}},
+	{Key: "conqueror", Name: "conquerors", Group: "stance", Weight: 13, Mil: 1, Domains: M{"weapons": 1.3, "society": 0.9}},
+	{Key: "vengeful", Name: "who never forget a wrong", Group: "stance", Weight: 9, Mil: 0.5, Soc: 0.5},
+	{Key: "confederate", Name: "makers of pacts", Group: "stance", Weight: 8, Soc: 0.5, Domains: M{"society": 1.1}},
+	{Key: "unyielding", Name: "a people who do not surrender", Group: "stance", Weight: 7, Mil: 1, Sur: -0.5},
+	// honour: whether a promise binds
+	{Key: "faithful", Name: "true to their word", Group: "honour", Weight: 30},
+	{Key: "practical", Name: "practical about promises", Group: "honour", Weight: 50, Quiet: true},
+	{Key: "faithless", Name: "faithless", Group: "honour", Weight: 20},
 	// drive
 	{Key: "curious", Name: "curious", Group: "drive", Weight: 25, Rate: 1.1, Domains: M{"computation": 1.2, "exotic": 1.2}},
 	{Key: "expansionist", Name: "expansionist", Group: "drive", Weight: 20, Reach: 1.25, Soc: -0.5, Domains: M{"propulsion": 1.3}},
@@ -254,7 +262,7 @@ func GenerateOn(r *rand.Rand, mult int, arch string) *Species {
 	} else if mult == 2 {
 		s.Add("hardy")
 	}
-	s.Traits = append(s.Traits, pickGroup(r, "org"), pickGroup(r, "stance"), pickGroup(r, "drive"))
+	s.Traits = append(s.Traits, pickGroup(r, "org"), pickGroup(r, "stance"), pickGroup(r, "honour"), pickGroup(r, "drive"))
 	if r.Float64() < 0.5 {
 		s.Traits = append(s.Traits, pickGroup(r, "bio"))
 	}
@@ -350,7 +358,7 @@ func (s *Species) DomainMul(d string) float64 {
 func (s *Species) Describe() string {
 	var parts []string
 	for _, t := range s.Traits {
-		if t.Group == "world" || t.Group == "made" {
+		if t.Group == "world" || t.Group == "made" || t.Quiet {
 			continue
 		}
 		parts = append(parts, t.Name)

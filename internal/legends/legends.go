@@ -193,6 +193,8 @@ func Write(out io.Writer, w *history.World, full bool) {
 		p("  %s, a %s, %s%s.", h.Name, h.Kind, state, made)
 	}
 	p("")
+	wars(p, w)
+	p("")
 	gazetteer(p, w)
 	p("")
 	p("Legacies of the elder ages:")
@@ -279,6 +281,114 @@ func Write(out io.Writer, w *history.World, full bool) {
 			sort.Strings(known)
 			p("  %-14s known: %s", "", strings.Join(known, " "))
 		}
+	}
+}
+
+// wars lists the wars worth remembering: those that took a world or ended
+// a people, and every war fought more than once; then the pacts and the
+// promises broken.
+func wars(p func(string, ...any), w *history.World) {
+	p("Wars of the age:")
+	n := 0
+	for _, wr := range w.Wars {
+		moved := wr.Taken[0] + wr.Taken[1] + wr.Glassed[0] + wr.Glassed[1]
+		if moved == 0 && wr.Nth == 1 && wr.Result == "peace" {
+			continue
+		}
+		a, b := w.Civs[wr.Sides[0]], w.Civs[wr.Sides[1]]
+		name := wr.Name
+		if name == "" {
+			name = "a war"
+		}
+		nth := ""
+		if wr.Nth > 1 {
+			nth = fmt.Sprintf(", their %s", ordinalOf(wr.Nth))
+		}
+		result := wr.Result
+		if !wr.Over {
+			result = "still fought"
+		}
+		length := ""
+		if wr.Over {
+			length = fmt.Sprintf(", %s", spanOf(wr.Ended-wr.Began))
+		}
+		p("  %s: the %s against the %s%s, over %s (%s%s). %s taken, %d burned; %s.", name, a.Name, b.Name, nth, wr.Cause, year(wr.Began), length, worldsOf(wr.Taken[0]+wr.Taken[1]), wr.Glassed[0]+wr.Glassed[1], result)
+		n++
+		if n >= 60 {
+			p("  (and %d more)", len(w.Wars)-n)
+			break
+		}
+	}
+	if n == 0 {
+		p("  none worth the telling")
+	}
+	p("")
+	p("Pacts sworn:")
+	n = 0
+	for _, pc := range w.Pacts {
+		var names []string
+		for _, m := range pc.Members {
+			names = append(names, w.Civs[m].Name)
+		}
+		against := "whoever came"
+		if pc.Target >= 0 {
+			against = "the " + w.Civs[pc.Target].Name
+		}
+		state := "still held"
+		if pc.Over {
+			state = "broken " + year(pc.Ended)
+		}
+		p("  the %s, a pact of %s against %s (%s; %s).", strings.Join(names, " and the "), pc.Kind, against, year(pc.Formed), state)
+		n++
+	}
+	if n == 0 {
+		p("  none")
+	}
+	p("")
+	p("Promises remembered:")
+	n = 0
+	for _, b := range w.Betrayals {
+		if b.Weight <= 0 {
+			continue
+		}
+		p("  The %s %s the %s (%s).", w.Civs[b.By].Name, b.Shape, w.Civs[b.Against].Name, year(b.Year))
+		n++
+	}
+	if n == 0 {
+		p("  none broken")
+	}
+}
+
+func worldsOf(n int) string {
+	switch n {
+	case 0:
+		return "no worlds"
+	case 1:
+		return "one world"
+	}
+	return fmt.Sprintf("%d worlds", n)
+}
+
+func ordinalOf(n int) string {
+	switch n {
+	case 2:
+		return "second"
+	case 3:
+		return "third"
+	case 4:
+		return "fourth"
+	case 5:
+		return "fifth"
+	}
+	return fmt.Sprintf("%dth", n)
+}
+
+func spanOf(y history.Year) string {
+	switch {
+	case y < 1000:
+		return "under a thousand years"
+	default:
+		return fmt.Sprintf("%d thousand years", y/1000)
 	}
 }
 
