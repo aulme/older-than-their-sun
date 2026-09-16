@@ -178,13 +178,13 @@ func Write(out io.Writer, w *history.World, full bool) {
 		}
 	}
 	p("")
-	p("Ruins and relics of this age:")
+	p("Remains of this age:")
 	ruins := map[history.LegacyState]int{}
 	for _, l := range w.Legacies {
 		if l.Maker >= 0 {
 			ruins[l.State]++
 			if l.State != history.Lost {
-				p("  %-10s %-12s %s, at %s.", l.Kind, l.State, l.Desc, w.G.Stars[l.Star].Name)
+				p("  %-10s %-12s %s, at %s.", l.Kind, l.State, l.Describe(), w.G.Stars[l.Star].Name)
 			}
 		}
 	}
@@ -283,14 +283,19 @@ func Stats(out io.Writer, w *history.World) {
 		}
 	}
 	ruins := map[history.LegacyState]int{}
+	conds := map[history.Condition]int{}
 	nRuins := 0
 	for _, l := range w.Legacies {
 		if l.Maker >= 0 {
 			ruins[l.State]++
 			nRuins++
+			if l.State == history.Buried {
+				conds[l.Cond]++
+			}
 		}
 	}
-	fmt.Fprintf(out, "seed %d: age %.1f Myr, fade %.0f Myr, fertility %.1f%%, %d civs (lived <0.5/<1/<3/<10/10+ Myr: %d/%d/%d/%d/%d), standing %d, remnants %d, knowers %d, horrors %d, ruins %d (mastered %d, wielded %d, sealed %d, unleashed %d, crumbled %d), capped %v\n",
+	fmt.Fprintf(out, "seed %d: age %.1f Myr, fade %.0f Myr, fertility %.1f%%, %d civs (lived <0.5/<1/<3/<10/10+ Myr: %d/%d/%d/%d/%d), standing %d, remnants %d, knowers %d, horrors %d, remains %d (mastered %d, wielded %d, sealed %d, unleashed %d, crumbled %d; still buried abandoned/derelict/wreck/ruin %d/%d/%d/%d), capped %v\n",
 		w.Seed, float64(w.Present-w.Cfg.Dawn)/1e6, float64(w.Cycle.Fade)/1e6, 100*w.FertilityNow(), len(w.Civs), b[0], b[1], b[2], b[3], b[4], standing, remnants, knowers, len(w.Horrors),
-		nRuins, ruins[history.Mastered], ruins[history.Wielded], ruins[history.Sealed], ruins[history.Unleashed], ruins[history.Lost], w.Capped)
+		nRuins, ruins[history.Mastered], ruins[history.Wielded], ruins[history.Sealed], ruins[history.Unleashed], ruins[history.Lost],
+		conds[history.Abandoned], conds[history.Derelict], conds[history.Wreck], conds[history.Ruin], w.Capped)
 }

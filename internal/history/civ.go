@@ -170,14 +170,15 @@ func (w *World) targeted(c *Civ, t int) bool {
 	return false
 }
 
-// build raises a structure within reach.
+// build raises a structure within reach. Great works are few: a people
+// raises one every few hundred thousand years, and at most two of a kind.
 func (w *World) build(c *Civ) {
-	if !w.chance(0.01) {
+	if !w.chance(0.004) {
 		return
 	}
 	var can []string
 	for k := range c.Known {
-		if s := tech.Get(k).Structure; s != "" && c.Structures[s] < 3 {
+		if s := tech.Get(k).Structure; s != "" && c.Structures[s] < 2 {
 			can = append(can, s)
 		}
 	}
@@ -230,7 +231,7 @@ func (w *World) loseSystem(c *Civ, s int, kind string, cause string) {
 	for _, wk := range c.Works {
 		if wk.Star == s {
 			c.Structures[wk.Key]--
-			w.leaveRuin(c, wk)
+			w.leaveRuin(c, wk, kind)
 		} else {
 			keep = append(keep, wk)
 		}
@@ -328,6 +329,10 @@ func (w *World) darkAge(c *Civ, why string) {
 	c.DarkAges++
 	c.Morale -= 1
 	c.Voyages = nil
+	if w.wreck == nil {
+		w.wreck = &defaultWreckage
+		defer func() { w.wreck = nil }()
+	}
 	forgotten := w.forget(c, 0.3)
 	// what is forgotten is not always destroyed: a relic of the lost art may wait at home
 	if len(forgotten) > 0 && w.R.Float64() < 0.6 {

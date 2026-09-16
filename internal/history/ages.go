@@ -123,7 +123,7 @@ func (w *World) leaveLegacy(e *Elder, at Year) {
 	if s == w.G.Sol {
 		return
 	}
-	l := &Legacy{ID: len(w.Legacies), Age: e.Age, Elder: e, Maker: -1, Star: s, Horror: -1, Finder: -1}
+	l := &Legacy{ID: len(w.Legacies), Age: e.Age, Elder: e, Maker: -1, Star: s, Horror: -1, Finder: -1, Cond: Condition(w.R.IntN(2))}
 	x := w.R.Float64()
 	switch {
 	case x < 0.35:

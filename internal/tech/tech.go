@@ -181,14 +181,15 @@ type Structure struct {
 	Key, Name     string
 	Mil, Sur, Soc float64
 	Rate          float64 // research multiplier while held
+	Hardy         float64 // multiplier on decay once abandoned; less is hardier
 	Text          string  // %s civ, %s star
 }
 
 // Structures by key.
 var Structures = map[string]*Structure{
-	"arcology": {Key: "arcology", Name: "arcology", Sur: 1, Text: "The %s seal a city at %s against everything outside it."},
-	"shipyard": {Key: "shipyard", Name: "shipyard", Mil: 0.5, Text: "Yards turn above %s, building ships for the %s."},
-	"defences": {Key: "defences", Name: "defence grid", Mil: 1.5, Text: "The %s ring %s with guns that watch the sky."},
-	"ansible":  {Key: "ansible", Name: "ansible net", Soc: 1.5, Text: "The %s link %s to home without delay."},
-	"dyson":    {Key: "dyson", Name: "Dyson swarm", Sur: 0.5, Rate: 1.5, Text: "The %s enclose %s in a swarm of collectors. The star dims from outside."},
+	"arcology": {Key: "arcology", Name: "arcology", Sur: 1, Hardy: 1.2, Text: "The %s seal a city at %s against everything outside it."},
+	"shipyard": {Key: "shipyard", Name: "shipyard", Mil: 0.5, Hardy: 1.6, Text: "Yards turn above %s, building ships for the %s."},
+	"defences": {Key: "defences", Name: "defence grid", Mil: 1.5, Hardy: 0.7, Text: "The %s ring %s with guns that watch the sky."},
+	"ansible":  {Key: "ansible", Name: "ansible net", Soc: 1.5, Hardy: 0.9, Text: "The %s link %s to home without delay."},
+	"dyson":    {Key: "dyson", Name: "Dyson swarm", Sur: 0.5, Rate: 1.5, Hardy: 0.3, Text: "The %s enclose %s in a swarm of collectors. The star dims from outside."},
 }

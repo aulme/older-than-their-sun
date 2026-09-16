@@ -43,7 +43,7 @@ func (w *World) find(c *Civ) {
 	switch {
 	case own != nil && w.chance(0.05):
 		l = own
-	case w.chance(0.004):
+	case w.chance(0.0025):
 		l = cands[w.R.IntN(len(cands))]
 	default:
 		return
@@ -63,17 +63,19 @@ func (w *World) find(c *Civ) {
 		}
 		w.log("The %s find %s %s. It is older than their sun. They call its makers %s.", c.Name, l.Desc, where, l.Elder.Name)
 	case kin == 2:
-		w.log("The %s find %s %s. It is their own, from before the dark age. Something in them remembers it.", c.Name, l.Desc, where)
+		w.log("The %s find %s %s. It is their own, from before the dark age. Something in them remembers it.", c.Name, l.Describe(), where)
 	case kin == 1:
-		w.log("The %s find %s %s. The hands that made it were like their hands.", c.Name, l.Desc, where)
+		w.log("The %s find %s %s. The hands that made it were like their hands.", c.Name, l.Describe(), where)
 	default:
 		m := w.Civs[l.Maker]
 		ago := float64(w.Now-m.Fell) / 1e6
-		if c.Met[m.ID] || m.Living() {
-			w.log("The %s find %s %s, %.1f million years after the %s left it.", c.Name, l.Desc, where, ago, m.Name)
+		if (c.Met[m.ID] || m.Living()) && ago < 0.1 {
+			w.log("The %s find %s %s, not long after the %s left it.", c.Name, l.Describe(), where, m.Name)
+		} else if c.Met[m.ID] || m.Living() {
+			w.log("The %s find %s %s, %.1f million years after the %s left it.", c.Name, l.Describe(), where, ago, m.Name)
 		} else {
 			l.Name = ruinNames[w.R.IntN(len(ruinNames))]
-			w.log("The %s find %s %s. They do not know who the %s were. They call them %s.", c.Name, l.Desc, where, m.Name, l.Name)
+			w.log("The %s find %s %s. They do not know who the %s were. They call them %s.", c.Name, l.Describe(), where, m.Name, l.Name)
 		}
 	}
 
@@ -102,6 +104,10 @@ func (w *World) find(c *Civ) {
 		master += 3
 		seal = 0
 	}
+	if l.Maker >= 0 && l.Cond == Ruin {
+		wield, seal = 0, 0 // nothing to use, nothing to guard
+		master = 1
+	}
 	if l.Kind == Law {
 		master, seal = 0, 0
 	}
@@ -124,6 +130,7 @@ func (w *World) attemptMaster(c *Civ, l *Legacy) {
 	if l.Maker >= 0 {
 		diff -= 1 // made to be understood by minds of this age
 		diff -= 1.5 * float64(w.kinship(c, l))
+		diff += l.condAdj()
 	}
 	if n := l.node(); n != nil {
 		diff += 0.5 * float64(n.Era-c.Era)
@@ -161,6 +168,10 @@ func (w *World) attemptMaster(c *Civ, l *Legacy) {
 		}
 		return
 	}
+	if l.Maker >= 0 && l.Cond == Ruin {
+		w.log("The %s pick over it for centuries and learn nothing. There is not enough left.", c.Name)
+		return
+	}
 	w.log("The %s try to understand it and cannot.", c.Name)
 	w.attemptWield(c, l)
 }
@@ -170,12 +181,20 @@ func (w *World) attemptWield(c *Civ, l *Legacy) {
 		w.unleash(c, l)
 		return
 	}
+	if l.Maker >= 0 && l.Cond == Ruin {
+		w.log("The %s try to make it work. Nothing in it will ever work again.", c.Name)
+		return
+	}
 	diff := 4.5 + c.traitDiff("find")
 	if l.Maker >= 0 {
 		diff -= 1 + 1.5*float64(w.kinship(c, l))
+		diff += l.condAdj()
 	}
 	if c.Mil+w.R.NormFloat64()*1.5 >= diff {
 		l.State = Wielded
+		if l.Maker >= 0 && l.Cond == Wreck {
+			l.Cond = Derelict // repaired, after a fashion
+		}
 		c.Record = append(c.Record, "wielded a legacy of "+w.makerName(l))
 		if l.Kind == Structure && l.Maker >= 0 && (contains(c.Systems, l.Star) || (w.Owner[l.Star] < 0 && w.Held[l.Star] < 0 && w.canLive(c, l.Star))) {
 			if !contains(c.Systems, l.Star) {
@@ -221,7 +240,7 @@ func (w *World) attemptWield(c *Civ, l *Legacy) {
 }
 
 func (w *World) attemptSeal(c *Civ, l *Legacy) {
-	if c.Soc+w.R.NormFloat64()*1.5 >= 3+c.traitDiff("find") {
+	if c.Soc+w.R.NormFloat64()*1.5 >= 3+c.traitDiff("find")+min(l.condAdj(), 0) {
 		l.State = Sealed
 		c.Record = append(c.Record, "sealed a legacy of "+w.makerName(l))
 		w.log("The %s seal it, and post a watch, and the watch holds.", c.Name)

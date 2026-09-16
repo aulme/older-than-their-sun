@@ -203,6 +203,27 @@ func (s LegacyState) String() string {
 	return [...]string{"undisturbed", "sealed", "wielded", "mastered", "unleashed", "lost"}[s]
 }
 
+// Condition is the state of repair of a legacy, best to worst. Below Ruin is Lost.
+type Condition uint8
+
+const (
+	Abandoned Condition = iota // whole; everything works more or less
+	Derelict                   // bad shape, but usable
+	Wreck                      // repairable with a lot of work
+	Ruin                       // nothing usable; something may still be learned
+)
+
+func (c Condition) String() string {
+	return [...]string{"abandoned", "derelict", "wreck", "ruin"}[c]
+}
+
+// Wreckage is what an ending does to the works of the fallen: the fraction
+// destroyed outright, and the condition the rest are left in.
+type Wreckage struct {
+	Destroy float64
+	Leave   Condition
+}
+
 // Legacy is something an earlier age left on the substrate. The current age
 // writes the same record type for what it leaves.
 type Legacy struct {
@@ -219,6 +240,8 @@ type Legacy struct {
 	Horror int    // horror id for threats and sleepers, -1 if none
 	Finder int    // civ that last acted on it, -1 if none
 	Level  string // for wielded artifacts: which level it lifts
+	Cond   Condition
+	Hardy  float64 // multiplier on the rate of decay; 0 never decays
 }
 
 // Elder is a civilisation of an earlier age. No traits, only a portrait.
@@ -323,4 +346,5 @@ type scratch struct {
 	beacon      *Horror
 	incursionAt int
 	incursionBy *Horror
+	wreck       *Wreckage // set while a filter's outcome runs
 }

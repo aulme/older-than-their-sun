@@ -117,6 +117,8 @@ func (w *World) face(c *Civ, key string, diffAdj float64) Outcome {
 	}
 	var out Outcome
 	var how string
+	w.wreck = wreckOf(key)
+	defer func() { w.wreck = nil }()
 	switch {
 	case margin >= 0.5:
 		out = Overcome
