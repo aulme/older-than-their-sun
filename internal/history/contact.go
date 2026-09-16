@@ -55,18 +55,19 @@ func (w *World) touch(a, b *Civ) bool {
 	if r < 1 {
 		return false
 	}
+	ha, hb := w.holdings(a), w.holdings(b)
 	ea, eb := 0.0, 0.0
-	for _, s := range a.Systems {
+	for _, s := range ha {
 		ea = max(ea, w.G.Dist(a.Home, s))
 	}
-	for _, s := range b.Systems {
+	for _, s := range hb {
 		eb = max(eb, w.G.Dist(b.Home, s))
 	}
 	if w.G.Dist(a.Home, b.Home) > r+ea+eb {
 		return false
 	}
-	for _, sa := range a.Systems {
-		for _, sb := range b.Systems {
+	for _, sa := range ha {
+		for _, sb := range hb {
 			if w.G.Dist(sa, sb) <= r {
 				return true
 			}
@@ -93,8 +94,8 @@ func (w *World) hear(a, b *Civ) bool {
 	if a.signal() == 0 || b.signal() == 0 {
 		return false
 	}
-	for _, sa := range a.Systems {
-		for _, sb := range b.Systems {
+	for _, sa := range w.holdings(a) {
+		for _, sb := range w.holdings(b) {
 			if d := w.G.Dist(sa, sb); d <= a.signal() && d <= b.signal() {
 				return true
 			}
@@ -111,6 +112,10 @@ func (w *World) hearing(a, b *Civ) {
 	_, d := w.nearest(a, b.Home)
 	if len(a.Met) == 1 || len(b.Met) == 1 || w.R.Float64() < 0.15 {
 		w.log("The %s hear the %s across %.0f light years: a signal, then a conversation %.0f years to the answer. Neither can reach the other yet.", a.Name, b.Name, d, 2*d)
+	}
+	if a.Has("mindrider") || b.Has("mindrider") {
+		w.infection(a, b) // an idea needs no ship
+		return
 	}
 	if a.Species.Kind == species.Parasite || b.Species.Kind == species.Parasite {
 		return
@@ -220,7 +225,11 @@ func (w *World) infection(a, b *Civ) {
 		w.log("The %s and the %s find each other, and find nothing in the other worth having.", a.Name, b.Name)
 		return
 	}
-	w.log("The %s find the %s. Within a generation the %s are inside them.", p.Name, h.Name, p.Name)
+	if p.Has("mindrider") {
+		w.log("The %s reach the %s. Within a generation the %s are in their heads.", p.Name, h.Name, p.Name)
+	} else {
+		w.log("The %s find the %s. Within a generation the %s are inside them.", p.Name, h.Name, p.Name)
+	}
 	out := w.face(h, "infection", 0)
 	wr := w.declare(p, h, "infection")
 	if wr == nil {
@@ -292,6 +301,9 @@ func (w *World) revolt(c *Civ) {
 // uplift: a strong civilisation makes a new species from complex life
 // within its reach. The client relationship goes the way of vassalage.
 func (w *World) uplift(c *Civ) {
+	if c.Aloft {
+		return
+	}
 	inclined := c.Has("curious") || c.Has("collective") || c.Has("contemplative")
 	p := 0.0001
 	if c.Species.Kind == species.Parasite {

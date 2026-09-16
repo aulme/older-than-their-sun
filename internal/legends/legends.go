@@ -138,7 +138,9 @@ func Write(out io.Writer, w *history.World, full bool) {
 	if standing > 0 {
 		p("Still standing in the waning of the age: %d.", standing)
 		for _, c := range w.Civs {
-			if c.Active() {
+			if c.Active() && c.Aloft {
+				p("  The %s, aloft, seated for now at %s, %s, in %d fleets. %s. Now: %s.", c.Name, c.HomeName, tech.EraNames[c.Era], fleetsOf(w, c), c.Species.Describe(), levels(c))
+			} else if c.Active() {
 				p("  The %s on %s, %s, holding %s. %s. Now: %s.", c.Name, c.HomeName, tech.EraNames[c.Era], systems(len(c.Systems)), c.Species.Describe(), levels(c))
 			}
 		}
@@ -155,7 +157,13 @@ func Write(out io.Writer, w *history.World, full bool) {
 		if scars := keysOf(c.Scars); len(scars) > 0 {
 			sc = " They live under " + strings.Join(scars, " and ") + "."
 		}
-		p("  The %s on %s, ruled by %s. %s. Once %s, %s. They %s (%s).%s", c.Name, w.G.Stars[c.Systems[0]].Name, c.Title, c.Species.Describe(), systems(c.Peak), tech.EraNames[c.Era], c.Cause, year(c.Ended), sc)
+		where := c.HomeName
+		if len(c.Systems) > 0 {
+			where = w.G.Stars[c.Systems[0]].Name
+		} else {
+			where = "no world of their own, drifting near " + c.HomeName
+		}
+		p("  The %s on %s, ruled by %s. %s. Once %s, %s. They %s (%s).%s", c.Name, where, c.Title, c.Species.Describe(), systems(c.Peak), tech.EraNames[c.Era], c.Cause, year(c.Ended), sc)
 	}
 	if !any {
 		p("  none")
@@ -357,6 +365,16 @@ func wars(p func(string, ...any), w *history.World) {
 	if n == 0 {
 		p("  none broken")
 	}
+}
+
+func fleetsOf(w *history.World, c *history.Civ) int {
+	n := 0
+	for _, x := range w.Expeditions {
+		if !x.Over && x.Kind == history.Roam && x.Owner == c.ID {
+			n++
+		}
+	}
+	return n
 }
 
 func worldsOf(n int) string {

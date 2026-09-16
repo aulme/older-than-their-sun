@@ -94,7 +94,7 @@ func (w *World) appraise(c, e *Civ, target int) Appraisal {
 // nearest is c's holding nearest a star, and the distance.
 func (w *World) nearest(c *Civ, star int) (int, float64) {
 	best, bd := c.Home, w.G.Dist(c.Home, star)
-	for _, s := range c.Systems {
+	for _, s := range w.holdings(c) {
 		if d := w.G.Dist(s, star); d < bd {
 			best, bd = s, d
 		}
@@ -125,6 +125,9 @@ func (w *World) bar(c, e *Civ) (bar float64, wants, far bool) {
 	}
 	if wants && c.Grudge[e.ID] > 0 && p != "vengeful" {
 		bar -= 0.1
+	}
+	if c.Aloft {
+		far = false // the horde fights from where it is
 	}
 	return
 }

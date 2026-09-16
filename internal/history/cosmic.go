@@ -73,6 +73,12 @@ func (w *World) blast(origin int, radius float64, what, text string, adj float64
 			hit[cid] = append(hit[cid], s)
 		}
 	}
+	for _, x := range w.Expeditions {
+		if !x.Over && x.Kind == Roam && x.Base >= 0 && contains(inside, x.Base) {
+			x.Over = true
+			w.log("A fleet of the %s at %s is caught in it and is gone.", w.Civs[x.Owner].Name, w.star(x.Base))
+		}
+	}
 	var cids []int
 	for cid := range hit {
 		cids = append(cids, cid)

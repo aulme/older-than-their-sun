@@ -65,9 +65,13 @@ func (w *World) front(c, e *Civ) []int {
 		d float64
 	}
 	var out []fw
-	for _, s := range e.Systems {
+	reach := c.Reach
+	if c.Aloft {
+		reach = min(max(c.Reach, 3), 20) // a hop from a fleet
+	}
+	for _, s := range w.holdings(e) {
 		_, d := w.nearest(c, s)
-		if d <= c.Reach {
+		if d <= reach {
 			out = append(out, fw{s, d})
 		}
 	}
@@ -121,6 +125,9 @@ func (w *World) initialWill(c, e *Civ, attacker bool) float64 {
 	}
 	if !attacker && w.inReach(e, c.Home) {
 		will += 0.7 // the home is at stake
+	}
+	if c.Aloft {
+		will *= 0.5 // a horde's peace is leaving
 	}
 	return will
 }
@@ -260,6 +267,10 @@ func (w *World) strikes(wr *War, i int) {
 func (w *World) strike(wr *War, c, e *Civ, t int) bool {
 	i := wr.side(c.ID)
 	atk := c.Mil + c.warBonus() + w.R.NormFloat64()*1.5
+	if c.Aloft {
+		from, _ := w.nearest(c, t)
+		atk = w.fleetAt(c, from) + c.warBonus() + w.R.NormFloat64()*1.5
+	}
 	def := w.defence(e, t) + w.R.NormFloat64()*1.5
 	w.observe(c, e, t, 0.3)
 	w.observe(e, c, c.Home, 0.3)
@@ -268,13 +279,23 @@ func (w *World) strike(wr *War, c, e *Civ, t int) bool {
 		wr.Will[1-i] += 0.1
 		return false
 	}
-	w.takeWorld(wr, c, e, t)
+	switch {
+	case e.Aloft:
+		w.hitFleet(wr, c, e, t)
+	case c.Aloft:
+		w.strip(wr, c, e, t)
+	default:
+		w.takeWorld(wr, c, e, t)
+	}
 	return true
 }
 
 // defence is what a world is held with: the defender fights with the whole
 // world's industry behind it, and the home with everything it has.
 func (w *World) defence(e *Civ, t int) float64 {
+	if e.Aloft {
+		return w.fleetAt(e, t) + e.warBonus() + 1
+	}
 	d := e.Mil + e.warBonus() + w.reliefAt(e, t) + 1
 	if t == e.Home {
 		d += 2.5
@@ -383,6 +404,11 @@ func boolKeys(m map[int]int) map[int]bool {
 
 // homeFalls is the last defence of a home broken.
 func (w *World) homeFalls(wr *War, c, e *Civ) {
+	if e.nomad() && e.Reach >= 1 && !e.Aloft {
+		w.takeSky(e, "lose "+e.HomeName+" to the "+c.Name)
+		w.endWar(wr, "peace")
+		return
+	}
 	i := wr.side(c.ID)
 	wr.Lost[1-i]++
 	wr.Taken[i]++
@@ -473,6 +499,26 @@ func (w *World) judge(wr *War) {
 // the winner still has something to take, peace otherwise.
 func (w *World) yield(wr *War, li int) {
 	l, v := w.Civs[wr.Sides[li]], w.Civs[wr.Sides[1-li]]
+	switch {
+	case l.Aloft:
+		w.peace(wr, sprintf("the %s moving on", l.Name))
+		return
+	case l.nomad() && l.Reach >= 1 && !l.Aloft:
+		w.takeSky(l, "yield to the "+v.Name)
+		w.peace(wr, sprintf("the %s gone to the sky", l.Name))
+		return
+	case v.Aloft:
+		for _, t := range w.front(v, l) {
+			if wr.Over || !l.Active() {
+				break
+			}
+			w.strip(wr, v, l, t)
+		}
+		if !wr.Over {
+			w.peace(wr, sprintf("the %s taking what they wanted and moving on", v.Name))
+		}
+		return
+	}
 	if len(w.front(v, l)) == 0 && len(w.fleetFront(v, l)) == 0 {
 		w.peace(wr, sprintf("the %s tired of it, and the %s had nothing left to take", l.Name, v.Name))
 		return

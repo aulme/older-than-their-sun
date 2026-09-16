@@ -109,6 +109,7 @@ var traitDiff = map[string]map[string]float64{
 	"xenophobic":    {"beacon": -1, "find": 1},
 	"submissive":    {"revolt": 1, "hold": -0.5},
 	"skyless":       {"cosmic": -1},
+	"nomadic":       {"weight": -1, "overshoot": -1, "distance": -3, "plague": 1},
 }
 
 func (c *Civ) traitDiff(key string) float64 {
@@ -159,6 +160,9 @@ func (w *World) face(c *Civ, key string, diffAdj float64) Outcome {
 		out = Scarred
 		c.Morale -= 0.5
 		f.Scar(w, c)
+		if c.Aloft && c.Active() && w.R.Float64() < 0.2 {
+			w.rest(c, f.Name)
+		}
 	default:
 		out = Declined
 		c.Morale -= 1
@@ -320,7 +324,7 @@ func init() {
 			w.log("A factory of the %s eats a moon before it is stopped. No machine may make itself. The law is absolute.", c.Name)
 		},
 		Decline: func(w *World, c *Civ) {
-			s := w.pick(c.Systems)
+			s := w.aWorld(c)
 			if w.R.Float64() < 0.3 {
 				w.loseSystem(c, s, "stripped world", "were consumed by their own machines")
 				w.darkAge(c, "lost "+w.star(s)+" to their own machines and burned the rest to stop it spreading")
@@ -430,14 +434,14 @@ func init() {
 		Scar: func(w *World, c *Civ) {
 			c.Scars[ScarDoor] = true
 			w.tear(0.3)
-			s := w.pick(c.Systems)
+			s := w.aWorld(c)
 			h := w.spawnHorror(SleeperHorror, s, -1)
 			h.Dormant = true
 			w.log("Something on the other side of the door notices the %s. %s now sleeps near %s. The %s close the door and speak of it seldom.", c.Name, h.Name, w.star(s), c.Name)
 		},
 		Decline: func(w *World, c *Civ) {
 			w.tear(0.6)
-			s := w.pick(c.Systems)
+			s := w.aWorld(c)
 			h := w.spawnHorror(Beacon, s, c.ID)
 			w.log("What came back through the door at %s speaks. It did not cross space to get there. It is called %s.", w.star(s), h.Name)
 		},
@@ -461,7 +465,14 @@ func init() {
 			c.Master = -1
 			c.Vassal = false
 			c.Scars[ScarChains] = true
-			w.log("The %s rise against the %s and are free.", c.Name, m.Name)
+			switch {
+			case m.Species.Kind == species.Parasite && m.Has("mindrider"):
+				w.log("The %s learn to unthink the %s. What was in their heads is gone, and they are free, and never again quite trust a new idea.", c.Name, m.Name)
+			case m.Species.Kind == species.Parasite:
+				w.log("The %s find a drug that kills what rides them. They are free, and careful about their blood ever after.", c.Name)
+			default:
+				w.log("The %s rise against the %s and are free.", c.Name, m.Name)
+			}
 			if !m.Living() && w.Owner[m.Home] < 0 {
 				w.Owner[m.Home] = c.ID
 				c.Systems = append(c.Systems, m.Home)

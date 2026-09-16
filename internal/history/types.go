@@ -137,7 +137,10 @@ type Civ struct {
 	Pacts    []int
 	Tally    Tally
 	LastDark Year
-	Summoned bool // an event calls the council this tick
+	Summoned bool    // an event calls the council this tick
+	Aloft    bool    // a nomad people living as fleets, with no worlds
+	Rested   bool    // a nomad people that came to rest, and will not rise again
+	Quality  float64 // for the aloft: the Military the tree would give, which the fleets grow toward
 
 	// filters
 	Faced        map[string]bool

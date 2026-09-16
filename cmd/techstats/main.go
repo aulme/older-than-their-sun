@@ -37,6 +37,9 @@ type Rec struct {
 	Honour    string             `json:"honour"`
 	Tally     history.Tally      `json:"tally"`
 	Met       int                `json:"met"`
+	Nomad     bool               `json:"nomad"`
+	Aloft     bool               `json:"aloft"`  // took to the sky at some point
+	Rested    bool               `json:"rested"` // came to rest after
 	World     string             `json:"world"`
 	Made      string             `json:"made,omitempty"`
 	Born      float64            `json:"born_myr"` // Myr after the dawn of the age
@@ -164,6 +167,13 @@ func flatten(w *history.World) []Rec {
 		}
 		r.Tally = c.Tally
 		r.Met = len(c.Met)
+		r.Nomad = c.Has("nomadic")
+		r.Rested = c.Rested
+		for _, rec := range c.Record {
+			if rec == "took to the sky" {
+				r.Aloft = true
+			}
+		}
 		for k := range c.Known {
 			r.Known = append(r.Known, k)
 			r.ever[k] = true

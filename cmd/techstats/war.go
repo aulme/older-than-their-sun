@@ -184,6 +184,21 @@ func warReport(out io.Writer, recs []Rec, wars []WarRec, seeds int) {
 		}
 	}
 	p("A people meets %.1f others on average; %s never meet anyone. %d peoples were ruled by another at some point (%s).", mean(mets), pct(never, len(recs)), count(recs, func(r Rec) bool { return r.Ruled > 0 }), "as masters")
+	p("")
+	p("### Nomads")
+	p("")
+	nomads := count(recs, func(r Rec) bool { return r.Nomad })
+	aloft := count(recs, func(r Rec) bool { return r.Aloft })
+	rested := count(recs, func(r Rec) bool { return r.Rested })
+	var lives, settled []float64
+	for _, r := range recs {
+		if r.Aloft {
+			lives = append(lives, r.Lived)
+		} else if r.Nomad {
+			settled = append(settled, r.Lived)
+		}
+	}
+	p("%d peoples born with the way (%s); %d took to the sky (%s of them), %d came to rest again. Those who flew lived %.2f Myr at the median; nomads who never reached the sky %.2f.", nomads, pct(nomads, len(recs)), aloft, pct(aloft, nomads), rested, median(lives), median(settled))
 }
 
 func count2(ws []WarRec, f func(WarRec) bool) int {

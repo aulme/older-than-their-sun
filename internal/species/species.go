@@ -171,6 +171,11 @@ var Traits = []*Trait{
 	{Key: "electric", Name: "who sense the living current", Group: "sense", Weight: 10, Domains: M{"energy": 1.1}},
 	{Key: "radiation", Name: "who feel radiation as warmth", Group: "sense", Weight: 6, Domains: M{"energy": 1.1, "exotic": 1.1}},
 	{Key: "chemical", Name: "who taste the world in the air", Group: "sense", Weight: 12, Domains: M{"biology": 1.1}},
+	// what a parasite rides: only parasites get one
+	{Key: "bodyrider", Name: "who live in the flesh of others", Group: "rider", Weight: 60},
+	{Key: "mindrider", Name: "who live as an idea in the minds of others", Group: "rider", Weight: 40, Domains: M{"society": 1.2, "computation": 1.1}},
+	// the way: nomads take to the sky when they can
+	{Key: "nomadic", Name: "nomads, who will not stay", Group: "way", Weight: 1, Domains: M{"propulsion": 1.3, "industry": 0.8}},
 	// born to a miracle
 	{Key: "born_voice", Name: "minds that speak across any distance", Group: "power", Weight: 25, Miracle: "ansible"},
 	{Key: "born_flesh", Name: "masters of their own flesh", Group: "power", Weight: 25, Miracle: "directed_evolution"},
@@ -274,6 +279,12 @@ func GenerateOn(r *rand.Rand, mult int, arch string) *Species {
 	}
 	if r.Float64() < 0.006 {
 		s.Traits = append(s.Traits, pickGroup(r, "power"))
+	}
+	if s.Kind == Parasite {
+		s.Traits = append(s.Traits, pickGroup(r, "rider"))
+	}
+	if r.Float64() < 0.08 && s.Kind != PlanetaryMind {
+		s.Add("nomadic")
 	}
 	return s
 }

@@ -21,9 +21,10 @@ const (
 	Campaign ExpKind = iota
 	Relief
 	Scout
+	Roam // a nomad people's fleet; see nomad.go
 )
 
-func (k ExpKind) String() string { return [...]string{"campaign", "relief", "scout"}[k] }
+func (k ExpKind) String() string { return [...]string{"campaign", "relief", "scout", "roam"}[k] }
 
 // Expedition is one fleet.
 type Expedition struct {
@@ -45,6 +46,7 @@ type Expedition struct {
 	Battles   int
 	Wins      int
 	Turned    bool
+	Fed       Year // for a roaming fleet: when it reached its base
 }
 
 // launch sends a fleet. The strength leaves the home level at once.
@@ -94,6 +96,14 @@ func (w *World) tickExpeditions() {
 			continue
 		}
 		c := w.Civs[x.Owner]
+		if x.Kind == Roam {
+			if !c.Active() {
+				x.Over = true
+			} else if x.Base < 0 && w.Now >= x.Arrive {
+				x.Base, x.Fed = x.Star, w.Now
+			}
+			continue
+		}
 		if !c.Active() {
 			if len(x.Held) > 0 && x.Base >= 0 {
 				w.goNative(x)
@@ -397,7 +407,7 @@ func (w *World) reliefAt(h *Civ, t int) float64 {
 
 // watchSky is everyone with a telescope seeing a fleet pass.
 func (w *World) watchSky(x *Expedition) {
-	if x.Kind == Scout {
+	if x.Kind == Scout || x.Kind == Roam {
 		return
 	}
 	c := w.Civs[x.Owner]

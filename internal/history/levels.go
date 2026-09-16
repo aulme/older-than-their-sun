@@ -138,6 +138,10 @@ func (w *World) recompute(c *Civ) {
 		env++ // they change themselves instead of the world
 	}
 	soc += c.Morale
+	c.Quality = clamp(mil, 0, 10)
+	if c.Aloft {
+		mil = w.ships(c) // the fleets are the people
+	}
 	mil -= c.Away // what is out with the fleets
 	c.Mil, c.Sur, c.Soc = clamp(mil, 0, 10), clamp(sur, 0, 10), clamp(soc, 0, 10)
 	w.setDials(c)
@@ -156,6 +160,9 @@ func (w *World) recompute(c *Civ) {
 	}
 	if c.Sur >= 8 {
 		c.Envelope++
+	}
+	if c.Aloft && c.Stage == Emergent {
+		c.Stage = Interstellar
 	}
 	if c.Stage == Emergent && c.Reach >= 10 {
 		c.Stage = Interstellar

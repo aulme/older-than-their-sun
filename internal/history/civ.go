@@ -80,14 +80,14 @@ func (w *World) tickCivs() {
 			w.tickRemnant(c)
 			continue
 		}
-		if len(c.Systems) == 0 {
+		if len(c.Systems) == 0 && !c.Aloft {
 			panic(sprintf("active civ %s with no worlds: record %v, cause %q, last events: %v", c.Name, c.Record, c.Cause, w.Events[len(w.Events)-4:]))
 		}
 		w.recompute(c)
 		if c.Ascended == 0 && c.Reach >= 1 && len(c.held()) > 0 {
 			c.Ascended = w.Now // the born reach the stars, and the miracle begins to matter
 		}
-		for _, step := range []func(*Civ){w.arrivals, w.research, w.expand, w.build, w.dyingSun, w.find, w.intelStep, w.council, w.wartime, w.revolt, w.ambientFilters, w.uplift} {
+		for _, step := range []func(*Civ){w.arrivals, w.research, w.wander, w.expand, w.build, w.dyingSun, w.find, w.intelStep, w.council, w.wartime, w.revolt, w.ambientFilters, w.uplift} {
 			if !c.Active() {
 				break
 			}
@@ -167,6 +167,10 @@ func (w *World) mindDead(t int) bool {
 // expand launches colony ships within reach. A target must be within reach
 // of home and within a ship's hop of a held system.
 func (w *World) expand(c *Civ) {
+	if c.Aloft {
+		w.roam(c)
+		return
+	}
 	if !c.Free() && !c.Vassal {
 		return
 	}
@@ -238,7 +242,7 @@ func (w *World) targeted(c *Civ, t int) bool {
 // build raises a structure within reach. Great works are few: a people
 // raises one every few hundred thousand years, and at most two of a kind.
 func (w *World) build(c *Civ) {
-	if !w.chance(0.004) {
+	if c.Aloft || !w.chance(0.004) {
 		return
 	}
 	var can []string
@@ -302,14 +306,14 @@ func (w *World) loseSystem(c *Civ, s int, kind string, cause string) {
 		}
 	}
 	c.Works = keep
-	if c.Stage != Dead && len(c.Systems) == 0 {
+	if c.Stage != Dead && len(c.Systems) == 0 && !c.Aloft {
 		if cause == "" {
 			cause = "lost their last world"
 		}
 		w.endCiv(c, Extinct, cause)
 		return
 	}
-	if s == c.Home && c.Stage != Dead {
+	if s == c.Home && c.Stage != Dead && !c.Aloft {
 		w.reseat(c)
 	}
 }
@@ -337,6 +341,16 @@ func (w *World) contract(c *Civ, cause string) {
 	keep := c.Home
 	if !contains(c.Systems, keep) && len(c.Systems) > 0 {
 		keep = w.pick(c.Systems)
+	}
+	if c.Aloft {
+		w.rest(c, "the end of the road")
+		if c.Aloft { // nowhere to rest: the fleets drift on as a remnant
+			for _, x := range w.fleets(c) {
+				x.Over = true
+			}
+			c.Aloft = false
+		}
+		keep = c.Home
 	}
 	for _, s := range append([]int(nil), c.Systems...) {
 		if s != keep {
@@ -471,6 +485,10 @@ func (w *World) forget(c *Civ, frac float64) []string {
 }
 
 func (w *World) schism(c *Civ) {
+	if c.Aloft {
+		w.splitFleets(c)
+		return
+	}
 	if c.Has("hive") {
 		w.log("The %s cannot split; a hive has no factions. The pressure goes elsewhere.", c.Name)
 		c.Morale -= 1
