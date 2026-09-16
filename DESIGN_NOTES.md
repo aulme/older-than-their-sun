@@ -124,6 +124,25 @@ The game's "now" is defined as the aftermath of galactic history. This is a hard
 - **The simulation guarantees it.** Rising hazard over time (horrors accumulate, they do not go away) should push most civilisations to an end naturally. Any civilisation still active at the present is pushed through a final decline pass, the "Long Dusk", so the rule always holds. Better to tune the sim so this rarely triggers, but the guarantee stays.
 - **Humanity is young and late.** Humans never saw the galaxy alive. Sol is special-cased: the simulation cannot sterilise it or let a horror consume it, because the player must exist. Other civilisations can still have visited Sol and left traces, which is a feature.
 
+### Ages of the galaxy
+
+Discussed 2026-09-16. The galaxy's history is a series of **ages**, each a burst of civilisations rising and falling, separated by **interregna** of hundreds of millions to billions of years in which only natural cosmic events happen. The fine simulation is the current age, and the present is its tail end. Everything before it is myth.
+
+- **Each age ends.** An age has an **age-ender**, a galaxy-wide filter that nothing survives as a civilisation: a great beacon, a replicator wave, an active phase of the galactic core (the real Milky Way's central black hole has had outbursts; the Fermi bubbles are a few million years old), a passage through a dense spiral arm, a change in what physics allows. The horrors accumulating in the current age *are* its age-ender forming. The Long Dusk is literally the age ending. The player arrives knowing, from the legends of prior ages, that ending is the rule.
+- **Prior ages are played very coarse.** One tick per rise, one per fall. Each age produces a handful of **elder civilisations** with a vague portrait rather than traits: something that thought in the convection cells of a red giant, a mind spread through the magnetic field of a nebula, a species that lived in the dark between stars. They are deliberately weirder than the weirdest current alien, and they left no trace of themselves, only their works. First age no earlier than about 7 billion years ago, when the galaxy had enough heavy elements for worlds.
+- **Names are given by the finders.** Elder civilisations have no surviving name. The current age calls them by what was found: the Ones Who Moved the Star, the Makers of the Hollow Sun. Two current civilisations may name the same legacy differently. Optional but cheap.
+- **Legacies** are what an age leaves, placed on the real substrate. Kinds:
+  - *Artifacts.* Mystery tech with unknown function. Finding one grants a node the finder never researched, with its filter attached, which is why they are dangerous.
+  - *Structures.* Things that should not exist: a moved star, a black hole in a ring, a corridor of darkness, a hollowed sun. Dungeons for the player.
+  - *Threats.* What ended an age, or the weapons of its wars, still around. Some of the current horrors originate here.
+  - *Sleepers.* Elder civilisations that did not die but withdrew into slumber. More or less lovecraftian gods. This is now the backstory of the dormant elder entities the sim already has, and some wake in the current age.
+  - *Laws.* Things an age left in the universe itself: a jump network, a standing signal, a region where minds do not work. Rare.
+- **Legacies act on the current age through the Find**, a filter that fires when a civilisation's reach touches a legacy. Overcome is a boon (the node, the structure put to use). Scarred is a cult or a taboo around the thing. Declined wakes what was sleeping or unleashes the threat.
+- **The current age becomes the next myth.** The legacies of current civilisations (Dyson remnants, beacons, rogue minds, made species) are exactly what an elder age leaves, at finer grain. One legacy model at two granularities: the coarse age generator and the fine sim should write the same record type, so a later age generator could run on this age's output.
+- **Interregna** are pure substrate time: star deaths, supernovae, a gamma-ray burst, a nebula born from an elder war, drift. The current deep pass (life arising, gamma-ray bursts, precursors, elders) folds into this: precursors become the last elder civilisations of the previous age, elders become sleepers.
+
+**Open question.** The fine pass is five million years, which is short for a whole age. The current age may want to be longer with only its tail simulated finely, or the age simply is short and intense. Decide when the v1 sim is in.
+
 ### The player-facing layer
 
 - Explorer is a **colony ship**, not an individual. The ship persists across generations of crew. This fits the timescales and the tone.
@@ -319,6 +338,7 @@ A node has: domain, prerequisites, effects on the three levels and on reach and 
 - 2026-09-16: Filter balance is fine for now. The lethality of early filters is accepted; the fix later is scale, not tuning. With hundreds of billions of stars the sim can afford far more civilisations, so a high failure rate still leaves plenty of history. Not for now.
 - 2026-09-16: Simulation v1 model agreed in full, including refinements (asymmetric traits, few traits per species, dynamic Social, Survival widens the envelope, kinds as flavour, small tree first). Dying sun is a slow filter: Survival sets how long a species endures it, reach decides whether it can leave.
 - 2026-09-16: Simulation v1 model sketched (species from home worlds, three levels plus reach, filters as level tests attached to tech nodes, war with enslavement, high-level tech tree, exotic kinds as flavour). See "Simulation v1". Not built yet.
+- 2026-09-16: Galactic history is a series of ages with interregna. Prior ages are coarse myth that leaves legacies (artifacts, structures, threats, sleepers, laws) on the substrate; the fine sim is the current age and its aftermath is the age ending. See "Ages of the galaxy".
 - 2026-09-16: The present is the aftermath. Every civilisation ends as gone, transformed, or contracted, always with a cause. Sol is protected by fiat.
 
 ## Next steps (proposed)
