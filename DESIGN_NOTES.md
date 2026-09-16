@@ -14,7 +14,8 @@ Started 2026-09-16.
 
 - **Dwarf Fortress**: world history simulated up front (civilisations, wars, artifacts, notable figures), then the player explores the result. Legends mode as a browsable history is a big part of the appeal.
 - **Caves of Qud**: fixed base geography plus procedurally generated history, factions, and "sultan" legends. Regions generated in detail lazily as the player arrives. Strong flavour text; the world feels weird and old.
-- Both share the key pattern this project wants: **simulate the big picture first, generate the details on demand from that history.**
+- **Out There: Ω The Alliance**: tone reference for the galaxy idea. A lone ship, scarce fuel and oxygen, every jump a gamble, alien languages learned a word at a time, ancient mysteries found rather than explained. Small, cold, and wondrous. Not a history simulator, but the feel of being one fragile thing in a very old galaxy is exactly right.
+- Both DF and Qud share the key pattern this project wants: **simulate the big picture first, generate the details on demand from that history.**
 
 ## Core architectural idea (shared by both concepts)
 
@@ -88,6 +89,19 @@ Each category should eventually have, in the simulation:
 - **Effect rules.** What it does to a civilisation it touches: extinction, transformation, absorption, subjugation, isolation.
 - **Trace rules.** What it leaves for the player: derelicts, dead worlds, warning beacons, corrupted archives, survivors' myths.
 
+### The present is the aftermath
+
+The game's "now" is defined as the aftermath of galactic history. This is a hard rule for the simulation, not a mood:
+
+- **Every civilisation must reach an end state by the present.** No civilisation is still at its zenith when the player sets out.
+- **Three end states:**
+  - **Gone.** Extinct. Only traces remain: ruins, derelicts, dead worlds, signals still broadcasting from nobody.
+  - **Transformed.** Became something weird. Uploaded into a rogue intelligence, ascended and left machinery behind, devolved into a monstrous race, became a cult of a memetic signal. The transformed thing may still be active in the galaxy, but it is no longer a civilisation in the ordinary sense. Often it becomes one of the alien horror categories.
+  - **Contracted.** Still alive but shrunk to one planet or a handful. Signs of old grandeur: an "emperor" ruling a single world that once ruled hundreds, crumbling megastructures, ceremonial titles that no longer mean anything. These remnants are the living civilisations the player can actually meet.
+- **Every end has a cause.** War, an encounter with one of the horror categories, a doomed technology, a cosmic event, internal decay, or a combination. The cause is part of the legend and determines what traces are left.
+- **The simulation guarantees it.** Rising hazard over time (horrors accumulate, they do not go away) should push most civilisations to an end naturally. Any civilisation still active at the present is pushed through a final decline pass, the "Long Dusk", so the rule always holds. Better to tune the sim so this rarely triggers, but the guarantee stays.
+- **Humanity is young and late.** Humans never saw the galaxy alive. Sol is special-cased: the simulation cannot sterilise it or let a horror consume it, because the player must exist. Other civilisations can still have visited Sol and left traces, which is a feature.
+
 ### The player-facing layer
 
 - Explorer is a **colony ship**, not an individual. The ship persists across generations of crew. This fits the timescales and the tone.
@@ -158,10 +172,12 @@ The shared architecture means a lot of the generator machinery (history simulati
 - 2026-09-16: Design notes kept in this Markdown file. Conceptual stuff only.
 - 2026-09-16: Two-pass history simulation agreed: coarse deep-time pass, then fine recent-history pass.
 - 2026-09-16: Alien horrors organised as categories with per-category simulation rules. Start with a small list, extend over time. Monstrous races are one category among several.
+- 2026-09-16: Language is Go. Reasons: the history sim is a graph of mutually referencing entities, which a garbage collector handles cleanly; performance needs are modest; fast iteration matters more than raw speed. Rust's sum types would have been nicer for event modelling, accepted as a cost.
+- 2026-09-16: The present is the aftermath. Every civilisation ends as gone, transformed, or contracted, always with a cause. Sol is protected by fiat.
 
 ## Next steps (proposed)
 
-- Decide on a language and a minimal tech stack for the generator.
-- Sketch the history simulation loop at the coarsest level: what are the actors, what is a tick, what events can happen.
-- Look at what real Milky Way data is easy to obtain and how much of it is worth using.
-- Build the smallest possible version: a handful of stars, a handful of civilisations, a few hundred ticks, and a printed legends log.
+- Read the v0 legends output and adjust rates until histories feel right: civilisation lifetimes, how many civs, how often each end state occurs.
+- Look at what real Milky Way data is easy to obtain (Gaia, HYG) and replace the random star field with real nearby stars.
+- Add more horror categories to the sim: plagues as spreading actors, monstrous races as civilisations with alien drives, dimensional anomalies tied to FTL use.
+- Add the lazy detail layer: given a star and its history, generate the system contents (planets, stations, derelicts).
