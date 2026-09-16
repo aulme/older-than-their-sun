@@ -28,6 +28,7 @@ func (w *World) spawnCiv(home int, sp *species.Species, maker int) *Civ {
 		Lifted: map[string]bool{},
 		Intel:  map[int]*Intel{}, Grudge: map[int]float64{}, Truce: map[int]Year{}, Fought: map[int]int{},
 		Watched: map[int]bool{}, Asked: map[int]Year{}, Scouted: map[int]Year{}, Ridden: map[int]bool{},
+		Charted: map[int]Year{home: w.Now}, Marked: map[int]bool{},
 		LastDark: -1 << 40,
 	}
 	if st.Real {
@@ -87,7 +88,7 @@ func (w *World) tickCivs() {
 		if c.Ascended == 0 && c.Reach >= 1 && len(c.held()) > 0 {
 			c.Ascended = w.Now // the born reach the stars, and the miracle begins to matter
 		}
-		for _, step := range []func(*Civ){w.arrivals, w.research, w.wander, w.expand, w.build, w.dyingSun, w.find, w.intelStep, w.council, w.wartime, w.revolt, w.ambientFilters, w.uplift} {
+		for _, step := range []func(*Civ){w.arrivals, w.research, w.wander, w.expand, w.build, w.dyingSun, w.find, w.explore, w.intelStep, w.council, w.wartime, w.revolt, w.ambientFilters, w.uplift} {
 			if !c.Active() {
 				break
 			}
@@ -115,12 +116,29 @@ func (w *World) arrivals(c *Civ) {
 			keep = append(keep, v)
 			continue
 		}
-		if w.Owner[v.Target] >= 0 || w.Held[v.Target] >= 0 {
-			w.trace(v.Target, "derelict "+c.Species.Kind.Flavour().Ship, c.ID)
-			w.log("A %s of the %s arrives at %s to find it already taken. It is never heard from again.", c.Species.Kind.Flavour().Ship, c.Name, w.star(v.Target))
-			continue
+		t, ship := v.Target, c.Species.Kind.Flavour().Ship
+		switch {
+		case w.Owner[t] == c.ID:
+			// settled already by another ship
+		case w.Owner[t] >= 0 && w.Civs[w.Owner[t]].Active():
+			w.trace(t, "derelict "+ship, c.ID)
+			w.log("A %s of the %s arrives at %s to find the %s already there.", ship, c.Name, w.star(t), w.Civs[w.Owner[t]].Name)
+			w.chart(c, t, "ship")
+		case w.Owner[t] >= 0 || w.Held[t] >= 0:
+			w.trace(t, "derelict "+ship, c.ID)
+			w.log("A %s of the %s arrives at %s to find it already taken. It is never heard from again.", ship, c.Name, w.star(t))
+			w.chart(c, t, "ship")
+		case !w.canLive(c, t):
+			c.Tally.BlindLost++
+			w.trace(t, "derelict "+ship, c.ID)
+			w.log("A %s of the %s reaches %s on a guess and finds nothing there it can live on. What it learned is sent home. The ship is not.", ship, c.Name, w.star(t))
+			w.chart(c, t, "ship")
+		default:
+			w.settle(c, t)
 		}
-		w.settle(c, v.Target)
+		if !c.Active() {
+			return
+		}
 	}
 	c.Voyages = keep
 }
@@ -143,6 +161,7 @@ func (w *World) settle(c *Civ, t int) {
 		c.Stage = Zenith
 		w.log("The %s enter their zenith: %d systems, and no rival in sight.", c.Name, len(c.Systems))
 	}
+	w.chart(c, t, "settle")
 }
 
 // canLive says whether a star is inside the civilisation's habitable envelope.
@@ -150,6 +169,9 @@ func (w *World) canLive(c *Civ, t int) bool {
 	s := &w.G.Stars[t]
 	if s.Dead() {
 		return c.Envelope >= 3
+	}
+	if w.G.Sys[t].Home < 0 && c.Envelope < 2 {
+		return false // no temperate world; rock and vacuum want a wider envelope
 	}
 	return s.Hostility() <= c.Envelope && !w.mindDead(t)
 }
@@ -199,13 +221,30 @@ func (w *World) expand(c *Civ) {
 		hop = reach // a door does not care how far
 	}
 	from := w.pick(c.Systems)
+	blind := -1
 	for _, t := range w.G.Near(from, hop) {
-		if w.Owner[t] >= 0 || w.Held[t] >= 0 || w.targeted(c, t) || w.G.Dist(c.Home, t) > reach || !w.canLive(c, t) {
+		if w.targeted(c, t) || w.G.Dist(c.Home, t) > reach || w.knownTaken(c, t) {
+			continue
+		}
+		if !w.read(c, t) {
+			// a star nobody has read: its colour is right, and that is all anyone knows
+			if blind < 0 && w.G.Stars[t].Hostility() <= c.Envelope && !w.G.Stars[t].Dead() {
+				blind = t
+			}
+			continue
+		}
+		if !w.canLive(c, t) {
 			continue
 		}
 		d := w.G.Dist(from, t)
 		c.Voyages = append(c.Voyages, Voyage{Target: t, Arrive: w.Now + Year(d*c.Speed)})
 		return
+	}
+	// nothing read to go to: now and then a ship goes on a guess
+	if blind >= 0 && w.R.Float64() < 0.2 {
+		c.Tally.Blind++
+		d := w.G.Dist(from, blind)
+		c.Voyages = append(c.Voyages, Voyage{Target: blind, Arrive: w.Now + Year(d*c.Speed), Blind: true})
 	}
 }
 
@@ -220,10 +259,14 @@ func (w *World) cheapest(c *Civ, domain string) string {
 	return best
 }
 
-// nothingNear is true when no star a people could live on lies within reach.
+// nothingNear is true when no star a people could live on lies within
+// reach, as far as it knows: an unread star might hold anything.
 func (w *World) nothingNear(c *Civ) bool {
 	for _, t := range w.G.Near(c.Home, max(c.Reach, 1)) {
-		if w.Owner[t] < 0 && w.Held[t] < 0 && w.canLive(c, t) {
+		if w.knownTaken(c, t) {
+			continue
+		}
+		if !w.read(c, t) || w.canLive(c, t) {
 			return false
 		}
 	}

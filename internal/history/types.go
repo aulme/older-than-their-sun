@@ -61,6 +61,7 @@ func (f Fate) String() string {
 type Voyage struct {
 	Target int
 	Arrive Year
+	Blind  bool // sent to a star nobody has read, on a guess
 }
 
 // Civ is a civilisation: a species on a home world with a history.
@@ -124,23 +125,27 @@ type Civ struct {
 	Seen     int // master declines this civ has reacted to
 
 	// war and diplomacy: see dials.go, intel.go, war.go, expedition.go, pact.go
-	Away     float64         // Military out with fleets and scouts, subtracted from the level
-	Dials    Dials           // temperament as numbers
-	Intel    map[int]*Intel  // what this people believes about each other people
-	Grudge   map[int]float64 // what each other people has done to them
-	Truce    map[int]Year    // no new war with each before this
-	Fought   map[int]int     // wars fought with each
-	Watched  map[int]bool    // looked at hard and left alone, until beliefs change
-	Asked    map[int]Year    // when each was last offered a pact
-	Scouted  map[int]Year    // when a scout last reported on each
-	Ridden   map[int]bool    // for parasites: peoples taken as hosts
-	Pacts    []int
-	Tally    Tally
-	LastDark Year
-	Summoned bool    // an event calls the council this tick
-	Aloft    bool    // a nomad people living as fleets, with no worlds
-	Rested   bool    // a nomad people that came to rest, and will not rise again
-	Quality  float64 // for the aloft: the Military the tree would give, which the fleets grow toward
+	Away       float64         // Military out with fleets and scouts, subtracted from the level
+	Dials      Dials           // temperament as numbers
+	Intel      map[int]*Intel  // what this people believes about each other people
+	Grudge     map[int]float64 // what each other people has done to them
+	Truce      map[int]Year    // no new war with each before this
+	Fought     map[int]int     // wars fought with each
+	Watched    map[int]bool    // looked at hard and left alone, until beliefs change
+	Asked      map[int]Year    // when each was last offered a pact
+	Scouted    map[int]Year    // when a scout last reported on each
+	Ridden     map[int]bool    // for parasites: peoples taken as hosts
+	Charted    map[int]Year    // stars read: worlds and who is on them known; see explore.go
+	Marked     map[int]bool    // stars the Sight showed something at, for the surveyors to visit
+	Searching  bool            // the Sight is turned outward, reading stars, not watching borders
+	Starfaring Year            // when reach first touched another star; 0 if never
+	Pacts      []int
+	Tally      Tally
+	LastDark   Year
+	Summoned   bool    // an event calls the council this tick
+	Aloft      bool    // a nomad people living as fleets, with no worlds
+	Rested     bool    // a nomad people that came to rest, and will not rise again
+	Quality    float64 // for the aloft: the Military the tree would give, which the fleets grow toward
 
 	// filters
 	Faced        map[string]bool
@@ -165,6 +170,11 @@ type Tally struct {
 	Fleets, Native, Scouts, Relief         int
 	Pacts, Refused, Betrayals, Called      int
 	Capitulated                            bool
+	// exploration
+	Surveys, Charted, Blind, BlindLost          int
+	FindSurvey, FindSettle, FindChance, FindOwn int
+	MetTouch, MetHeard, MetSurvey, MetShip      int
+	Searched, Sighted                           float64 // kyr with the Sight turned outward; kyr holding it
 }
 
 // Living is true for active and remnant civilisations.

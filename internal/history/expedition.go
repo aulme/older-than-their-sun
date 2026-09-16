@@ -21,10 +21,13 @@ const (
 	Campaign ExpKind = iota
 	Relief
 	Scout
-	Roam // a nomad people's fleet; see nomad.go
+	Roam   // a nomad people's fleet; see nomad.go
+	Survey // surveyors reading the stars; see explore.go
 )
 
-func (k ExpKind) String() string { return [...]string{"campaign", "relief", "scout", "roam"}[k] }
+func (k ExpKind) String() string {
+	return [...]string{"campaign", "relief", "scout", "roam", "survey"}[k]
+}
 
 // Expedition is one fleet.
 type Expedition struct {
@@ -47,6 +50,8 @@ type Expedition struct {
 	Wins      int
 	Turned    bool
 	Fed       Year // for a roaming fleet: when it reached its base
+	Tour      int  // for surveyors: stars read this trip
+	Recalled  bool // for surveyors: called home by a war; they finish the leg and turn
 }
 
 // launch sends a fleet. The strength leaves the home level at once.
@@ -73,6 +78,8 @@ func (w *World) launch(c *Civ, kind ExpKind, target *Civ, star int, mil float64)
 		if w.Cfg.TraceAI {
 			w.log("[the %s send a scout to %s, %s away]", c.Name, w.star(star), span(x.Arrive-w.Now))
 		}
+	case Survey:
+		// logged by survey, which knows whether it is the first
 	}
 	return x
 }
@@ -101,6 +108,7 @@ func (w *World) tickExpeditions() {
 				x.Over = true
 			} else if x.Base < 0 && w.Now >= x.Arrive {
 				x.Base, x.Fed = x.Star, w.Now
+				w.chart(c, x.Star, "fleet")
 			}
 			continue
 		}
@@ -149,6 +157,8 @@ func (w *World) tickExpeditions() {
 func (w *World) arrive(x *Expedition) {
 	c := w.Civs[x.Owner]
 	switch x.Kind {
+	case Survey:
+		w.surveyArrive(x)
 	case Scout:
 		if x.Target >= 0 {
 			if e := w.Civs[x.Target]; e.Living() {
@@ -407,7 +417,7 @@ func (w *World) reliefAt(h *Civ, t int) float64 {
 
 // watchSky is everyone with a telescope seeing a fleet pass.
 func (w *World) watchSky(x *Expedition) {
-	if x.Kind == Scout || x.Kind == Roam {
+	if x.Kind == Scout || x.Kind == Roam || x.Kind == Survey {
 		return
 	}
 	c := w.Civs[x.Owner]
@@ -422,7 +432,7 @@ func (w *World) watchSky(x *Expedition) {
 		if c.Speed <= 4 {
 			r *= 2 // a relativistic drive is a torch
 		}
-		seen := o.miracle("foresight") && w.Owner[x.Star] == o.ID
+		seen := o.miracle("foresight") && !o.Searching && w.Owner[x.Star] == o.ID
 		if !seen && r > 0 {
 			for _, s := range o.Systems {
 				st := &w.G.Stars[s]

@@ -149,6 +149,8 @@ func (w *World) declare(c, e *Civ, cause string) *War {
 	delete(c.Trade, e.ID)
 	delete(e.Trade, c.ID)
 	delete(c.Watched, e.ID)
+	w.recallSurveys(c)
+	w.recallSurveys(e)
 	c.Tally.Declared++
 	c.Tally.Fought++
 	e.Tally.Fought++

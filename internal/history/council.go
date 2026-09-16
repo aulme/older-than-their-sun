@@ -95,7 +95,7 @@ func (w *World) consider(c, e *Civ) bool {
 // maybeScout sends a scout when a report would change the decision and
 // the level can be spared. The Sight reads for free.
 func (w *World) maybeScout(c, e *Civ) {
-	if c.miracle("foresight") {
+	if c.miracle("foresight") && !c.Searching {
 		w.observe(c, e, e.Home, 0.1)
 		return
 	}

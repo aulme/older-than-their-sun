@@ -14,6 +14,8 @@ var finderNames = map[LegacyKind][]string{
 	Law:       {"the Lawgivers", "the Ones Who Changed the Rules"},
 }
 
+// find is the lottery: what turns up with nobody looking. Surveyors,
+// colony ships and fleets find things by visiting; see explore.go.
 func (w *World) find(c *Civ) {
 	if !c.Active() || !c.Free() {
 		return
@@ -43,19 +45,44 @@ func (w *World) find(c *Civ) {
 	}
 	// one's own lost works are looked for, and found quickly; the rest turn up by chance
 	var l *Legacy
+	how := ""
 	switch {
 	case own != nil && w.chance(0.05):
 		l = own
-	case w.chance(0.004):
+		how = "own"
+	case w.chance(0.0001):
 		l = cands[w.R.IntN(len(cands))]
 	default:
 		return
 	}
+	w.discover(c, l, how)
+}
+
+// discover is the Find itself: a people comes upon a remain, by a survey,
+// by settling the star, by a fleet basing there, or by chance ("").
+func (w *World) discover(c *Civ, l *Legacy, how string) {
 	c.Found[l.ID] = true
 	l.Finder = c.ID
+	switch how {
+	case "survey":
+		c.Tally.FindSurvey++
+	case "settle", "fleet", "ship":
+		c.Tally.FindSettle++
+	case "own":
+		c.Tally.FindOwn++
+	default:
+		c.Tally.FindChance++
+	}
+	who := "The " + c.Name
+	if how == "survey" {
+		who = "Surveyors of the " + c.Name
+	}
 	where := "beneath their own cities on " + c.HomeName
 	if l.Star != c.Home {
 		where = "at " + w.star(l.Star)
+	}
+	if how == "settle" {
+		where += ", under the feet of the first colonists"
 	}
 	kin := w.kinship(c, l)
 	switch {
@@ -64,21 +91,21 @@ func (w *World) find(c *Civ) {
 			ns := finderNames[l.Kind]
 			l.Elder.Name = ns[w.R.IntN(len(ns))]
 		}
-		w.log("The %s find %s %s. It is older than their sun. They call its makers %s.", c.Name, l.Desc, where, l.Elder.Name)
+		w.log("%s find %s %s. It is older than their sun. They call its makers %s.", who, l.Desc, where, l.Elder.Name)
 	case kin == 2:
-		w.log("The %s find %s %s. It is their own, from before the dark age. Something in them remembers it.", c.Name, l.Describe(), where)
+		w.log("%s find %s %s. It is their own, from before the dark age. Something in them remembers it.", who, l.Describe(), where)
 	case kin == 1:
-		w.log("The %s find %s %s. The hands that made it were like their hands.", c.Name, l.Describe(), where)
+		w.log("%s find %s %s. The hands that made it were like their hands.", who, l.Describe(), where)
 	default:
 		m := w.Civs[l.Maker]
 		ago := float64(w.Now-m.Fell) / 1e6
 		if (c.Met[m.ID] || m.Living()) && ago < 0.1 {
-			w.log("The %s find %s %s, not long after the %s left it.", c.Name, l.Describe(), where, m.Name)
+			w.log("%s find %s %s, not long after the %s left it.", who, l.Describe(), where, m.Name)
 		} else if c.Met[m.ID] || m.Living() {
-			w.log("The %s find %s %s, %.1f million years after the %s left it.", c.Name, l.Describe(), where, ago, m.Name)
+			w.log("%s find %s %s, %.1f million years after the %s left it.", who, l.Describe(), where, ago, m.Name)
 		} else {
 			l.Name = ruinNames[w.R.IntN(len(ruinNames))]
-			w.log("The %s find %s %s. They do not know who the %s were. They call them %s.", c.Name, l.Describe(), where, m.Name, l.Name)
+			w.log("%s find %s %s. They do not know who the %s were. They call them %s.", who, l.Describe(), where, m.Name, l.Name)
 		}
 	}
 

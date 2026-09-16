@@ -154,6 +154,9 @@ func (w *World) recompute(c *Civ) {
 		}
 	}
 	c.Reach, c.Speed, c.Era = reach, speed, era
+	if c.Starfaring == 0 && reach >= 1 {
+		c.Starfaring = w.Now
+	}
 	c.Envelope = env
 	if c.Sur >= 5 {
 		c.Envelope++

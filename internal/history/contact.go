@@ -22,30 +22,60 @@ func (w *World) contacts() {
 			if !w.touch(a, b) {
 				if !(a.Met[b.ID] && b.Met[a.ID]) && w.hear(a, b) {
 					a.Met[b.ID], b.Met[a.ID] = true, true
+					a.Tally.MetHeard++
+					b.Tally.MetHeard++
 					w.hearing(a, b)
 				}
 				continue
 			}
-			// a young species found by an old one is not a contact between equals
-			// a people holding a miracle is nobody's primitive, whatever their era
-			if young, old := a, b; (young.Era < 2 && len(young.held()) == 0) || (old.Era < 2 && len(old.held()) == 0) {
-				if old.Era < 2 && len(old.held()) == 0 {
-					young, old = b, a
-				}
-				if (young.Era >= 2 || len(young.held()) > 0) || old.Met[young.ID] {
-					continue // both young, or already watched
-				}
-				if !w.primitives(old, young) {
-					continue // watched from orbit; they will meet properly later
-				}
+			if !w.knowsOf(a, b) && !w.knowsOf(b, a) {
+				continue // territories overlap, but neither has looked
 			}
-			watched := (a.Met[b.ID] || b.Met[a.ID]) && !(a.Met[b.ID] && b.Met[a.ID])
-			heard := a.Met[b.ID] && b.Met[a.ID]
-			a.Met[b.ID], b.Met[a.ID] = true, true
-			a.Reached[b.ID], b.Reached[a.ID] = true, true
-			w.encounter(a, b, watched, heard)
+			a.Tally.MetTouch++
+			b.Tally.MetTouch++
+			w.meet(a, b, -1)
 		}
 	}
+}
+
+// knowsOf says whether a people has any idea b is there: heard, watched,
+// or a holding of b read.
+func (w *World) knowsOf(a, b *Civ) bool {
+	if a.Met[b.ID] {
+		return true
+	}
+	for _, s := range w.holdings(b) {
+		if _, ok := a.Charted[s]; ok {
+			return true
+		}
+	}
+	return false
+}
+
+// meet is two peoples coming to know each other in the flesh: at a star
+// where one came upon the other, or -1 for a border met by touch.
+func (w *World) meet(a, b *Civ, at int) {
+	if !a.Active() || !b.Active() || (a.Reached[b.ID] && b.Reached[a.ID]) {
+		return
+	}
+	// a young species found by an old one is not a contact between equals
+	// a people holding a miracle is nobody's primitive, whatever their era
+	if young, old := a, b; (young.Era < 2 && len(young.held()) == 0) || (old.Era < 2 && len(old.held()) == 0) {
+		if old.Era < 2 && len(old.held()) == 0 {
+			young, old = b, a
+		}
+		if (young.Era >= 2 || len(young.held()) > 0) || old.Met[young.ID] {
+			return // both young, or already watched
+		}
+		if !w.primitives(old, young) {
+			return // watched from orbit; they will meet properly later
+		}
+	}
+	watched := (a.Met[b.ID] || b.Met[a.ID]) && !(a.Met[b.ID] && b.Met[a.ID])
+	heard := a.Met[b.ID] && b.Met[a.ID]
+	a.Met[b.ID], b.Met[a.ID] = true, true
+	a.Reached[b.ID], b.Reached[a.ID] = true, true
+	w.encounter(a, b, watched, heard, at)
 }
 
 // touch says whether two peoples' territories overlap: a holding of one
@@ -157,9 +187,10 @@ func (w *World) primitives(old, young *Civ) bool {
 // encounter is a first meeting between equals: the miracles and the
 // postures that settle it without a council, then each side's council on
 // the other, and trade if nobody strikes.
-func (w *World) encounter(a, b *Civ, watched, heard bool) {
+func (w *World) encounter(a, b *Civ, watched, heard bool, at int) {
 	w.observe(a, b, b.Home, 0.5)
 	w.observe(b, a, a.Home, 0.5)
+	finder, found := a, b
 	// the stronger side is the one with the initiative
 	if b.Mil > a.Mil {
 		a, b = b, a
@@ -192,6 +223,10 @@ func (w *World) encounter(a, b *Civ, watched, heard bool) {
 		return
 	}
 	switch {
+	case at >= 0 && heard:
+		w.log("Ships of the %s come upon the %s at %s, and the long conversation across the dark has a face at last.", finder.Name, found.Name, w.star(at))
+	case at >= 0:
+		w.log("Ships of the %s come upon the %s at %s.", finder.Name, found.Name, w.star(at))
 	case heard:
 		w.log("The %s and the %s, who have heard each other for a long time, at last meet in the flesh.", a.Name, b.Name)
 	case watched:

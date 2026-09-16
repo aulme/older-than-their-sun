@@ -59,7 +59,13 @@ func gazetteer(p func(string, ...any), w *history.World) {
 	for i := range touched {
 		ids = append(ids, i)
 	}
-	sort.Slice(ids, func(a, b int) bool { return w.G.FromCentre(ids[a]) < w.G.FromCentre(ids[b]) })
+	sort.Slice(ids, func(a, b int) bool {
+		da, db := w.G.FromCentre(ids[a]), w.G.FromCentre(ids[b])
+		if da != db {
+			return da < db
+		}
+		return ids[a] < ids[b] // two stars at one distance: a fixed order, since ids came from a map
+	})
 	p("=== THE STARS (%d with a history, nearest first) ===", len(ids))
 	for _, i := range ids {
 		s := &w.G.Stars[i]

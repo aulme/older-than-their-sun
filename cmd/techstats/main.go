@@ -39,6 +39,7 @@ type Rec struct {
 	Met       int                `json:"met"`
 	Nomad     bool               `json:"nomad"`
 	Aloft     bool               `json:"aloft"`  // took to the sky at some point
+	Stars     bool               `json:"stars"`  // reached the stars at some point
 	Rested    bool               `json:"rested"` // came to rest after
 	World     string             `json:"world"`
 	Made      string             `json:"made,omitempty"`
@@ -129,6 +130,7 @@ func main() {
 	defer f.Close()
 	report(f, recs, *seeds, *from, *at, ageSum/float64(*seeds))
 	warReport(f, recs, wars, *seeds)
+	exploreReport(f, recs)
 	fmt.Printf("%d civilisations over %d worlds; wrote %s\n", len(recs), *seeds, *out)
 }
 
@@ -168,6 +170,7 @@ func flatten(w *history.World) []Rec {
 		r.Tally = c.Tally
 		r.Met = len(c.Met)
 		r.Nomad = c.Has("nomadic")
+		r.Stars = c.Starfaring > 0
 		r.Rested = c.Rested
 		for _, rec := range c.Record {
 			if rec == "took to the sky" {
