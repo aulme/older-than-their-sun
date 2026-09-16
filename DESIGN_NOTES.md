@@ -222,6 +222,90 @@ Observations after adding filters (10 seeds):
 - Filters arrive fast, within a few hundred thousand years of a civilisation arising. Plausible given thousand-year ticks, but a civilisation's whole story can be over in 300 ticks. Slowing tech growth would spread it out.
 - The Weight of Ages rarely gets to act because the named filters catch most civilisations first. It matters mostly for the survivors of everything else.
 
+## Simulation v1 (proposed model, not yet built)
+
+Discussed 2026-09-16. This replaces the scalar "tech" and the hand-weighted filter odds of v0 with a small set of interlocking systems. Nothing here is coded yet.
+
+### Species and home worlds
+
+Every civilisation starts as a **species on a home world**, and the world explains the species.
+
+- **Star(s).** Class from the substrate. Multiplicity rolled (about half of sunlike stars are in multiples): binaries give cyclic climates and hardy life, trinaries are rare and strange. Star lifetime matters: an F star dies within the simulation window, so a species born there faces a "dying sun" filter eventually. Massive stars nearby are future supernovae.
+- **World archetype**, weighted so lush worlds are most common and extreme ones rare but interesting. Starting list: temperate lush; ocean; arid; ice or tidally locked twilight band; high-gravity superterran; low-gravity; hothouse under a thick atmosphere; subsurface ocean under an ice shell; gas giant aerial; tidally heated volcanic; dim world around a brown dwarf. Each archetype sets **physical facts** (gravity, heat, atmosphere, orbit, major biomes) and **base traits**: high gravity breeds robust bodies and strong survival; an ocean world delays flight and metallurgy but breeds cooperation; an ice-shell world has never seen a sky, so astronomy and the urge to leave come late; gas giant floaters cannot make fire, so the industrial path is locked until an exotic route opens.
+- **Random traits** on top of the base ones, from a pool in rarity tiers. Keep three to five traits per species so each one reads in the legends. Common tier is social organisation and drives (individualist, collective, hive, caste, non-conscious intelligence, expansionist, contemplative, xenophobic, submissive, fight-to-the-death, pacifist). Uncommon tier is biology quirks (short-lived, very long-lived, cyclical dormancy, many sexes, sessile adults). Rare tier is science-fiction powers: ansible minds that communicate faster than light, directed evolution, precognition, memetic immunity, machine symbiosis, unbroken memory across generations.
+- **Traits are asymmetric against filters.** A hive mind cannot schism, so the Distance and the Weight of Ages barely touch it, but it is one mind, so a beacon that catches it catches everything. Unbroken memory makes the Long Silence harsher. This asymmetry, not raw bonuses, is what makes species feel different.
+- **Kinds.** Beyond traits, a species has a body plan that sets the flavour of everything it builds: standard; swarm; planetary mind (a living ocean, a forest that thinks); parasite or memetic virus that needs host species; machine-born; evolver that directs its own flesh. The tech tree is the same for all; the words are different. A standard species builds a space station, an evolver breeds a placid sub-species that survives vacuum and hosts a city, a swarm secretes one. A few kinds get hard rules: a parasite spreads through other civilisations rather than colonising, a planetary mind has very low reach and very high social. Keep the hard rules few and the flavour tables large.
+- **Species can be made.** Some filter outcomes produce a new species: an uplift by a stronger neighbour, a directed-evolution schism, slaves bred into something else, a transformation that leaves a successor. Made species carry a trait recording who made them.
+
+### Three levels and reach
+
+Each civilisation tracks three levels, on a small named scale so legends can say "a warlike people" rather than print a number.
+
+- **Military.** Answering threats with force and tech: wars, monsters, machines. Mostly from tech and structures, a little from traits.
+- **Survival.** Continuing to live in degraded environments: plague, ecological collapse, a dying star, a scoured colony. Mostly from traits and biology tech. Survival also widens the **habitable envelope**, the set of worlds the species can colonise at all.
+- **Social.** Holding together: unity under stress, ability to act as one when it matters. Mostly from traits, a little from tech and structures, and it is dynamic: wars, plagues, dark ages and distance erode it, peace restores it. Scars push it (iron centralism raises it and freezes it).
+
+Rare science-fiction traits can move all three.
+
+**Reach** is how far from home a civilisation can act, in light years, and it is separate from the levels. Structures are only built and worlds only colonised within reach. Two civilisations **encounter each other when their reach spheres overlap**. Reach comes from propulsion and communication tech and a few traits, and it steps: one world, one system, a few light years by slow ship, then more, then far if FTL exists. Ansible minds effectively multiply reach for social purposes because a colony a hundred light years away never diverges. Reach spheres are also what makes the later scale-up cheap: a civilisation is a sphere and stars only need to exist where a sphere touches them.
+
+### Filters resolved as tests
+
+A filter now **tests one or two levels against a difficulty** instead of rolling hand-tuned weights. Roll plus level minus difficulty gives a margin: a clear pass is overcome, a narrow one is scarred, a clear failure is declined, with the decline scenarios still specific to the filter. Difficulty scales with galactic hazard and prior scars, as before.
+
+| Filter | Tests |
+| --- | --- |
+| Atomic Age | Social |
+| Overshoot | Survival, Social |
+| Plague | Survival |
+| Thinking Machines | Social |
+| The Distance | Social (reach makes it harder, ansible traits negate it) |
+| The Long Silence | Social |
+| Self-Replication | Military |
+| Stellar Engineering | Survival |
+| Transcendence | Social |
+| War | Military, then Social to hold together |
+| Replicator swarm, rogue mind | Military |
+| Beacon | Social |
+| Elder entity | Survival, and reach to flee |
+| Cosmic event | Survival, and reach to evacuate |
+| The Weight of Ages | Social |
+
+**Filters attach to tech.** Discovering a node can proc its filter: the Atomic Age fires when atomic power is discovered, Thinking Machines when machine minds are, Self-Replication when self-replicating industry is. This replaces the tech-threshold triggers of v0. The ambient and external filters keep their own triggers.
+
+**Filters steer research.** Facing a filter raises discovery weights in the domains that answer it for a while: a plague pushes biology, a war pushes weapons, a dying sun pushes propulsion. Scars can lock domains permanently (a prohibition on thinking machines closes computation).
+
+**Cosmic filters** are the new external category: a supernova, the death of a home star, a passing black hole, a gamma-ray burst. Each has a blast radius and every civilisation inside it faces the filter at once. Overcome can mean **migration**, a new home world and the old one left as a ruin, which is a legend worth having. With a real star catalogue the supernova candidates and the dying stars are known in advance and can be scheduled rather than rolled.
+
+### War, submission, enslavement
+
+Contact happens when reach overlaps. What follows depends on **stance traits and relative military**:
+
+- Peace or trade when neither is expansionist or xenophobic. Trade raises both sides' discovery rates.
+- Submission without a war when one side is far stronger and the weaker has a submissive trait: it becomes a vassal.
+- War otherwise, decided mostly by military with social deciding whether the loser holds together. Fight-to-the-death species are exterminated rather than enslaved. Pacifists do not fight and are ignored, absorbed or enslaved.
+- **Enslavement** is an outcome alongside destruction. An enslaved civilisation keeps its species and home, loses its reach, researches slowly, and adds to its master's military. When the master faces a decline, the slaves face a **revolt filter**: overcome and they are free, often inheriting the master's ruins and becoming the remnant the player meets; decline and they fall with the master. Slaves can also be bred into a made species, which is a transformation.
+- **Uplift** is the benign version: a strong civilisation makes a new species from complex life within its reach, with a client relationship that can later go the same way as vassalage.
+
+### Tech tree
+
+High level only: Industrial Revolution, not the internal combustion engine; Slow Interstellar Travel, not a particular drive. Around eight **domains**: energy, industry, computation, biology, society, propulsion and communication (reach), weapons, exotic physics. Start with 50 to 100 **nodes** with prerequisites; the tree can grow later, but richness should come from how nodes, traits, scars and filters combine, not from node count.
+
+A node has: domain, prerequisites, effects on the three levels and on reach and envelope, changes to discovery weights in other domains, structures it unlocks, a chance to proc a filter on discovery, and flavour text per kind.
+
+**Discovery** is random each tick. The domain is drawn from weights that are base times traits times current filter focus times scars, then an available node in that domain is taken. Discovery rate scales with size and social level. The old scalar tech becomes a derived era label.
+
+**Structures** are built within reach, require nodes, and give levels: orbital defences give military, arcologies and closed ecologies give survival, an ansible net gives social across distance, a Dyson swarm multiplies energy and so discovery. Flavour by kind.
+
+### Order of building
+
+1. Species and home world generator with traits, levels and reach as data; legends print a species portrait.
+2. Filter resolution as level tests.
+3. Tech tree driving levels and reach; drop the tech scalar.
+4. Contact, war, submission, enslavement, revolt, uplift.
+5. Cosmic filters with blast radii. Pairs well with ingesting the real catalogue, since star lifetimes come with it.
+6. Kinds as flavour tables, then the few hard kind rules.
+
 ## Decision log
 
 - 2026-09-16: Galaxy idea is primary. Fairy idea is backup.
@@ -231,6 +315,7 @@ Observations after adding filters (10 seeds):
 - 2026-09-16: Language is Go. Reasons: the history sim is a graph of mutually referencing entities, which a garbage collector handles cleanly; performance needs are modest; fast iteration matters more than raw speed. Rust's sum types would have been nicer for event modelling, accepted as a cost.
 - 2026-09-16: "Filters" is the term for anything that may push a civilisation into decline. Three outcomes: overcome, scarred, declined. Early filters like nuclear weapons included. Scars are lasting traits.
 - 2026-09-16: Filter balance is fine for now. The lethality of early filters is accepted; the fix later is scale, not tuning. With hundreds of billions of stars the sim can afford far more civilisations, so a high failure rate still leaves plenty of history. Not for now.
+- 2026-09-16: Simulation v1 model sketched (species from home worlds, three levels plus reach, filters as level tests attached to tech nodes, war with enslavement, high-level tech tree, exotic kinds as flavour). See "Simulation v1". Not built yet.
 - 2026-09-16: The present is the aftermath. Every civilisation ends as gone, transformed, or contracted, always with a cause. Sol is protected by fiat.
 
 ## Next steps (proposed)
