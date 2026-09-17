@@ -61,6 +61,16 @@ var templates = [...]string{
 	FSurveyLost:   "{P} surveyors did not come back from {T}. {H} is there.",
 }
 
+// blamedTemplates are the woes that name their own cause, retold once
+// somebody else is blamed for them.
+var blamedTemplates = map[FactKind]string{
+	FDarkAge:  "{S} were brought low, and a dark age followed.",
+	FFall:     "{S} were brought low, and were a remnant after.",
+	FEnd:      "{S} were ended.",
+	FDeclined: "{S} were broken.",
+	FScarred:  "{S} were marked, and it did not heal.",
+}
+
 // archetypes are what a people calls an enemy whose name it has lost.
 var archetypes = []string{"the ones from the dark", "the eaters of worlds", "the faithless ones", "the old enemy", "the ones who came in ships"}
 
@@ -70,12 +80,17 @@ func (w *World) Tell(c *Civ, t *Tale) string { return w.tell(c, t) }
 func (w *World) tell(c *Civ, t *Tale) string {
 	f := w.Facts[t.Fact]
 	subj, obj := f.Subject, f.Object
-	if t.Blamed >= 0 {
+	if t.Blamed >= 0 && f.sort() != Woe {
 		subj = t.Blamed
 	}
 	line := templates[f.Kind]
 	if strings.Contains(f.What, "{S}") {
 		line = f.What
+	}
+	if t.Blamed >= 0 {
+		if bl, ok := blamedTemplates[f.Kind]; ok {
+			line = bl // the cause it gave itself is gone; the blame sentence carries it
+		}
 	}
 	sort := f.sort()
 	if sort == Bond && obj == c.ID {
@@ -207,6 +222,8 @@ func (w *World) frame(c *Civ, t *Tale, f *Fact, s string, we int, sort Sort, sl 
 		}
 	case Woe:
 		switch {
+		case t.Blamed >= 0 && t.Blamed != c.ID:
+			s += " It was the doing of " + w.partyName(c, t, t.Blamed, false) + "."
 		case we == 1 && f.Object >= 0 && sl < 0 && wear == 0:
 			s += " We had done nothing to deserve it."
 		case we == 1 && f.Object >= 0 && sl < 0:
@@ -351,6 +368,36 @@ func (w *World) mythOf(c *Civ, f *Fact) string {
 }
 
 // deedOf is a fact as a verb phrase, for the note that blame has moved.
+// blameOf is a wrong as a teller hangs it on somebody: "who <did this>".
+func (w *World) blameOf(c *Civ, f *Fact) string {
+	if f.sort() != Woe {
+		return w.deedOf(f)
+	}
+	us := "the " + w.Civs[f.Subject].Name
+	if f.Subject == c.ID {
+		us = "us"
+	}
+	switch f.Kind {
+	case FDarkAge:
+		return "brought the dark years on " + us
+	case FFall, FDeclined, FScarred:
+		return "brought " + us + " low"
+	case FEnd:
+		return "ended the " + w.Civs[f.Subject].Name
+	case FSchism:
+		return "split " + us
+	case FHorrorStrike, FSurveyLost:
+		return "woke " + w.horrorName(f)
+	case FDefeat:
+		return "broke the fleet at " + w.star(f.Star)
+	case FCosmic, FDoom:
+		return "killed the sun"
+	case FExodus:
+		return "drove " + us + " from " + w.star(f.Star)
+	}
+	return "did it"
+}
+
 func (w *World) deedOf(f *Fact) string {
 	switch f.Kind {
 	case FBurned:

@@ -1,19 +1,19 @@
 # The tech tree in use
 
-10 worlds (seeds 1 to 10) at sol, 2099 civilisations, mean age length 53 Myr. A node counts as reached if a people ever held it, by pursuit, by a find, or by inheritance from a parent people. Lifetimes are from birth to the end of activity, or to the present for those still standing.
+10 worlds (seeds 1 to 10) at sol, 2017 civilisations, mean age length 53 Myr. A node counts as reached if a people ever held it, by pursuit, by a find, or by inheritance from a parent people. Lifetimes are from birth to the end of activity, or to the present for those still standing.
 
 ## How deep peoples get
 
 | Deepest era reached | Peoples | Share | Median life (Myr) |
 |---|---|---|---|
-| 0 pre-industrial | 27 | 1.3% | 0.01 |
-| 1 industrial | 79 | 3.8% | 0.12 |
-| 2 atomic | 387 | 18.4% | 0.28 |
-| 3 interstellar | 915 | 43.6% | 1.18 |
-| 4 exotic | 691 | 32.9% | 5.94 |
+| 0 pre-industrial | 27 | 1.3% | 0.02 |
+| 1 industrial | 68 | 3.4% | 0.11 |
+| 2 atomic | 378 | 18.7% | 0.28 |
+| 3 interstellar | 878 | 43.5% | 1.18 |
+| 4 exotic | 666 | 33.0% | 5.82 |
 
-Nodes ever held per people: median 38, lower quartile 30, upper quartile 48, most 77 of 96.
-Reached the stars (any node with reach 10 ly or more, or the Flesh or the Door): 667 (31.8%), median life 5.09 Myr against 0.73 for those who did not.
+Nodes ever held per people: median 37, lower quartile 29, upper quartile 48, most 77 of 96.
+Reached the stars (any node with reach 10 ly or more, or the Flesh or the Door): 605 (30.0%), median life 5.14 Myr against 0.74 for those who did not.
 
 ## The tree
 
@@ -23,25 +23,25 @@ Reached is the share of all peoples that ever held the node. Of eligible is the 
 
 | Node | Domain | Needs | Price | Reached | Of eligible | Learned at | Life | Effects |
 |---|---|---|---|---|---|---|---|---|
-| Tools | industry |  | 0.6 | 2073 (98.8%) | 98.8% | 0.01 Myr | 1.42 | Mil +0.2 |
-| Fire | energy |  | 0.6 | 1968 (93.8%) | 93.8% | 0.01 Myr | 1.42 | Sur +0.3 |
-| Agriculture | biology |  | 0.6 | 1931 (92.0%) | 92.0% | 0.01 Myr | 1.43 | Sur +0.5; Soc +0.1 |
-| Writing | society |  | 0.6 | 1880 (89.6%) | 89.6% | 0.01 Myr | 1.36 | Soc +0.2 |
-| Metallurgy | industry | Fire, Tools | 0.6 | 2053 (97.8%) | 99.8% | 0.04 Myr | 1.46 | Mil +0.5 |
-| Mathematics | computation | Writing | 0.6 | 2070 (98.6%) | 110.1% | 0.02 Myr | 1.43 |  |
-| Star Gazing | exotic |  | 0.6 | 1949 (92.9%) | 92.9% | 0.01 Myr | 1.50 | tilt propulsion ×1.2 |
-| States | society | Agriculture, Writing | 0.6 | 1548 (73.7%) | 88.8% | 0.03 Myr | 1.37 | Mil +0.5; Soc +0.3 |
-| Seafaring | propulsion | Tools | 0.6 | 1685 (80.3%) | 81.3% | 0.02 Myr | 1.56 | tilt society ×1.1 |
-| Burial | society |  | 0.6 | 1566 (74.6%) | 74.6% | 0.01 Myr | 1.30 | Soc +0.1 |
-| Song | society |  | 0.6 | 1898 (90.4%) | 90.4% | 0.01 Myr | 1.40 | Soc +0.1 |
-| Religion | society | Burial | 0.6 | 1870 (89.1%) | 119.4% | 0.02 Myr | 1.40 | Soc +0.2 |
-| Philosophy | computation | Writing | 0.6 | 2070 (98.6%) | 110.1% | 0.02 Myr | 1.44 | tilt computation ×1.2, society ×1.2 |
-| Law | society | States, Writing | 0.6 | 1994 (95.0%) | 118.4% | 0.04 Myr | 1.50 | Soc +0.2 |
-| Organised Religion | society | Religion, States | 0.6 | 1673 (79.7%) | 106.2% | 0.04 Myr | 1.40 | Mil +0.2; Soc +0.2 |
-| the Gathering | society |  | 0.6 | 150 (7.1%) | 98.7% | 0.02 Myr | 1.48 | Mil +0.5; Soc +0.5 |
-| Host-craft | biology |  | 0.6 | 95 (4.5%) | 99.0% | 0.01 Myr | 1.32 | Sur +0.5; Soc +0.5 |
-| Maintenance | industry |  | 0.6 | 32 (1.5%) | 91.4% | 0.14 Myr | 2.72 | Sur +0.5 |
-| Husbandry of the Self | biology |  | 0.6 | 186 (8.9%) | 100.5% | 0.00 Myr | 0.91 | Sur +0.5; tilt biology ×1.2 |
+| Tools | industry |  | 0.6 | 1992 (98.8%) | 98.8% | 0.02 Myr | 1.42 | Mil +0.2 |
+| Fire | energy |  | 0.6 | 1892 (93.8%) | 93.8% | 0.01 Myr | 1.40 | Sur +0.3 |
+| Agriculture | biology |  | 0.6 | 1896 (94.0%) | 94.0% | 0.01 Myr | 1.40 | Sur +0.5; Soc +0.1 |
+| Writing | society |  | 0.6 | 1808 (89.6%) | 89.6% | 0.01 Myr | 1.34 | Soc +0.2 |
+| Metallurgy | industry | Fire, Tools | 0.6 | 1979 (98.1%) | 100.4% | 0.04 Myr | 1.44 | Mil +0.5 |
+| Mathematics | computation | Writing | 0.6 | 1985 (98.4%) | 109.8% | 0.02 Myr | 1.44 |  |
+| Star Gazing | exotic |  | 0.6 | 1889 (93.7%) | 93.7% | 0.01 Myr | 1.45 | tilt propulsion ×1.2 |
+| States | society | Agriculture, Writing | 0.6 | 1497 (74.2%) | 87.6% | 0.03 Myr | 1.38 | Mil +0.5; Soc +0.3 |
+| Seafaring | propulsion | Tools | 0.6 | 1562 (77.4%) | 78.4% | 0.03 Myr | 1.57 | tilt society ×1.1 |
+| Burial | society |  | 0.6 | 1496 (74.2%) | 74.2% | 0.01 Myr | 1.28 | Soc +0.1 |
+| Song | society |  | 0.6 | 1839 (91.2%) | 91.2% | 0.01 Myr | 1.38 | Soc +0.1 |
+| Religion | society | Burial | 0.6 | 1793 (88.9%) | 119.9% | 0.02 Myr | 1.38 | Soc +0.2 |
+| Philosophy | computation | Writing | 0.6 | 1986 (98.5%) | 109.8% | 0.02 Myr | 1.44 | tilt computation ×1.2, society ×1.2 |
+| Law | society | States, Writing | 0.6 | 1916 (95.0%) | 118.5% | 0.04 Myr | 1.50 | Soc +0.2 |
+| Organised Religion | society | Religion, States | 0.6 | 1620 (80.3%) | 105.8% | 0.04 Myr | 1.40 | Mil +0.2; Soc +0.2 |
+| the Gathering | society |  | 0.6 | 131 (6.5%) | 96.3% | 0.02 Myr | 1.12 | Mil +0.5; Soc +0.5 |
+| Host-craft | biology |  | 0.6 | 66 (3.3%) | 103.1% | 0.00 Myr | 1.75 | Sur +0.5; Soc +0.5 |
+| Maintenance | industry |  | 0.6 | 17 (0.8%) | 54.8% | 0.10 Myr | 2.70 | Sur +0.5 |
+| Husbandry of the Self | biology |  | 0.6 | 176 (8.7%) | 99.4% | 0.00 Myr | 1.25 | Sur +0.5; tilt biology ×1.2 |
 
 - **Tools**: Shaped stone, bone and shell. The first lever over the world.
 - **Fire**: Kept flame: warmth, cooked food, the dark held back. Survival begins here.
@@ -67,20 +67,20 @@ Reached is the share of all peoples that ever held the node. Of eligible is the 
 
 | Node | Domain | Needs | Price | Reached | Of eligible | Learned at | Life | Effects |
 |---|---|---|---|---|---|---|---|---|
-| Cold Chemistry | exotic |  | 2 | 113 (5.4%) | 94.2% | 0.03 Myr | 1.47 |  |
-| Printing | society | Writing, Metallurgy | 2 | 1855 (88.4%) | 99.7% | 0.06 Myr | 1.36 | Soc +0.3; tilt computation ×1.2, biology ×1.1 |
-| the Scientific Method | computation | Mathematics, Philosophy, Printing | 2 | 2042 (97.3%) | 110.3% | 0.07 Myr | 1.47 | tilt energy ×1.3, industry ×1.3, biology ×1.3, exotic ×1.3 |
-| Astronomy | exotic | the Scientific Method, Star Gazing | 2 | 1868 (89.0%) | 97.3% | 0.11 Myr | 1.70 | tilt propulsion ×1.2, exotic ×1.1 |
-| Doubt | society | Philosophy, Printing, Organised Religion | 2 | 1605 (76.5%) | 96.9% | 0.08 Myr | 1.50 | Soc +0.1; filter: the Wars of Faith (diff 2.5 on soc) |
-| Steam Power | energy | Metallurgy, the Scientific Method | 2 | 1993 (94.9%) | 98.2% | 0.10 Myr | 1.52 |  |
-| the Breach | industry | Steam Power | 2 | 75 (3.6%) | 92.6% | 0.16 Myr | 3.84 |  |
-| High Air | propulsion | the Scientific Method | 2 | 124 (5.9%) | 98.4% | 0.12 Myr | 1.38 |  |
-| the Industrial Revolution | industry | Steam Power | 2 | 1953 (93.0%) | 98.0% | 0.14 Myr | 1.56 | Mil +0.5; Sur +0.5 |
-| Chemistry | industry | the Scientific Method | 2 | 1983 (94.5%) | 97.1% | 0.10 Myr | 1.50 |  |
-| Medicine | biology | the Scientific Method | 2 | 1954 (93.1%) | 95.7% | 0.10 Myr | 1.50 | Sur +0.5 |
-| Firearms | weapons | Metallurgy, Chemistry | 2 | 1632 (77.8%) | 82.6% | 0.16 Myr | 1.81 | Mil +0.5 |
-| Mass Politics | society | Printing, the Industrial Revolution, Doubt | 2 | 1194 (56.9%) | 77.9% | 0.20 Myr | 1.98 | Soc +0.5 |
-| Electricity | energy | the Scientific Method, the Industrial Revolution | 2 | 1827 (87.0%) | 93.8% | 0.20 Myr | 1.81 | tilt computation ×1.3 |
+| Cold Chemistry | exotic |  | 2 | 105 (5.2%) | 98.1% | 0.03 Myr | 1.62 |  |
+| Printing | society | Writing, Metallurgy | 2 | 1786 (88.5%) | 99.8% | 0.06 Myr | 1.36 | Soc +0.3; tilt computation ×1.2, biology ×1.1 |
+| the Scientific Method | computation | Mathematics, Philosophy, Printing | 2 | 1953 (96.8%) | 110.0% | 0.07 Myr | 1.48 | tilt energy ×1.3, industry ×1.3, biology ×1.3, exotic ×1.3 |
+| Astronomy | exotic | the Scientific Method, Star Gazing | 2 | 1800 (89.2%) | 97.5% | 0.11 Myr | 1.68 | tilt propulsion ×1.2, exotic ×1.1 |
+| Doubt | society | Philosophy, Printing, Organised Religion | 2 | 1559 (77.3%) | 96.8% | 0.08 Myr | 1.48 | Soc +0.1; filter: the Wars of Faith (diff 2.5 on soc) |
+| Steam Power | energy | Metallurgy, the Scientific Method | 2 | 1920 (95.2%) | 98.8% | 0.10 Myr | 1.50 |  |
+| the Breach | industry | Steam Power | 2 | 64 (3.2%) | 97.0% | 0.16 Myr | 2.51 |  |
+| High Air | propulsion | the Scientific Method | 2 | 95 (4.7%) | 99.0% | 0.12 Myr | 1.18 |  |
+| the Industrial Revolution | industry | Steam Power | 2 | 1885 (93.5%) | 98.2% | 0.14 Myr | 1.56 | Mil +0.5; Sur +0.5 |
+| Chemistry | industry | the Scientific Method | 2 | 1889 (93.7%) | 96.7% | 0.10 Myr | 1.54 |  |
+| Medicine | biology | the Scientific Method | 2 | 1865 (92.5%) | 95.5% | 0.10 Myr | 1.54 | Sur +0.5 |
+| Firearms | weapons | Metallurgy, Chemistry | 2 | 1563 (77.5%) | 83.0% | 0.16 Myr | 1.70 | Mil +0.5 |
+| Mass Politics | society | Printing, the Industrial Revolution, Doubt | 2 | 1122 (55.6%) | 75.1% | 0.20 Myr | 2.10 | Soc +0.5 |
+| Electricity | energy | the Scientific Method, the Industrial Revolution | 2 | 1747 (86.6%) | 92.8% | 0.20 Myr | 1.80 | tilt computation ×1.3 |
 
 - **Cold Chemistry**: Making without burning: catalysis, pressure and patience. The fireless road to industry, for peoples who cannot burn.
 - **Printing**: Cheap copies of anything written. Ideas spread faster than they can be stopped.
@@ -101,20 +101,20 @@ Reached is the share of all peoples that ever held the node. Of eligible is the 
 
 | Node | Domain | Needs | Price | Reached | Of eligible | Learned at | Life | Effects |
 |---|---|---|---|---|---|---|---|---|
-| Mass Industry | energy | the Industrial Revolution, Chemistry | 6 | 1740 (82.9%) | 90.8% | 0.24 Myr | 1.95 | Mil +0.3; Sur +0.3; filter: Overshoot (diff 4 on sur/soc) |
-| Mechanised War | weapons | Firearms, the Industrial Revolution | 6 | 1257 (59.9%) | 78.5% | 0.30 Myr | 2.36 | Mil +0.5 |
-| Modern Physics | exotic | Electricity, Mathematics, Astronomy | 6 | 1421 (67.7%) | 82.7% | 0.42 Myr | 2.94 | tilt energy ×1.3 |
-| Atomic Power | energy | Modern Physics | 6 | 1246 (59.4%) | 87.7% | 0.69 Myr | 3.67 | Mil +1.0; filter: the Atomic Age (diff 3.5 on soc) |
-| Rocketry | propulsion | Chemistry, Mechanised War | 6 | 1233 (58.7%) | 98.5% | 0.36 Myr | 2.40 | reach 0.1 ly |
-| Computers | computation | Electricity, Mathematics | 6 | 1659 (79.0%) | 91.1% | 0.32 Myr | 2.22 | tilt energy ×1.1, industry ×1.1, biology ×1.1 |
-| Global Networks | computation | Computers, Mass Politics | 6 | 1147 (54.6%) | 108.6% | 0.46 Myr | 4.01 | Soc +0.5 |
-| Genetics | biology | Medicine, Chemistry | 6 | 1695 (80.8%) | 88.6% | 0.16 Myr | 1.78 | Sur +0.5 |
-| Ecology | biology | Medicine, Mass Industry | 6 | 1485 (70.7%) | 88.0% | 0.32 Myr | 2.54 | Sur +0.5; tilt society ×1.2 |
-| Orbital Weapons | weapons | Rocketry, Atomic Power | 6 | 620 (29.5%) | 68.0% | 1.35 Myr | 4.82 | Mil +0.5 |
-| Fusion Power | energy | Atomic Power, Computers | 6 | 1039 (49.5%) | 86.6% | 1.10 Myr | 4.43 | Mil +0.3; Sur +0.3 |
-| Neuroscience | biology | Medicine, Computers | 6 | 1399 (66.7%) | 86.9% | 0.49 Myr | 2.80 | tilt computation ×1.2 |
-| Broodline | biology | Host-craft, Chemistry | 6 | 80 (3.8%) | 93.0% | 0.16 Myr | 1.68 | Sur +0.5; tilt biology ×1.2 |
-| Forking | computation | Maintenance, Electricity | 6 | 23 (1.1%) | 76.7% | 0.62 Myr | 3.52 | Sur +0.5; Soc +0.5 |
+| Mass Industry | energy | the Industrial Revolution, Chemistry | 6 | 1667 (82.6%) | 90.3% | 0.23 Myr | 1.92 | Mil +0.3; Sur +0.3; filter: Overshoot (diff 4 on sur/soc) |
+| Mechanised War | weapons | Firearms, the Industrial Revolution | 6 | 1173 (58.2%) | 76.5% | 0.30 Myr | 2.19 | Mil +0.5 |
+| Modern Physics | exotic | Electricity, Mathematics, Astronomy | 6 | 1370 (67.9%) | 83.4% | 0.37 Myr | 2.80 | tilt energy ×1.3 |
+| Atomic Power | energy | Modern Physics | 6 | 1174 (58.2%) | 85.7% | 0.60 Myr | 3.60 | Mil +1.0; filter: the Atomic Age (diff 3.5 on soc) |
+| Rocketry | propulsion | Chemistry, Mechanised War | 6 | 1135 (56.3%) | 97.2% | 0.35 Myr | 2.31 | reach 0.1 ly |
+| Computers | computation | Electricity, Mathematics | 6 | 1593 (79.0%) | 91.4% | 0.32 Myr | 2.18 | tilt energy ×1.1, industry ×1.1, biology ×1.1 |
+| Global Networks | computation | Computers, Mass Politics | 6 | 1102 (54.6%) | 109.8% | 0.44 Myr | 3.88 | Soc +0.5 |
+| Genetics | biology | Medicine, Chemistry | 6 | 1650 (81.8%) | 90.9% | 0.17 Myr | 1.70 | Sur +0.5 |
+| Ecology | biology | Medicine, Mass Industry | 6 | 1429 (70.8%) | 88.3% | 0.32 Myr | 2.41 | Sur +0.5; tilt society ×1.2 |
+| Orbital Weapons | weapons | Rocketry, Atomic Power | 6 | 552 (27.4%) | 67.6% | 1.30 Myr | 4.91 | Mil +0.5 |
+| Fusion Power | energy | Atomic Power, Computers | 6 | 972 (48.2%) | 86.1% | 1.08 Myr | 4.39 | Mil +0.3; Sur +0.3 |
+| Neuroscience | biology | Medicine, Computers | 6 | 1332 (66.0%) | 86.5% | 0.50 Myr | 2.78 | tilt computation ×1.2 |
+| Broodline | biology | Host-craft, Chemistry | 6 | 58 (2.9%) | 92.1% | 0.16 Myr | 2.20 | Sur +0.5; tilt biology ×1.2 |
+| Forking | computation | Maintenance, Electricity | 6 | 13 (0.6%) | 76.5% | 0.64 Myr | 3.80 | Sur +0.5; Soc +0.5 |
 
 - **Mass Industry**: Production at planetary scale. It strips a world if not watched, and no one watches at first.
 - **Mechanised War**: Engines, armour and aircraft. Wars that consume nations rather than armies.
@@ -135,32 +135,32 @@ Reached is the share of all peoples that ever held the node. Of eligible is the 
 
 | Node | Domain | Needs | Price | Reached | Of eligible | Learned at | Life | Effects |
 |---|---|---|---|---|---|---|---|---|
-| Machine Minds | computation | Computers, Neuroscience | 30 | 1005 (47.9%) | 70.8% | 0.94 Myr | 4.46 | Soc +0.5; tilt energy ×1.2, industry ×1.2, biology ×1.2, propulsion ×1.2, weapons ×1.2, exotic ×1.2; filter: Thinking Machines (diff 4.5 on soc) |
-| Closed Ecologies | biology | Ecology, Genetics | 30 | 1296 (61.7%) | 89.4% | 0.48 Myr | 2.99 | Sur +0.5; envelope +1; unlocks arcology |
-| Orbital Habitats | industry | Rocketry, Closed Ecologies | 30 | 724 (34.5%) | 73.6% | 1.08 Myr | 4.10 | Sur +0.5; unlocks shipyard |
-| Interplanetary Flight | propulsion | Rocketry, Fusion Power, Astronomy | 30 | 744 (35.4%) | 95.0% | 1.44 Myr | 4.77 | reach 1 ly |
-| Slow Interstellar Travel | propulsion | Interplanetary Flight, Closed Ecologies | 30 | 650 (31.0%) | 97.6% | 1.78 Myr | 5.13 | reach 12 ly; speed 100 y/ly |
-| Self-Replicating Industry | industry | Machine Minds, Orbital Habitats | 30 | 403 (19.2%) | 72.5% | 1.99 Myr | 5.62 | Mil +0.5; Sur +0.3; filter: Self-Replication (diff 5.5 on mil) |
-| Life Extension | biology | Genetics, Neuroscience | 30 | 1097 (52.3%) | 80.6% | 0.85 Myr | 4.04 | Sur +0.5; filter: the Long Silence (diff 4.5 on soc) |
-| Terraforming | biology | Closed Ecologies, Fusion Power | 30 | 652 (31.1%) | 73.9% | 2.04 Myr | 5.60 | Sur +0.5; envelope +1 |
-| Antimatter | energy | Fusion Power, Modern Physics | 30 | 765 (36.4%) | 73.7% | 1.96 Myr | 5.35 | Mil +0.5 |
-| Planetary Defence | weapons | Orbital Weapons, Computers | 30 | 430 (20.5%) | 70.0% | 1.90 Myr | 5.55 | Mil +0.5; unlocks defence grid |
-| Memetic Engineering | society | Global Networks, Neuroscience | 30 | 641 (30.5%) | 63.0% | 1.06 Myr | 5.66 | Soc +1.0 |
-| Relativistic Travel | propulsion | Antimatter, Slow Interstellar Travel | 30 | 467 (22.2%) | 91.9% | 2.58 Myr | 5.94 | reach 25 ly; speed 4 y/ly |
-| Relativistic Weapons | weapons | Relativistic Travel | 30 | 256 (12.2%) | 54.8% | 3.76 Myr | 6.62 | Mil +1.5 |
-| Mind Uploading | computation | Machine Minds, Neuroscience | 30 | 585 (27.9%) | 59.0% | 1.28 Myr | 5.97 | Sur +0.5; Soc +0.5 |
-| Dyson Swarms | industry | Self-Replicating Industry, Antimatter | 30 | 156 (7.4%) | 56.5% | 3.82 Myr | 7.28 | Sur +0.5; unlocks Dyson swarm |
-| Germline Engineering | biology | Terraforming, Life Extension | 30 | 485 (23.1%) | 81.5% | 2.64 Myr | 6.18 | Sur +1.0; envelope +1 |
-| Quantum Computing | computation | Computers, Modern Physics | 30 | 965 (46.0%) | 71.2% | 1.02 Myr | 4.72 | tilt computation ×1.2, exotic ×1.3 |
-| Synthetic Biology | biology | Genetics, Closed Ecologies | 30 | 1090 (51.9%) | 84.2% | 0.73 Myr | 3.71 | Sur +0.5; tilt biology ×1.3 |
-| Deep Governance | society | Memetic Engineering, Global Networks, Law | 30 | 589 (28.1%) | 92.5% | 1.28 Myr | 5.86 | Soc +1.0 |
-| Beamed Sails | propulsion | Slow Interstellar Travel, Orbital Habitats | 30 | 470 (22.4%) | 89.4% | 2.24 Myr | 5.43 | reach 18 ly; speed 30 y/ly |
-| Hibernation | biology | Medicine, Slow Interstellar Travel | 30 | 519 (24.7%) | 80.7% | 2.22 Myr | 5.50 | Sur +0.5; reach 5 ly |
-| Seed-clouds | propulsion | Interplanetary Flight, the Gathering | 30 | 58 (2.8%) | 93.5% | 1.59 Myr | 5.17 | reach 12 ly; speed 300 y/ly |
-| Living Ships | propulsion | Interplanetary Flight, Synthetic Biology | 30 | 43 (2.0%) | 84.3% | 1.92 Myr | 5.00 | reach 12 ly; speed 100 y/ly |
-| Grafting | biology | Slow Interstellar Travel, Synthetic Biology | 30 | 21 (1.0%) | 84.0% | 1.84 Myr | 5.48 | Sur +0.5 |
-| Deep Root | biology | Closed Ecologies | 30 | 46 (2.2%) | 83.6% | 0.55 Myr | 4.18 | Sur +1.0 |
-| Free-living | biology | Broodline, Closed Ecologies | 60 | 43 (2.0%) | 76.8% | 0.88 Myr | 3.58 | Sur +0.5 |
+| Machine Minds | computation | Computers, Neuroscience | 30 | 946 (46.9%) | 70.3% | 0.94 Myr | 4.44 | Soc +0.5; tilt energy ×1.2, industry ×1.2, biology ×1.2, propulsion ×1.2, weapons ×1.2, exotic ×1.2; filter: Thinking Machines (diff 4.5 on soc) |
+| Closed Ecologies | biology | Ecology, Genetics | 30 | 1251 (62.0%) | 89.6% | 0.48 Myr | 2.86 | Sur +0.5; envelope +1; unlocks arcology |
+| Orbital Habitats | industry | Rocketry, Closed Ecologies | 30 | 649 (32.2%) | 71.7% | 1.14 Myr | 4.02 | Sur +0.5; unlocks shipyard |
+| Interplanetary Flight | propulsion | Rocketry, Fusion Power, Astronomy | 30 | 675 (33.5%) | 95.6% | 1.42 Myr | 4.76 | reach 1 ly |
+| Slow Interstellar Travel | propulsion | Interplanetary Flight, Closed Ecologies | 30 | 596 (29.5%) | 97.7% | 1.70 Myr | 5.19 | reach 12 ly; speed 100 y/ly |
+| Self-Replicating Industry | industry | Machine Minds, Orbital Habitats | 30 | 374 (18.5%) | 74.4% | 2.11 Myr | 5.48 | Mil +0.5; Sur +0.3; filter: Self-Replication (diff 5.5 on mil) |
+| Life Extension | biology | Genetics, Neuroscience | 30 | 1051 (52.1%) | 81.5% | 0.84 Myr | 4.02 | Sur +0.5; filter: the Long Silence (diff 4.5 on soc) |
+| Terraforming | biology | Closed Ecologies, Fusion Power | 30 | 638 (31.6%) | 77.1% | 2.04 Myr | 5.58 | Sur +0.5; envelope +1 |
+| Antimatter | energy | Fusion Power, Modern Physics | 30 | 767 (38.0%) | 79.2% | 1.84 Myr | 5.20 | Mil +0.5 |
+| Planetary Defence | weapons | Orbital Weapons, Computers | 30 | 396 (19.6%) | 72.3% | 1.80 Myr | 5.43 | Mil +0.5; unlocks defence grid |
+| Memetic Engineering | society | Global Networks, Neuroscience | 30 | 630 (31.2%) | 64.7% | 1.06 Myr | 5.60 | Soc +1.0 |
+| Relativistic Travel | propulsion | Antimatter, Slow Interstellar Travel | 30 | 457 (22.7%) | 93.6% | 2.52 Myr | 5.74 | reach 25 ly; speed 4 y/ly |
+| Relativistic Weapons | weapons | Relativistic Travel | 30 | 254 (12.6%) | 55.6% | 3.32 Myr | 6.48 | Mil +1.5 |
+| Mind Uploading | computation | Machine Minds, Neuroscience | 30 | 554 (27.5%) | 59.8% | 1.30 Myr | 6.00 | Sur +0.5; Soc +0.5 |
+| Dyson Swarms | industry | Self-Replicating Industry, Antimatter | 30 | 156 (7.7%) | 60.0% | 3.82 Myr | 6.65 | Sur +0.5; unlocks Dyson swarm |
+| Germline Engineering | biology | Terraforming, Life Extension | 30 | 459 (22.8%) | 76.8% | 2.56 Myr | 6.05 | Sur +1.0; envelope +1 |
+| Quantum Computing | computation | Computers, Modern Physics | 30 | 920 (45.6%) | 71.5% | 0.92 Myr | 4.67 | tilt computation ×1.2, exotic ×1.3 |
+| Synthetic Biology | biology | Genetics, Closed Ecologies | 30 | 1023 (50.7%) | 81.9% | 0.76 Myr | 3.84 | Sur +0.5; tilt biology ×1.3 |
+| Deep Governance | society | Memetic Engineering, Global Networks, Law | 30 | 563 (27.9%) | 89.4% | 1.34 Myr | 5.80 | Soc +1.0 |
+| Beamed Sails | propulsion | Slow Interstellar Travel, Orbital Habitats | 30 | 399 (19.8%) | 86.2% | 2.19 Myr | 5.65 | reach 18 ly; speed 30 y/ly |
+| Hibernation | biology | Medicine, Slow Interstellar Travel | 30 | 487 (24.1%) | 82.5% | 2.16 Myr | 5.48 | Sur +0.5; reach 5 ly |
+| Seed-clouds | propulsion | Interplanetary Flight, the Gathering | 30 | 36 (1.8%) | 85.7% | 1.88 Myr | 3.58 | reach 12 ly; speed 300 y/ly |
+| Living Ships | propulsion | Interplanetary Flight, Synthetic Biology | 30 | 45 (2.2%) | 81.8% | 1.82 Myr | 5.40 | reach 12 ly; speed 100 y/ly |
+| Grafting | biology | Slow Interstellar Travel, Synthetic Biology | 30 | 32 (1.6%) | 94.1% | 2.47 Myr | 6.31 | Sur +0.5 |
+| Deep Root | biology | Closed Ecologies | 30 | 68 (3.4%) | 87.2% | 0.64 Myr | 3.73 | Sur +1.0 |
+| Free-living | biology | Broodline, Closed Ecologies | 60 | 31 (1.5%) | 72.1% | 1.00 Myr | 4.46 | Sur +0.5 |
 
 - **Machine Minds**: A mind that is not one of theirs. It speeds everything, or replaces its makers.
 - **Closed Ecologies**: Sealed, self-sustaining habitats. Living where nothing lives; arcologies at home.
@@ -193,23 +193,23 @@ Reached is the share of all peoples that ever held the node. Of eligible is the 
 
 | Node | Domain | Needs | Price | Reached | Of eligible | Learned at | Life | Effects |
 |---|---|---|---|---|---|---|---|---|
-| Stellar Engineering | exotic | Dyson Swarms, Modern Physics | 250 | 83 (4.0%) | 53.2% | 4.93 Myr | 8.06 | Mil +1.0; Sur +1.0; filter: Stellar Engineering (diff 7 on sur) |
-| Wormhole Physics | exotic | Antimatter, Modern Physics, Quantum Computing | 250 | 287 (13.7%) | 43.2% | 3.64 Myr | 6.90 |  |
-| Exotic Matter | exotic | Wormhole Physics, Antimatter | 500 | 100 (4.8%) | 34.8% | 5.45 Myr | 8.32 | Mil +0.5; Sur +0.5 |
-| Causal Physics | exotic | Wormhole Physics, Quantum Computing | 600 | 96 (4.6%) | 33.4% | 5.63 Myr | 8.10 | Soc +0.5; tilt exotic ×1.3 |
-| Transcendence | exotic | Mind Uploading, Wormhole Physics, Memetic Engineering | 500 | 75 (3.6%) | 45.5% | 5.52 Myr | 8.38 | filter: Transcendence (diff 7 on soc) |
-| Star Lifting | exotic | Stellar Engineering | 500 | 39 (1.9%) | 47.0% | 4.88 Myr | 8.60 | Sur +1.0 |
-| Deep Time | exotic | Star Lifting, Causal Physics | 600 | 18 (0.9%) | 56.2% | 6.64 Myr | 8.53 | Soc +0.5; after 4 Myr of life; 30% chance per attempt |
-| Vacuum Energy | energy | Antimatter, Quantum Computing | 250 | 348 (16.6%) | 52.4% | 3.68 Myr | 6.79 | Mil +0.5; Sur +1.0; tilt exotic ×1.2 |
-| Matter Compilers | industry | Self-Replicating Industry, Vacuum Energy | 250 | 81 (3.9%) | 52.9% | 5.78 Myr | 8.38 | Mil +1.0; Sur +1.0 |
-| World Engines | industry | Matter Compilers, Terraforming | 500 | 45 (2.1%) | 57.0% | 6.58 Myr | 9.45 | Sur +1.0; envelope +1 |
-| Substrate Minds | computation | Mind Uploading, Quantum Computing | 250 | 384 (18.3%) | 71.6% | 3.26 Myr | 6.66 | Sur +0.5; Soc +1.0; tilt society ×1.2 |
-| Panspermia | biology | Synthetic Biology, Germline Engineering | 250 | 334 (15.9%) | 71.1% | 3.60 Myr | 6.99 | Sur +1.0; envelope +1 |
-| Posthuman Law | society | Deep Governance, Mind Uploading | 250 | 350 (16.7%) | 78.7% | 2.68 Myr | 6.47 | Soc +1.5 |
-| the Long Thought | society | Posthuman Law, Substrate Minds | 500 | 160 (7.6%) | 58.0% | 5.28 Myr | 7.46 | Soc +1.0 |
-| Near-light Travel | propulsion | Relativistic Travel, Vacuum Energy | 250 | 151 (7.2%) | 64.0% | 4.62 Myr | 7.86 | reach 35 ly; speed 1.5 y/ly |
-| Nova Bombs | weapons | Relativistic Weapons, Antimatter | 250 | 138 (6.6%) | 53.9% | 4.79 Myr | 7.86 | Mil +1.5 |
-| Stellar Weapons | weapons | Nova Bombs, Stellar Engineering | 500 | 35 (1.7%) | 62.5% | 6.42 Myr | 8.68 | Mil +2.0 |
+| Stellar Engineering | exotic | Dyson Swarms, Modern Physics | 250 | 91 (4.5%) | 58.7% | 4.86 Myr | 6.96 | Mil +1.0; Sur +1.0; filter: Stellar Engineering (diff 7 on sur) |
+| Wormhole Physics | exotic | Antimatter, Modern Physics, Quantum Computing | 250 | 293 (14.5%) | 44.7% | 3.74 Myr | 6.74 |  |
+| Exotic Matter | exotic | Wormhole Physics, Antimatter | 500 | 104 (5.2%) | 35.5% | 5.32 Myr | 8.23 | Mil +0.5; Sur +0.5 |
+| Causal Physics | exotic | Wormhole Physics, Quantum Computing | 600 | 92 (4.6%) | 31.4% | 5.80 Myr | 8.23 | Soc +0.5; tilt exotic ×1.3 |
+| Transcendence | exotic | Mind Uploading, Wormhole Physics, Memetic Engineering | 500 | 81 (4.0%) | 45.3% | 6.06 Myr | 9.32 | filter: Transcendence (diff 7 on soc) |
+| Star Lifting | exotic | Stellar Engineering | 500 | 58 (2.9%) | 63.7% | 5.24 Myr | 7.01 | Sur +1.0 |
+| Deep Time | exotic | Star Lifting, Causal Physics | 600 | 23 (1.1%) | 60.5% | 6.42 Myr | 8.16 | Soc +0.5; after 4 Myr of life; 30% chance per attempt |
+| Vacuum Energy | energy | Antimatter, Quantum Computing | 250 | 346 (17.2%) | 52.6% | 3.54 Myr | 6.72 | Mil +0.5; Sur +1.0; tilt exotic ×1.2 |
+| Matter Compilers | industry | Self-Replicating Industry, Vacuum Energy | 250 | 77 (3.8%) | 51.7% | 5.22 Myr | 7.72 | Mil +1.0; Sur +1.0 |
+| World Engines | industry | Matter Compilers, Terraforming | 500 | 49 (2.4%) | 65.3% | 5.94 Myr | 8.16 | Sur +1.0; envelope +1 |
+| Substrate Minds | computation | Mind Uploading, Quantum Computing | 250 | 357 (17.7%) | 71.4% | 3.06 Myr | 6.87 | Sur +0.5; Soc +1.0; tilt society ×1.2 |
+| Panspermia | biology | Synthetic Biology, Germline Engineering | 250 | 304 (15.1%) | 68.0% | 3.55 Myr | 6.72 | Sur +1.0; envelope +1 |
+| Posthuman Law | society | Deep Governance, Mind Uploading | 250 | 325 (16.1%) | 77.6% | 2.92 Myr | 6.70 | Soc +1.5 |
+| the Long Thought | society | Posthuman Law, Substrate Minds | 500 | 141 (7.0%) | 54.2% | 5.08 Myr | 7.46 | Soc +1.0 |
+| Near-light Travel | propulsion | Relativistic Travel, Vacuum Energy | 250 | 154 (7.6%) | 71.0% | 4.73 Myr | 7.33 | reach 35 ly; speed 1.5 y/ly |
+| Nova Bombs | weapons | Relativistic Weapons, Antimatter | 250 | 134 (6.6%) | 52.8% | 4.31 Myr | 7.20 | Mil +1.5 |
+| Stellar Weapons | weapons | Nova Bombs, Stellar Engineering | 500 | 41 (2.0%) | 65.1% | 5.84 Myr | 8.16 | Mil +2.0 |
 
 - **Stellar Engineering**: Reaching into the star: shaping its output and, a little, moving it. It can flare.
 - **Wormhole Physics**: The proof that space can be folded. A proof, for now.
@@ -233,12 +233,12 @@ Reached is the share of all peoples that ever held the node. Of eligible is the 
 
 | Node | Domain | Needs | Price | Reached | Of eligible | Learned at | Life | Effects |
 |---|---|---|---|---|---|---|---|---|
-| the Voice | exotic | Causal Physics, Substrate Minds | 600 | 6 (0.3%) | 8.6% | 2.76 Myr | 6.39 | unlocks ansible net; filter: the Open Line (diff 6 on soc) |
-| the Flesh | biology | Panspermia, Life Extension | 600 | 19 (0.9%) | 5.7% | 5.22 Myr | 9.88 | filter: the Brood (diff 6 on soc) |
-| the Door | propulsion | Exotic Matter, Near-light Travel | 600 | 1 (0.0%) | 1.8% | 3.56 Myr | 6.26 | reach 45 ly; speed 0.3 y/ly; filter: the Door (diff 4.5 on soc) |
-| the Unmaking | weapons | Exotic Matter, Stellar Weapons | 600 | 3 (0.1%) | 11.5% | 2.12 Myr | 3.16 | filter: the Unmaking (diff 6.5 on soc) |
-| the Chorus | society | the Long Thought, Memetic Engineering | 600 | 13 (0.6%) | 8.5% | 6.68 Myr | 11.20 | filter: the Chorus (diff 6 on soc) |
-| the Sight | exotic | Causal Physics, the Long Thought | 600 | 3 (0.1%) | 7.3% | 2.24 Myr | 8.38 | filter: the Sight (diff 6 on soc) |
+| the Voice | exotic | Causal Physics, Substrate Minds | 600 | 3 (0.1%) | 4.2% | 5.11 Myr | 7.96 | unlocks ansible net; filter: the Open Line (diff 6 on soc) |
+| the Flesh | biology | Panspermia, Life Extension | 600 | 26 (1.3%) | 8.6% | 6.66 Myr | 11.23 | filter: the Brood (diff 6 on soc) |
+| the Door | propulsion | Exotic Matter, Near-light Travel | 600 | 3 (0.1%) | 4.9% | 4.09 Myr | 7.59 | reach 45 ly; speed 0.3 y/ly; filter: the Door (diff 4.5 on soc) |
+| the Unmaking | weapons | Exotic Matter, Stellar Weapons | 600 | 2 (0.1%) | 7.1% | 4.85 Myr | 10.06 | filter: the Unmaking (diff 6.5 on soc) |
+| the Chorus | society | the Long Thought, Memetic Engineering | 600 | 10 (0.5%) | 7.7% | 6.95 Myr | 12.73 | filter: the Chorus (diff 6 on soc) |
+| the Sight | exotic | Causal Physics, the Long Thought | 600 | 2 (0.1%) | 4.8% | 5.50 Myr | 6.62 | filter: the Sight (diff 6 on soc) |
 
 - **the Voice**: Speech across any distance with no delay. Every world in one room; every mind on one line.
 - **the Flesh**: The species remade in a generation, a body for every world. No ships, no plague, no fear of the sky.
@@ -251,12 +251,12 @@ How miracles were held, by route (a people may hold one by more than one route):
 
 | Miracle | Born | Leap | Found | Wielded | Holders | Median life (Myr) |
 |---|---|---|---|---|---|---|
-| the Voice | 4 | 0 | 4 | 9 | 17 | 7.27 |
-| the Flesh | 3 | 17 | 2 | 11 | 33 | 7.92 |
-| the Door | 3 | 0 | 1 | 25 | 29 | 5.70 |
-| the Unmaking | 0 | 0 | 3 | 7 | 10 | 5.22 |
-| the Chorus | 1 | 11 | 2 | 8 | 22 | 9.80 |
-| the Sight | 8 | 0 | 3 | 13 | 24 | 7.47 |
+| the Voice | 2 | 0 | 2 | 6 | 10 | 7.94 |
+| the Flesh | 3 | 23 | 3 | 13 | 42 | 10.26 |
+| the Door | 3 | 0 | 2 | 31 | 36 | 5.67 |
+| the Unmaking | 0 | 0 | 2 | 5 | 7 | 9.20 |
+| the Chorus | 1 | 10 | 0 | 10 | 21 | 10.89 |
+| the Sight | 1 | 0 | 1 | 9 | 11 | 9.20 |
 
 ## What happens at the nodes that test a people
 
@@ -264,76 +264,74 @@ Outcomes recorded when a node's filter was faced. Foresaw means the Sight steppe
 
 | Node | Filter | Faced | Overcame | Scarred | Fell | Foresaw |
 |---|---|---|---|---|---|---|
-| Doubt | the Wars of Faith | 1564 | 70.1% | 24.9% | 4.7% | 0.3% |
-| Mass Industry | Overshoot | 1667 | 61.1% | 31.4% | 7.4% | 0.1% |
-| Atomic Power | the Atomic Age | 1194 | 76.1% | 17.9% | 5.8% | 0.2% |
-| Machine Minds | Thinking Machines | 939 | 66.3% | 25.5% | 8.0% | 0.2% |
-| Self-Replicating Industry | Self-Replication | 384 | 44.5% | 37.0% | 16.4% | 2.1% |
-| Life Extension | the Long Silence | 1072 | 61.0% | 29.0% | 9.6% | 0.4% |
-| Stellar Engineering | Stellar Engineering | 81 | 77.8% | 17.3% | 0.0% | 4.9% |
-| Transcendence | Transcendence | 74 | 62.2% | 23.0% | 2.7% | 12.2% |
-| the Voice | the Open Line | 17 | 88.2% | 5.9% | 5.9% | 0.0% |
-| the Flesh | the Brood | 32 | 84.4% | 6.2% | 9.4% | 0.0% |
-| the Door | the Door | 29 | 86.2% | 10.3% | 3.4% | 0.0% |
-| the Unmaking | the Unmaking | 15 | 53.3% | 0.0% | 40.0% | 6.7% |
-| the Chorus | the Chorus | 23 | 91.3% | 4.3% | 4.3% | 0.0% |
-| the Sight | the Sight | 19 | 68.4% | 15.8% | 15.8% | 0.0% |
+| Doubt | the Wars of Faith | 1522 | 66.9% | 27.4% | 5.7% | 0.1% |
+| Mass Industry | Overshoot | 1626 | 61.6% | 30.6% | 7.8% | 0.0% |
+| Atomic Power | the Atomic Age | 1134 | 75.2% | 18.3% | 6.3% | 0.2% |
+| Machine Minds | Thinking Machines | 892 | 67.6% | 24.6% | 7.7% | 0.1% |
+| Self-Replicating Industry | Self-Replication | 353 | 51.6% | 30.0% | 17.6% | 0.8% |
+| Life Extension | the Long Silence | 1035 | 63.7% | 25.2% | 11.0% | 0.1% |
+| Stellar Engineering | Stellar Engineering | 82 | 76.8% | 13.4% | 3.7% | 6.1% |
+| Transcendence | Transcendence | 79 | 77.2% | 15.2% | 2.5% | 5.1% |
+| the Voice | the Open Line | 11 | 72.7% | 27.3% | 0.0% | 0.0% |
+| the Flesh | the Brood | 40 | 85.0% | 12.5% | 2.5% | 0.0% |
+| the Door | the Door | 38 | 86.8% | 5.3% | 5.3% | 2.6% |
+| the Unmaking | the Unmaking | 10 | 40.0% | 30.0% | 30.0% | 0.0% |
+| the Chorus | the Chorus | 21 | 85.7% | 14.3% | 0.0% | 0.0% |
+| the Sight | the Sight | 20 | 55.0% | 30.0% | 15.0% | 0.0% |
 
 ## Common builds
 
-Among the 1606 peoples (76.5%) that reached era 3, the interstellar tree. A build is read two ways: the two domains a people went deepest in (by count of era 2+ nodes, deepest first), and the frontier, the nodes at their deepest era that nothing else they knew depends on.
+Among the 1544 peoples (76.5%) that reached era 3, the interstellar tree. A build is read two ways: the two domains a people went deepest in (by count of era 2+ nodes, deepest first), and the frontier, the nodes at their deepest era that nothing else they knew depends on.
 
 ### By domain pair
 
 | Domains | Peoples | Share | Median life (Myr) | Hold a miracle |
 |---|---|---|---|---|
-| biology + computation | 577 | 35.9% | 4.06 | 8.3% |
-| biology + energy | 473 | 29.5% | 1.30 | 1.5% |
-| biology + propulsion | 190 | 11.8% | 3.82 | 10.5% |
-| computation + biology | 130 | 8.1% | 1.56 | 0.0% |
-| energy + computation | 77 | 4.8% | 2.06 | 0.0% |
-| computation + energy | 56 | 3.5% | 1.90 | 0.0% |
-| energy + biology | 33 | 2.1% | 1.62 | 0.0% |
-| biology + exotic | 25 | 1.6% | 8.60 | 96.0% |
-| biology + weapons | 11 | 0.7% | 3.56 | 36.4% |
-| computation + society | 7 | 0.4% | 5.40 | 14.3% |
-| biology + industry | 6 | 0.4% | 1.26 | 0.0% |
-| energy + propulsion | 6 | 0.4% | 3.83 | 0.0% |
-| computation + propulsion | 3 | 0.2% | 1.59 | 0.0% |
-| energy + weapons | 3 | 0.2% | 3.29 | 0.0% |
-| propulsion + energy | 3 | 0.2% | 2.12 | 0.0% |
-| propulsion + computation | 2 | 0.1% | 2.84 | 0.0% |
-| computation + exotic | 1 | 0.1% | 7.33 | 0.0% |
-| computation + weapons | 1 | 0.1% | 1.27 | 0.0% |
-| energy + exotic | 1 | 0.1% | 6.64 | 0.0% |
-| exotic + computation | 1 | 0.1% | 11.16 | 100.0% |
+| biology + computation | 525 | 34.0% | 4.04 | 7.8% |
+| biology + energy | 496 | 32.1% | 1.40 | 2.0% |
+| biology + propulsion | 165 | 10.7% | 3.80 | 16.4% |
+| computation + biology | 119 | 7.7% | 1.58 | 0.8% |
+| energy + computation | 76 | 4.9% | 1.76 | 1.3% |
+| computation + energy | 51 | 3.3% | 2.68 | 0.0% |
+| energy + biology | 43 | 2.8% | 1.76 | 0.0% |
+| biology + exotic | 29 | 1.9% | 8.67 | 86.2% |
+| biology + weapons | 12 | 0.8% | 2.50 | 8.3% |
+| biology + industry | 5 | 0.3% | 1.40 | 0.0% |
+| computation + propulsion | 4 | 0.3% | 1.18 | 0.0% |
+| energy + propulsion | 4 | 0.3% | 1.16 | 0.0% |
+| energy + weapons | 4 | 0.3% | 1.26 | 0.0% |
+| propulsion + energy | 4 | 0.3% | 2.15 | 0.0% |
+| computation + society | 2 | 0.1% | 5.77 | 0.0% |
+| computation + weapons | 2 | 0.1% | 2.61 | 0.0% |
+| exotic + computation | 2 | 0.1% | 6.62 | 50.0% |
+| energy + industry | 1 | 0.1% | 0.02 | 0.0% |
 
 ### By frontier
 
-The 20 most common frontiers of 634 distinct:
+The 20 most common frontiers of 632 distinct:
 
 | Frontier | Peoples | Median life (Myr) |
 |---|---|---|
-| Closed Ecologies | 68 | 0.55 |
-| Synthetic Biology | 52 | 0.72 |
-| Panspermia | 48 | 4.26 |
-| Posthuman Law + Substrate Minds | 46 | 5.01 |
-| Life Extension | 41 | 0.48 |
-| the Long Thought | 38 | 5.97 |
-| Life Extension + Synthetic Biology | 33 | 0.84 |
-| Posthuman Law | 31 | 2.92 |
-| Machine Minds | 30 | 0.54 |
-| Wormhole Physics | 30 | 3.87 |
-| Quantum Computing | 26 | 0.58 |
-| Vacuum Energy | 26 | 3.67 |
-| Orbital Habitats + Synthetic Biology | 23 | 0.96 |
-| Vacuum Energy + Wormhole Physics | 21 | 5.18 |
-| Life Extension + Machine Minds | 18 | 0.72 |
-| Substrate Minds | 17 | 3.71 |
-| Life Extension + Machine Minds + Synthetic Biology | 15 | 1.10 |
-| Antimatter + Quantum Computing | 14 | 1.51 |
-| Life Extension + Orbital Habitats + Synthetic Biology | 14 | 1.26 |
-| Orbital Habitats | 12 | 0.93 |
+| Closed Ecologies | 90 | 0.52 |
+| Panspermia | 46 | 3.85 |
+| Synthetic Biology | 46 | 0.74 |
+| Life Extension | 44 | 0.52 |
+| Posthuman Law + Substrate Minds | 37 | 5.43 |
+| Wormhole Physics | 34 | 3.56 |
+| the Long Thought | 34 | 5.93 |
+| Life Extension + Synthetic Biology | 29 | 0.74 |
+| Vacuum Energy | 29 | 3.50 |
+| Posthuman Law | 28 | 2.80 |
+| Machine Minds | 27 | 0.51 |
+| Orbital Habitats + Synthetic Biology | 24 | 1.04 |
+| Quantum Computing | 21 | 0.61 |
+| Life Extension + Machine Minds | 17 | 0.76 |
+| Vacuum Energy + Wormhole Physics | 17 | 4.42 |
+| Life Extension + Machine Minds + Synthetic Biology | 13 | 1.22 |
+| Closed Ecologies + Life Extension | 12 | 0.74 |
+| Substrate Minds | 12 | 3.83 |
+| Antimatter + Quantum Computing | 11 | 1.24 |
+| Life Extension + Orbital Habitats + Synthetic Biology | 11 | 1.06 |
 
 ### Era 4 pairs
 
@@ -341,21 +339,21 @@ Which deep nodes are held together, among peoples holding at least two era 4 nod
 
 | Pair | Peoples |
 |---|---|
-| Posthuman Law + Substrate Minds | 276 |
-| Substrate Minds + Vacuum Energy | 212 |
-| Panspermia + Substrate Minds | 200 |
-| Vacuum Energy + Wormhole Physics | 198 |
-| Panspermia + Vacuum Energy | 197 |
-| Panspermia + Posthuman Law | 172 |
-| Posthuman Law + Vacuum Energy | 170 |
-| Substrate Minds + Wormhole Physics | 165 |
-| the Long Thought + Posthuman Law | 160 |
-| the Long Thought + Substrate Minds | 160 |
-| Panspermia + Wormhole Physics | 156 |
-| Near-light Travel + Vacuum Energy | 151 |
-| Posthuman Law + Wormhole Physics | 120 |
-| Near-light Travel + Panspermia | 115 |
+| Posthuman Law + Substrate Minds | 260 |
+| Substrate Minds + Vacuum Energy | 209 |
+| Vacuum Energy + Wormhole Physics | 205 |
+| Panspermia + Vacuum Energy | 177 |
+| Panspermia + Substrate Minds | 169 |
+| Substrate Minds + Wormhole Physics | 169 |
+| Posthuman Law + Vacuum Energy | 163 |
+| Panspermia + Wormhole Physics | 155 |
+| Near-light Travel + Vacuum Energy | 154 |
+| Panspermia + Posthuman Law | 145 |
+| the Long Thought + Posthuman Law | 141 |
+| the Long Thought + Substrate Minds | 141 |
+| Posthuman Law + Wormhole Physics | 132 |
 | Near-light Travel + Substrate Minds | 108 |
+| Exotic Matter + Wormhole Physics | 104 |
 
 ### The way to the stars
 
@@ -363,40 +361,39 @@ The first node that gave a people reach of 10 ly or more:
 
 | Node | Peoples | Median life (Myr) |
 |---|---|---|
-| Slow Interstellar Travel | 587 | 5.21 |
-| Seed-clouds | 22 | 4.37 |
-| Beamed Sails | 16 | 3.63 |
-| Living Ships | 10 | 4.31 |
-| Relativistic Travel | 9 | 5.94 |
-| a miracle held from birth or by a find | 8 | 4.11 |
-| Relativistic Travel (inherited) | 5 | 3.03 |
-| Near-light Travel | 4 | 7.43 |
-| Slow Interstellar Travel (inherited) | 4 | 0.54 |
-| Near-light Travel (inherited) | 1 | 7.02 |
-| Seed-clouds (inherited) | 1 | 0.49 |
+| Slow Interstellar Travel | 553 | 5.20 |
+| Seed-clouds | 11 | 3.86 |
+| Beamed Sails | 8 | 5.77 |
+| Relativistic Travel | 8 | 5.80 |
+| Living Ships | 7 | 4.02 |
+| Slow Interstellar Travel (inherited) | 5 | 0.54 |
+| a miracle held from birth or by a find | 5 | 2.80 |
+| Beamed Sails (inherited) | 3 | 0.06 |
+| Near-light Travel | 3 | 2.70 |
+| Relativistic Travel (inherited) | 2 | 1.20 |
 
 ## Successful builds
 
-Success here is a long life, not survival to the present. The tenth-longest-lived of every hundred peoples lasted 7.0 Myr or more. The cut used below is 10 Myr: 36 peoples (1.7%). Their median birth was 4 Myr into the age against 14 for everyone, so part of a long life is simply being born early.
+Success here is a long life, not survival to the present. The tenth-longest-lived of every hundred peoples lasted 7.1 Myr or more. The cut used below is 10 Myr: 52 peoples (2.6%). Their median birth was 3 Myr into the age against 13 for everyone, so part of a long life is simply being born early.
 
 ### Life by what was held
 
 | Held | Peoples | Median life (Myr) | Lived 10+ Myr |
 |---|---|---|---|
-| everyone | 2099 | 1.38 | 1.7% |
-| no miracle | 1990 | 1.30 | 0.2% |
-| any miracle | 109 | 7.49 | 30.3% |
-| the Voice | 17 | 7.27 | 29.4% |
-| the Flesh | 33 | 7.92 | 36.4% |
-| the Door | 29 | 5.70 | 6.9% |
-| the Unmaking | 10 | 5.22 | 0.0% |
-| the Chorus | 22 | 9.80 | 45.5% |
-| the Sight | 24 | 7.47 | 37.5% |
-| a miracle by born | 19 | 1.35 | 0.0% |
-| a miracle by leap | 28 | 10.96 | 60.7% |
-| a miracle by found | 12 | 5.79 | 25.0% |
-| a miracle by wielded | 61 | 7.46 | 24.6% |
-| knows the cycle | 17 | 8.68 | 41.2% |
+| everyone | 2017 | 1.39 | 2.6% |
+| no miracle | 1910 | 1.27 | 0.4% |
+| any miracle | 107 | 8.16 | 41.1% |
+| the Voice | 10 | 7.94 | 30.0% |
+| the Flesh | 42 | 10.26 | 52.4% |
+| the Door | 36 | 5.67 | 8.3% |
+| the Unmaking | 7 | 9.20 | 28.6% |
+| the Chorus | 21 | 10.89 | 66.7% |
+| the Sight | 11 | 9.20 | 45.5% |
+| a miracle by born | 10 | 5.49 | 10.0% |
+| a miracle by leap | 33 | 11.64 | 84.8% |
+| a miracle by found | 10 | 10.03 | 50.0% |
+| a miracle by wielded | 61 | 6.40 | 23.0% |
+| knows the cycle | 21 | 8.67 | 38.1% |
 
 ### Nodes that mark the long-lived
 
@@ -404,226 +401,225 @@ For every era 2+ node, its share among the long-lived against its share among al
 
 | Node | Among long-lived | Among era 2+ | Lift |
 |---|---|---|---|
-| World Engines | 50% | 2% | 22.14 |
-| Deep Time | 19% | 1% | 21.53 |
-| Stellar Weapons | 36% | 2% | 20.56 |
-| Star Lifting | 36% | 2% | 18.45 |
-| Transcendence | 64% | 4% | 16.98 |
-| Stellar Engineering | 67% | 4% | 16.01 |
-| Matter Compilers | 61% | 4% | 15.04 |
-| Exotic Matter | 75% | 5% | 14.95 |
-| Causal Physics | 69% | 5% | 14.42 |
-| Near-light Travel | 83% | 8% | 11.00 |
-| the Long Thought | 83% | 8% | 10.38 |
-| Nova Bombs | 69% | 7% | 10.03 |
-| Dyson Swarms | 69% | 8% | 8.87 |
-| Relativistic Weapons | 89% | 13% | 6.92 |
-| Wormhole Physics | 89% | 14% | 6.17 |
+| Transcendence | 69% | 4% | 16.43 |
+| Exotic Matter | 71% | 5% | 13.15 |
+| Deep Time | 15% | 1% | 12.86 |
+| World Engines | 33% | 3% | 12.82 |
+| Stellar Weapons | 25% | 2% | 11.72 |
+| Causal Physics | 56% | 5% | 11.65 |
+| Matter Compilers | 44% | 4% | 11.04 |
+| Star Lifting | 31% | 3% | 10.20 |
+| Stellar Engineering | 44% | 5% | 9.34 |
+| Near-light Travel | 65% | 8% | 8.16 |
+| the Long Thought | 58% | 7% | 7.86 |
+| Nova Bombs | 54% | 7% | 7.72 |
+| Dyson Swarms | 56% | 8% | 6.87 |
+| Wormhole Physics | 88% | 15% | 5.80 |
+| Grafting | 10% | 2% | 5.78 |
 | … | | | |
-| Ecology | 100% | 75% | 1.34 |
-| Free-living | 3% | 2% | 1.29 |
-| Computers | 100% | 83% | 1.20 |
+| Neuroscience | 98% | 69% | 1.42 |
+| Modern Physics | 100% | 71% | 1.40 |
+| Mechanised War | 85% | 61% | 1.39 |
+| Ecology | 100% | 74% | 1.34 |
+| Computers | 100% | 83% | 1.21 |
 | Mass Industry | 100% | 87% | 1.15 |
-| Genetics | 94% | 85% | 1.11 |
-| Broodline | 3% | 4% | 0.69 |
-| Grafting | 0% | 1% | 0.00 |
-| Deep Root | 0% | 2% | 0.00 |
+| Genetics | 92% | 86% | 1.08 |
+| Seed-clouds | 2% | 2% | 1.03 |
 
 ### Domain pairs of the long-lived
 
 | Domains | Peoples | Share of long-lived | Share of era 3+ |
 |---|---|---|---|
-| biology + computation | 21 | 58.3% | 35.9% |
-| biology + exotic | 9 | 25.0% | 1.6% |
-| biology + propulsion | 5 | 13.9% | 11.8% |
-| exotic + computation | 1 | 2.8% | 0.1% |
+| biology + computation | 28 | 53.8% | 34.0% |
+| biology + exotic | 11 | 21.2% | 1.9% |
+| biology + propulsion | 6 | 11.5% | 10.7% |
+| biology + energy | 5 | 9.6% | 32.1% |
+| biology + weapons | 1 | 1.9% | 0.8% |
+| exotic + computation | 1 | 1.9% | 0.1% |
 
 ### Frontiers of the long-lived
 
 | Frontier | Peoples | Median life (Myr) |
 |---|---|---|
-| Deep Time + Exotic Matter + Near-light Travel + Panspermia + Stellar Weapons + Transcendence + World Engines + the Long Thought | 4 | 12.28 |
-| Causal Physics + Exotic Matter + Near-light Travel + Panspermia + Transcendence + the Chorus | 2 | 16.63 |
-| Near-light Travel + Stellar Weapons + World Engines + the Flesh + the Long Thought | 2 | 14.32 |
-| Causal Physics + Exotic Matter + Matter Compilers + Near-light Travel + Nova Bombs + Panspermia + Transcendence + the Long Thought | 1 | 11.20 |
-| Causal Physics + Exotic Matter + Matter Compilers + Near-light Travel + Transcendence + the Flesh + the Long Thought | 1 | 12.84 |
-| Causal Physics + Exotic Matter + Near-light Travel + Nova Bombs + Panspermia + Posthuman Law + Substrate Minds + Transcendence | 1 | 11.04 |
-| Causal Physics + Exotic Matter + Near-light Travel + Nova Bombs + Panspermia + Star Lifting + Substrate Minds + Transcendence | 1 | 10.98 |
-| Causal Physics + Exotic Matter + Near-light Travel + Nova Bombs + Panspermia + Stellar Engineering + Transcendence + World Engines + the Long Thought | 1 | 10.20 |
-| Causal Physics + Exotic Matter + Near-light Travel + Nova Bombs + Panspermia + Transcendence + the Long Thought | 1 | 12.14 |
-| Causal Physics + Exotic Matter + Near-light Travel + Nova Bombs + the Flesh + the Long Thought | 1 | 15.19 |
-| Causal Physics + Exotic Matter + Near-light Travel + Panspermia + Star Lifting + Stellar Weapons + Substrate Minds + World Engines | 1 | 10.80 |
-| Causal Physics + Exotic Matter + Near-light Travel + Panspermia + Star Lifting + Stellar Weapons + Transcendence + World Engines + the Chorus | 1 | 12.52 |
-| Causal Physics + Exotic Matter + Near-light Travel + Panspermia + Star Lifting + Transcendence + World Engines + the Chorus | 1 | 13.66 |
-| Causal Physics + Exotic Matter + Near-light Travel + Panspermia + Stellar Engineering + Transcendence + World Engines + the Chorus | 1 | 11.20 |
-| Causal Physics + Exotic Matter + Near-light Travel + Panspermia + Stellar Engineering + Transcendence + World Engines + the Long Thought | 1 | 10.94 |
+| Causal Physics + Exotic Matter + Near-light Travel + Nova Bombs + Panspermia + Transcendence + the Chorus | 2 | 13.95 |
+| Causal Physics + Exotic Matter + Panspermia + Transcendence + Vacuum Energy | 2 | 10.34 |
+| Deep Time + Exotic Matter + Near-light Travel + Panspermia + Stellar Weapons + Transcendence + World Engines + the Long Thought | 2 | 11.73 |
+| Deep Time + Exotic Matter + Near-light Travel + Stellar Weapons + Transcendence + World Engines + the Flesh + the Long Thought | 2 | 11.27 |
+| Exotic Matter + Near-light Travel + Nova Bombs + the Flesh + the Long Thought | 2 | 11.43 |
+| Causal Physics + Exotic Matter + Matter Compilers + Near-light Travel + Nova Bombs + Posthuman Law + Stellar Engineering + Substrate Minds + Transcendence + the Flesh | 1 | 11.50 |
+| Causal Physics + Exotic Matter + Matter Compilers + Near-light Travel + Panspermia + Stellar Engineering + Transcendence + the Chorus | 1 | 11.40 |
+| Causal Physics + Exotic Matter + Near-light Travel + Nova Bombs + Panspermia + Posthuman Law + Substrate Minds + Transcendence | 1 | 10.28 |
+| Causal Physics + Exotic Matter + Near-light Travel + Nova Bombs + Panspermia + Star Lifting + the Long Thought | 1 | 10.04 |
+| Causal Physics + Exotic Matter + Near-light Travel + Nova Bombs + Star Lifting + Substrate Minds + Transcendence + World Engines + the Flesh | 1 | 11.64 |
+| Causal Physics + Exotic Matter + Near-light Travel + Nova Bombs + Star Lifting + Transcendence + World Engines + the Flesh + the Long Thought | 1 | 11.78 |
+| Causal Physics + Exotic Matter + Near-light Travel + Nova Bombs + Transcendence + World Engines + the Flesh | 1 | 12.13 |
+| Causal Physics + Exotic Matter + Near-light Travel + Panspermia + Star Lifting + Stellar Weapons + Transcendence + World Engines + the Long Thought | 1 | 11.98 |
+| Causal Physics + Exotic Matter + Near-light Travel + Panspermia + Stellar Weapons + Substrate Minds + Transcendence + World Engines | 1 | 10.84 |
+| Causal Physics + Exotic Matter + Near-light Travel + Panspermia + Transcendence + the Chorus | 1 | 10.76 |
 
 ### How the long-lived ended
 
 | End | Peoples |
 |---|---|
-| extinct | 31 |
-| contracted | 4 |
+| extinct | 35 |
+| contracted | 16 |
 | still standing | 1 |
 
 ### The thirty longest lives
 
 | Seed | People | Kind | Born (Myr) | Lived (Myr) | Era | Nodes | Peak | Miracles | Frontier | End |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 10 | Eishuu | standard | 0 | 18.2 | 4 | 68 | 2 | the Chorus (leap), the Voice (wielded) | Causal Physics + Exotic Matter + Near-light Travel + Panspermia + Transcendence + the Chorus | contracted: collapsed under their own weight |
-| 9 | Vaophokaix | evolver | 1 | 16.1 | 4 | 71 | 1 | the Chorus (leap), the Sight (wielded) | Exotic Matter + Near-light Travel + Panspermia + Star Lifting + Stellar Weapons + Transcendence + World Engines + the Chorus | extinct: collapsed under their own weight and did not recover |
-| 1 | Tsemaivram | swarm | 15 | 16.0 | 4 | 72 | 3 | the Sight (found) | Deep Time + Exotic Matter + Near-light Travel + Panspermia + Stellar Weapons + Transcendence + World Engines + the Sight | extinct: collapsed under their own weight and did not recover |
-| 3 | Thutre | parasite | 0 | 15.8 | 4 | 76 | 3 | the Sight (wielded) | Deep Time + Exotic Matter + Near-light Travel + Panspermia + Stellar Weapons + Transcendence + World Engines + the Long Thought | extinct: collapsed under their own weight and did not recover |
-| 6 | Truusvei | standard | 2 | 15.7 | 4 | 64 | 3 | the Flesh (leap) | Near-light Travel + Stellar Weapons + World Engines + the Flesh + the Long Thought | extinct: collapsed under their own weight and did not recover |
-| 6 | Dolokhuun | standard | 17 | 15.2 | 4 | 69 | 1 | the Flesh (leap) | Causal Physics + Exotic Matter + Near-light Travel + Nova Bombs + the Flesh + the Long Thought | extinct: collapsed under their own weight and did not recover |
-| 9 | Hehaolain | standard | 26 | 15.0 | 4 | 62 | 1 | the Chorus (leap) | Causal Physics + Exotic Matter + Near-light Travel + Panspermia + Transcendence + the Chorus | extinct: collapsed under their own weight and did not recover |
-| 5 | Lamem | standard | 0 | 14.7 | 4 | 56 | 2 | the Flesh (leap) | Causal Physics + Exotic Matter + Transcendence + Vacuum Energy + the Flesh + the Long Thought | extinct: collapsed under their own weight and did not recover |
-| 6 | Aindqoxtruun | standard | 0 | 13.9 | 4 | 69 | 1 | the Chorus (leap) | Matter Compilers + Near-light Travel + Panspermia + Stellar Engineering + Wormhole Physics + the Chorus | extinct: collapsed under their own weight and did not recover |
-| 4 | Aphesthais | evolver | 20 | 13.8 | 4 | 67 | 3 | the Flesh (leap) | Near-light Travel + World Engines + Wormhole Physics + the Flesh + the Long Thought | extinct: collapsed under their own weight, and long after faded away, the last of them unremarked |
-| 9 | Truutrax | standard | 4 | 13.7 | 4 | 67 | 1 | the Chorus (leap) | Causal Physics + Exotic Matter + Near-light Travel + Panspermia + Star Lifting + Transcendence + World Engines + the Chorus | extinct: collapsed under their own weight and did not recover |
-| 4 | Druyerr | standard | 1 | 13.2 | 4 | 76 | 2 | the Flesh (wielded), the Sight (wielded), the Voice (wielded) | Deep Time + Exotic Matter + Near-light Travel + Panspermia + Stellar Weapons + Transcendence + World Engines + the Long Thought | extinct: collapsed under their own weight and did not recover |
-| 1 | Vraithtauth | standard | 4 | 12.9 | 4 | 64 | 2 | the Flesh (leap) | Near-light Travel + Stellar Weapons + World Engines + the Flesh + the Long Thought | contracted: collapsed under their own weight |
-| 9 | Suusheshuux | standard | 2 | 12.8 | 4 | 67 | 1 | the Flesh (leap) | Causal Physics + Exotic Matter + Matter Compilers + Near-light Travel + Transcendence + the Flesh + the Long Thought | extinct: collapsed under their own weight and did not recover |
-| 3 | Kainyosh | swarm | 0 | 12.6 | 4 | 75 | 1 | the Voice (found) | Deep Time + Exotic Matter + Near-light Travel + Nova Bombs + Panspermia + Transcendence + World Engines + the Long Thought + the Voice | extinct: collapsed under their own weight and did not recover |
-| 9 | Kaushhiar | standard | 8 | 12.5 | 4 | 61 | 1 |  | Nova Bombs + Panspermia + Stellar Engineering + Transcendence + Vacuum Energy + the Long Thought | extinct: collapsed under their own weight and did not recover |
-| 4 | Shuththand | standard | 1 | 12.5 | 4 | 69 | 1 | the Chorus (found) | Causal Physics + Exotic Matter + Near-light Travel + Panspermia + Star Lifting + Stellar Weapons + Transcendence + World Engines + the Chorus | extinct: collapsed under their own weight and did not recover |
-| 9 | Kiadon | standard | 0 | 12.1 | 4 | 69 | 3 | the Sight (wielded) | Causal Physics + Exotic Matter + Near-light Travel + Nova Bombs + Panspermia + Transcendence + the Long Thought | extinct: collapsed under their own weight, and long after faded away, the last of them unremarked |
-| 9 | Viasuutesh | evolver | 3 | 12.0 | 4 | 68 | 1 | the Flesh (leap) | Exotic Matter + Near-light Travel + the Flesh + the Long Thought | extinct: collapsed under their own weight, and long after faded away, the last of them unremarked |
-| 10 | Siththaiyaik | swarm | 9 | 11.6 | 4 | 69 | 10 | the Chorus (wielded), the Door (wielded) | Deep Time + Exotic Matter + Near-light Travel + Panspermia + Stellar Weapons + Substrate Minds + Transcendence + World Engines | extinct: collapsed under their own weight, and long after faded away, the last of them unremarked |
-| 5 | Lagu | standard | 26 | 11.4 | 4 | 63 | 1 | the Flesh (wielded) | Causal Physics + Near-light Travel + Nova Bombs + Panspermia + the Long Thought | standing |
-| 1 | Guuskhash | standard | 10 | 11.4 | 4 | 76 | 9 | the Sight (wielded) | Deep Time + Exotic Matter + Near-light Travel + Panspermia + Stellar Weapons + Transcendence + World Engines + the Long Thought | contracted: collapsed under their own weight |
-| 4 | Saultiaxphaox | standard | 0 | 11.2 | 4 | 71 | 1 | the Door (wielded) | Causal Physics + Exotic Matter + Matter Compilers + Near-light Travel + Nova Bombs + Panspermia + Transcendence + the Long Thought | extinct: collapsed under their own weight, and long after faded away, the last of them unremarked |
-| 8 | Tsasiam | standard | 4 | 11.2 | 4 | 72 | 6 | the Chorus (leap) | Causal Physics + Exotic Matter + Near-light Travel + Panspermia + Stellar Engineering + Transcendence + World Engines + the Chorus | extinct: collapsed under their own weight and did not recover |
-| 3 | Iagavi | machine-born | 16 | 11.2 | 4 | 68 | 2 | the Voice (wielded) | Deep Time + Exotic Matter + Near-light Travel + Panspermia + Stellar Weapons + Transcendence + World Engines + the Long Thought | extinct: collapsed under their own weight, and long after faded away, the last of them unremarked |
-| 10 | Maikedriar | standard | 3 | 11.0 | 4 | 71 | 3 | the Chorus (leap) | Matter Compilers + Near-light Travel + Panspermia + Stellar Weapons + the Chorus | extinct: collapsed under their own weight and did not recover |
-| 6 | Dairadraoth | evolver | 4 | 11.0 | 4 | 63 | 1 | the Flesh (wielded) | Causal Physics + Exotic Matter + Near-light Travel + Nova Bombs + Panspermia + Posthuman Law + Substrate Minds + Transcendence | contracted: collapsed under their own weight |
-| 5 | Qitein | standard | 2 | 11.0 | 4 | 70 | 3 | the Sight (wielded) | Causal Physics + Exotic Matter + Near-light Travel + Nova Bombs + Panspermia + Star Lifting + Substrate Minds + Transcendence | extinct: collapsed under their own weight and did not recover |
-| 4 | Mauzaon | standard | 6 | 10.9 | 4 | 72 | 3 | the Sight (wielded) | Causal Physics + Exotic Matter + Near-light Travel + Panspermia + Stellar Engineering + Transcendence + World Engines + the Long Thought | extinct: collapsed under their own weight, and long after faded away, the last of them unremarked |
-| 8 | Zaimvuundsal | standard | 5 | 10.9 | 4 | 49 | 1 | the Flesh (leap) | Causal Physics + Exotic Matter + Vacuum Energy + the Flesh + the Long Thought | extinct: collapsed under their own weight and did not recover |
+| 9 | Konrovia | standard | 5 | 14.7 | 4 | 70 | 1 | the Chorus (leap) | Causal Physics + Exotic Matter + Near-light Travel + Nova Bombs + Panspermia + Transcendence + the Chorus | extinct: collapsed under their own weight and did not recover |
+| 3 | Thutre | parasite | 0 | 14.4 | 4 | 77 | 4 | the Sight (wielded), the Voice (found) | Deep Time + Exotic Matter + Near-light Travel + Panspermia + Stellar Weapons + Transcendence + World Engines + the Long Thought + the Voice | contracted: collapsed under their own weight |
+| 8 | Kheiniakyum | standard | 4 | 14.3 | 4 | 64 | 5 | the Flesh (leap) | Near-light Travel + Stellar Weapons + World Engines + the Flesh + the Long Thought | extinct: collapsed under their own weight, and long after were unmade by the Grey Tide |
+| 8 | Denziakham | standard | 0 | 13.7 | 4 | 54 | 1 | the Flesh (leap) | Exotic Matter + Transcendence + Vacuum Energy + the Flesh + the Long Thought | extinct: collapsed under their own weight and did not recover |
+| 1 | Yivond | standard | 2 | 13.3 | 4 | 64 | 1 | the Flesh (found) | Deep Time + Exotic Matter + Near-light Travel + Substrate Minds + World Engines + the Flesh | extinct: collapsed under their own weight and did not recover |
+| 10 | Eithorr | standard | 13 | 13.3 | 4 | 64 | 1 | the Chorus (leap) | Causal Physics + Near-light Travel + Panspermia + Transcendence + the Chorus | extinct: collapsed under their own weight, and long after faded away, the last of them unremarked |
+| 9 | Likizox | standard | 1 | 13.2 | 4 | 70 | 1 | the Chorus (leap) | Causal Physics + Exotic Matter + Near-light Travel + Nova Bombs + Panspermia + Transcendence + the Chorus | extinct: collapsed under their own weight and did not recover |
+| 7 | Shuyek | standard | 12 | 13.2 | 4 | 61 | 2 | the Flesh (leap) | Matter Compilers + Near-light Travel + Nova Bombs + Wormhole Physics + the Flesh + the Long Thought | contracted: collapsed under their own weight |
+| 4 | Keziath | standard | 2 | 13.1 | 4 | 69 | 2 | the Chorus (leap) | Exotic Matter + Panspermia + Star Lifting + Transcendence + the Chorus | extinct: collapsed under their own weight, and long after faded away, the last of them unremarked |
+| 6 | Yairoqaus | standard | 0 | 13.1 | 4 | 69 | 1 | the Chorus (leap) | Causal Physics + Exotic Matter + Star Lifting + Transcendence + the Chorus | extinct: collapsed under their own weight, and long after faded away, the last of them unremarked |
+| 9 | Trauktrend | standard | 1 | 13.0 | 4 | 60 | 1 | the Flesh (leap) | Causal Physics + Exotic Matter + Transcendence + Vacuum Energy + the Flesh + the Long Thought | extinct: collapsed under their own weight, and long after faded away, the last of them unremarked |
+| 6 | Taitaindren | planetary mind | 2 | 12.8 | 4 | 69 | 1 | the Chorus (wielded) | Deep Time + Exotic Matter + Near-light Travel + Panspermia + Stellar Weapons + Transcendence + World Engines + the Long Thought | extinct: collapsed under their own weight and did not recover |
+| 5 | Tsaotsudim | standard | 1 | 12.5 | 4 | 67 | 1 | the Flesh (wielded) | Exotic Matter + Near-light Travel + Nova Bombs + Panspermia + Transcendence + the Long Thought | contracted: collapsed under their own weight |
+| 7 | Shesotraun | standard | 7 | 12.4 | 4 | 54 | 1 | the Chorus (leap) | Causal Physics + Exotic Matter + Transcendence + Vacuum Energy + the Chorus | extinct: collapsed under their own weight and did not recover |
+| 4 | Etokha | planetary mind | 4 | 12.3 | 4 | 61 | 1 | the Chorus (leap) | Causal Physics + Exotic Matter + Panspermia + Transcendence + Vacuum Energy + the Chorus | extinct: collapsed under their own weight, and long after faded away, the last of them unremarked |
+| 1 | Luumluul | evolver | 10 | 12.1 | 4 | 64 | 1 | the Flesh (leap) | Causal Physics + Exotic Matter + Near-light Travel + Nova Bombs + Transcendence + World Engines + the Flesh | extinct: collapsed under their own weight, and long after faded away, the last of them unremarked |
+| 5 | Tsatranesh | standard | 3 | 12.0 | 4 | 76 | 1 | the Sight (wielded), the Voice (born) | Causal Physics + Exotic Matter + Near-light Travel + Panspermia + Star Lifting + Stellar Weapons + Transcendence + World Engines + the Long Thought | contracted: collapsed under their own weight |
+| 10 | Trekhautseik | planetary mind | 1 | 11.8 | 4 | 72 | 1 | the Chorus (wielded), the Flesh (leap) | Causal Physics + Exotic Matter + Near-light Travel + Nova Bombs + Star Lifting + Transcendence + World Engines + the Flesh + the Long Thought | extinct: collapsed under their own weight, and long after faded away, the last of them unremarked |
+| 6 | Shaothnuuvrel | parasite | 0 | 11.8 | 4 | 61 | 17 | the Flesh (leap) | Exotic Matter + Near-light Travel + Nova Bombs + the Flesh + the Long Thought | extinct: collapsed under their own weight, and long after faded away, the last of them unremarked |
+| 1 | Vitsairel | planetary mind | 27 | 11.7 | 4 | 71 | 1 | the Flesh (leap) | Deep Time + Exotic Matter + Near-light Travel + Stellar Weapons + Transcendence + World Engines + the Flesh + the Long Thought | standing |
+| 6 | Ageisvin | parasite | 1 | 11.7 | 4 | 69 | 8 | the Flesh (leap) | Exotic Matter + Near-light Travel + Transcendence + the Flesh + the Long Thought | extinct: collapsed under their own weight and did not recover |
+| 1 | Sholushuurr | standard | 1 | 11.6 | 4 | 66 | 10 | the Flesh (leap) | Causal Physics + Exotic Matter + Near-light Travel + Nova Bombs + Star Lifting + Substrate Minds + Transcendence + World Engines + the Flesh | contracted: collapsed under their own weight |
+| 7 | Mothtseiyuuth | swarm | 1 | 11.5 | 4 | 70 | 20 | the Flesh (leap) | Causal Physics + Exotic Matter + Matter Compilers + Near-light Travel + Nova Bombs + Posthuman Law + Stellar Engineering + Substrate Minds + Transcendence + the Flesh | contracted: collapsed under their own weight |
+| 6 | Oseth | standard | 2 | 11.4 | 4 | 72 | 5 | the Chorus (leap) | Causal Physics + Exotic Matter + Matter Compilers + Near-light Travel + Panspermia + Stellar Engineering + Transcendence + the Chorus | extinct: collapsed under their own weight, and long after faded away, the last of them unremarked |
+| 4 | Zuusiave | standard | 2 | 11.3 | 4 | 55 | 1 | the Flesh (leap) | Star Lifting + Stellar Weapons + the Flesh | extinct: collapsed under their own weight and did not recover |
+| 10 | Traozialtreith | evolver | 0 | 11.2 | 4 | 56 | 1 | the Flesh (leap) | Stellar Weapons + the Flesh | extinct: collapsed under their own weight, and long after faded away, the last of them unremarked |
+| 1 | Atao | evolver | 15 | 11.1 | 4 | 69 | 5 | the Flesh (leap) | Exotic Matter + Near-light Travel + Nova Bombs + the Flesh + the Long Thought | extinct: collapsed under their own weight and did not recover |
+| 5 | Hosshuudaix | standard | 4 | 10.9 | 4 | 74 | 1 | the Unmaking (found) | Deep Time + Matter Compilers + Near-light Travel + Posthuman Law + Substrate Minds + Transcendence + the Unmaking | contracted: collapsed under their own weight |
+| 4 | Eso | standard | 9 | 10.9 | 4 | 61 | 1 | the Chorus (wielded) | Near-light Travel + World Engines | extinct: collapsed under their own weight, and long after faded away, the last of them unremarked |
+| 4 | Uuyu | standard | 23 | 10.8 | 4 | 72 | 3 | the Sight (wielded) | Causal Physics + Exotic Matter + Near-light Travel + Panspermia + Stellar Weapons + Substrate Minds + Transcendence + World Engines | contracted: collapsed under their own weight |
 
 ## Kinds
 
 | Kind | Peoples | Median life (Myr) | Reached era 3 | Lived 10+ Myr |
 |---|---|---|---|---|
-| standard | 1560 | 1.41 | 74.2% | 1.7% |
-| evolver | 185 | 0.91 | 79.5% | 2.2% |
-| swarm | 152 | 1.44 | 82.9% | 2.6% |
-| parasite | 96 | 1.29 | 77.1% | 1.0% |
-| planetary mind | 71 | 1.66 | 93.0% | 0.0% |
-| machine-born | 35 | 2.08 | 100.0% | 2.9% |
+| standard | 1512 | 1.40 | 75.1% | 2.4% |
+| evolver | 177 | 1.17 | 82.5% | 2.8% |
+| swarm | 136 | 0.99 | 69.9% | 0.7% |
+| planetary mind | 97 | 1.70 | 88.7% | 6.2% |
+| parasite | 64 | 1.75 | 79.7% | 4.7% |
+| machine-born | 31 | 1.55 | 100.0% | 3.2% |
 
 ## War and peace
 
-315 wars over 10 worlds, 31.5 per world; 84 fought in the fine pass, where a duration means something.
+395 wars over 10 worlds, 39.5 per world; 142 fought in the fine pass, where a duration means something.
 
 ### How wars end
 
 | Result | Wars | Share |
 |---|---|---|
-| capitulation | 2 | 0.6% |
-| enslaved | 98 | 31.1% |
-| peace | 140 | 44.4% |
-| peace by the pact | 2 | 0.6% |
-| the fall of a side | 65 | 20.6% |
-| vassal | 8 | 2.5% |
+| enslaved | 110 | 27.8% |
+| extinction | 2 | 0.5% |
+| peace | 228 | 57.7% |
+| peace by the pact | 1 | 0.3% |
+| the fall of a side | 45 | 11.4% |
+| vassal | 9 | 2.3% |
 
-Fine-pass wars last 4 kyr at the median (quartiles 2 to 14, longest 149).
-Worlds changing hands or burned per war: median 0, mean 0.8. Wars that were the second or later between the same two: 36.5%.
+Fine-pass wars last 13 kyr at the median (quartiles 7 to 16, longest 84).
+Worlds changing hands or burned per war: median 0, mean 0.7. Wars that were the second or later between the same two: 50.6%.
 
 | Cause | Wars |
 |---|---|
-| conquest | 93 |
-| the old quarrel | 83 |
-| extermination | 69 |
-| infection | 45 |
-| opportunity | 17 |
-| revenge | 2 |
-| their pact with the Exlemeix | 1 |
-| their pact with the Haidria | 1 |
-| their pact with the Miarrtsetros | 1 |
-| their pact with the Raophethe | 1 |
-| their pact with the Yaithvom | 1 |
-| their pact with the Zaivram | 1 |
+| the old quarrel | 181 |
+| conquest | 83 |
+| infection | 55 |
+| extermination | 40 |
+| opportunity | 26 |
+| revenge | 7 |
+| their pact with the Mundguuso | 1 |
+| their pact with the Raqemyaum | 1 |
+| their pact with the Triatrairdend | 1 |
 
 ### By posture
 
 | Posture | Peoples | Met | Declared | Fought | Taken | Lost | Fleets | Went native | Scouts | Pacts | Betrayals | Ruled | Capitulated | Median life (Myr) |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| confederate | 147 | 1.65 | 0.04 | 0.16 | 0.14 | 0.12 | 0.01 | 0 | 0.03 | 0.23 | 5 | 0.09 | 2.0% | 2.06 |
-| conqueror | 290 | 1.30 | 0.61 | 0.77 | 0.34 | 0.31 | 0.30 | 5 | 1.06 | 0.10 | 1 | 0.31 | 1.4% | 1.19 |
-| defensive | 571 | 1.34 | 0.05 | 0.24 | 0.02 | 0.09 | 0.01 | 0 | 0.22 | 0.14 | 6 | 0.02 | 2.1% | 1.24 |
-| opportunist | 282 | 1.09 | 0.16 | 0.23 | 0.17 | 0.06 | 0.03 | 0 | 0.52 | 0.07 | 0 | 0.13 | 0.4% | 1.10 |
-| pacifist | 258 | 1.34 | 0.00 | 0.27 | 0.00 | 0.05 | 0.00 | 0 | 0.00 | 0.10 | 1 | 0.00 | 11.2% | 2.78 |
-| submissive | 204 | 1.12 | 0.00 | 0.07 | 0.01 | 0.03 | 0.00 | 0 | 0.00 | 0.05 | 0 | 0.00 | 2.0% | 1.47 |
-| unyielding | 147 | 1.32 | 0.29 | 0.44 | 0.04 | 0.05 | 0.18 | 0 | 0.16 | 0.07 | 0 | 0.10 | 0.0% | 1.22 |
-| vengeful | 200 | 1.43 | 0.07 | 0.18 | 0.15 | 0.12 | 0.04 | 0 | 0.00 | 0.08 | 0 | 0.07 | 0.5% | 1.68 |
+| confederate | 158 | 1.51 | 0.04 | 0.44 | 0.01 | 0.06 | 0.02 | 0 | 0.01 | 0.30 | 13 | 0.08 | 1.3% | 1.65 |
+| conqueror | 272 | 1.04 | 0.81 | 0.97 | 0.42 | 0.33 | 0.21 | 0 | 0.97 | 0.04 | 0 | 0.32 | 0.0% | 1.07 |
+| defensive | 554 | 1.24 | 0.06 | 0.28 | 0.03 | 0.09 | 0.01 | 0 | 0.30 | 0.16 | 2 | 0.02 | 1.8% | 1.22 |
+| opportunist | 282 | 1.44 | 0.34 | 0.60 | 0.28 | 0.11 | 0.01 | 0 | 1.36 | 0.11 | 19 | 0.19 | 1.4% | 1.23 |
+| pacifist | 251 | 1.23 | 0.02 | 0.19 | 0.00 | 0.09 | 0.00 | 0 | 0.00 | 0.17 | 0 | 0.00 | 8.4% | 2.80 |
+| submissive | 193 | 1.20 | 0.04 | 0.14 | 0.02 | 0.06 | 0.00 | 0 | 0.70 | 0.12 | 1 | 0.00 | 1.6% | 1.84 |
+| unyielding | 146 | 1.06 | 0.01 | 0.05 | 0.01 | 0.03 | 0.01 | 0 | 0.01 | 0.10 | 0 | 0.02 | 0.0% | 1.02 |
+| vengeful | 161 | 1.44 | 0.16 | 0.30 | 0.16 | 0.14 | 0.02 | 0 | 0.00 | 0.09 | 0 | 0.08 | 0.0% | 1.68 |
 
 ### By honour
 
 | Honour | Peoples | Pacts | Relief sent | Called | Betrayals | Refused pacts | Median life (Myr) |
 |---|---|---|---|---|---|---|---|
-| faithful | 623 | 0.13 | 8 | 52 | 3 | 245 | 1.44 |
-| faithless | 395 | 0.10 | 2 | 5 | 7 | 73 | 1.46 |
-| practical | 1081 | 0.10 | 5 | 18 | 3 | 311 | 1.32 |
+| faithful | 628 | 0.13 | 4 | 12 | 1 | 181 | 1.38 |
+| faithless | 394 | 0.13 | 0 | 19 | 10 | 99 | 1.44 |
+| practical | 995 | 0.14 | 2 | 47 | 24 | 278 | 1.37 |
 
 ### Contact
 
-A people meets 1.3 others on average; 55.6% never meet anyone. 88 peoples were ruled by another at some point (as masters).
+A people meets 1.3 others on average; 55.0% never meet anyone. 77 peoples were ruled by another at some point (as masters).
 
 ### Nomads
 
-167 peoples born with the way (8.0%); 65 took to the sky (38.9% of them), 25 came to rest again. Those who flew lived 5.10 Myr at the median; nomads who never reached the sky 0.74.
+136 peoples born with the way (6.7%); 60 took to the sky (44.1% of them), 22 came to rest again. Those who flew lived 5.49 Myr at the median; nomads who never reached the sky 0.90.
 
 ## Exploration
 
-472 peoples of 752 that reached the stars ever sent surveyors (62.8%); 6606 surveys in all, 14.0 per surveying people, 5.9 readings per survey. Readings of stars by any means: 55723, 26.5 per people.
-Colony ships sent on a guess to unread stars: 104, of which 3 found nothing to live on.
+432 peoples of 699 that reached the stars ever sent surveyors (61.8%); 5940 surveys in all, 13.8 per surveying people, 5.4 readings per survey. Readings of stars by any means: 48243, 23.9 per people.
+Colony ships sent on a guess to unread stars: 119, of which 4 found nothing to live on.
 
 ### Finds, by how
 
 | How | Finds | Share |
 |---|---|---|
-| surveyors visiting | 485 | 54.1% |
-| a ship or fleet arriving, or settling the star | 162 | 18.1% |
-| a people's own lost works | 46 | 5.1% |
-| bumped into by chance | 204 | 22.7% |
+| surveyors visiting | 476 | 57.3% |
+| a ship or fleet arriving, or settling the star | 127 | 15.3% |
+| a people's own lost works | 54 | 6.5% |
+| bumped into by chance | 173 | 20.8% |
 
 ### Meetings, by how
 
-Counted once per side. Heard across the dark: 2220. Met in the flesh at a border, knowing the other was there: 2394. Surveyors coming upon a people: 58. A colony ship arriving to find a people: 8.
+Counted once per side. Heard across the dark: 1962. Met in the flesh at a border, knowing the other was there: 2798. Surveyors coming upon a people: 66. A colony ship arriving to find a people: 8.
 
 ### The Sight
 
-Peoples holding the Sight spent 10.9% of their time with it turned outward, reading stars instead of watching borders (12955 of 119338 kyr).
+Peoples holding the Sight spent 40.1% of their time with it turned outward, reading stars instead of watching borders (31213 of 77855 kyr).
 
 ### Surveys by posture
 
 | Posture | Peoples that reached the stars | Ever surveyed | Surveys per people | Finds by survey |
 |---|---|---|---|---|
-| confederate | 60 | 63.3% | 10.1 | 56 |
-| conqueror | 113 | 53.1% | 5.3 | 53 |
-| defensive | 209 | 65.6% | 10.5 | 146 |
-| opportunist | 110 | 65.5% | 9.4 | 77 |
-| pacifist | 42 | 54.8% | 5.5 | 37 |
-| submissive | 74 | 63.5% | 6.1 | 33 |
-| unyielding | 61 | 63.9% | 8.4 | 33 |
-| vengeful | 83 | 67.5% | 11.6 | 50 |
+| confederate | 68 | 67.6% | 9.3 | 73 |
+| conqueror | 99 | 55.6% | 5.8 | 57 |
+| defensive | 194 | 61.9% | 7.8 | 141 |
+| opportunist | 114 | 62.3% | 10.8 | 70 |
+| pacifist | 23 | 60.9% | 7.0 | 20 |
+| submissive | 82 | 61.0% | 7.3 | 39 |
+| unyielding | 53 | 60.4% | 8.2 | 34 |
+| vengeful | 66 | 66.7% | 12.2 | 42 |
 
 ## Tellings
 
-69924 tales learned in all, 33.3 per people. By source: witnessed 37.2%, told 49.7%, read in ruins and relics 5.3%, handed down 7.8%.
-Retold because a regard changed: 4729. Blame moved to the enemy of the day: 7. Tellings left in remains: 2894; tales restored from a people's own relic: 0.
+65598 tales learned in all, 32.5 per people. By source: witnessed 38.3%, told 49.0%, read in ruins and relics 5.4%, handed down 7.3%.
+Retold because a regard changed: 3069. Blame moved to the enemy of the day: 996. Tellings left in remains: 2803; tales restored from a people's own relic: 76.
 
 ### Memory by kind, peoples that lived a million years or more
 
 | kind | peoples | held at the end | of them myth | forgotten over the life | monsters remembered |
 |---|---|---|---|---|---|
-| evolver | 90 | 31.5 | 23.7% | 28.0 | 0.40 |
-| machine-born | 27 | 41.3 | 8.4% | 1.2 | 0.30 |
-| parasite | 54 | 11.6 | 31.7% | 10.4 | 0.13 |
-| planetary mind | 46 | 32.3 | 8.8% | 2.7 | 0.22 |
-| standard | 926 | 31.2 | 23.7% | 22.5 | 0.29 |
-| swarm | 91 | 25.6 | 22.4% | 13.8 | 0.16 |
+| evolver | 93 | 37.5 | 25.8% | 27.2 | 0.45 |
+| machine-born | 20 | 84.3 | 7.3% | 3.6 | 0.45 |
+| parasite | 38 | 18.3 | 24.0% | 12.2 | 0.26 |
+| planetary mind | 66 | 36.2 | 8.7% | 2.2 | 0.15 |
+| standard | 884 | 27.7 | 23.8% | 21.0 | 0.26 |
+| swarm | 68 | 29.6 | 23.3% | 17.9 | 0.34 |
 
 ### What the telling did to temperament
 
@@ -632,12 +628,12 @@ Mean shift of each dial from the tales held at the end, over all peoples; the ca
 | dial | mean shift | mean size of shift |
 |---|---|---|
 | aggression | +0.002 | 0.002 |
-| risk | -0.106 | 0.106 |
+| risk | -0.105 | 0.105 |
 | greed | +0.002 | 0.002 |
-| fear | +0.111 | 0.111 |
-| loyalty | +0.062 | 0.063 |
-| hunger | +0.026 | 0.026 |
-| patience | +0.011 | 0.011 |
-| hate | +0.015 | 0.015 |
+| fear | +0.110 | 0.110 |
+| loyalty | +0.067 | 0.067 |
+| hunger | +0.023 | 0.023 |
+| patience | +0.012 | 0.012 |
+| hate | +0.016 | 0.016 |
 
-Peoples that held somebody to be a monster at the end: 228 of 2099 (10.9%).
+Peoples that held somebody to be a monster at the end: 253 of 2017 (12.5%).

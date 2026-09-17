@@ -29,7 +29,7 @@ func (w *World) spawnCiv(home int, sp *species.Species, maker int) *Civ {
 		Intel:  map[int]*Intel{}, Grudge: map[int]float64{}, Truce: map[int]Year{}, Fought: map[int]int{},
 		Watched: map[int]bool{}, Asked: map[int]Year{}, Scouted: map[int]Year{}, Ridden: map[int]bool{},
 		Charted: map[int]Year{home: w.Now}, Marked: map[int]bool{},
-		LastDark: -1 << 40,
+		LastDark: -1 << 40, foeNow: -1,
 	}
 	if st.Real {
 		c.HomeName = st.Name // a real star keeps the name Earth knows it by
@@ -469,9 +469,8 @@ func (w *World) darkAge(c *Civ, why string) {
 		defer func() { w.wreck = nil }()
 	}
 	forgotten := w.forget(c, 0.3)
-	w.forgetting(c)
-	w.factOf(FDarkAge, c, nil, c.Home, why)
-	// what is forgotten is not always destroyed: a relic of the lost art may wait at home
+	// what is forgotten is not always destroyed: a relic of the lost art may
+	// wait at home, written on the eve, with the telling as it stood then
 	if len(forgotten) > 0 && w.R.Float64() < 0.6 {
 		best := forgotten[0]
 		for _, k := range forgotten {
@@ -481,6 +480,8 @@ func (w *World) darkAge(c *Civ, why string) {
 		}
 		w.leaveRelic(c, best, c.Home)
 	}
+	w.forgetting(c)
+	w.factOf(FDarkAge, c, nil, c.Home, why)
 	lost := 0
 	for _, s := range append([]int(nil), c.Systems...) {
 		if s != c.Home && w.R.Float64() < 0.5 {

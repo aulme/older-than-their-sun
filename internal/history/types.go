@@ -144,6 +144,8 @@ type Civ struct {
 	Lore       []*Tale      // what this people knows of what happened; see lore.go
 	LoreDials  Dials        // what the telling does to the temperament
 	lore       map[int]bool // facts held, forgotten or not
+	inscribed  map[int]bool // remains whose testament this people has read
+	foeNow     int          // the enemy of the day, or -1; a new one gets the old blame
 	monsters   map[int]bool // peoples remembered as things that do harm
 	LastDark   Year
 	Summoned   bool    // an event calls the council this tick
