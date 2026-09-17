@@ -1,33 +1,15 @@
 package history
 
 import (
+	"worldgen/internal/mind"
 	"worldgen/internal/species"
 )
 
 // Dials are a people's temperament as numbers, set from traits at birth and
 // nudged by scars and morale. Decisions read dials, never traits, so the
-// table below is the one place a temperament is tuned.
-type Dials struct {
-	Aggression float64 // readiness to strike first
-	Risk       float64 // acts on hope (high) or on the pessimistic tail (low)
-	Greed      float64 // wants worlds
-	Fear       float64 // wants the home kept safe
-	Loyalty    float64 // keeps promises
-	Hunger     float64 // wants to know before acting
-	Patience   float64 // holds a course, and a grudge
-	Hate       float64 // sees the different as a thing to end
-}
-
-func (d *Dials) add(o Dials) {
-	d.Aggression += o.Aggression
-	d.Risk += o.Risk
-	d.Greed += o.Greed
-	d.Fear += o.Fear
-	d.Loyalty += o.Loyalty
-	d.Hunger += o.Hunger
-	d.Patience += o.Patience
-	d.Hate += o.Hate
-}
+// table below is the one place a temperament is tuned. The type is the
+// mind's; the mind reads dials and never traits.
+type Dials = mind.Dials
 
 // dialTable is what each trait does to the dials, as deltas from a half.
 var dialTable = map[string]Dials{
@@ -73,18 +55,18 @@ var scarDials = []struct {
 
 // setDials derives the dials; called from recompute.
 func (w *World) setDials(c *Civ) {
-	d := Dials{0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5}
+	d := Dials{Aggression: 0.5, Risk: 0.5, Greed: 0.5, Fear: 0.5, Loyalty: 0.5, Hunger: 0.5, Patience: 0.5, Hate: 0.5}
 	for _, t := range c.Species.Traits {
-		d.add(dialTable[t.Key])
+		d.Add(dialTable[t.Key])
 	}
 	for _, sd := range scarDials {
 		if c.Scars[sd.scar] {
-			d.add(sd.d)
+			d.Add(sd.d)
 		}
 	}
 	d.Aggression += 0.1 * clamp(c.Morale, -2, 2)
 	c.LoreDials = w.loreDials(c)
-	d.add(c.LoreDials)
+	d.Add(c.LoreDials)
 	d.Aggression = clamp(d.Aggression, 0.05, 0.95)
 	d.Risk = clamp(d.Risk, 0.05, 0.95)
 	d.Greed = clamp(d.Greed, 0.05, 0.95)
@@ -118,11 +100,7 @@ func (c *Civ) honour() string {
 
 // hostile is true of postures that strike first.
 func (c *Civ) hostile() bool {
-	switch c.posture() {
-	case "opportunist", "conqueror":
-		return true
-	}
-	return c.Has("xenophobic")
+	return mind.Hostile(c.posture()) || c.Has("xenophobic")
 }
 
 // difference is how alien two species are to each other: another kind

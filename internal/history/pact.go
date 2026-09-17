@@ -1,6 +1,10 @@
 package history
 
-import "math"
+import (
+	"math"
+
+	"worldgen/internal/mind"
+)
 
 // Pacts, messages and reputation. Diplomacy travels at light speed: a
 // proposal, a call for help or a report is a message that arrives after
@@ -136,13 +140,10 @@ func (w *World) threat(c *Civ) *Civ {
 			continue
 		}
 		mil, _ := w.believe(c, e)
-		if mil < c.Mil-0.5 {
+		if !mind.Threatens(mind.ThreatInput{Believed: mil, Mil: c.Mil, Hostile: e.hostile(), Hates: e.hates(c), AtWar: len(e.Wars) > 0, Rules: e.Ruled > 0, Grudge: c.Grudge[eid] > 0}, w.Cfg.Tuning) {
 			continue
 		}
-		if !(e.hostile() || e.hates(c) || len(e.Wars) > 0 || e.Ruled > 0 || c.Grudge[eid] > 0) {
-			continue
-		}
-		if !w.inReach(e, c.Home) && len(w.front(e, c)) == 0 && w.G.Dist(c.Home, e.Home) > e.Reach+c.Reach+10 {
+		if !w.inReach(e, c.Home) && len(w.front(e, c)) == 0 && w.G.Dist(c.Home, e.Home) > e.Reach+c.Reach+w.Cfg.Tuning.Pact.ThreatMargin {
 			continue
 		}
 		if worst == nil || mil > worstMil {
@@ -155,18 +156,13 @@ func (w *World) threat(c *Civ) *Civ {
 // proposePact is a council's diplomacy: confederates seek defence against
 // a threat both can see, conquerors and the vengeful seek partners in war.
 func (w *World) proposePact(c *Civ) {
-	rate := 0.08
+	plan := mind.ProposePact(c.posture(), w.Cfg.Tuning)
 	kind := Defensive
-	var target *Civ
-	switch c.posture() {
-	case "confederate":
-		rate = 0.5
-	case "defensive":
-		rate = 0.15
-	case "conqueror", "vengeful":
-		rate, kind = 0.2, Aggressive
+	if plan.Aggressive {
+		kind = Aggressive
 	}
-	if w.R.Float64() > rate {
+	var target *Civ
+	if w.R.Float64() > plan.Rate {
 		return
 	}
 	if kind == Aggressive {
@@ -191,10 +187,10 @@ func (w *World) proposePact(c *Civ) {
 		if f == target || !f.Active() || !f.Free() || f.Wars[c.ID] || w.allied(c, f) || c.hates(f) || f.hates(c) {
 			continue
 		}
-		if c.Asked[fid]+30_000 > w.Now {
+		if c.Asked[fid]+Year(w.Cfg.Tuning.Pact.AskAgain) > w.Now {
 			continue
 		}
-		if kind == Aggressive && !(f.hostile() || f.Grudge[target.ID] > 0) {
+		if !mind.Partner(plan.Aggressive, f.hostile(), f.Grudge[target.ID] > 0) {
 			continue
 		}
 		if w.allied(f, target) {
@@ -225,81 +221,25 @@ func (w *World) answerPact(f, c *Civ, m *Message) {
 			return
 		}
 	}
-	score := 0.0
-	if m.PactKind == Aggressive {
-		switch f.posture() {
-		case "pacifist", "defensive", "submissive":
-			return
-		case "confederate":
-			if e == nil || f.Grudge[e.ID] == 0 {
-				return
-			}
-		}
-		if e != nil && w.allied(f, e) {
-			return
-		}
-		switch f.posture() {
-		case "conqueror":
-			score += 0.3
-		case "opportunist":
-			if mil, _ := w.believe(f, e); mil < f.Mil {
-				score += 0.2
-			} else {
-				score -= 0.2
-			}
-		case "vengeful":
-			if e != nil && f.Grudge[e.ID] > 0 {
-				score += 0.4
-			} else {
-				score -= 0.3
-			}
-		case "unyielding":
-			score += 0.1
-		}
-		score += 0.5 * f.Dials.Greed
-	} else {
-		if e != nil {
-			mil, _ := w.believe(f, e)
-			score += f.Dials.Fear * clamp(0.5+0.25*(mil-f.Mil), 0, 1.5)
-			if f.Met[e.ID] && (w.inReach(e, f.Home) || len(w.front(e, f)) > 0) {
-				score += 0.2
-			}
-			if f.Wars[e.ID] {
-				score += 0.3
-			}
-			if f.Grudge[e.ID] > 0 {
-				score += 0.2
-			}
-		}
-		switch f.posture() {
-		case "confederate":
-			score += 0.3
-		case "defensive":
-			score += 0.2
-		case "pacifist", "submissive", "vengeful":
-			score += 0.1
-		case "opportunist":
-			if c.Mil > f.Mil {
-				score += 0.2
-			} else {
-				score -= 0.2
-			}
-		case "conqueror":
-			score -= 0.1
-		}
+	in := mind.AnswerInput{
+		Aggressive: m.PactKind == Aggressive, Posture: f.posture(), Target: e != nil, Mil: f.Mil, ProposerMil: c.Mil,
+		Difference: difference(f.Species, c.Species), Infamy: w.infamy(c), Renown: w.renown(c), Dials: f.Dials,
 	}
-	score -= 0.1 * difference(f.Species, c.Species)
-	score -= 0.3 * w.infamy(c)
-	score += 0.15 * w.renown(c)
-	score += 0.2 * (f.Dials.Loyalty - 0.5)
-	if w.Cfg.TraceAI {
-		name := "whoever comes"
-		if e != nil {
-			name = "the " + e.Name
-		}
-		w.log("[the %s weigh a pact of %s with the %s against %s: %.2f]", f.Name, m.PactKind, c.Name, name, score)
+	against := "whoever comes"
+	if e != nil {
+		against = "the " + e.Name
+		in.Believed, _ = w.believe(f, e)
+		in.Grudge = f.Grudge[e.ID] > 0
+		in.AlliedEnemy = w.allied(f, e)
+		in.EnemyNear = f.Met[e.ID] && (w.inReach(e, f.Home) || len(w.front(e, f)) > 0)
+		in.AtWar = f.Wars[e.ID]
 	}
-	if score <= 0.45 {
+	ans := mind.AnswerPact(in, w.Cfg.Tuning)
+	w.explain(f, "asked by the "+c.Name+" for a pact of "+m.PactKind.String()+" against "+against, ans)
+	if ans.Reason != "" {
+		return
+	}
+	if !ans.Accept {
 		c.Tally.Refused++
 		if w.R.Float64() < 0.3 {
 			if e != nil {
@@ -391,26 +331,14 @@ func (w *World) answerCall(m, v, a *Civ) {
 		}
 		return
 	}
-	total := m.Mil + m.Away
-	share := max(0.3*m.Mil, max(0.1*total, 1))
 	milA, _ := w.believe(m, a)
-	helps := share+v.Mil >= milA-1
-	safe := m.Mil-share >= 2 || m.Dials.Fear < 0.3
-	want := m.Dials.Loyalty - 0.6*m.Dials.Fear + 0.3
-	if m.posture() == "confederate" {
-		want += 0.2
-	}
-	if w.betrayed(m, v) {
-		want -= 1
-	}
-	if w.Cfg.TraceAI {
-		w.log("[the %s are called by the %s against the %s: want %.2f, helps %v, safe %v]", m.Name, v.Name, a.Name, want, helps, safe)
-	}
-	if want > 0.4 && helps && safe && share <= m.Mil {
-		w.launch(m, Relief, v, v.Home, share)
+	k := mind.AnswerCall(mind.CallInput{Mil: m.Mil, Away: m.Away, VictimMil: v.Mil, Believed: milA, Confederate: m.posture() == mind.Confederate, Betrayed: w.betrayed(m, v), Dials: m.Dials}, w.Cfg.Tuning)
+	w.explain(m, "called by the "+v.Name+" against the "+a.Name, k)
+	if k.Come {
+		w.launch(m, Relief, v, v.Home, k.Share)
 		return
 	}
-	if m.Mil >= 3 {
+	if k.Blame {
 		w.betray(m, v, "did not come when called", 0.5)
 		w.log("The %s call on the %s, who do not come.", v.Name, m.Name)
 	}

@@ -1,6 +1,7 @@
 package history
 
 import (
+	"worldgen/internal/mind"
 	"worldgen/internal/names"
 	"worldgen/internal/species"
 	"worldgen/internal/tech"
@@ -239,9 +240,15 @@ func (w *World) expand(c *Civ) {
 	if !c.Free() && !c.Vassal {
 		return
 	}
-	// necessity: a people with nowhere to go works on ships, whatever else it was doing
-	if c.Era >= 2 && c.Reach < 40 && w.nothingNear(c) {
-		c.Focus[tech.Propulsion] = max(c.Focus[tech.Propulsion], 4)
+	t := w.Cfg.Tuning
+	plan := mind.Expand(mind.ExpandInput{
+		Systems: len(c.Systems), Mul: c.expandMul(w), Era: c.Era, Reach: c.Reach,
+		Nowhere:  func() bool { return w.nothingNear(c) },
+		Parasite: c.Species.Kind == species.Parasite && !c.Known["free_living"], FTL: c.miracle("ftl"),
+	}, t)
+	if plan.Ships {
+		// necessity: a people with nowhere to go works on ships, whatever else it was doing
+		c.Focus[tech.Propulsion] = max(c.Focus[tech.Propulsion], t.Expand.ShipFocus)
 		if p := tech.Get(c.Pursuit); p == nil || (p.Domain != tech.Propulsion && !p.Miracle) {
 			if k := w.cheapest(c, tech.Propulsion); k != "" {
 				c.Pursuit = k
@@ -251,44 +258,33 @@ func (w *World) expand(c *Civ) {
 	if c.Reach < 1 {
 		return
 	}
-	p := min(0.3, 0.04*float64(len(c.Systems))) * c.expandMul(w)
-	if !w.chance(p) {
+	if !w.chance(plan.Rate) {
 		return
-	}
-	reach := c.Reach
-	if c.Species.Kind == species.Parasite && !c.Known["free_living"] {
-		reach *= 0.3 // a rider settles nothing on its own; it goes where a host carries it
-	}
-	hop := min(reach, 20)
-	if c.miracle("ftl") {
-		hop = reach // a door does not care how far
 	}
 	from := w.pick(c.Systems)
-	blind := -1
-	for _, t := range w.G.Near(from, hop) {
-		if w.targeted(c, t) || w.G.Dist(c.Home, t) > reach || w.knownTaken(c, t) || w.dread(c, t) {
+	var stars []mind.Colony
+	for _, s := range w.G.Near(from, plan.Hop) {
+		if w.targeted(c, s) || w.G.Dist(c.Home, s) > plan.Reach || w.knownTaken(c, s) || w.dread(c, s) {
 			continue
 		}
-		if !w.read(c, t) {
+		col := mind.Colony{ID: s, Read: w.read(c, s)}
+		if col.Read {
+			col.Livable = w.canLive(c, s)
+		} else {
 			// a star nobody has read: its colour is right, and that is all anyone knows
-			if blind < 0 && w.G.Stars[t].Hostility() <= c.Envelope && !w.G.Stars[t].Dead() {
-				blind = t
-			}
-			continue
+			col.Guess = w.G.Stars[s].Hostility() <= c.Envelope && !w.G.Stars[s].Dead()
 		}
-		if !w.canLive(c, t) {
-			continue
-		}
-		d := w.G.Dist(from, t)
-		c.Voyages = append(c.Voyages, Voyage{Target: t, Arrive: w.Now + Year(d*c.Speed)})
+		stars = append(stars, col)
+	}
+	target, blind := mind.Target(stars, w.R, t)
+	if target < 0 {
 		return
 	}
-	// nothing read to go to: now and then a ship goes on a guess
-	if blind >= 0 && w.R.Float64() < 0.2 {
+	if blind {
 		c.Tally.Blind++
-		d := w.G.Dist(from, blind)
-		c.Voyages = append(c.Voyages, Voyage{Target: blind, Arrive: w.Now + Year(d*c.Speed), Blind: true})
 	}
+	d := w.G.Dist(from, target)
+	c.Voyages = append(c.Voyages, Voyage{Target: target, Arrive: w.Now + Year(d*c.Speed), Blind: blind})
 }
 
 // cheapest returns the cheapest node of a domain open to a people, or "".
@@ -328,7 +324,7 @@ func (w *World) targeted(c *Civ, t int) bool {
 // build raises a structure within reach. Great works are few: a people
 // raises one every few hundred thousand years, and at most two of a kind.
 func (w *World) build(c *Civ) {
-	if c.Aloft || !w.chance(0.004) {
+	if c.Aloft || !w.chance(w.Cfg.Tuning.Build.Rate) {
 		return
 	}
 	var can []string

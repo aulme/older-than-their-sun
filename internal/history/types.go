@@ -10,6 +10,7 @@ package history
 import (
 	"math/rand/v2"
 	"time"
+	"worldgen/internal/mind"
 
 	"worldgen/internal/galaxy"
 	"worldgen/internal/species"
@@ -356,10 +357,11 @@ type Config struct {
 	EndFertility    float64
 	EndFertilityLow float64
 	Linger          Year
-	MaxFades        float64 // give up after this many fades and flag it
-	Debug           bool    // log the state of the galaxy every million years
-	TraceAI         bool    // log every council's reasoning
-	Profile         bool    // log each phase's time every million years
+	MaxFades        float64      // give up after this many fades and flag it
+	Debug           bool         // log the state of the galaxy every million years
+	TraceAI         bool         // log every council's reasoning
+	Profile         bool         // log each phase's time every million years
+	Tuning          *mind.Tuning // every number the decisions use; nil means mind.Default()
 }
 
 // DefaultConfig is a small, fast world.
@@ -371,6 +373,7 @@ func DefaultConfig() Config {
 		FineActive: 12, FineFertility: 0.5,
 		EndActive: 5, EndFertility: 0.2, EndFertilityLow: 0.05, Linger: 2_000_000,
 		MaxFades: 8,
+		Tuning:   mind.Default(),
 	}
 }
 

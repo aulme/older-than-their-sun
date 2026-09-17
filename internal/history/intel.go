@@ -1,6 +1,7 @@
 package history
 
 import (
+	"worldgen/internal/mind"
 	"worldgen/internal/tech"
 )
 
@@ -48,13 +49,11 @@ func (c *Civ) receive(about int, i *Intel) bool {
 // believe is what c thinks e's level is, and how sure: the spread widens
 // half a level per five thousand years since the last look, to three.
 func (w *World) believe(c, e *Civ) (mil, spread float64) {
-	i := c.Intel[e.ID]
-	if i == nil {
-		// the lights of their cities are a guess at their age
-		return 1 + 1.2*float64(e.Era), 3
+	in := mind.BeliefInput{EnemyEra: e.Era}
+	if i := c.Intel[e.ID]; i != nil {
+		in.Seen, in.Mil, in.AgeKyr = true, i.Mil, float64(w.Now-i.Year)/1000
 	}
-	age := float64(w.Now-i.Year) / 1000
-	return i.Mil, min(3, 0.3+0.1*age)
+	return mind.Believe(in, w.Cfg.Tuning)
 }
 
 // intelStep is what a people learns each tick without trying: trade
@@ -89,18 +88,8 @@ func (w *World) forward(c *Civ, about *Civ, i *Intel) {
 			if m == c || !m.Active() {
 				continue
 			}
-			need := 0.3
-			if m.Wars[about.ID] || p.Target == about.ID {
-				need = 1
-			} else if m.Met[about.ID] {
-				need = 0.5
-			}
-			designs := 0.0
-			if c.hostile() && i.Mil < c.Mil {
-				designs = 1
-			}
-			score := c.Dials.Loyalty*need - c.Dials.Greed*designs*0.6
-			if score > 0.3 {
+			in := mind.ForwardInput{AllyAtWar: m.Wars[about.ID] || p.Target == about.ID, AllyMet: m.Met[about.ID], Hostile: c.hostile(), Reported: i.Mil, Mil: c.Mil, Dials: c.Dials}
+			if ok, _ := mind.Forward(in, w.Cfg.Tuning); ok {
 				w.send(c, m, &Message{Kind: MsgIntel, About: about.ID, Intel: i})
 			}
 		}

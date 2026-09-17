@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"worldgen/internal/galaxy"
+	"worldgen/internal/mind"
 )
 
 // Generate runs the whole history for a seed and returns the world at the present.
@@ -23,6 +24,9 @@ func Generate(seed uint64, cfg Config) *World {
 // and the tick's phases in order. Nothing has happened yet: Generate runs
 // the passes, and the test harness runs ticks by hand.
 func newWorld(seed uint64, cfg Config) *World {
+	if cfg.Tuning == nil {
+		cfg.Tuning = mind.Default()
+	}
 	r := rand.New(rand.NewPCG(seed, seed^0x9E3779B97F4A7C15))
 	rg, err := galaxy.RegionByName(cfg.Region)
 	if err != nil {

@@ -1,26 +1,34 @@
 package history
 
+import "worldgen/internal/mind"
+
 // The council is where a people decides: whom to strike, whether to send a
 // fleet or a scout first, whom to ask for a pact. It sits on a cadence and
 // whenever an event summons it. Every option is scored through the
-// appraisal; posture sets the bar; a little folly is wanted.
+// appraisal; posture sets the bar; a little folly is wanted. The judgment
+// is mind.Judge and mind.Council; this file gathers and executes.
 
+// council sits, judges each enemy in turn, scouts or watches as each
+// verdict says, then strikes the best of those that cleared their bar.
+// Each judgment follows the scouts sent before it, since a scout takes a
+// level from home.
 func (w *World) council(c *Civ) {
+	t := w.Cfg.Tuning
 	if !c.Active() || !c.Free() {
 		return
 	}
-	if !c.Summoned && !w.chance(0.3) {
+	if !c.Summoned && !w.chance(t.Council.Cadence) {
 		return
 	}
 	c.Summoned = false
 	type cand struct {
 		e   *Civ
 		ap  Appraisal
-		bar float64
 		far bool
 	}
-	var best *cand
-	compelled := c.posture() == "conqueror" && w.R.Float64() < 0.1
+	var cands []cand
+	var verdicts []mind.Verdict
+	compelled := c.posture() == mind.Conqueror && w.R.Float64() < t.Council.Compulsion
 	for _, eid := range sortedInts(c.Met) {
 		e := w.Civs[eid]
 		if !e.Active() || !e.Free() || c.Wars[eid] || w.allied(c, e) || c.Truce[eid] > w.Now {
@@ -33,37 +41,37 @@ func (w *World) council(c *Civ) {
 		if !wants {
 			continue
 		}
-		if compelled {
-			bar = min(bar, 0.25)
-		}
 		ap := w.appraise(c, e, -1)
-		if len(ap.Front) == 0 && !far {
+		v := w.weigh(c, e, ap, bar, far, compelled)
+		if v.Action == mind.Nothing {
 			continue
 		}
-		if c.posture() == "vengeful" {
-			ap.Acted = ap.High // against the grudge target the cost is not counted
-		}
-		if w.Cfg.TraceAI {
-			w.log("[council of the %s on the %s: odds %.2f (%.2f to %.2f), acting on %.2f, bar %.2f, front %d, lag %s]", c.Name, e.Name, ap.Odds, ap.Low, ap.High, ap.Acted, bar, len(ap.Front), span(Year(ap.Lag)))
-		}
-		switch {
-		case ap.Acted >= bar:
-			if best == nil || ap.Acted-bar > best.ap.Acted-best.bar {
-				best = &cand{e, ap, bar, far}
-			}
-		case ap.Low < bar && ap.High > bar:
-			w.maybeScout(c, e)
-		case !c.Watched[eid]:
-			if w.Now-c.Scouted[eid] < 5000 && c.posture() == "conqueror" {
-				w.log("The %s look hard at the %s, and stay home.", c.Name, e.Name)
-			}
-			c.Watched[eid] = true
-		}
+		cands = append(cands, cand{e, ap, far})
+		verdicts = append(verdicts, v)
 	}
-	if best != nil {
-		w.strikeFirst(c, best.e, best.ap, best.far)
+	if i := mind.Council(verdicts); i >= 0 {
+		w.strikeFirst(c, cands[i].e, cands[i].ap, cands[i].far)
 	}
 	w.proposePact(c)
+}
+
+// weigh is the council's view of one enemy, with the scout or the watch
+// it calls for done at once.
+func (w *World) weigh(c, e *Civ, ap Appraisal, bar float64, far, compelled bool) mind.Verdict {
+	v := mind.Judge(mind.JudgeInput{Appraisal: ap.Appraisal, Bar: bar, Far: far, Front: len(ap.Front), Vengeful: c.posture() == mind.Vengeful, Compelled: compelled}, w.Cfg.Tuning)
+	w.explain(c, "on the "+e.Name, v)
+	switch v.Action {
+	case mind.ScoutFirst:
+		w.maybeScout(c, e)
+	case mind.Watch:
+		if !c.Watched[e.ID] {
+			if w.Now-c.Scouted[e.ID] < 5000 && c.posture() == mind.Conqueror {
+				w.log("The %s look hard at the %s, and stay home.", c.Name, e.Name)
+			}
+			c.Watched[e.ID] = true
+		}
+	}
+	return v
 }
 
 // consider is the council on one people, at first meeting. Returns whether
@@ -77,16 +85,12 @@ func (w *World) consider(c, e *Civ) bool {
 		return false
 	}
 	ap := w.appraise(c, e, -1)
-	if len(ap.Front) == 0 && !far {
-		return false
-	}
-	if c.posture() == "vengeful" {
-		ap.Acted = ap.High
-	}
-	if ap.Acted >= bar {
+	v := mind.Judge(mind.JudgeInput{Appraisal: ap.Appraisal, Bar: bar, Far: far, Front: len(ap.Front), Vengeful: c.posture() == mind.Vengeful}, w.Cfg.Tuning)
+	w.explain(c, "at the meeting of the "+e.Name, v)
+	switch v.Action {
+	case mind.Strike:
 		return w.strikeFirst(c, e, ap, far)
-	}
-	if ap.Low < bar && ap.High > bar {
+	case mind.ScoutFirst:
 		w.maybeScout(c, e)
 	}
 	return false
@@ -95,19 +99,21 @@ func (w *World) consider(c, e *Civ) bool {
 // maybeScout sends a scout when a report would change the decision and
 // the level can be spared. The Sight reads for free.
 func (w *World) maybeScout(c, e *Civ) {
-	if c.miracle("foresight") && !c.Searching {
-		w.observe(c, e, e.Home, 0.1)
-		return
-	}
-	if c.Mil-1 < 1 || (c.Dials.Fear > 0.8 && c.Mil < 4) {
-		return
-	}
+	out := false
 	for _, x := range w.Expeditions {
 		if !x.Over && x.Kind == Scout && x.Owner == c.ID && x.Target == e.ID {
-			return
+			out = true
+			break
 		}
 	}
-	w.launch(c, Scout, e, e.Home, 1)
+	s := mind.Scout(mind.ScoutInput{Sight: c.miracle("foresight") && !c.Searching, Mil: c.Mil, Fear: c.Dials.Fear, Out: out}, w.Cfg.Tuning)
+	w.explain(c, "scouting the "+e.Name, s)
+	switch {
+	case s.Look:
+		w.observe(c, e, e.Home, w.Cfg.Tuning.Scout.SightNoise)
+	case s.Send:
+		w.launch(c, Scout, e, e.Home, 1)
+	}
 }
 
 // cause is what a posture calls its war.
@@ -119,11 +125,11 @@ func (w *World) cause(c, e *Civ) string {
 		return "the old quarrel"
 	}
 	switch c.posture() {
-	case "opportunist":
+	case mind.Opportunist:
 		return "opportunity"
-	case "conqueror":
+	case mind.Conqueror:
 		return "conquest"
-	case "vengeful":
+	case mind.Vengeful:
 		return "revenge"
 	}
 	return "a border"
@@ -147,11 +153,12 @@ func (w *World) strikeFirst(c, e *Civ, ap Appraisal, far bool) bool {
 }
 
 // maybeCampaign sizes and sends a fleet against e, declaring war first if
-// none is running. Nobody sends a fleet that cannot take its first world.
+// none is running. Conquerors and the hating try for the home first.
+// Nobody sends a fleet that cannot take its first world.
 func (w *World) maybeCampaign(c, e *Civ, cause string) bool {
 	_, near := w.nearestEnemy(c, e)
 	targets := []int{near}
-	if c.posture() == "conqueror" || c.hates(e) {
+	if c.posture() == mind.Conqueror || c.hates(e) {
 		targets = []int{e.Home, near} // the home if it can be had, else what can
 	}
 	for _, target := range targets {
@@ -164,23 +171,18 @@ func (w *World) maybeCampaign(c, e *Civ, cause string) bool {
 
 func (w *World) sizeCampaign(c, e *Civ, cause string, target int) bool {
 	ap := w.appraise(c, e, target)
-	def := w.strength(c, e) - ap.Margin
-	need := def - (2*c.Dials.Risk-1)*ap.Spread // even odds on what they believe, tilted by risk
-	total := c.Mil + c.Away
-	floor := max(0.1*total, 1)
-	cap := c.Mil * (1 - 0.4*c.Dials.Fear)
-	share := min(max(need, floor), cap)
-	lagOK := ap.Lag < 20_000 || (c.posture() == "conqueror" && ap.Lag < 40_000)
-	if w.Cfg.TraceAI {
-		w.log("[the %s size a fleet against the %s at %s: need %.1f, floor %.1f, cap %.1f, crossing %s]", c.Name, e.Name, w.star(target), need, floor, cap, span(Year(ap.Lag)))
-	}
-	if share < need || share < floor || !lagOK {
+	k := mind.SizeCampaign(mind.CampaignInput{
+		Appraisal: ap.Appraisal, Strength: w.strength(c, e), Mil: c.Mil, Away: c.Away,
+		Risk: c.Dials.Risk, Fear: c.Dials.Fear, Conqueror: c.posture() == mind.Conqueror,
+	}, w.Cfg.Tuning)
+	w.explain(c, "sizing a fleet against the "+e.Name+" at "+w.star(target), k)
+	if !k.Send {
 		return false
 	}
 	if w.warBetween(c.ID, e.ID) == nil {
 		w.declare(c, e, cause)
 	}
-	w.launch(c, Campaign, e, target, share)
+	w.launch(c, Campaign, e, target, k.Share)
 	return true
 }
 

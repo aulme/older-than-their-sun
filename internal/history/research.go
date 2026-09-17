@@ -1,6 +1,7 @@
 package history
 
 import (
+	"worldgen/internal/mind"
 	"worldgen/internal/species"
 	"worldgen/internal/tech"
 )
@@ -141,8 +142,7 @@ func (w *World) choose(c *Civ) string {
 		}
 	}
 	var avail []*tech.Node
-	var weights []float64
-	total := 0.0
+	var open []mind.Pursuit
 	for _, n := range tech.Nodes {
 		if !w.canPursue(c, n) {
 			continue
@@ -152,25 +152,18 @@ func (w *World) choose(c *Civ) string {
 			f = 1
 		}
 		_, mult := w.aptitude(c, n)
-		wt := n.Weight * c.Species.DomainMul(n.Domain) * f * (1 + 0.25*float64(depth[n.Domain])) / mult
+		p := mind.Pursuit{Weight: n.Weight, Domain: c.Species.DomainMul(n.Domain), Focus: f, Depth: depth[n.Domain], Aptitude: mult, Miracle: n.Miracle}
 		if n.Miracle {
-			wt = n.Weight * c.leapWeight(n.Key)
+			p.Leap = c.leapWeight(n.Key)
 		}
 		avail = append(avail, n)
-		weights = append(weights, wt)
-		total += wt
+		open = append(open, p)
 	}
-	if len(avail) == 0 || total <= 0 {
+	i, _ := mind.Choose(open, w.R, w.Cfg.Tuning)
+	if i < 0 {
 		return ""
 	}
-	x := w.R.Float64() * total
-	for i, a := range avail {
-		x -= weights[i]
-		if x < 0 {
-			return a.Key
-		}
-	}
-	return avail[len(avail)-1].Key
+	return avail[i].Key
 }
 
 // learn adds a node, applies its side effects and fires its filter.

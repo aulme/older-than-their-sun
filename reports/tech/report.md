@@ -363,15 +363,13 @@ The first node that gave a people reach of 10 ly or more:
 
 | Node | Peoples | Median life (Myr) |
 |---|---|---|
-| Slow Interstellar Travel | 545 | 5.03 |
-| Relativistic Travel | 20 | 3.14 |
+| Slow Interstellar Travel | 549 | 5.05 |
 | Seed-clouds | 19 | 4.84 |
-| Slow Interstellar Travel (inherited) | 11 | 0.15 |
+| Slow Interstellar Travel (inherited) | 18 | 1.21 |
+| Relativistic Travel | 16 | 2.12 |
 | Beamed Sails | 10 | 3.44 |
 | Living Ships | 10 | 4.14 |
 | a miracle held from birth or by a find | 6 | 7.23 |
-| Relativistic Travel (inherited) | 4 | 1.83 |
-| Beamed Sails (inherited) | 3 | 3.77 |
 | Near-light Travel | 3 | 2.57 |
 
 ## Successful builds

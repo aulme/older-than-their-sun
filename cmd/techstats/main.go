@@ -23,6 +23,7 @@ import (
 	"worldgen/internal/galaxy"
 	"worldgen/internal/history"
 	"worldgen/internal/legends"
+	"worldgen/internal/mind"
 	"worldgen/internal/tech"
 )
 
@@ -81,7 +82,16 @@ func main() {
 	from := flag.Uint64("from", 1, "first seed")
 	at := flag.String("at", "sol", "where in the galaxy")
 	out := flag.String("out", "reports/tech", "output directory")
+	tuning := flag.String("tuning", "", "a JSON file of mind.Tuning; fields left out keep their defaults")
+	var tunes []string
+	flag.Func("tune", "one override of the mind's tuning, Group.Field=value; may repeat", func(s string) error { tunes = append(tunes, s); return nil })
 	flag.Parse()
+
+	tune, err := mind.Configure(*tuning, tunes)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(2)
+	}
 
 	if _, err := galaxy.RegionByName(*at); err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -108,6 +118,7 @@ func main() {
 			seed := *from + uint64(i)
 			cfg := history.DefaultConfig()
 			cfg.Region = *at
+			cfg.Tuning = tune
 			w := history.Generate(seed, cfg)
 			var sb strings.Builder
 			legends.Stats(&sb, w)
@@ -622,16 +633,17 @@ func report(out io.Writer, recs []Rec, seeds int, from uint64, at string, ageMea
 	p("")
 	first := newCounter()
 	for _, r := range recs {
+		// in tree order, so ties fall the same way every run
 		best, at := "", 1e9
-		for k, y := range r.Learned {
-			if tech.Get(k).Reach >= 10 && y < at {
-				best, at = tech.Get(k).Name, y
+		for _, n := range tech.Nodes {
+			if y, ok := r.Learned[n.Key]; ok && n.Reach >= 10 && y < at {
+				best, at = n.Name, y
 			}
 		}
 		if best == "" {
-			for k := range r.ever {
-				if tech.Get(k).Reach >= 10 {
-					best = tech.Get(k).Name + " (inherited)"
+			for _, n := range tech.Nodes {
+				if r.ever[n.Key] && n.Reach >= 10 {
+					best = n.Name + " (inherited)"
 					break
 				}
 			}

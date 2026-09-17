@@ -1,6 +1,7 @@
 package history
 
 import (
+	"worldgen/internal/mind"
 	"worldgen/internal/names"
 	"worldgen/internal/species"
 	"worldgen/internal/tech"
@@ -170,7 +171,7 @@ func (w *World) roam(c *Civ) {
 		}
 	}
 	fl = w.fleets(c)
-	hop := min(max(c.Reach, 3), 20)
+	hop := mind.RoamHop(c.Reach, w.Cfg.Tuning)
 	cap := c.Quality + 2
 	for _, x := range fl {
 		if x.Base < 0 {
@@ -218,25 +219,12 @@ func (w *World) roam(c *Civ) {
 // is at, not held by a horror, an unowned one or a trade partner's by
 // preference.
 func (w *World) nextStar(c *Civ, x *Expedition, hop float64) int {
-	var good, any []int
+	var ports []mind.Port
 	for _, t := range w.G.Near(x.Base, hop) {
-		if w.Held[t] >= 0 {
-			continue
-		}
 		o := w.Owner[t]
-		if o < 0 || c.Trade[o] {
-			good = append(good, t)
-		} else if !c.Wars[o] || true {
-			any = append(any, t)
-		}
+		ports = append(ports, mind.Port{ID: t, Held: w.Held[t] >= 0, Good: o < 0 || c.Trade[o]})
 	}
-	if len(good) > 0 {
-		return good[w.R.IntN(len(good))]
-	}
-	if len(any) > 0 {
-		return any[w.R.IntN(len(any))]
-	}
-	return -1
+	return mind.NextStar(ports, w.R)
 }
 
 func (w *World) moveFleet(c *Civ, x *Expedition, t int) {

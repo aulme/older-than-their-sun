@@ -3,6 +3,7 @@ package history
 import (
 	"math"
 
+	"worldgen/internal/mind"
 	"worldgen/internal/names"
 	"worldgen/internal/species"
 	"worldgen/internal/tech"
@@ -474,41 +475,12 @@ func (w *World) fleetSeen(x *Expedition, o *Civ) {
 // sets the base, posture multiplies it, and there has to be an opening.
 func (w *World) wouldTurn(x *Expedition) bool {
 	c, h := w.Civs[x.Owner], w.Civs[x.Target]
-	p := 0.0
-	switch c.honour() {
-	case "faithful":
-		p = 0.0005
-	case "practical":
-		p = 0.01
-	case "faithless":
-		p = 0.05
-	}
-	switch c.posture() {
-	case "opportunist", "conqueror":
-		p *= 2
-	case "vengeful":
-		if w.betrayed(h, c) {
-			p *= 3
-		} else {
-			p = 0
-		}
-	case "pacifist":
-		p = 0
-	}
-	if p == 0 {
-		return false
-	}
-	hold := h.Mil + h.warBonus() + w.reliefAt(h, x.Base) - x.Mil + 1
-	if x.Base == h.Home {
-		hold += 2.5
-	}
-	if h.Known["defence_grid"] {
-		hold += 0.5
-	}
-	if x.Mil <= hold+1 {
-		return false
-	}
-	return w.chance(p * (0.5 + c.Dials.Greed))
+	u := mind.Turn(mind.TurnInput{
+		Honour: c.honour(), Posture: c.posture(), Betrayed: w.betrayed(h, c),
+		HostMil: h.Mil + h.warBonus(), Relief: w.reliefAt(h, x.Base), Mil: x.Mil,
+		AtHome: x.Base == h.Home, Grid: h.Known["defence_grid"], Greed: c.Dials.Greed,
+	}, w.Cfg.Tuning)
+	return u.Rate > 0 && w.chance(u.Rate)
 }
 
 // turn is the betrayal that makes history: the relief fleet seizes the

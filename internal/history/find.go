@@ -1,6 +1,9 @@
 package history
 
-import "worldgen/internal/tech"
+import (
+	"worldgen/internal/mind"
+	"worldgen/internal/tech"
+)
 
 // The Find: a civilisation's reach touches a legacy of an earlier age. The
 // species chooses what to attempt from its traits; the levels decide whether
@@ -117,45 +120,18 @@ func (w *World) discover(c *Civ, l *Legacy, how string) {
 	}
 
 	// what to attempt
-	master, wield, seal := 1.0, 1.5, 1.0
-	if c.Has("curious") {
-		master += 3
-	}
-	if c.Has("expansionist") || c.Has("symbiosis") {
-		master += 1
-	}
-	if c.Has("cautious") {
-		seal += 3
-	}
-	if c.Has("xenophobic") || c.Has("contemplative") {
-		seal += 1.5
-	}
-	if c.Has("pragmatic") || c.Has("conqueror") {
-		wield += 2
-	}
-	if l.Kind == Sleeper || l.Kind == Threat {
-		wield = 0
-		seal += 2
-	}
-	if n := l.node(); n != nil && n.Miracle && l.Kind == Artifact {
-		wield += 2 // it is plainly a thing to be used, whatever it is
-	}
-	if w.kinship(c, l) == 2 {
-		master += 3
-		seal = 0
-	}
-	if l.Maker >= 0 && l.Cond == Ruin {
-		wield, seal = 0, 0 // nothing to use, nothing to guard
-		master = 1
-	}
-	if l.Kind == Law {
-		master, seal = 0, 0
-	}
-	x := w.R.Float64() * (master + wield + seal)
-	switch {
-	case x < master:
+	n := l.node()
+	a := mind.Find(mind.FindInput{
+		Curious: c.Has("curious"), Expansionist: c.Has("expansionist"), Symbiotic: c.Has("symbiosis"), Cautious: c.Has("cautious"),
+		Xenophobic: c.Has("xenophobic"), Contemplative: c.Has("contemplative"), Pragmatic: c.Has("pragmatic"), Conqueror: c.Has("conqueror"),
+		Threat: l.Kind == Sleeper || l.Kind == Threat, Plain: n != nil && n.Miracle && l.Kind == Artifact,
+		Own: w.kinship(c, l) == 2, Ruin: l.Maker >= 0 && l.Cond == Ruin, Law: l.Kind == Law,
+	}, w.Cfg.Tuning)
+	w.explain(c, "weighing what to do with "+l.Describe(), a)
+	switch a.Pick(w.R.Float64()) {
+	case 0:
 		w.attemptMaster(c, l)
-	case x < master+wield:
+	case 1:
 		w.attemptWield(c, l)
 	default:
 		w.attemptSeal(c, l)

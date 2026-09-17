@@ -9,6 +9,7 @@ import (
 	"worldgen/internal/galaxy"
 	"worldgen/internal/history"
 	"worldgen/internal/legends"
+	"worldgen/internal/mind"
 )
 
 func main() {
@@ -16,7 +17,10 @@ func main() {
 	stars := flag.Int("stars", 400, "number of stars")
 	full := flag.Bool("full", false, "print known tech per civilisation")
 	debug := flag.Bool("debug", false, "log the state of the galaxy every million years")
-	ai := flag.Bool("ai", false, "log every council's reasoning")
+	ai := flag.Bool("ai", false, "log the reason behind every decision a people makes")
+	tuning := flag.String("tuning", "", "a JSON file of mind.Tuning; fields left out keep their defaults")
+	var tunes []string
+	flag.Func("tune", "one override of the mind's tuning, Group.Field=value; may repeat", func(s string) error { tunes = append(tunes, s); return nil })
 	phases := flag.Bool("phases", false, "log each phase's time every million years")
 	stats := flag.Bool("stats", false, "print one line of numbers instead of the legends")
 	at := flag.String("at", "sol", "where in the galaxy: a named place, a feature such as \"Cygnus X-1\", or x,y,z in kpc (see -map)")
@@ -38,6 +42,10 @@ func main() {
 	cfg.Debug = *debug
 	cfg.TraceAI = *ai
 	cfg.Profile = *phases
+	if cfg.Tuning, err = mind.Configure(*tuning, tunes); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(2)
+	}
 	w := history.Generate(*seed, cfg)
 	if *stats {
 		legends.Stats(os.Stdout, w)

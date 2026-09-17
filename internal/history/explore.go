@@ -1,6 +1,6 @@
 package history
 
-import "math"
+import "worldgen/internal/mind"
 
 // Exploration. Every star is seen: where it is, its colour, whether it is
 // dying. What a star holds, worlds and who is on them, is known only by
@@ -125,7 +125,7 @@ func (w *World) explore(c *Civ) {
 		// first, out to twice the reach, since the Sight does not travel;
 		// the never-read before the stale
 		c.Tally.Searched += w.dt
-		n := max(1, w.count(2))
+		n := max(1, w.count(w.Cfg.Tuning.Sight.Reads))
 		near := w.G.Near(c.Home, w.sightRange(c))
 		for pass := 0; pass < 2 && n > 0; pass++ {
 			for _, t := range near {
@@ -151,35 +151,33 @@ func (w *World) sightMode(c *Civ) {
 		c.Searching = false
 		return
 	}
-	want := len(c.Wars) == 0
-	if want && c.Dials.Fear > 0.6 {
+	menaced := func() bool {
 		for _, eid := range sortedInts(c.Met) {
 			e := w.Civs[eid]
-			if e.Active() && e.Free() && (e.hostile() || c.Grudge[eid] > 0.5 || w.monster(c, e)) && w.inReach(e, c.Home) {
-				want = false
-				break
+			if e.Active() && e.Free() && mind.Menaces(e.hostile(), w.monster(c, e), c.Grudge[eid], w.Cfg.Tuning) && w.inReach(e, c.Home) {
+				return true
 			}
 		}
+		return false
 	}
-	threat := !want
-	if want && !w.unread(c, w.sightRange(c)) {
-		want = false // nothing left to look for; it comes back when reach grows
-	}
-	if want == c.Searching {
+	unread := func() bool { return w.unread(c, w.sightRange(c)) } // nothing left to look for; it comes back when reach grows
+	m := mind.Sight(mind.SightInput{AtWar: len(c.Wars) > 0, Fear: c.Dials.Fear, Menaced: menaced, Unread: unread}, w.Cfg.Tuning)
+	if m.Outward == c.Searching {
 		return
 	}
-	c.Searching = want
+	w.explain(c, "the Sight", m)
+	c.Searching = m.Outward
 	switch {
-	case want && c.Tally.Searched == 0:
+	case m.Outward && c.Tally.Searched == 0:
 		w.log("The %s turn the Sight outward, to the stars nobody has visited.", c.Name)
-	case !want && threat:
+	case !m.Outward && m.Threat:
 		w.log("The %s turn the Sight back to their own borders.", c.Name)
 	}
 }
 
 // neverRead says whether any star within reach has never been read.
 func (w *World) neverRead(c *Civ) bool {
-	for _, t := range w.G.Near(c.Home, max(c.Reach, 5)) {
+	for _, t := range w.G.Near(c.Home, max(c.Reach, w.Cfg.Tuning.Survey.NearMin)) {
 		if _, ok := c.Charted[t]; !ok && !w.read(c, t) {
 			return true
 		}
@@ -188,7 +186,7 @@ func (w *World) neverRead(c *Civ) bool {
 }
 
 // sightRange is how far the Sight reads: twice the reach, at least a little.
-func (w *World) sightRange(c *Civ) float64 { return max(2*c.Reach, 10) }
+func (w *World) sightRange(c *Civ) float64 { return mind.SightRange(c.Reach, w.Cfg.Tuning) }
 
 // unread says whether any star within a range is unread or stale.
 func (w *World) unread(c *Civ, within float64) bool {
@@ -204,33 +202,27 @@ func (w *World) unread(c *Civ, within float64) bool {
 // want and the level can spare, none in wartime, at least one when there
 // is nothing read to settle and stars still unread.
 func (w *World) survey(c *Civ) {
-	if !c.Free() || c.Aloft || c.Reach < 1 || c.Mil < 2 {
-		return
-	}
-	want := int(math.Round(2*c.Dials.Hunger + c.Dials.Greed))
-	if len(c.Wars) > 0 {
-		want = 0
-	}
-	if want == 0 && c.Era >= 2 && !w.anyToSettle(c) && w.unread(c, max(c.Reach, 5)) {
-		want = 1
-	}
-	if !w.neverRead(c) {
-		want = min(want, 1) // only stale stars left: one ship keeps the charts current
-	}
-	want = min(want, int(c.Mil-1)) // a level must stay home
+	tn := w.Cfg.Tuning
+	want := mind.Survey(mind.SurveyInput{
+		Free: c.Free() && !c.Aloft, Reach: c.Reach, Mil: c.Mil, AtWar: len(c.Wars) > 0, Era: c.Era, Dials: c.Dials,
+		ToSettle:  func() bool { return w.anyToSettle(c) },
+		Unread:    func() bool { return w.unread(c, max(c.Reach, tn.Survey.NearMin)) },
+		NeverRead: func() bool { return w.neverRead(c) },
+	}, tn)
 	out := 0
 	for _, x := range w.Expeditions {
 		if !x.Over && x.Kind == Survey && x.Owner == c.ID {
 			out++
 		}
 	}
-	if out >= want || !w.chance(0.3) {
+	if out >= want.Want || !w.chance(tn.Survey.Rate) {
 		return
 	}
 	t := w.surveyTarget(c, -1)
 	if t < 0 {
 		return
 	}
+	w.explain(c, "surveying", want)
 	c.Tally.Surveys++
 	x := w.launch(c, Survey, nil, t, 1)
 	if c.Tally.Surveys == 1 {
@@ -256,31 +248,17 @@ func (w *World) anyToSettle(c *Civ) bool {
 func (w *World) surveyTarget(c *Civ, from int) int {
 	origin, within := c.Home, c.Reach
 	if from >= 0 {
-		origin, within = from, min(max(c.Reach, 3), 20)
-		if c.miracle("ftl") {
-			within = c.Reach
-		}
+		origin, within = from, mind.SurveyHop(c.Reach, c.miracle("ftl"), w.Cfg.Tuning)
 	}
-	best, stale := -1, -1
+	var stars []mind.Star
 	for _, t := range w.G.Near(origin, within) {
 		if w.G.Dist(c.Home, t) > c.Reach || w.surveyBound(c, t) || w.dread(c, t) {
 			continue
 		}
-		if c.Marked[t] {
-			return t
-		}
-		if _, ok := c.Charted[t]; !ok {
-			if best < 0 {
-				best = t
-			}
-		} else if stale < 0 && !w.fresh(c, t) {
-			stale = t
-		}
+		_, charted := c.Charted[t]
+		stars = append(stars, mind.Star{ID: t, Marked: c.Marked[t], Charted: charted, Fresh: w.fresh(c, t)})
 	}
-	if best < 0 {
-		return stale
-	}
-	return best
+	return mind.SurveyTarget(stars)
 }
 
 // surveyBound says whether surveyors of a people are already on their way to a star.
@@ -315,7 +293,7 @@ func (w *World) surveyArrive(x *Expedition) {
 	}
 	x.Tour++
 	next := -1
-	if !x.Recalled && x.Tour < 6 && float64(w.Now-x.Launched) < 40_000 {
+	if mind.TourOn(x.Tour, float64(w.Now-x.Launched), x.Recalled, w.Cfg.Tuning) {
 		next = w.surveyTarget(c, t)
 	}
 	if next < 0 {
