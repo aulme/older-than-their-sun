@@ -1,14 +1,15 @@
 // Package history simulates the rise and fall of life across the star field.
 //
-// Three passes. The age generator writes the myth of earlier ages as coarse
-// events and leaves their legacies on the substrate. The middle pass runs the
-// early current age at medium grain and the fine pass the late current age at
-// fine grain, both with the same engine. The present is year 0 and is the
-// aftermath: every civilisation ends extinct, transformed or contracted.
+// Two passes. The age generator writes the myth of earlier ages as coarse
+// events and leaves their legacies on the substrate. The current age then
+// runs from its dawn at one tick of a thousand years, as a pipeline of named
+// phases. The present is year 0 and is the aftermath: every civilisation ends
+// extinct, transformed or contracted.
 package history
 
 import (
 	"math/rand/v2"
+	"time"
 
 	"worldgen/internal/galaxy"
 	"worldgen/internal/species"
@@ -345,9 +346,8 @@ type Config struct {
 	DeepStart Year // substrate begins
 	Dawn      Year // the current age dawns; the engine runs from here
 	DeepStep  Year
-	MidStep   Year // tick in the youth of the age
-	FineStep  Year // tick in the waning
-	// the waning: switch to the fine tick when this few are active and fertility is this low
+	Step      Year // the tick of the current age, dawn to present; every rate is per thousand years
+	// the waning: declared when this few are active and fertility is this low
 	FineActive    int
 	FineFertility float64
 	// the present: stop when this few are active and fertility is below a threshold drawn
@@ -359,6 +359,7 @@ type Config struct {
 	MaxFades        float64 // give up after this many fades and flag it
 	Debug           bool    // log the state of the galaxy every million years
 	TraceAI         bool    // log every council's reasoning
+	Profile         bool    // log each phase's time every million years
 }
 
 // DefaultConfig is a small, fast world.
@@ -366,7 +367,7 @@ func DefaultConfig() Config {
 	return Config{
 		Stars: 400, Radius: 150, Thickness: 40,
 		DeepStart: -galaxy.Age, Dawn: 0,
-		DeepStep: 10_000_000, MidStep: 20_000, FineStep: 1_000,
+		DeepStep: 10_000_000, Step: 1_000,
 		FineActive: 12, FineFertility: 0.5,
 		EndActive: 5, EndFertility: 0.2, EndFertilityLow: 0.05, Linger: 2_000_000,
 		MaxFades: 8,
@@ -382,9 +383,12 @@ type World struct {
 	R         *rand.Rand
 	Now       Year
 	Present   Year    // when the simulation stopped; years are printed relative to this
-	Waning    Year    // when the fine tick began
+	Waning    Year    // when the waning was declared
 	Capped    bool    // the age never ended on its own; stopped at MaxFades
+	Ticks     int     // ticks run in the current age
 	dt        float64 // current tick in kyr
+	phases    []phase // the tick, in order; see sim.go
+	phaseTime map[string]time.Duration
 	Bio       []BioState
 	Owner     []int // civ id owning each star, -1 if none
 	Held      []int // horror id holding each star, -1 if none

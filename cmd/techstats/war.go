@@ -24,7 +24,7 @@ type WarRec struct {
 	Taken   int     `json:"taken"`
 	Glassed int     `json:"glassed"`
 	Result  string  `json:"result"`
-	Fine    bool    `json:"fine"` // fought in the fine pass, where duration means something
+	Waning  bool    `json:"waning"` // began after the waning was declared
 }
 
 func flattenWars(w *history.World) []WarRec {
@@ -33,7 +33,7 @@ func flattenWars(w *history.World) []WarRec {
 		a, b := w.Civs[wr.Sides[0]], w.Civs[wr.Sides[1]]
 		r := WarRec{Seed: w.Seed, A: a.Name, B: b.Name, PostA: posture(a), PostB: posture(b), Cause: wr.Cause, Nth: wr.Nth,
 			Began: float64(wr.Began-w.Cfg.Dawn) / 1e6, Taken: wr.Taken[0] + wr.Taken[1], Glassed: wr.Glassed[0] + wr.Glassed[1],
-			Result: wr.Result, Fine: wr.Began >= w.Waning}
+			Result: wr.Result, Waning: wr.Began >= w.Waning}
 		if wr.Over {
 			r.Length = float64(wr.Ended-wr.Began) / 1000
 		} else {
@@ -75,7 +75,7 @@ func warReport(out io.Writer, recs []Rec, wars []WarRec, seeds int) {
 	p("")
 	p("## War and peace")
 	p("")
-	p("%d wars over %d worlds, %.1f per world; %d fought in the fine pass, where a duration means something.", len(wars), seeds, float64(len(wars))/float64(seeds), count2(wars, func(r WarRec) bool { return r.Fine }))
+	p("%d wars over %d worlds, %.1f per world; %d began in the waning.", len(wars), seeds, float64(len(wars))/float64(seeds), count2(wars, func(r WarRec) bool { return r.Waning }))
 	p("")
 	p("### How wars end")
 	p("")
@@ -92,7 +92,7 @@ func warReport(out io.Writer, recs []Rec, wars []WarRec, seeds int) {
 	var lengths, moved []float64
 	nth := 0
 	for _, r := range wars {
-		if r.Fine && r.Result != "unfinished" {
+		if r.Result != "unfinished" {
 			lengths = append(lengths, r.Length)
 		}
 		moved = append(moved, float64(r.Taken+r.Glassed))
@@ -101,7 +101,7 @@ func warReport(out io.Writer, recs []Rec, wars []WarRec, seeds int) {
 		}
 	}
 	if len(lengths) > 0 {
-		p("Fine-pass wars last %.0f kyr at the median (quartiles %.0f to %.0f, longest %.0f).", median(lengths), quantile(lengths, 0.25), quantile(lengths, 0.75), quantile(lengths, 1))
+		p("Wars last %.0f kyr at the median (quartiles %.0f to %.0f, longest %.0f).", median(lengths), quantile(lengths, 0.25), quantile(lengths, 0.75), quantile(lengths, 1))
 	}
 	p("Worlds changing hands or burned per war: median %.0f, mean %.1f. Wars that were the second or later between the same two: %s.", median(moved), mean(moved), pct(nth, len(wars)))
 	p("")

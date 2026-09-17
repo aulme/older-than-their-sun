@@ -289,6 +289,17 @@ func GenerateOn(r *rand.Rand, mult int, arch string) *Species {
 	return s
 }
 
+// Fixed makes a known species for tests: a standard people of a lush world
+// with exactly the traits named, in that order, and no roll. Unknown keys
+// are ignored.
+func Fixed(traits ...string) *Species {
+	s := &Species{Name: "Fixed", Kind: Standard, World: ArchetypeByKey("lush")}
+	for _, t := range traits {
+		s.Add(t)
+	}
+	return s
+}
+
 // Add gives the species a trait by key if it does not have it.
 func (s *Species) Add(key string) {
 	if t := byKey[key]; t != nil && !s.Has(key) {

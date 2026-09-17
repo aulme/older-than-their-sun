@@ -73,6 +73,44 @@ func (w *World) spawnCiv(home int, sp *species.Species, maker int) *Civ {
 	return c
 }
 
+// civStep is one stage of a people's tick. civSteps is the ordered list of
+// them, run for every active people each tick; a subsystem joins by
+// inserting a step at a named place with insertCivStep.
+type civStep struct {
+	Name string
+	Run  func(*World, *Civ)
+}
+
+var civSteps = []civStep{
+	{"arrivals", (*World).arrivals},
+	{"research", (*World).research},
+	{"wander", (*World).wander},
+	{"expand", (*World).expand},
+	{"build", (*World).build},
+	{"dyingSun", (*World).dyingSun},
+	{"find", (*World).find},
+	{"explore", (*World).explore},
+	{"lore", (*World).loreStep},
+	{"intel", (*World).intelStep},
+	{"council", (*World).council},
+	{"wartime", (*World).wartime},
+	{"revolt", (*World).revolt},
+	{"filters", (*World).ambientFilters},
+	{"uplift", (*World).uplift},
+}
+
+// insertCivStep puts s after the step named after, or at the end if there
+// is no such step.
+func insertCivStep(after string, s civStep) {
+	for i, q := range civSteps {
+		if q.Name == after {
+			civSteps = append(civSteps[:i+1], append([]civStep{s}, civSteps[i+1:]...)...)
+			return
+		}
+	}
+	civSteps = append(civSteps, s)
+}
+
 func (w *World) tickCivs() {
 	for _, c := range w.Civs {
 		if !c.Living() {
@@ -90,11 +128,11 @@ func (w *World) tickCivs() {
 		if c.Ascended == 0 && c.Reach >= 1 && len(c.held()) > 0 {
 			c.Ascended = w.Now // the born reach the stars, and the miracle begins to matter
 		}
-		for _, step := range []func(*Civ){w.arrivals, w.research, w.wander, w.expand, w.build, w.dyingSun, w.find, w.explore, w.loreStep, w.intelStep, w.council, w.wartime, w.revolt, w.ambientFilters, w.uplift} {
+		for _, step := range civSteps {
 			if !c.Active() {
 				break
 			}
-			step(c)
+			step.Run(w, c)
 		}
 		if c.Active() {
 			// morale drifts back toward zero in peace

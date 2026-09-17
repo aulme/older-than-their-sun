@@ -1,0 +1,559 @@
+# Execution plan: the ten proposals, built in order
+
+**Status:** Accepted for execution, 2026-09-17. Steps are ticked as they land.
+**Source proposals:** every file in `specs/proposals/` (one-tick, resources-and-trade, morality, ships-and-garrisons, fleet-interception, wisdom, contracts-and-mercenaries, plagues, ossification, kinds). This plan supersedes their individual "Implementation notes" stage lists where the two differ; their Design sections stay the specification.
+
+## How to run a step in a fresh session
+
+Every step is written to be done by a session that has read nothing but this file. The protocol:
+
+1. Read this file top to bottom once. Then read the **Reads** list of the step you are on: the named proposal sections and the named code files. Nothing else is needed to start; read more code as the work asks for it.
+2. Check the **Progress ledger** below and `git log --oneline -5`. The ledger says which step is next and what state the last step left. If the ledger and the log disagree, the log is right; fix the ledger first.
+3. Build the step's **Build** list in order. Keep to the **Architecture rules** section. When a proposal's text and this plan differ, this plan wins; when this plan is silent, the proposal wins; when both are silent, pick the simplest thing, write it in the step's ledger entry, and move on. Do not stop to ask unless the choice would change a design that is already built.
+4. Run the **Gate** for the step: `go build ./... && go vet ./... && go test ./...`, then the batch command it names, and read the **Batch** numbers it lists. Fix red tests. If a batch number is far outside the range the step gives, tune the numbers the step names as tunable, not the design; if it cannot be tuned into range, record it in the ledger and go on.
+5. Commit with the step's **Commit** message (one commit per step, more if the step says so). End every commit message with `Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>`.
+6. Append to **Optimisation notes** at the end of this file anything you saw that was slow or could run in parallel, one line each, without acting on it unless it is cheap and certain.
+7. Update the ledger: tick the step, write one line of state (what landed, anything left out, any number that would not tune), and update `Status` in every proposal the step touched (`In Progress` when first touched, `Implemented` when its last stage lands). Commit the ledger change with the step or right after.
+8. Stop with a four-paragraph summary: what was built, choices made, surprises, what is next. The next session starts at 1.
+
+Experiments that need a changed rate are run with `go build -overlay` copies in the scratchpad or by a flag, never by editing source to test and forgetting to revert. The reference batch is `go run ./cmd/techstats -seeds 10 -out reports/tech` at 400 stars; it is committed under `reports/tech/`, so `git diff --stat reports/tech/stats.txt` after a batch shows what moved. A crowding check is `-stars 800` on three seeds through `cmd/worldgen -stats`; only steps that say so need it.
+
+## Progress ledger
+
+Tick a step when its commit is in. The state line is for the next session.
+
+- [x] Step 1: Foundations: one tick, the tick pipeline, the test harness. State: landed as planned. `Config.Step` (1000), `newWorld`, `w.phases` with `insertPhase`, `civSteps` with `insertCivStep`, `World.Ticks`, `Config.Profile` behind `worldgen -phases`. techstats had no per-tick counts to convert; its "fine pass" war flag became `Waning` (began after the waning) and war lengths are now read over every finished war. Tests: `TestDeterminism`, `TestOneStep`, `TestChanceRate`, plus a small `TestHarness` that exercises `newTestWorld`/`spawnAt`. Batch: age, count of peoples, lifetime buckets, standing and remnants within seed noise; wars 395 → 462 over ten worlds, ending in peace 58% → 68% and enslavement 28% → 15%, median war 13 → 10 kyr; nothing fires twenty-fold, nothing was converted to `chance`. Batch runs in 37 s on ten seeds.
+- [ ] Step 2: The mind: the decision layer as one module with one tuning table. State:
+- [ ] Step 3: Species registry: substrates, modifiers, profile, chain generator. State:
+- [ ] Step 4: Flows: income, upkeep, direction, dormancy. State:
+- [ ] Step 5: Reservations, structures, rarities, force. State:
+- [ ] Step 6: Trade. State:
+- [ ] Step 7: Morality. State:
+- [ ] Step 8: Ships: quality, ships, docks, keep. State:
+- [ ] Step 9: Battles: guns, silos, the battle at a world, garrisons, muster, nomads. State:
+- [ ] Step 10: Sightings: wrecks, eyes, interception, pickets. State:
+- [ ] Step 11: Wisdom. State:
+- [ ] Step 12: Contracts and mercenaries, with the sighting and broker terms. State:
+- [ ] Step 13: Plagues: the object, spread, memetic, reservoirs. State:
+- [ ] Step 14: Plagues: parasites as plagues, conscious plagues, engineered plagues. State:
+- [ ] Step 15: Ossification: stiffness, the break, civil war, shattering, kinship, grudge decay. State:
+- [ ] Step 16: Kinds: modifier rules and the eldritch pool. State:
+- [ ] Step 17: Kinds: horrors dissolved, the transmitter, replicators, sleepers. State:
+- [ ] Step 18: Kinds: evolver drift, anti-memetics, hunts. State:
+- [ ] Step 19: Absorb: design notes, decision log, proposals to done, reference batch. State:
+
+## Order and dependencies
+
+```mermaid
+flowchart TD
+  S1[1 foundations] --> S2[2 the mind]
+  S2 --> S3[3 species registry]
+  S3 --> S4[4 flows]
+  S4 --> S5[5 reservations, structures, rarities]
+  S5 --> S6[6 trade]
+  S6 --> S7[7 morality]
+  S5 --> S8[8 ships, docks, keep]
+  S8 --> S9[9 battles, guns, garrisons]
+  S9 --> S10[10 sightings, interception]
+  S7 --> S11[11 wisdom]
+  S10 --> S12[12 contracts]
+  S11 --> S12
+  S12 --> S13[13 plagues]
+  S13 --> S14[14 parasites, engineered plagues]
+  S14 --> S15[15 ossification]
+  S15 --> S16[16 modifier rules, eldritch]
+  S16 --> S17[17 horrors dissolved]
+  S17 --> S18[18 evolver drift, anti-memetics]
+  S18 --> S19[19 absorb]
+```
+
+Why this order. One tick first because every rate afterwards is per thousand years. The mind second because every later step adds decisions, and they should land in the module from the start. The species registry third because every later step reads a people's nature through its profile and must never write a kind switch. Flows before ships because a ship is a reservation of flow. Ships before sightings because the losses rule pays in ships. Morality before wisdom because wisdom's "wants to be understood" reads a fixation. Contracts after both, since the sighting and broker terms hang on it. Plagues after ships and contracts because dirt reads sieges and refusal reads messages. Ossification after plagues because its dark age is plagues' dirt and its sunder is what the hive cut-off in kinds reuses. Kinds' mechanics last because they touch every system that exists by then; its registry is second because it is the shape everything else is written into.
+
+## Architecture rules
+
+These hold for every step. They are what "modular and pluggable" means here.
+
+**The tick is a pipeline.** `runAge` becomes a loop over `w.phases`, a slice of named `phase{name, run func(*World)}` built once in `newWorld` in a fixed order. Per-civ steps stay the ordered slice in `tickCivs`, but as a package-level `civSteps []civStep{name, run func(*World, *Civ)}`. A new subsystem adds a phase or a step by inserting into the slice at a named place (`after("messages")`), never by editing the loop. Order is explicit and deterministic. Debug flag `-phases` logs each phase's time per million years.
+
+**Cores are pure, adapters are thin.** Every new mechanic is written twice: a **core** that takes plain values and, if it rolls, a `*rand.Rand` (or a pre-drawn float) and returns a value, with no `*World` and no `*Civ`; and an **adapter**, a `World` method, that reads state, calls the core and writes the result and the log line. Cores go in files named for the mechanic, adapters in the file where the tick calls them. The test suite tests cores directly and adapters through a small real world. Where a core would need half of `Civ`, pass a small input struct built by the adapter, not the `Civ`. A core may keep a `World` pointer only for read-only geometry (`w.G.Dist`), and then it is documented as such.
+
+**Tables are registries.** The tree, filters (`def`), facts (`factShape`), aptitudes, structures and dials are tables already. New rules follow: sources, rarities, term kinds with their `worth` and tick hooks, morality's sort table, plague ladders, the species registry's substrates, modifiers and powers, phases and steps. A rule that would otherwise be a `switch` over a kind, a term kind or a fact kind is a table lookup with a function field. `init` may fill a table from a literal; nothing else runs at init.
+
+**Nothing in the history package names a species kind.** From step 3, `Species.Kind` no longer exists. A rule reads `c.Species.Profile()` (multipliers and flags composed from substrate and modifiers), `c.Species.Is(mod)`, `c.Species.Sub`, or a hook on the registry entry. New profile fields are added by the step that needs them, with a default that leaves behaviour unchanged for entries that do not set them.
+
+**The mind is one module.** Every decision a people makes lives in `internal/mind`: the appraisal, the bars, the council's choice, scouting and survey policy, pact offers and answers, the answer to a call, forwarding intel, the Find's choice, research choice, the colony target, and from later steps the direction order, the ship want and garrison scores, contract offers and worth, interception, the parasite's choice to try, weapon-making, the hunt's deduction. A decision is a pure function over an input struct the adapter assembles (beliefs, dials, wisdom, morality, wants, geometry already computed) that returns a decision value and a `Why string`. Every number a decision uses is a field of one `mind.Tuning` struct with a `Default()`; nothing in `mind` holds a literal that a designer might want to move. History passes `w.Cfg.Tuning` in and executes what comes back. `cmd/worldgen` and `cmd/techstats` take `-tuning file.json` and `-tune key=value` overrides, and `-ai` prints each decision's `Why`. Tinkering with the AI is editing one table or one function in one package, with unit tests that feed it inputs by hand.
+
+**Maintainability first; performance only when it is a large win.** Performance is not a goal of this plan, and no optimisation is taken that costs clarity unless the gain is large against what it costs to read and change the code afterwards: an index that removes a linear scan from a hot loop qualifies, a cache that every writer has to remember to invalidate does not, and a clever encoding never does. The shape should still not close doors. Cheap and certain things are done as they come: cores take values, not the world, so they can run on any goroutine later; per-phase timing under `-profile` says where the time goes; nothing new iterates every star for every people when an index by star would do; a table computed once at world generation is computed once. Anything larger (a per-people random stream so civ steps can run in parallel, a spatial index for `Near` and `Dist`, sightings' geometry fanned out per eye, an age split by region) is a note in **Optimisation notes** for the pass after this plan, not a change now. `cmd/techstats` already runs seeds on all cores; that is the parallelism that matters for tuning and it stays.
+
+**Generators are separate.** Things that are made from randomness alone live as functions with a `*rand.Rand` in their own package or file and know nothing of history: species (`internal/species`), names (`internal/names`), the galaxy (`internal/galaxy`), and now plague shapes and names (`internal/plague`), the battle arithmetic (`internal/battle`), the flow allocation (`internal/flow`). History composes them. A generator never reads the world; the world hands it what it needs.
+
+**Rates are per thousand years.** Every chance goes through `w.chance` or `w.count`; `w.R.Float64() < p` is allowed only for a choice that happens once by construction (which of two outcomes, a coin at a birth). Step 1 leaves the sixty-five existing bare rolls alone; a step that touches a file converts the bare rolls it passes.
+
+**Determinism.** No `range` over a map on any path that draws from the RNG or appends to a slice that the RNG later indexes; use `sortedInts`, `knownOf`, or a sorted key slice. Every step's gate runs `TestDeterminism` (three worlds from one seed are byte-identical in their events).
+
+**Facts before lines.** A significant moment writes a fact through `w.fact*` and then a legend line; the tellings read the fact. New fact kinds are added to `factShape` with sort and weight, and to the telling in `telling.go`. From step 7, every place that judges a fact reads `sortFor(c, f)`.
+
+**Tests are Chicago-school.** Real structs, real collaborators, no interfaces introduced for mocking, no mocks. Two tiers. Core tests: call the core with literal inputs, assert outputs, table-driven, statistical claims over a fixed seed and a stated run count with a tolerance. World tests: `newTestWorld(t, seed, stars)` builds a small real galaxy (`galaxy.GenerateAt`) and world, `spawnAt(w, star, species)` raises peoples, the test drives `w.tick()` a number of times and asserts on state. Fixed seeds, no time, no goroutines. Tests live beside the code as internal package tests so unexported functions are reachable. Cover the edge cases each step lists and nothing for its own sake: no test of a one-line getter, no golden legends text except the determinism test.
+
+**Packages.** `internal/species` (registry and generator), `internal/tech` (tree, structures, ladders, upkeep table), `internal/names`, `internal/galaxy` as now; new `internal/mind` (decisions and their tuning), `internal/flow`, `internal/battle`, `internal/plague`; `internal/history` wires them; `internal/legends` prints; `cmd/worldgen`, `cmd/techstats` read. Nothing in `internal/history` is imported by the four new packages; `mind` may import `flow` for the order type and nothing else of the sim.
+
+**Files.** One mechanic per file in history: `flow.go`, `sources.go`, `trade.go`, `morality.go`, `ships.go`, `battle.go`, `garrison.go`, `sighting.go`, `field.go`, `wisdom.go`, `contract.go`, `plague.go`, `weapon.go`, `ossify.go`, `sunder.go`, `eldritch.go`, `transmitter.go`, `gap.go`. Types for a mechanic live in its file, not in `types.go`; `types.go` keeps `Civ`, `World`, `Config` and the enums shared by many files. `Civ` grows fields per step; a field used by one file only is declared in that file's section of `Civ` with a comment naming the file.
+
+## Decisions on open questions
+
+Taken so that no step blocks on them. Each is provisional and is written into the decision log at step 19; the batch may overturn any.
+
+| Proposal | Question | Decision |
+|---|---|---|
+| one-tick | finer tick | 1000 years; 500 not taken |
+| one-tick | variable tick | no |
+| one-tick | per-tick counts in techstats | become per kyr |
+| resources | read-only stars yield | no, only owned or grazed |
+| resources | Exotic law | stays as ambient multiplier |
+| resources | capacity | deferred; spare O is the number, nothing reads it yet |
+| resources | soft vs hard gates | soft everywhere, the Heart included |
+| resources | Manna rising | the uplift path with the made trait "grown for the table" |
+| resources | Manna judged without morality | crime 2 until step 7 lands |
+| resources | CLAUDE.md | added at step 1, links DESIGN_NOTES.md |
+| morality | sacred kind | no; a religious object is a fixation on knowing or old things |
+| morality | herd and foreign herds | as written, a crime |
+| morality | on Species or Civ | Civ |
+| contracts | taught node in the telling | `Civ.Taught map[string]int` (node to seller), read by the telling and `Learned` |
+| contracts | teaching beyond canPursue | one node at a time, canPursue only |
+| contracts | haggling | one offer, one answer |
+| contracts | paid access vs partner sharing | both: partners share for nothing, strangers pay |
+| contracts | peace with a horror | out |
+| wisdom | signal-only fathoming | +1 as written |
+| wisdom | wanting to be understood | also refused by a fixation on conquest or holding toward a people it reads as weaker |
+| wisdom | unpaid brokering | shared pact or confederate posture only |
+| ships | base | 1.25 |
+| ships | build cost, rate | 4 kyr of keep per ship, one per dock per kyr |
+| ships | want cap | as written, uncapped; tunable: if more than a quarter of peoples at zenith are building until the flow gives out, cap the want at twice the strongest neighbour's believed fleet |
+| ships | rot | 0.1 per kyr |
+| ships | empty sky | taken without a siege tick |
+| ships | guns per grid | 3, plus one per weapons era above the node |
+| ships | whole worlds | a nest or a living world with an empty sky is burned as `homeFalls` has it; it costs the taker a tick of siege and nothing else |
+| ships | home want, turned relief | as written |
+| sightings | standing watch term | one-off sales only |
+| sightings | muster | the real muster from ships; the flat fifty years goes |
+| sightings | pickets and levels | a picket is one ship; the level cost goes with step 8 |
+| sightings | course and destination | exact line |
+| sightings | seen scout grudge | kept |
+| sightings | winner's share | symmetric |
+| sightings | healing | gone; docks rebuild |
+| sightings | what is aboard | out |
+| sightings | salvage decay | 0.1 per kyr, as written |
+| sightings | observatory's node | orbital habitats |
+| plagues | beacon | the transmitter of kinds, at step 17 |
+| plagues | strains | out |
+| plagues | fleet as third road | out |
+| plagues | born rider's start | ridden |
+| plagues | conscious chance | 1 in 20 |
+| plagues | censorship | a node |
+| plagues | ladder strength | ÷3 per rung; tunable down to ÷2 |
+| plagues | lethality | l² per world per tick; tunable to l³ |
+| plagues | hygiene | ÷1.5 per rung |
+| ossification | lines in the portrait | immediate parent in the portrait; the whole tree in the aftermath's Lines |
+| ossification | bands or a roll | bands |
+| ossification | hazard | dropped from growth |
+| ossification | stillness | 200 kyr, ×1.5; war is not still |
+| ossification | shard cap | 8 shards; the rest of the worlds are abandoned |
+| ossification | claims and third parties | no pull on third parties |
+| kinds | how many modifiers | as many as roll: each is its own tilted roll, zero is the common case (above half of births), every combination has a positive chance by construction, and the full set is astronomically rare (below one in ten million from the table). The swarm stays a bio trait |
+| kinds | rates on the batch | as written; read at step 16 |
+| kinds | eldritch levels | one level per power as written; revisit at step 16 if an eldritch thing reads as young |
+| kinds | deepening rate | 0.0005 per kyr, times (1 + powers held / 4) |
+| kinds | hunt threshold | three doerless losses inside 20 ly within 50 kyr |
+
+## Reconciliation ledger
+
+Amendments one proposal makes to another. The step that builds the amended thing builds the amended version.
+
+- **ships → sightings:** `Civ.Losses` and its healing, "relief loses first" and the flat fifty-year muster are withdrawn; losses are paid in ships at the payer's quality; the muster is real.
+- **ships → resources:** the fleet row becomes per ship `1 O 1 M 1 E` (machine `1 M 2 E`, living ships `3 O`); a dock at work draws `4 M 4 E` (living ships `12 O`) in proportion to its rate; `shipyard` loses `Mil +0.5` and the half-reservation and becomes one more dock; `defences` reserves per gun with no O; `silos` is the smallest upkeep in the table.
+- **one-tick → everyone:** every "per tick" in the drafts is per thousand years; techstats' per-tick counts become per kyr.
+- **plagues → resources, ships, wisdom, morality:** dirt reads shed uses and sieges; refusal reads fathoming; `FPlagueGiven` and the Manna are judged by `sortFor`.
+- **ossification → everyone:** there is one `darkAge` of variable depth and every caller gets it; `Node.Structure` may need to become a list when the observatory lands (sightings) and `orbital_habitats` names two structures.
+- **kinds → plagues, wisdom, ossification, resources, morality, ships, sightings, tellings, tree:** the table "Rules by substrate and modifier across the drafts" in kinds.md. Steps 4 to 15 write their rules against the profile so that step 16 only sets profile fields and adds hooks.
+- **kinds → plagues:** parasite kind weight goes to zero at step 14 (born riders replace it); kinds' registry keeps the parasite substrate for made peoples.
+- **kinds → morality:** the morality roll's "hive, nonconscious, swarm, machine-born, parasite, planetary mind" rows read `Is(Hive)`, `Is(Unconscious)`, `Has("swarming")`, `Sub == Machine`, `Sub == Parasite`, `Is(Planetary)`.
+- **wisdom → contracts:** the `broker` term and the worth noise land in step 12.
+- **contracts → sightings:** the `sighting` term lands in step 12.
+
+---
+
+## Step 1: Foundations
+
+One tick for the whole age; the pipeline; the test harness; techstats per kyr; CLAUDE.md.
+
+**Reads.** `specs/proposals/one-tick.md` (all). Code: `internal/history/sim.go`, `types.go` (Config, World), `civ.go` (`tickCivs`), `util.go`, `cmd/techstats/main.go` (flags and `report`), `cmd/techstats/war.go` (per-tick counts), `internal/legends/legends.go` (`Stats`).
+
+**Build.**
+1. `Config`: replace `MidStep` and `FineStep` with `Step Year` (1000). Keep `FineActive`, `FineFertility` as the waning's condition. Update `DefaultConfig` and techstats' config.
+2. `runAge`: set `w.dt` once before the loop; the waning block logs and sets `Waning` and no longer changes the step.
+3. The pipeline: `type phase struct{ Name string; Run func(*World) }`; `w.phases` built in a new `newWorld(seed, cfg)` (split out of `Generate`) in the order `runAge` calls now; `runAge` ranges over it. Helper `insertPhase(after string, p phase)` used by later steps. `civSteps` as a package-level ordered slice with the same helper; `tickCivs` ranges over it. `TraceAI` unchanged; a new `Config.Profile bool` logs phase time per million years.
+4. Test harness in `internal/history/harness_test.go`: `newTestWorld(t, seed uint64, stars int) *World` (small galaxy through `galaxy.GenerateAt`, world through `newWorld` without running the deep pass; `w.makeCycle()` so fertility works); `w.tick()` runs the phases once and advances `Now` by `Step`; `spawnAt(w, star, sp) *Civ`; `species.Fixed(traits ...string) *Species` in the species package for tests that want a known people (not yet through the registry; step 3 rewrites it).
+5. `TestDeterminism` in `sim_test.go`: three `Generate` runs at 200 stars, events identical. `TestOneStep`: the age runs at `Step` throughout, `Waning` is set once and logged once. `TestChanceRate`: over a fixed span a rate given per kyr fires within tolerance of its expectation.
+6. techstats: counts that are per tick (battles, sightings, council actions, strikes) become per kyr; label the columns.
+7. `CLAUDE.md` at the repo root: three lines: the canonical spec is `DESIGN_NOTES.md`; proposals live in `specs/proposals/`, the execution plan in `specs/plan.md`; commits end with the co-author line.
+
+**Tests.** The three above. No more.
+
+**Gate.** `go test ./...`; batch at 10 seeds; `git diff reports/tech/stats.txt`. **Batch:** age length, count of peoples, lifetime buckets, standing and remnants within seed noise of the committed batch; things that count ticks (battles, sightings) about twenty times the youth's old count and near the waning's. If a per-kyr rate was tuned on the coarse pass and now fires twenty times as often, convert it to `chance` and note it.
+
+**Commit.** `One tick: the whole age at a thousand years; the tick as a pipeline; a test harness`.
+
+**Done when** the ledger is ticked, `one-tick.md` is `Implemented`, and the batch is committed.
+
+## Step 2: The mind
+
+The decision layer moved into one module with one tuning table. No behaviour change: the batch must be identical.
+
+**Reads.** `DESIGN_NOTES.md` "War, submission, enslavement" (the decision layer paragraphs), the architecture rule "The mind is one module" above. Code: `internal/history/appraise.go` (all), `council.go` (all), `intel.go` (`believe`, `forward`), `pact.go` (`threat`, `proposePact`, `answerPact`, `answerCall`), `explore.go` (`explore`, `sightMode`, `survey`, `surveyTarget`), `find.go` (`discover` choice weights), `research.go` (`choose`), `civ.go` (`expand`, `build`), `expedition.go` (`wouldTurn`), `nomad.go` (`roam`, `nextStar`), `dials.go`.
+
+**Build.**
+1. `internal/mind`: `Tuning` struct with every number the decisions below use (council cadence, the compulsion chance, bars by posture and the grudge discount, the scout band, pact proposal odds and the answer's score weights, the call's share and safe, intel forwarding weights, survey counts by hunger and greed, the Find's choice weights, research choice weights, the expansion chance and the blind-guess chance, the turn odds by honour, the roam hop). `Default()` returns today's numbers. `Load(path)` and `Set(key=value)` by field name.
+2. Decisions as pure functions with input structs and a returned `Why`: `Appraise(in AppraiseInput) Appraisal` (beliefs, war bonus, target facts, plague and dark-age flags, the other's wars, risk dial, lag); `Bar(in) (bar, wants, far)`; `Council(in CouncilInput) CouncilDecision` (the candidate loop's choice among strike, scout, watch, nothing, given per-enemy appraisals and bars); `SizeCampaign`, `Scout`, `Survey`, `SightMode`, `ProposePact`, `AnswerPact`, `AnswerCall`, `Forward`, `Choose` (research), `Expand` (target choice among read candidates), `Find` (choice weights), `Turn`. Geometry (`front`, `nearest`, distances, reachable stars) is computed by the adapter and passed in.
+3. History adapters: each existing function becomes assemble-input, call, execute. The RNG draw order must be preserved exactly so seeds reproduce: where a decision rolls, the adapter draws the floats in the old order and passes them in, or `mind` takes the `*rand.Rand` and draws in the same order; write it down per function. `Config.Tuning *mind.Tuning` defaulting to `Default()`. `-ai` logs `Why`; `-tuning` and `-tune` on both commands.
+4. Later steps add to `mind`, each with its numbers in `Tuning`: step 4 `Order`; step 8 `Want`; step 9 `Garrison`, `Muster`; step 10 `Intercept`, `Picket`; step 11 the judgment rules as `Tuning` fields read by `Appraise`, `Bar`, `Council`, `Find`; step 12 `Offer`, `Worth`, `Answer`, `Sell`, `BuyOff`; step 14 `TryRide`, `MakePlague`; step 7 the fixation tilt in `Order`; step 15 the council's preference when stiff; step 18 `Deduce`.
+
+**Tests** (`internal/mind`): `Appraise` reproduces the closed-form odds for a few hand inputs; `Bar` by posture; `Council` picks the best margin over the bar, scouts inside the band, watches below it; `AnswerPact` and `AnswerCall` on hand inputs at each honour; `Set("Council.Cadence=0.5")` changes the field and an unknown key errors. History: `TestDeterminism`, and a new `TestSameHistory` that pins the events of one seed at 200 stars before and after this step (write the digest into the test at the start of the step from the step 1 build and keep it green through the step).
+
+**Gate.** Tests; batch. **Batch:** `reports/tech/stats.txt` unchanged to the byte.
+
+**Commit.** `The mind: every decision a people makes in one module, with one tuning table and a reason on each; no behaviour change`.
+
+## Step 3: Species registry
+
+Kinds stage 1: substrates and modifiers as registry entries, the profile, the chain generator, every kind switch in history a profile read, no behaviour change.
+
+**Reads.** `specs/proposals/kinds.md`: Substrates; Modifiers (the table only, for names); A registry; Generation: a chain of tilted rolls; What everything now becomes; Implementation notes (first three bullets and the aptitude bullet). Code: `internal/species/species.go` (all), `internal/history/dials.go` (`difference`, `orgOf`), `levels.go` (`recompute` kind switch), `filters.go` (`kindDiff`, `traitDiff` hive and nonconscious rows), `aptitude.go` (`applies`, the `kind:` keys), `civ.go` (`spawnCiv`, `expandMul`, `schism`, `machinePeople`), and `grep -rn 'species\.\(Swarm\|PlanetaryMind\|Parasite\|MachineBorn\|Evolver\|Standard\)\|Has("hive")\|Has("nonconscious")' internal cmd` for the rest (about a hundred sites in ten files).
+
+**Build.**
+1. `internal/species/registry.go`: `Substrate` (Biological, Machine, Eldritch, Parasite), `Mod` bitset (Planetary, Hive, Unconscious, Replicator, Antimemetic, Evolver), `SubstrateDef` and `ModDef` (Key, Portrait, Arising, Flavour and which fields override, Base weight or odds, Tilts map[string]float64, SkipGroups, TiltGroups map[string]float64, OwnGroups, Profile, hooks as nil-able funcs typed on species values only: `Hooks{...}` grows per step), `Profile` struct (start: Mil, Sur, Soc adds; Reach, Rate, Expand multipliers; Dom map; Env add; Fields, Works, Trades, Launches, SettlesByShip, Stiffens, CivilWars, HoldsGrudges bools with defaults true), `Compose(defs...) Profile` (multiply multipliers, add adds, and-together the "can" flags), `Species.Profile()` cached. `Species.Sub`, `Species.Mods`, `Species.Is(mod)`, `Species.Powers []string` (empty until step 16). `Species.Kind` deleted.
+2. One file per entry: `sub_biological.go`, `sub_machine.go`, `sub_eldritch.go` (a stub profile; behaviour at step 16), `sub_parasite.go`, `mod_planetary.go`, `mod_hive.go`, `mod_unconscious.go`, `mod_replicator.go` (stub), `mod_antimemetic.go` (stub), `mod_evolver.go`. Each carries what `kindMods`, `flavours` and the old `hive`/`nonconscious` trait rows gave, moved and not changed. Registry order is the chain order from the proposal.
+3. `generate.go`: `Generate(r, mult)`, `GenerateOn(r, mult, arch)`, `GenerateWith(r, mult, arch, sub, mods)`; `Options{Weights map[Substrate]float64}` for the deep pass; the chain: substrate by weight, each modifier by `tiltedOdds(base, tilts...)` where tilts multiply the odds `p/(1-p)`; then the trait groups with the entries' skip and tilt maps. `tilted(r, base, tilt) bool` is a pure core with a test. The old `kindWeights` become a `Legacy` weight table on the substrates and modifiers so that the cradle distribution matches the old one within tolerance (standard 74 → biological plain; swarm 7 → biological + `swarming`; planetary mind 4 → biological + Planetary; parasite 4; evolver 8 → Evolver; machine 0). The proposal's first-setting numbers (92/6/2 and the tilt table) go in as the `Draws` for the *new* generator but are switched on at step 16; until then the legacy weights hold so the batch does not move. Write both tables now.
+4. Traits: `swarming` in the bio group with the swarm's rules; `hive` and `nonconscious` leave the org group; the `seat` group (of one queen, of no queen, of a moving throne), rolled only for hives, of a moving throne only when nomadic. The two old org traits' `traitDiff` and `dialTable` rows move to the modifier entries (`Profile.FilterDiff map[string]float64`, `Profile.Dials`).
+5. Species and people as separate things (added 2026-09-17 at the owner's request). `Species` becomes an entity the world holds: `World.Species []*species.Species` with an `ID` and its own `Name`; `Civ.Species` points into it and several peoples may share one. `Civ.Name` is the people's own name, drawn at birth and not the species' name (a cradle people's is the species name; a schism's heir, a colony that goes its own way, a shard, a civil-war heir get their own). A schism no longer copies the species: the branch shares it and the portrait line reads "a people of the X". A people changes species only through a made path: uplift and the machine successor make a new species as now; evolver drift at step 18 makes a new species entry for the drifting people (a branch of the old, with the old as `Parent`), so kin sharing the old species are untouched by the drift. `difference`, kinship, the plague's "target's kin" and the tellings' "the same people" read species identity where they mean blood and `Civ` identity where they mean the polity. techstats records both names.
+6. History: every kind switch and `Has("hive")`/`Has("nonconscious")` becomes a profile read or `Is`. `difference` reads `Sub` for the 2.5 term and `Is(Hive)`/`Is(Unconscious)` for the order term. `recompute` reads `Profile().Env`, the parasite soc term reads `Sub == Parasite`. `machinePeople` and the other made-people paths call `GenerateWith`. `aptitude.go`: `when` keys `sub:`, `mod:`, `trait:`; every `kind:` entry remapped as the proposal's table says; `tech.Node.For` likewise (`kind:swarm` → `trait:swarming`, `kind:parasite` → `sub:parasite`, `kind:machine-born` → `sub:machine`, `kind:evolver` → `mod:evolver`, `kind:planetary mind` → `mod:planetary`). techstats' `Kind` column becomes `Sub` and `Mods` strings and `forMatches` follows.
+7. Portrait: substrate sentence, then one per modifier, then traits; `Describe` unchanged for traits. The legends' species line and the arising line follow.
+
+**Tests** (`internal/species`): a schism's heir shares its parent's species pointer and has a different `Name`; a machine successor has a new species; `tilted` with a tilt of a thousand on a 1-in-20 base still fails sometimes over a million draws and a tilt of 1 matches the base rate; the legacy weights reproduce the old kind distribution within 1% over a hundred thousand draws; with the new odds, zero modifiers is the outcome in more than half of a hundred thousand draws, every one of the 64 modifier sets has a positive probability computed from the table, and the full set is below one in ten million; the profile of a people with no modifiers equals its substrate's; `GenerateWith` fixes what it is told and rolls the rest; a hive rolls a seat and skips the org group; a parasite rolls a rider. History: `difference` between a biological hive and a biological individualist is the old value; `TestDeterminism`.
+
+**Gate.** Tests; batch. **Batch:** everything within seed noise (the generator's draw order changes, so seeds differ; the distributions must not). Compare kind shares in `report.md` against the old `Kind` column.
+
+**Commit.** `Species registry: substrates and modifiers as plug-ins, a profile the sim reads, the chain generator; no behaviour change`.
+
+## Step 4: Flows
+
+Resources stage 1: `internal/flow`, sources read from systems, node upkeep, the direction, dormant nodes, the Means section.
+
+**Reads.** `specs/proposals/resources-and-trade.md`: Commodities; Sources (natural sources table only); Uses and upkeep; Direction: the order; Kinds; What it writes; Per-tick order. Code: `internal/galaxy/system.go` (Planet, System, world tags), `internal/history/levels.go`, `research.go` (`rateMul`, `research`), `civ.go` (`expand`, `build`), `nomad.go` (`holdings`), `cmd/techstats/main.go` (`report`, to add a section).
+
+**Build.**
+1. `internal/flow`: `Kind` (O, E, M), `Income [3]float64`, `Use{Key, Cat Category, Era int, Need [3]float64}`, `Category` (Fields, Arms, Works, Mind, Road, Word), `Order []Category`, `Direct(income Income, uses []Use, order Order) Allocation` returning the working set, the dormant set, the surplus per kind and the want per kind. Pure; lowest era first inside a category; a fleet-in-flight flag on a use that only the fields may shed. Tests here.
+2. `internal/tech`: `Node.Upkeep() [3]float64` from the era-and-domain table with the named exceptions; `Node.Cat() flow.Category` by domain with the named exceptions (the fields list). Table-driven and tested.
+3. `internal/history/sources.go`: `Source` type as the proposal's record; `naturalSources(g) []Source` placed at world generation from systems and features (worlds by archetype, rocky worlds, tags, belts, giants, the star, comets, remnants, nebulae, doomed giants, clusters), stored on `World.Sources` with an index by star and by feature radius. `w.income(c) flow.Income`: sum of sources at held stars whose `Needs` the people knows, plus ranged sources; profile multipliers by substrate (machine pays O in E; planetary cradle double O; parasite hosts' income; evolver halves biology upkeep, doubles industry).
+4. `flow.go` in history: `w.uses(c) []flow.Use` from known nodes (upkeep, category); `w.order(c) flow.Order` through `mind.Order` from dials and state (the precedence list; `Word` is added at step 12); `w.direct(c)` adapter runs the core, stores `c.Working map[string]bool`, `c.Shed` (the dormant set), `c.Surplus`, `c.Want`, and `c.DormantSince map[string]Year`. A `flows` civ step inserted before `research` in `civSteps`.
+5. `recompute` sums only working nodes; the envelope shrinks only for nodes dormant ten ticks; research rate from spare E replaces the swarm's flat multiplier (keep the Dyson `Rate` until step 5 replaces it). A node dormant for a whole dark age is forgotten with the rest (`forget` prefers dormant leaves).
+6. Log lines: first shed in a stretch; `FWant` (Woe 1) after a hundred thousand years of shedding; `factShape` and telling lines.
+7. `techstats`: **Means** section: income and upkeep by kind at zenith, share of ticks shedding, what is shed most.
+
+**Tests.** `flow.Direct`: fills in order, sheds newest first in a category, never sheds a fleet in flight except for the fields, surplus and want add up; a machine people pays O in E; a planetary cradle yields double O to itself; a node dormant ten ticks shrinks the envelope and one dormant nine does not; a shed stretch over 100 kyr writes exactly one `FWant`. `TestDeterminism`.
+
+**Gate.** Tests; batch. **Batch:** the calibration target from the proposal: a cradle runs era 2 in comfort, strains at era 3, needs colonies or trade for era 4. Read the Means section: share of ticks shedding at era 2 near zero, at era 3 a minority, at era 4 a majority without colonies. Tunable: the yield table and the upkeep table, nothing else. Age length and people count within seed noise; lifetimes may shorten a little at era 3.
+
+**Commit.** `Flows: three commodities as per-tick income and upkeep, a directed allocation that sheds the newest first, dormant tech`.
+
+## Step 5: Reservations, structures, rarities, force
+
+Resources stages 2 and 3.
+
+**Reads.** `resources-and-trade.md`: Sources (structures table), Uses and upkeep (other uses), Rarities, Force, Kinds (nomad grazing). Code: `civ.go` (`build`), `expedition.go` (`launch`), `explore.go` (`survey`), `nomad.go` (`roam`, `strip`, `rest`), `war.go` (`takeWorld`), `appraise.go`, `ages.go` (`leaveLegacy`), `legacy.go`, `find.go` (`attemptWield`), `internal/tech/tech.go` (`Structure`).
+
+**Build.**
+1. `tech.Structure` gains `Upkeep [3]float64`, `Yield` rules by star kind, `Per` (one per star, per belt, per people); new structures: mine, collectors, accretion tap, lifter; `vacuum_energy` as a node yield. The Dyson swarm's `Rate 1.5` goes; it yields E by star class.
+2. Reservations: fleets, scouts, surveyors and colony ships are uses (`flow.Use` with the in-flight flag); `launch` and `expand` check spare covers the reservation this tick or do not go. Structures reserve their upkeep; a structure is built only when spare covers twice its upkeep.
+3. `build` chooses by deficit: the structure that fixes the deepest want, else the largest source in reach with no harness; one attempt per few hundred thousand years as now. `Work` gains nothing; `Source.Holder` set when harnessed; `FHarness` (Deed 1) on a first harness by kind.
+4. Rarities: `Source` with `Grants`, `Levels`; `naturalRarities(g)` at world generation (horizon, beam, beacon, diamond star, heavy star, colours, ash, the Heart, companions, world tags); elder `Bounty` as a new `LegacyKind` placed by `leaveLegacy`; `w.has(c, rarity) bool` (own star, radius, carried, partner-shared from step 6); grants halve `price`; wielded artifacts registered as mobile rarities with `Levels`. `TestNoCatch22` in tech: every source's `Needs` closure reaches no hard-gated node.
+5. Mobility: mobile rarities ride with holdings; `takeWorld` carries them off; a fleet lost with one leaves it buried where it died; nomads' ride with the greatest fleet.
+6. Force and grazing: taking a star takes its sources; the appraisal gains the yield-and-rarity term weighted by the attacker's want; a nomad fleet at an unowned star grazes half, at a partner's a quarter; `strip` takes the rest once.
+7. Log lines and the gazetteer name rarities; Means gains rarities had by kind and gated nodes reached with and without the grant.
+
+**Tests.** A launch with no spare does not go and one with spare does; `build` picks the structure that fixes the deepest deficit; a mine doubles a belt's M and a second mine on the same belt is refused; a grant halves the price and a second instance of the same rarity adds nothing; `TestNoCatch22`; a fleet lost with a mobile rarity leaves a buried legacy at the star; grazing takes half at an empty star and nothing at a stranger's. `TestDeterminism`.
+
+**Gate.** Tests; batch. **Batch:** structures built per people by kind, harnessed sources by kind, gated nodes reached; wars on rich neighbours should rise a little (war count within twice seed noise); expansion still happens (colonies per people not down by more than a fifth).
+
+**Commit.** `Reservations and rarities: fleets and ships as flow, structures by deficit, mines, collectors, taps and lifters, natural and elder rarities with soft grants, force and grazing`.
+
+## Step 6: Trade
+
+Resources stage 4 and stage 5 (the Ember and the Manna).
+
+**Reads.** `resources-and-trade.md`: Trade; The Ember and the Manna. Code: `contact.go` (where `Trade` is set), `pact.go` (`warEnded`, `breakPacts`), `appraise.go`, `miracle.go` (`gain`, `remake`), `internal/tech/tech.go` (miracles), `flow.go` and `sources.go` from steps 4 and 4.
+
+**Build.**
+1. `trade.go`: a `trade` phase after `civs` in `w.phases`: per kind, in `sortedInts` order, surplus to partners' wants with `share`, `cap` by drive, willingness (monster, grudge above 0.3, xenophobe half, fear and stronger hostile partner), refill in the partner's order; `w.tradeCap(a, b)` reads reach and drives. Core `flow.Share(surplus, wants []float64, cap float64) []float64` pure and tested.
+2. Embargo: a refusal that lasts is `FEmbargo` (Crime 1 from the refused side) and a war cause the appraisal reads. Dependence: `c.Dependent map[int]bool` when a partner's sending covers the shed uses; on a break, `FCutOff` (Woe 2) and the uses go dark. The war appraisal subtracts what a war on a partner loses in trade.
+3. Rarities in trade: partners share immobile rarities' grants and levels (`w.has` reads partners); the Manna cutting (below).
+4. The Ember and the Manna as two miracle nodes (energy and biology, era 4, the prerequisites the proposal names); discovery makes one mobile source object with a rolled `Form` and its `Consequence` as a table of hooks (`emberForms`, `mannaForms` with per-tick funcs); lost object, another after a million years; findable as elder artifacts; `born_manna` in the power group at weight 10; `kinfed` in the bio group (weight 4, biological only, needs caste or hive); a sentient Manna (0.2) writes `FManna` (Crime 2, judged by morality from step 7) and may rise (0.001 per kyr) by the uplift path with the made trait "grown for the table"; may get loose (0.0005 per kyr, doubled in the holder's dark age) as a replicator people at step 17, until then as a Threat remain at that star that takes worlds by the blast rule; the cutting given to a partner in want of O at 0.1 per kyr.
+5. Means gains trade moved by kind, dependence at the moment of a fall, the Ember and Manna forms and what came of them.
+
+**Tests.** `flow.Share`: never sends more than surplus times cap, splits by want share, positive sum (working uses after ≥ before); an embargo writes one fact and lasts; a cut-off darkens the dependent's uses the same tick; a partner shares an immobile rarity's grant and not its yield; the pocket-star Ember dims by 2 E when moved; a Manna cutting gives the partner an instance and the giver keeps its own. `TestDeterminism`.
+
+**Gate.** Tests; batch. **Batch:** trade moved by kind is nonzero for most partner pairs; dependence at a fall appears in a minority of falls; the war count moves by less than twice seed noise; one or two Embers or Mannas per ten worlds.
+
+**Commit.** `Trade: surplus shared between partners with willingness, caps, embargo and dependence; the Ember and the Manna as objects with a form and a price`. Mark `resources-and-trade.md` Implemented.
+
+## Step 7: Morality
+
+**Reads.** `morality.md` (all). Code: `lore.go` (`hold`, `regard`, `reckon`, `loreDials`, `scapegoat`, `factShape`), `telling.go` (`frame`, `deedOf`, `blameOf`), `dials.go` (`difference`), `civ.go` (`spawnCiv`, `schism`, `machinePeople`), `contact.go` (`uplift`), `filters.go` (the Church scar), `flow.go` (`order`), `trade.go`.
+
+**Build.**
+1. `morality.go`: `Morality{Kind, Object}` on `Civ`; `rollMorality(r, sp *species.Species, hints) Morality` as a pure core over the weight table (reads `Is`, `Sub`, traits, the Sight, a found-much hint); set in `spawnCiv`; drift by schism branch (0.3), the Church scar, uplift (0.5), machine successor (fixation ×3 on the makers' doing).
+2. `sortFor(c, f) (Sort, weight)`: the override table as a map from morality kind and fact kind; `-` returns a woe for the sufferer and nothing for others. Replace every `f.sort()` where a people judges: `hold`, `regard`, `reckon`, `loreDials`, `scapegoat`, the testament and the telling text.
+3. Direction: a fixation puts its category first before every rule but a fleet in flight. Trade: holding sends nothing and takes first, partners embargo it after a stretch; spawning gives O at double cap. Difference: the morality term. Text: the portrait sentence; a telling line where the judgment differs from the default.
+4. techstats: moralities by kind, monsters held by morality, facts that are a crime to one people and a deed to another.
+
+**Tests.** `rollMorality` weights: a hive never rolls individual above 1%, a pacifist never amoral; `sortFor`: enslaved is a crime of 4 to an individual people, a deed of 2 to a conquest fixation, nothing to an amoral one; an amoral people holds no monsters after a run of a small world; a holding people's cap out is zero; `difference` adds 1 between individual and herd. `TestDeterminism`.
+
+**Gate.** Tests; batch. **Batch:** the Tellings section shows monsters falling for amoral and herd peoples and rising for fixations; war count within seed noise.
+
+**Commit.** `Morality: what a people counts as wrong; four kinds rolled from its nature, an override table every judgment reads, fixations that steer direction and trade`.
+
+## Step 8: Ships, docks, keep
+
+Ships stage 1 and `internal/battle`'s arithmetic.
+
+**Reads.** `ships-and-garrisons.md`: Levels and ships; Docks and building; Fleets (the kinds table and merge/split); What reads what; Implementation notes (first six bullets). Code: `expedition.go` (all), `nomad.go` (`fleets`, `ships`, `roam`, `strip`, `takeSky`, `rest`), `levels.go` (`Away`, `Quality`, the structure sum), `appraise.go` (`strength`), `intel.go`, `council.go` (`sizeCampaign`), `war.go` (`defence`), `miracle.go` (`warBonus`), `flow.go`.
+
+**Build.**
+1. `internal/battle`: `Quality(mil float64) float64` (`1.25^mil`), `Strength(ships int, q float64)`, `Roll(r, a, b float64) bool` with multiplicative noise `exp(N(0, 0.35))`, `Losses(r, a, b float64) (la, lb float64)` (`U(0, 0.5 × other)`), `ToShips(r, loss, q float64) int` stochastic rounding. Tests with the proposal's tables (four ships beat four at three levels better about nineteen times in twenty).
+2. `Expedition.Mil` becomes `Ships int`; `Kind` gains `Guard`; `LaidUp bool`; `Civ.Away` and `Civ.Quality` go; `w.ships(c)` sums fleets; `launch(c, kind, target, star, n)` takes `n` from the guard at `from`; fleets of one owner, one kind, one base merge; every starfaring people gets a guard of one at home when `Starfaring` is first set.
+3. `recompute` stops subtracting `Away`, stops setting a horde's `Mil` to its fleets, stops reading `shipyard` and `defences` levels; `quality(c)` is `battle.Quality(c.Mil + c.warBonus())` and `warBonus` stops being added to rolls.
+4. `ships.go`: `docks(c)` (home 1, shipyard stars 1, horde bases 0.25, vassal half, slave none); `want(c)` through `mind.Want` (garrison wants from step 9 are zero for now: campaign need + exploring policies + `1 + round(Fear)`); `shipwright(c)` civ step: per dock the rate the spare affords, `w.count`, ships to the guard at the dock's star while under want; the dock's draw as a use (works in peace, arms at war); ships in being reserve their keep by substrate (`1 O 1 M 1 E`, machine `1 M 2 E`, living ships `3 O`). Laying up: a fleet `direct` cannot feed is `LaidUp`, skipped by movement, battle and defence, rots at 0.1 per kyr, manned again when fed; a horde's laid-up fleet is left behind; a taken world's laid-up fleet is a field (a Threat-less remain; the field kind lands at step 10, so until then it is lost).
+5. Bridge: `strike` and `defence` read the nearest guard's ships times `q` on each side, so the front still works until step 9. `strength`, `appraise`, `believe` and `Intel` carry ships, guns (zero until step 9) and a believed `q`; contact keeps `Mil`. `sizeCampaign` in ships. `strip` makes a Roam fleet of ships; `takeSky` and `rest` convert. `roam` loses its cap and growth term. Enslavement: the slave's fleets become the master's guards.
+6. Portrait's military line; techstats: ships built and lost, ship-years spent building, share at want, share laid up.
+
+**Tests.** The battle core tables; a dock with `4 M 4 E` spare builds one ship a kyr and with `2 M 2 E` one per two (over 2000 ticks, tolerance); a ship's build draws four times its keep whatever the tick; a people at its want builds nothing; a laid-up fleet does not fight, loses about one in ten per kyr, and is manned at the current level; learning a weapons node raises `q` next tick with the same ships; a horde with no grazing thins. `TestDeterminism`.
+
+**Gate.** Tests; batch. **Batch:** ships per people at zenith (a handful to a few dozen); share of peoples laid up (a minority in the youth, more in the waning); wars and worlds taken within twice seed noise, since the bridge keeps the old front.
+
+**Commit.** `Ships: Military as quality, ships as a count built at docks and kept on flow, one fleet object, laying up and rot`.
+
+## Step 9: Battles, guns, garrisons, muster, nomads
+
+Ships stages 2 to 4.
+
+**Reads.** `ships-and-garrisons.md`: Garrisons; Guns; The battle at a world; The front becomes reach; Nomads; Implementation notes (the rest). Code: `war.go` (`strikes`, `strike`, `defence`, `takeWorld`, `homeFalls`, `drain`), `expedition.go` (`campaign`, `resolve`, `station`, `turn`, `arrive`), `nomad.go` (`hitFleet`), `civ.go` (`build`), `council.go`, `internal/tech/tech.go` (`Structure`, `orbital_weapons`).
+
+**Build.**
+1. Guns: `tech.Structure.Guns`; `defences` gets `Guns 3`, `Mil 0`, plus one per weapons era above the node; `silos` on `orbital_weapons` with `Guns 2`, no repair during a siege; `Civ.Guns map[int]int` standing per star; `dig(c)` raises silos at 1 per kyr at home and 0.3 at a colony; repair one per kyr in the civ tick when no campaign fleet is in the sky; `build` caps both per star.
+2. `battle.go` in history: `defence(e, t)` returns guns, guard and relief at `t` times `quality(e)`; `battle(x, t)` replaces the roll block of `campaign`, `strike` and `turn`: the core's roll and losses, the defender's losses on guns first then fleets in proportion, withdrawal to the nearest own holding in a hop else an empty star else home, taking a world with nothing in its sky without a battle, a world with a gun standing never taken; one battle per tick at a world. `strikes` and the level attack go; `hitFleet` goes; the "war of fleets" line goes; a war with no fleet on the way and none at base drains double.
+3. `garrison.go`: wants per holding as the proposal's score through `mind.Garrison`; one move per council; a `Guard` fleet in flight with `Star` the holding. `muster(c, star, n)`: a pending order, guards move, the campaign launches when the guard at `star` has `n`; stands down if `need` no longer holds.
+4. Nomads: `takeSky` turns guards to Roam; a settled people strikes a horde by a campaign to a base; `Quality + 2` goes.
+5. Lines: garrison sent, taken with an empty sky, held behind the guns, grid broken and repaired, muster, laid up and manned again, a dock's first ship. techstats: battles by outcome, won by the side with fewer ships, garrison moves, worlds struck with an empty sky.
+
+**Tests.** Two silos hold against one ship at equal arts about nine times in ten and against three about one in eight over ten thousand runs of the core, and against one ship four levels better about one in three; a silo is not repaired during a siege and is re-dug after; an empty sky is taken without a battle and leaves no field; guns absorb before a guard and a guard that lost nothing stays; a guard that lost one withdraws to the nearest own world in a hop; a world with a gun standing is not taken; a broken grid repairs a gun per kyr; a muster completes at ship speed and stands down if need is no longer met; a war with no fleet drains double. `TestDeterminism`.
+
+**Gate.** Tests; batch, and the 800-star crowding check. **Batch:** wars end by capitulation or peace at roughly the old shares; worlds taken per war within twice seed noise; the share of battles won by the side with fewer ships is common at two levels' gap and rare at none; sieges of several ticks appear.
+
+**Commit.** `Battles: guns and silos, one battle a tick at a world, withdrawal, garrisons by want, a real muster, hordes on the shared rule`. Mark `ships-and-garrisons.md` Implemented.
+
+## Step 10: Sightings, wrecks, interception, pickets
+
+Fleet-interception minus the sighting term.
+
+**Reads.** `fleet-interception.md`: Seeing; Meeting in the dark; Losses (only the ships-and-wrecks parts still standing after ships); Wrecks; Pickets; What the physics gives; Implementation notes. Code: `expedition.go` (`watchSky`, `fleetSeen`, `tickExpeditions`, `wouldTurn`), `intel.go` (`watchRange`), `legacy.go`, `find.go` (`discover`, `attemptWield`), `explore.go` (`survey`), `internal/tech/tech.go` (`Structure`, `Node.Structure`).
+
+**Build.**
+1. `tech.Structure.Watch`; `Node.Structures []string` replaces `Structure` (keep a `Structure()` accessor for the first); `observatory` on `orbital_habitats`, capped at one; `watchRange` drops the grid and swarm rows; `eyes(o) []eye{star, radius}` from holdings, works at any star, fleets at base, fleets in flight, pickets.
+2. `sighting.go`: `Sighting` type, `Civ.Sightings map[int]*Sighting`; `timetable(x)` on launch and on a nomad hop: per people the earliest line-sphere entry year over its eyes, scaled by fleet size and drive; queued as an event at that year; a new eye checks fleets in flight. Core `battle.Entry(line, sphere) (year, ok)` pure geometry in `internal/battle` or a `geom.go` in history with no world state. Sightings forwarded to pact members by the intel rule, always to a member whose world it is bound for; dropped if unfathomed once step 11 lands.
+3. `field.go`: `LegacyKind Field`, `Legacy.Wrecks, Derelicts`, `At`, `Adrift`; `leaveField(loser, ships, star, at)` merging by star and maker; wear rates; `find` admits fields with ships; `discover` zeroes seal for a field; `attemptWield` launches the salvage fleet home, `Civ.Salvage` added in `recompute` and decaying at 0.1 per kyr. Every ship lost in any battle goes to a field.
+4. Interception: `Kind Intercept`, `Quarry`, `Meet`; `intercept(o, s)` feasibility (64 samples) and sizing from ships' `sizeCampaign`; `meet(x)` fights on the battle core with no world behind either side; `turnBack` to the back hemisphere; `tickExpeditions` resolves meetings before arrivals in year order. `FIntercept` (Deed 1 winner, Woe 1 loser).
+5. Pickets: `Picket bool` on a Scout of one ship, tour 20 kyr; `picket(c)` beside `survey` with the policy as written. The seen scout: summons and a grudge of 0.5.
+6. Lines and techstats' Sightings section.
+
+**Tests.** Every ship lost in a battle is in a field by the next tick with the rolled split; a second battle at a star by the same loser grows the field; a surveyor whose line passes 0.3 ly from an adrift field finds it and one at 2 ly does not; a field at Ruin yields no ships; a wielded field's ships decay to nothing in ten thousand years; an observatory at a held world sees a fleet of two levels forty light years out and the world alone does not; a mine at a stranger's belt sees a fleet through that star and nothing a light year off; a torch at 4 yr/ly with 30 ly of warning yields no meeting from a holding 20 ly off the line; a slow fleet seen 5 ly out is met by a holding 3 ly from the line; a fleet that loses the meeting lands at a star with a negative dot against its old heading or at `From`; a picket at the midpoint sees a fleet a world would not. `TestDeterminism`.
+
+**Gate.** Tests; batch. **Batch:** share of fleets seen before arrival by drive (most slow fleets, few torches); intercepts feasible, launched, met; if slow fleets are nearly always met and early wars go all to the defender, note it and leave the tuning to step 19.
+
+**Commit.** `Sightings: eyes on worlds, works and fleets, sightings on the fleet's timetable, interception in the dark, wrecks as remains, pickets`.
+
+## Step 11: Wisdom
+
+Everything in wisdom except the broker term and the worth noise on contracts, which land at step 12.
+
+**Reads.** `wisdom.md` (all). Code: `levels.go`, `dials.go`, `contact.go` (`meet`, `hearing`, `encounter`, `contacts`), `pact.go` (`tickMessages`, `proposePact`, `answerPact`), `appraise.go`, `council.go`, `find.go` (`discover`), `war.go` (`peace`, `yield`), `civ.go` (`darkAge`), `lore.go` (`monster`, `regard`), `internal/tech/tech.go` (`Node`).
+
+**Build.**
+1. `Civ.Wis` derived in `recompute` after `Soc`: `wisTable` for traits, profile terms (`Profile.Wis` add: unconscious −1.5, planetary +1, parasite +0.5, eldritch +1 at step 16), `tech.Node.Wis` on the ten nodes, experience over `c.Lore` (woes and follies as subject, +0.1 each, cap 2), renaissances, Communion, the Sight, the cycle, ossified (step 15), vassal and slave. Core `wisdom(in wisInput) float64` pure.
+2. `wisdom.go`: `Civ.Fathomed`, `FathomTried`; `fathom(c, e)` roll as written with the adjustment table; `monster(c, e)` reads unfathomed; `meet`, `hearing`, `encounter` roll both ways before `consider`; a `contacts` pass runs retries, making-understood and unpaid brokering (shared pact or confederate); `appraise` adds spread when unfathomed; `tickMessages` drops messages from an unfathomed sender; `proposePact`, `peace`, `yield` need mutual fathoming; the truce path the suer's side; a war between two unfathomed peoples cannot end by peace; `darkAge` forgets each fathoming at 0.3; kin (step 15) fathom at once, so leave a `w.kin(a, b)` stub that returns false until then.
+3. Judgment: the tail shrink in `appraise`, the grudge shrink in `bar`, the compulsion shrink in `council`, the vengeful `Acted = High` only below Wisdom 7, the Find's weights and the look-before-the-leap check, `answerPact`'s score through folly noise.
+4. `FFathomed` (Bond 1), `FBrokered` (Deed 1); portrait words at the ends; techstats' Wisdom section.
+
+**Tests.** Two cousins (a branch of a people) fathom each other at meeting; a difference-6 pair on a fixed seed stays unfathomed 50 kyr and then goes one-sided, and the taught side follows within 20 kyr; a hostile one-sided people does not teach; a broker cuts the mean time to fathoming over a hundred seeds of the core; a war between two unfathomed peoples does not end by peace; a people at Wisdom 9 with a Sleeper seals at least four times in five over a hundred runs; a message from an unfathomed sender is dropped. `TestDeterminism`.
+
+**Gate.** Tests; batch. **Batch:** the share of pairs that never fathom each other is small but not zero; the lifetime spread does not move (Wisdom reads into no filter); trade opens later on average.
+
+**Commit.** `Wisdom: a fourth level, fathoming as a state between met and understood, judgment that acts nearer the estimate`. Mark `wisdom.md` In Progress (the broker term is left).
+
+## Step 12: Contracts and mercenaries
+
+With the `sighting` term from sightings and the `broker` term and worth noise from wisdom.
+
+**Reads.** `contracts-and-mercenaries.md` (all); `fleet-interception.md` Selling a sighting; `wisdom.md` Brokers (the contract paragraph) and Judgment 4. Code: `pact.go` (`Message`, `send`, `tickMessages`, `answerPact`, `betray`), `expedition.go` (`launch`, `station`, `turn`, `resolve`), `war.go` (`yield`, `capitulate`), `flow.go` (`order`), `trade.go`, `research.go` (`learn`, `canPursue`), `sighting.go`, `wisdom.go`.
+
+**Build.**
+1. `contract.go`: `Contract`, `Term`, `TermKind` as a registry: `termKinds[kind] = termDef{worthTo, worthFrom, start, tick, done, lapse}` so each kind is one entry; `World.Contracts`, `Civ.Contracts`, `Expedition.Contract`. `worth(c, term) float64` in `mind` dispatches through the registry and applies wisdom's folly noise; margins by honour, greed, fixation, morality's crime, xenophobia.
+2. Offers: `MsgOffer`, `MsgAnswer`, `MsgTeach`; the buyer's want order (guard, strike, node, rarity, access, flow) at 0.05 per kyr (0.15 greedy or holding); seller selection; what it pays; `answerOffer`. The `word` category in `flow.Order` placed by honour. Breaking after two ticks undelivered through `betray`; bought off; lapsing; tribute at `yield` and `capitulate`; the mercenary offer at 0.02 × want share × spare fleet share; the sellsword name in the telling; grudge on the seller at half.
+3. The `sighting` term: offered when the honour rule allows, priced by remaining crossing, sent on payment at light lag; a fleet intercepted after a sale gives the owner the seller's name at 0.5 and a betrayal of 1 and a grudge of 2.
+4. The `broker` term: a brokered attempt at 0.1 per kyr while running; done on fathoming; lapses at 30 kyr or when the broker stops fathoming either; xenophobes never sell it; at war with the target never.
+5. `Civ.Taught map[string]int` for the telling of who taught whom. Facts `FHire`, `FTaught`, `FStrikeBought`, `FBoughtOff`, `FTribute`; the Contracts section in techstats; `Tally.Hired, Sold, Broke`.
+
+**Tests.** An offer with a positive margin is accepted and a guard fleet arrives and stands; a shed flow breaks the contract after two ticks and writes a betrayal; a faithless guard is bought off and turns; tribute is written by a defensive winner and worlds are taken by a conqueror; a teach term for a node the buyer cannot pursue lapses; a sold sighting of a pact member's fleet is refused by the faithful and offered by the faithless; a broker term ends when the buyer fathoms the target. `TestDeterminism`.
+
+**Gate.** Tests; batch. **Batch:** contracts running per people-pair at zenith is a small number, not zero; bought-off guards are rare; tribute appears in a share of yields.
+
+**Commit.** `Contracts: a timed term for a term, mercenaries, tribute, sold sightings and paid brokers`. Mark `contracts-and-mercenaries.md`, `fleet-interception.md`, `wisdom.md` Implemented.
+
+## Step 13: Plagues: the object, spread, memetic plagues, reservoirs
+
+Plagues stages 1 to 4.
+
+**Reads.** `plagues.md`: The object; Birth; Medicine in the tree; Spread; The toll; The cure; What it writes; What goes; Implementation notes (first six bullets and stages 1 to 4). Code: `filters.go` (the `plague` filter and its outcomes, `ambientFilters`), `contact.go` (the 30% trade contagion, `infection`), `research.go`, `levels.go`, `lore.go` (`readWalls`, `testament`), `legacy.go`, `civ.go` (`settle`), `war.go` (`takeWorld`), `pact.go` (`tickMessages`), `internal/names/names.go`, `internal/tech/tech.go`.
+
+**Build.**
+1. `internal/plague`: `Plague{ID, Name, Kind, Born, Origin, FirstHost, Contagion, Lethality, Conscious, Engineered, Band}`, `New(r, kind, firstHostName) Plague` with the name tables (`names.Plague` moves here or stays in names; pick names and import it), `BirthChance(base, factors) float64`, `CureMargin(level, ladder, roll, c, dirt, partnerCured) float64` with the three bands, `WorldToll(r, l) bool`, `Catch(r, c, weight, hygiene) bool`. All pure and tested here.
+2. `tech`: the seven ladder nodes and their `Desc` lines; `bioLadder` and `mindLadder` lists; `Node.Ladder` marker. `bodily_sovereignty` and `sealed_minds` as milestones.
+3. `plague.go` in history: `World.Plagues`, `Civ.Infections map[int]*Infection{Since, From, Contained}`, `Civ.Immune`, `World.Reservoir map[int]{Plague, Until}`, `Legacy.Plague`; a `plagues` phase after `messages` and before `civs`: births by the sanitation factor (reads working ladder rungs, shed uses, sieges from step 9's campaign-in-sky, dark ages, taken worlds, the Wars of Faith, a beacon heard), cure rolls, tolls (worlds dark or gone over; levels, morale, research, income through `direct`), then spread on each channel where the contact already happens (trade links with and without goods, occupation, settling near, resting, meeting, messages read, signal). Suspicion, refusal (all messages from a suspected sender) and embargo (through trade's willingness), `FRefused`. Cults from a memetic world going over (0.4) as a branch people carrying the idea, immune. Immunity inherited by branches, uplifts and successors. Reservoirs on emptied worlds and walls on testaments; the Find's reading and `settle`/`takeWorld` wake them; dread extends to remembered plagues. The quarantine creed from twenty contained ticks.
+4. Remove the `plague` filter, the trade contagion and `Civ.Plagued` (`appraise` reads any raging infection with `l ≥ 0.2`). Machine, planetary, hive, unconscious factors read the profile (`Profile.PlagueBio`, `PlagueMeme` multipliers, 0 meaning immune).
+5. Facts (`FPlague`, `FPlagueGiven`, `FPlagueWorld`, `FCured`, `FRefused`, `FBelieved`), lines, the wildfire line, the aftermath's Plagues section, the portrait line, the gazetteer's reservoirs and walls, techstats' Sickness section.
+
+**Tests.** Core: an `l = 0.9` plague ends a four-world people within five ticks uncured at the median over a hundred runs; an `l = 0.05` one lasts fifty ticks with no world lost at the median; a cradle's birth rate against an era-3 people's with the ladder paid is about 250 to 1; a people with bodily sovereignty bears none. World: a contained host offers nothing; a refused message carries nothing; a reservoir infects a settler at `c`; a machine people never catches a biological plague and catches a memetic one at twice the rate; a cult is immune and a carrier; a testament written while infected carries the plague to its reader. `TestDeterminism`.
+
+**Gate.** Tests; batch, and the 800-star check. **Batch:** in a 400-star run a third to a half of cradles meet a plague in their first half million years; plague is the second early killer after Overshoot; one or two wildfires per age at 400 stars, several at 800. Tunable: base birth rates, `l²`, rung strengths, hygiene.
+
+**Commit.** `Plagues: sickness as an actor with a name, born of dirt, carried on trade and messages, fought each tick, remembered in reservoirs and on walls`.
+
+## Step 14: Plagues: parasites as plagues, conscious plagues, engineered plagues
+
+Plagues stages 5 and 6.
+
+**Reads.** `plagues.md`: Engineered plagues; Parasites; Implementation notes (the Weapons and Parasites bullets, stages 5 and 6). `kinds.md`: Substrates (parasite row) for what the substrate keeps. Code: `contact.go` (`infection`, `revolt`), `war.go` (`ride`, `takeWorld`'s parasite case, `homeFalls`), `filters.go` (the `infection` and `revolt` filters), `civ.go` (`spawnCiv`), `internal/species/sub_parasite.go`, `flow.go`, `plague.go`.
+
+**Build.**
+1. Parasites onto the plague rules: `Civ.Own *Plague` rolled at birth; the toll's world-over becomes the converted host world; the home going over is `ride`; `tryRide(c, e, channel)` as the council's choice through `mind.TryRide` on every channel event under the postures as written, as an engineered attempt (`attempt`); the host's cure contest replaces the Infection filter; a contained host burns as now; a ridden people's revolt is the contest at +4; reservoirs and walls for riders; conscious plagues at 1 in 20 with `wake(plague, host)` spawning a parasite people through `GenerateWith(Parasite, ...)` when the first host's home goes over; born riders at 1 in 100 cradles (the parasite substrate's cradle weight goes to zero; `spawnCiv` rolls the infection and spawns host and rider, the host ridden); a parasite with no host dies that tick; a parasite bears and catches no plague; its capacity is its hosts' sums and it reserves first.
+2. Engineered plagues: the six weapon nodes with `Filter: "containment"`; the `containment` filter with the vial scar (locks the ladder above; never uses); `Civ.Weapons map[string]*plague.Plague`; `makePlague(c, target, aim)` from the council's war and grudge pass, shaped by the aim, costing a use under arms, taking a tick; `attempt(c, e, p, channel)` shared with parasites: sneaked into goods or a message, one roll, detection by rungs, `FPoisoned` (Crime 4) on taking or catching with the war cause, the reckoning, allies, pacts broken; tailored plagues catch only the target's kin; the leak while held at `0.0005 × dirt` per kyr, ten times if the programme is shed; the breakout at discovery leaves the maker host 0 and immune only if the node grants it; `FWoke`, `FHorrorMade` for a plague that wakes on its maker.
+3. techstats: parasites by origin (born, woke, made), attempts, detections, breakouts.
+
+**Tests.** A crude weapon's breakout leaves its maker a host and a tailored one's does not; a tailored plague never spreads past the target's kin over a run; a parasite that never tries writes no `FPoisoned`; a conscious plague cured before the home goes over spawns nothing; a parasite whose last host dies dies the same tick; a parasite never bears or catches a plague; a plague that empties a parasite's only host ends the parasite; a born rider's host starts ridden. `TestDeterminism`.
+
+**Gate.** Tests; batch. **Batch:** one or two parasites per age at 400 stars from plagues past three hosts; engineered plagues made by a minority of peoples at war at era 2 and above; breakouts rare.
+
+**Commit.** `Plagues: parasites as plagues that choose when to try, plagues that wake into peoples, engineered plagues with a breakout filter and a leak`. Mark `plagues.md` Implemented.
+
+## Step 15: Ossification
+
+All of ossification.
+
+**Reads.** `ossification.md` (all). Code: `filters.go` (the `weight` filter at its `def`, `adjust`'s weight case, `ScarOssified`, the three `schism` callers), `civ.go` (`darkAge`, `forget`, `schism`, `contract`, `endCiv`, `expandMul`), `nomad.go` (`splitFleets`), `research.go`, `appraise.go` (`bar`, target of opportunity), `lore.go` (`regard`, `wear`, `inherit`), `contact.go` (`meet`), `legacy.go` (`kinship`), `war.go` (`takeWorld`, `declare`), `pact.go` (`leavePact`), `wisdom.go` (`w.kin` stub), `dials.go`.
+
+**Build.**
+1. `ossify.go`: `Civ.Stiff`, `Ossified`, `Still`, `Line []int`, `Claim map[int]bool`; `stiffGrowth(in) float64` pure over the growth table (profile terms: `Profile.Stiffens` false for hive and unconscious, multipliers for machine, planetary, `swarming`, evolver 0.7, replicator 0 later); the lowering hooks (`master`, `uplift`, `spawnCiv` with a parent, first `meet`, `endWar` at peace, `loseSystem`, miracle gain); `tickStiff(c)` at the Weight's place; the `ossification` filter replacing `weight` with `Diff = 4 + Stiff + 0.5 × Renaissances`, Scar setting `Ossified` (a second Scar is a Decline), Decline choosing civil war or dark age; research and expansion multipliers; the council's preference past one; target of opportunity at 1.5; foresight from `deep_governance` or `KnowsCycle`.
+2. Off ticks: `tickCivs` skips the council, `expand`, `research`, `build`, launches, pact offers and unsolicited messages for an ossified people on odd ticks by `(Now/1000 + ID) % 2`; on ticks halve research and double build and muster times. Renaissance, civil war and dark age clear `Ossified`.
+3. `sunder.go`: `sunder(c, fate, cause)` hands holdings over without traces and copies every other people's grudge (×0.5), truce (whole), intel, watched and monster entries onto each heir; `civilWar(c)`: heirs by size (two below six worlds, two or three above), deal worlds with works, garrisons, wielded, sources; fleets, voyages, slaves and vassals, ridden hosts; wars copied per heir; pacts dropped; tree in full then `forget(nc, 0.1)`; miracles with the works; `inherit(nc, c, 0)`, dials and scars copied, `Line`; pairwise `declare` with cause "the sundering" and grudge 3; `Claim` on all; fate `Sundered`; `FSundered`. The three `schism` callers and `splitFleets` call `civilWar`.
+4. Dark age: `darkAge(c, why)` takes depth from the formula; `forget(c, depth)`; colonies lost at depth; the third-fatal branch goes; stiffness reset; after `recompute`, `shatter(c)` if reach is under ten and worlds > 1: `sunder(c, Shattered, ...)`, one `spawnCiv` per world up to eight (the rest abandoned), reduced tree, `inherit(nc, c, 1)`, works, relic and garrison left; `FShattered`.
+5. Kinship: `w.kin(a, b)` from `Line` (shared ancestor or one in the other's line), replacing the stub; `regard` returns self for the line and friend for kin with grudge ≤ 0.5 and no monster reckoning; the wearing pass keeps the line's tales as its own; the Find's kinship reads `Line`; `meet` for kin with no grudge opens trade at once, no first-contact council, a defensive pact at doubled odds; `bar` never wants a kin without a grudge or a claim; kin fathom at once; claims read at `bar` (the vengeful bar) and `takeWorld` (`FReclaimed`); claims clear when the sundering tale wears to myth.
+6. Grudges decay ×0.995 per kyr, cleared below 0.05, in the per-tick pass; a sundering quarters the heirs' grudges against others.
+7. Remove the Weight, `ScarOssified`, `schism`, `splitFleets`, contraction and extinction by age. `FRenaissance`, `FSundered`, `FReclaimed`, `FShattered`; lines; the portrait's stiffness word and parent; the aftermath's Lines; the gazetteer's claims; techstats' Ossification section with the share of peoples ended by cause.
+
+**Tests.** The growth table and the lowering hooks; an ossified people banks no research and launches nothing on off ticks and half on on ticks; a second near miss breaks; renaissance, civil war and dark age all clear `Ossified`; a people at Stiff 3 faces within a few hundred kyr; civil war deals every holding to exactly one heir and every heir has a world; the old people ends `Sundered` with no traces left and no heir sharing its ID; heirs are pairwise at war with claims; others' grudges against the old people are on every heir at half; a shard's regard for its line is self; an heir holding the whole old realm has no claims; depth formula bounds; shattering only when reach is lost and worlds > 1, capped at eight; shards are kin and regard is friend; kin three steps apart are still kin; a grudge above the enemy line suspends the warmth and its decay restores it; grudges decay and clear; claims clear at myth; no `endCiv` and no `contract` reachable from the ossification filter (a run of a small world with the filter forced records no age deaths). `TestDeterminism`.
+
+**Gate.** Tests; batch. **Batch:** "died of nothing" and "collapsed under their own weight" go to zero; peoples ended by cause shows wars, plagues, horrors, cosmic and the named filters; civil wars and shatterings appear a few times per world; the count of peoples rises (heirs and shards) and the lifetime buckets shift younger without the age going short.
+
+**Commit.** `Ossification: stiffness that shows before it breaks, renaissance, true ossification, civil wars into heirs with claims, dark ages of variable depth, the shattering, kinship, grudges that decay; nobody dies of age`. Mark `ossification.md` Implemented.
+
+## Step 16: Kinds: modifier rules and the eldritch pool
+
+Kinds stages 2 and 3, and the new generator odds switched on.
+
+**Reads.** `kinds.md`: Substrates (eldritch paragraph); The eldritch pool; Modifiers (all rows); Rules by substrate and modifier across the drafts; Output; Implementation notes (the eldritch, planetary, hive, unconscious bullets; stages 2 and 3); Open questions (eldritch levels, deepening). Code: `internal/species/registry.go` and the entry files, `generate.go`; history: `dials.go`, `levels.go`, `filters.go` (`face`, the faith and silence filters), `war.go` (`strike`, `homeFalls`), `expedition.go` (`launch`), `civ.go` (`expand`), `lore.go` (`takeToHeart`), `ossify.go`, `morality.go`, `plague.go`, `research.go`, `flow.go`, `horror.go` (`wakeElder`, for the waking's shape), `sunder.go`.
+
+**Build.**
+1. Switch the generator to the proposal's first setting (92/6/2, the tilt table) for cradles and the deep-pass `Draws` (55/25/20) in `ages.go`; keep the legacy table behind a species `Options.Legacy` for a test.
+2. Profile fields the modifier rules need, set on the entries: hive (`Stiffens false`, `CivilWars false`, `PlagueMeme 2`, voice tilt ×5, org group skipped, the Distance's decline as `cutOff(c, world)` spawning a kin hive on the far world through `sunder` with one holding, the seat's rule on a lost home); unconscious (`HoldsGrudges false` guarding the grudge writes and `takeToHeart`, `Morale` pinned at zero, faith, silence and ossification skipped in `face`, morality forced amoral, difference +2 against any conscious people, `PlagueMeme 0`); planetary (`Civ.Neighbourhood` radius, no expeditions and no fleets, home defence multiplier, strikes inside the neighbourhood routed to `face(victim, "waking", adj)` after a demand through the council for a conscious one, worlds capped, expansion a tenth, no fields and no works, its body as a source, the nomad way at a twentieth); evolver's existing bonuses moved from the old kind (biology half price, industry dear, living ships, the Brood easier, Overshoot harder); machine's dark age forgetting half and a shattering with the whole tree; the difference terms (substrate 2.5, eldritch +3, unconscious +2, morality from step 7).
+3. `internal/species/pool.go`: the fourteen powers (key, name, domain, grants as a profile delta, filter key); `Species.Powers`; an eldritch people draws one to three at birth; `eldritch.go` in history: `levelOf` reads the pool for an eldritch people (one level per power in its domain); research skipped; `deepen(c)` at the decision's rate; `appear(c)` for the second presence; the tithe and the making as hooks the flows pass calls; the pool's filters route through `face` with the node's key; the sight, the voice, the door, the unmaking, the shell, the long sleep (dormancy: sleeps when will is spent, wakes when disturbed), the mirror, the hunger, the wound; a miracle from birth at ten times the rate; wisdom +1 base; no fields, works, upkeep or yields; never trades; may hold a pact; the eldritch sense table.
+4. Portrait sentences per modifier and the powers; arising line names a non-biological substrate; deepenings as legend lines and facts; techstats' substrate-by-modifier table.
+
+**Tests.** A hive never has stiffness above zero across a full small-world run; an unconscious people ends a run with an empty grudge map and morale zero; a planetary people never launches an expedition and never holds more than the cap; an eldritch people never has a colony ship in flight and never researches, and gains powers over a long run; a cut-off hive world becomes a kin people; the cradle distribution over a hundred thousand draws matches the proposal's per-thousand figures within a fifth. `TestDeterminism`.
+
+**Gate.** Tests; batch, and the 800-star check. **Batch:** the substrate-by-modifier table: hives, evolvers, living worlds, eldritch and machines in roughly the proposal's shares; an eldritch thing reads as neither trivial nor unbeatable in the war stats (if it reads as young, revisit the eldritch-levels decision here and record it); age length and the count of peoples within twice seed noise.
+
+**Commit.** `Kinds: modifier rules through the profile, living worlds that warn before they wake, hives that sunder, the unconscious, the eldritch with a pool of powers`.
+
+## Step 17: Kinds: horrors dissolved, the transmitter, replicators, sleepers
+
+Kinds stages 4 and 5.
+
+**Reads.** `kinds.md`: What everything now becomes; The transmitter; Modifiers (replicator row); Implementation notes (horrors, transmitter, sleeper, replicator bullets; stages 4 and 5). Code: `horror.go` (all), `types.go` (`Horror`, `HorrorKind`, `World.Horrors`, `Held`), `sim.go` (`updateHazard`, `life`), `filters.go` (the machines, replication, brood, door, signal and incursion filters and every `spawnHorror` caller), `find.go` (`unleash`), `ages.go` (sleeper and threat legacies), `beneath.go` (`leak`), `miracle.go`, `lore.go` (`factH`, `horrorName`, `FHorror*`), `telling.go`, `legends.go` (horrors in the aftermath), `trade.go` (the Manna loose), `plague.go`.
+
+**Build.**
+1. Replicator: profile (`Rate 0.2`, never trades, no yields, the Brood and swarm filters never faced, a monster to everyone, dormancy tilt ×10); the conversion of held worlds' O or M into ships at a set rate in the flows pass; a won world stripped and held empty; peace only by exhaustion; dormancy when will is spent, waking when someone settles inside reach or the Find unleashes it (shared with the long sleep).
+2. Made peoples: Thinking Machines' decline makes a machine people every time it does not pull the plug (the rogue-mind horror goes); Self-Replication's decline makes a machine replicator at the eaten world with the old people extinct; the Brood's decline a biological replicator; the legacy "machines that sleep in the rubble" a dormant replicator people; unleashed industry and weapons artifacts wake one; the Manna loose becomes a biological replicator. All through `GenerateWith` with the story's fixed parts.
+3. `transmitter.go`: `Legacy.Payload` (corruption 9 in 10, seed 1 in 10) drawn at making; made by the Door's decline, a thin wall, an unleashed exotic artifact, a deep-pass legacy, an eldritch door, a cult; range by the listener's era; fires on listeners that are era two or more, hold within range, are not sealed of mind, not unconscious, not eldritch, not anti-memetic; a `transmitters` phase replacing `tickBeacon`: corruption runs the Signal (scar and decline also seed a memetic plague of contagion one), a seed runs the cure contest against a conscious memetic plague and wakes a mind-rider parasite through `wake`; the decline's new transmitter at the listener's home.
+4. Sleeper: `ages.go` and the Door's scar spawn an eldritch people via `GenerateWith(Eldritch, Planetary|Unconscious)` with the long sleep, asleep until disturbed; the waking is the planetary strike on everything in the neighbourhood; the Sleeper legacy points at the people.
+5. Remove `Horror`, `HorrorKind`, `World.Horrors`, `Held`, `horrorTake`, `tickHorrors`, the four tickers, the incursion filter, `names.Horror`, `FHorrorMade/Strike/Beaten` (strikes become ordinary war facts; the making becomes `FUnleashed` or the new people's arising); `updateHazard` counts replicator-held worlds, live transmitters and the tithe; dread reads remembered monster peoples and transmitters; `arrivals`' `Held` check reads owners; the aftermath lists the eldritch, the sleeping and the replicators under "What is still there".
+6. techstats: transmitters made, listeners lost, seeds that woke; replicators born and what ended them.
+
+**Tests.** A Thinking Machines decline yields a machine people every time over a hundred forced runs; a replicator converts a world's yield into ships and nothing else; a replicator makes peace only by exhaustion; a sleeper wakes when a settler lands inside its neighbourhood and sleeps again when its will is spent; a transmitter with a seed wakes a parasite when the listener's home goes over and a corruption runs the Signal; `updateHazard` rises with replicator worlds and live transmitters; nothing references `Held`. `TestDeterminism`.
+
+**Gate.** Tests; batch, and the 800-star check. **Batch:** the aftermath comes as it did (age length, standing, remnants within twice seed noise); replicators end a few peoples per world; sleepers strike a few times per world; hazard's curve resembles the committed batch.
+
+**Commit.** `Horrors dissolved: replicators and rogue minds as peoples, the beacon as a transmitter with a corruption or a seed, sleepers as eldritch worlds that sleep`.
+
+## Step 18: Kinds: evolver drift, anti-memetics, hunts
+
+Kinds stages 6 and 7.
+
+**Reads.** `kinds.md`: Modifiers (evolver and anti-memetic rows); Fighting what cannot be seen; Implementation notes (evolver and anti-memetic bullets; stages 6 and 7); Open questions (hunt threshold). Code: `internal/species/mod_evolver.go`, `mod_antimemetic.go`, `generate.go`; history: `contact.go` (`meet`, `hearing`), `explore.go` (`read`, `chart`), `sighting.go` (`fleetSeen`, `timetable`), `pact.go` (`send`, `tickMessages`), `lore.go` (`fact`, `spread`, `hold`, `scapegoat`), `war.go` (`declare`, `front`), `council.go`, `dials.go`, `plague.go` (the cure for an evolver), `civ.go` (`darkAge`), `internal/tech/tech.go`.
+
+**Build.**
+1. Evolver drift: `drift(c)` hook per tick at a slow rate: gain, lose or replace a bio, sense or world trait; world traits added per world type held past a threshold; `Civ.Drifts` read by `difference` (+0.25 per drift since the other fathomed it, tracked as `FathomedAt`) and by the plague cure (a drift while raging is a cure roll at +3); "they have changed again" as a fact and a line.
+2. Antimemetic Resilience: a computation node, era 3, needs the mind ladder's first rung; `perceives(c, e)` true unless c is conscious, e is anti-memetic and c lacks the node; guarded in `meet`, `hearing`, `read`, `fleetSeen`, `deliver` and `learn`; facts with an anti-memetic party get `Doer = -1` on the victim's side and a `Where`; the chronicle keeps the name; a dark age that forgets the node forgets the people (tales go doerless, wars become hunts).
+3. `gap.go`: `Civ.Gaps []Gap{Centre, Radius, Losses, Since, Will}`; a `ledger` pass over doerless facts within the window; `mind.Deduce` opens a gap at the threshold (three losses inside 20 ly within 50 kyr); a hunt is a war against a region: the war engine takes a gap as a target, strikes at stars inside it on whatever holds them, battles as any battle, a won world taken with a doerless fact, a lost battle another gap that tightens the region; ends when will is spent or the region has been empty long enough; the anti-memetic side sees the hunt and may fight, move or stop; its peace offers are dropped by the conscious side. Facts for the deduction and the hunt; scapegoating may still hang doerless woes on somebody.
+4. techstats: hunts declared and what they found; evolver drifts per people.
+
+**Tests.** An evolver's trait set differs after a long run and its difference to an old acquaintance grows by 0.25 per drift; a conscious people without the node never has `Met` set for an anti-memetic one and with the node does; an anti-memetic people's fleets are never sighted by a conscious people without the node; a hunt is declared after three doerless losses in one region and not after two; a hunt's strike lands on the anti-memetic people's garrison and is fought; a dark age that forgets the node turns the war into a hunt. `TestDeterminism`.
+
+**Gate.** Tests; batch. **Batch:** anti-memetic peoples appear in a share of worlds and are hunted in some; evolvers drift a few times per million years; nothing else moves beyond seed noise.
+
+**Commit.** `Kinds: evolvers that drift, the anti-memetic fought by the shape of the hole, Antimemetic Resilience`. Mark `kinds.md` Implemented.
+
+## Step 19: Absorb
+
+**Reads.** `DESIGN_NOTES.md` (Simulation v1, Decision log, Next steps); every proposal's Design section for what is now current; the ledger's state lines.
+
+**Build.**
+1. `DESIGN_NOTES.md`: a new "Simulation v2 (built 2026-…)" section, mid-to-high level, one subsection per system as built (One tick; Substrates and modifiers; Means: flows, sources, rarities, trade; Morality; Ships and battles; Sightings; Wisdom; Contracts; Plagues; Ossification and lines; The transmitter and what is still there), each with an *As built* paragraph from the batch. The v1 subsections that describe replaced behaviour (kinds as flavour, the Weight, the plague filter, horrors as tickers, strikes as level rolls) get a one-line pointer to the v2 subsection and their text is trimmed to what is still true. Decision-log lines for every row in "Decisions on open questions" and for each step's design. "Next steps" rewritten.
+2. Each proposal: "absorbed into DESIGN_NOTES.md § …" at the top, `Status: Implemented`, moved to `specs/proposals/done/`. This plan gets a final ledger and moves to `specs/done/plan.md`.
+3. The reference batch regenerated and committed; `reports/tech/report.md` read once end to end for anything absurd; a final tuning pass on the numbers each step marked tunable, one batch per change, recorded in the ledger.
+4. `CLAUDE.md` checked; `go vet`, `go test ./...` green; a last `TestDeterminism`.
+
+**Commit.** `Absorb: design notes describe v2 as built; proposals to done; reference batch`.
+
+**Done when** `specs/proposals/` holds nothing but `done/`, the design notes describe the current system, and the batch is committed.
+
+---
+
+## Optimisation notes
+
+- Step 1: `go test ./internal/history` takes about a minute, nearly all in `TestDeterminism` (three 200-star `Generate` runs) and `TestOneStep` (one more). Sharing one run between the two, or a `-short` mode that runs 100 stars, would cut it to a third; the full-size run should stay in the gate.
+
+For a pass after this plan. Each step appends what it saw; nothing here is acted on during the plan unless a step's Build says so. The bar for that pass is the same as the rule above: a change is taken only when the measured gain is large against the maintainability it costs, and every entry below should be weighed that way, with the profile numbers beside it.
+
+- The one RNG stream is the wall: every per-people step draws from `w.R` in civ order, so civ steps cannot run in parallel without a stream per people (seeded from the world seed and the people's ID) and a fixed merge order for anything that writes shared state. That changes every seed's history once, so it belongs in its own pass with a batch re-read.
+- `w.G.Near` and `w.G.Dist` are linear scans over all stars; a grid or k-d index at world generation would cut `expand`, `front`, `nearest`, the survey target and the sightings timetable. Measure with `-profile` first.
+- The sightings timetable (step 10) is per fleet per eye and independent: fan out per eye once a stream per people exists.
+- `recompute` runs per people per tick over the whole known tree; caching the tree sums would be exact but adds an invalidation duty on every writer; only worth it if the profile shows it high.
+- The batch tool is the parallel win that matters for tuning; keep `techstats` one goroutine per seed and add `-cpu` only if memory becomes the limit at 800 stars.
