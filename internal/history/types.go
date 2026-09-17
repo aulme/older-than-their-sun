@@ -69,11 +69,12 @@ type Voyage struct {
 // Civ is a civilisation: a species on a home world with a history.
 type Civ struct {
 	ID         int
-	Name       string
-	Species    *species.Species
-	Home       int // current seat; moves if the cradle is lost
+	Name       string           // the people's own name; a cradle people is named for its species
+	Species    *species.Species // its blood, one of w.Species; kin share it, and it changes only by a made path
+	Origin     string           // how the people came to be when not by arising: "a branch of the X"; "" for a cradle people
+	Home       int              // current seat; moves if the cradle is lost
 	HomeName   string
-	Cradle     int // the world the species arose on; never changes, and neither does the species
+	Cradle     int // the world the people arose on; never changes
 	CradleName string
 	Born       Year
 	Ended      Year
@@ -399,6 +400,7 @@ type World struct {
 	Thin      float64 // how worn the wall between this and the state beneath is; see beneath.go
 	ThinStage int
 	Civs      []*Civ
+	Species   []*species.Species // every blood that has arisen or been made, by ID
 	Horrors   []*Horror
 	Ages      []*AgeRecord
 	Cycle     *Cycle

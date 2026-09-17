@@ -39,7 +39,7 @@ func (w *World) ticks(n int) {
 // are made fit to live on as the sim does for a natural birth.
 func spawnAt(w *World, star int, sp *species.Species) *Civ {
 	w.Bio[star] = BioComplex
-	return w.spawnCiv(star, sp, -1)
+	return w.spawnCiv(star, sp, -1, "")
 }
 
 // testGalaxy is a galaxy alone, for tests that want geometry and nothing else.

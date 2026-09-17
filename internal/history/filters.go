@@ -83,9 +83,8 @@ func def(f *Filter) { filters[f.Key] = f }
 
 // traitDiff is the asymmetry: how each trait changes each filter's difficulty.
 var traitDiff = map[string]map[string]float64{
-	"hive":          {"distance": -3, "weight": -2, "beacon": 3, "silence": -1, "machines": -1},
 	"memory":        {"silence": 2, "weight": 1, "find": -1},
-	"nonconscious":  {"beacon": -3, "transcend": 2, "machines": -1, "silence": -2},
+	"swarming":      {"cosmic": -1, "beacon": 2}, // they scatter; gathered, they hear with one ear
 	"unyielding":    {"atomic": 1, "hold": -1},
 	"opportunist":   {"hold": 0.5},
 	"vengeful":      {"hold": -0.5},
@@ -143,7 +142,7 @@ func (w *World) face(c *Civ, key string, diffAdj float64) Outcome {
 		return Overcome
 	}
 	lvl := c.level(f.Levels...)
-	diff := f.Diff + diffAdj + 0.25*float64(len(c.Scars)) + 1.5*(w.Hazard-1) + c.traitDiff(key) + c.kindDiff(key) + c.miracleDiff(key) + w.lawDiff(key) + w.thinDiff(key)
+	diff := f.Diff + diffAdj + 0.25*float64(len(c.Scars)) + 1.5*(w.Hazard-1) + c.traitDiff(key) + c.natureDiff(key) + c.miracleDiff(key) + w.lawDiff(key) + w.thinDiff(key)
 	roll := w.R.NormFloat64() * 1.5
 	margin := lvl + roll - diff
 	if f.Domain != "" {
@@ -222,11 +221,11 @@ func (w *World) ambientFilters(c *Civ) {
 	if len(c.Systems) >= c.NextDrift && w.chance(0.05) {
 		adj := 0.3 * float64(len(c.Systems)-6)
 		c.NextDrift *= 2
-		if !c.miracle("ansible") && c.Species.Kind != species.Swarm && c.Species.Kind != species.PlanetaryMind { // nothing drifts when every world is in the room, or there is no centre, or it is all one mind
+		if !c.miracle("ansible") && !c.Has("swarming") && !c.Species.Is(species.Planetary) { // nothing drifts when every world is in the room, or there is no centre, or it is all one mind
 			w.face(c, "distance", adj)
 		}
 	}
-	if c.miracle("directed_evolution") || c.Species.Kind == species.MachineBorn {
+	if c.miracle("directed_evolution") || !c.Species.Profile().Can(species.Sickens) {
 		c.Plagued = false // nothing lives in them that they did not put there
 	} else if c.Plagued || w.chance(0.0004) {
 		w.face(c, "plague", 0)
@@ -501,9 +500,9 @@ func init() {
 			c.Vassal = false
 			c.Scars[ScarChains] = true
 			switch {
-			case m.Species.Kind == species.Parasite && m.Has("mindrider"):
+			case m.Species.Sub == species.Parasite && m.Has("mindrider"):
 				w.log("The %s learn to unthink the %s. What was in their heads is gone, and they are free, and never again quite trust a new idea.", c.Name, m.Name)
-			case m.Species.Kind == species.Parasite:
+			case m.Species.Sub == species.Parasite:
 				w.log("The %s find a drug that kills what rides them. They are free, and careful about their blood ever after.", c.Name)
 			default:
 				w.log("The %s rise against the %s and are free.", c.Name, m.Name)
@@ -529,43 +528,15 @@ func init() {
 	})
 }
 
-// kindDiff is the asymmetry of the kinds: what being a swarm, a world, a
-// rider, a machine or a self-made thing does to each filter.
-func (c *Civ) kindDiff(key string) float64 {
-	switch c.Species.Kind {
-	case species.Swarm:
-		switch key {
-		case "cosmic":
-			return -1 // they scatter
-		case "beacon":
-			return 2 // gathered, they hear with one ear
-		}
-	case species.PlanetaryMind:
-		if key == "plague" {
-			return 2 // one body to sicken
-		}
-	case species.Parasite:
-		if (key == "silence" || key == "weight") && c.Hosts <= 1 {
-			return 1 // an empty field is a slow death for a rider
-		}
-	case species.MachineBorn:
-		switch key {
-		case "cosmic":
-			return -1
-		case "weight":
-			return 1 // machines ossify
-		case "replication":
-			return -1
-		}
-	case species.Evolver:
-		switch key {
-		case "brood":
-			return -1
-		case "overshoot":
-			return 1 // populations are what they make
-		}
+// natureDiff is what the substrate and the modifiers do to each filter,
+// from the profile, plus the one rule that reads a people's state: an
+// empty field is a slow death for a rider.
+func (c *Civ) natureDiff(key string) float64 {
+	d := c.Species.Profile().FilterDiff[key]
+	if c.Species.Sub == species.Parasite && (key == "silence" || key == "weight") && c.Hosts <= 1 {
+		d++
 	}
-	return 0
+	return d
 }
 
 func init() {

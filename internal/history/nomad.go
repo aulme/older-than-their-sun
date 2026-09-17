@@ -105,7 +105,7 @@ func (w *World) takeSky(c *Civ, why string) {
 // what escaped: refugees under the nomad rules, without the way. Returns
 // false if nothing could get away.
 func (w *World) flee(c *Civ, lost int, cause string) bool {
-	if c.Reach < 1 || c.Species.Kind == species.PlanetaryMind || c.Aloft {
+	if c.Reach < 1 || !c.Species.Profile().Can(species.Flees) || c.Aloft {
 		return false
 	}
 	strength := max(0.5, 0.3*(c.Mil+c.Away))
@@ -415,12 +415,8 @@ func (w *World) splitFleets(c *Civ) {
 		w.log("Schism in the fleets of the %s. Half of them scatter and are not heard of again.", c.Name)
 		return
 	}
-	sp := *c.Species
-	sp.Name = names.Civ(w.R)
-	sp.Traits = append([]*species.Trait(nil), c.Species.Traits...)
-	sp.Add("branch")
-	sp.Made = "a branch of the " + c.Name
-	nc := w.spawnCiv(home, &sp, -1)
+	nc := w.spawnCiv(home, c.Species, -1, names.Civ(w.R))
+	nc.Origin = "a branch of the " + c.Name
 	nc.Master = -1
 	w.Owner[home] = -1
 	nc.Systems = nil

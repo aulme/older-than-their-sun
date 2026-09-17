@@ -5,7 +5,6 @@ import (
 
 	"worldgen/internal/mind"
 	"worldgen/internal/names"
-	"worldgen/internal/species"
 	"worldgen/internal/tech"
 )
 
@@ -346,18 +345,14 @@ func (w *World) goNative(x *Expedition) {
 		c.Away = max(0, c.Away-x.Mil)
 		return
 	}
-	sp := *c.Species
-	sp.Name = names.Civ(w.R)
-	sp.Traits = append([]*species.Trait(nil), c.Species.Traits...)
-	sp.Add("branch")
-	sp.Made = "the fleet of the " + c.Name + " that never came home"
 	home := held[len(held)-1]
 	for _, s := range held {
 		c.Systems = remove(c.Systems, s)
 		w.Owner[s] = -1
 	}
 	w.log("The fleet of the %s never comes home. At %s its captains rule as their own people.", c.Name, w.star(home))
-	nc := w.spawnCiv(home, &sp, -1)
+	nc := w.spawnCiv(home, c.Species, -1, names.Civ(w.R))
+	nc.Origin = "the fleet of the " + c.Name + " that never came home"
 	nc.Master = -1
 	for _, s := range held {
 		if s != home {

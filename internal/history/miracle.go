@@ -91,11 +91,11 @@ func (c *Civ) leapWeight(key string) float64 {
 	}
 	switch key {
 	case "ansible":
-		if c.Has("collective") || c.Has("hive") {
+		if c.Has("collective") || c.Species.Is(species.Hive) {
 			m *= 2
 		}
 	case "directed_evolution":
-		if c.Species.Kind == species.Evolver || c.Species.Kind == species.Parasite {
+		if c.Species.Is(species.Evolver) || c.Species.Sub == species.Parasite {
 			m *= 3
 		}
 	case "ftl":
@@ -180,7 +180,7 @@ func (w *World) holdDiff(c *Civ) float64 {
 		return 0
 	}
 	d := 0.0
-	if m.Species.Kind == species.Parasite {
+	if m.Species.Sub == species.Parasite {
 		// a rider is not thrown off; it is cured, and the cure is a science
 		d += 4
 		switch {
@@ -219,16 +219,19 @@ func (w *World) loseMiracle(c *Civ, key string) {
 // remake turns a people into a successor species on the same worlds, the
 // Flesh gone wrong or gone too far.
 func (w *World) remake(c *Civ, why string) *Civ {
-	sp := species.Generate(w.R, w.G.Stars[c.Home].Mult)
+	var sp *species.Species
 	if w.R.Float64() < 0.5 {
-		sp.Kind = species.Evolver
+		sp = species.GenerateWith(w.R, w.G.Stars[c.Home].Mult, "", species.Biological, species.Evolver)
+	} else {
+		sp = species.Generate(w.R, w.G.Stars[c.Home].Mult)
 	}
 	sp.Made = "what the " + c.Name + " made of themselves"
+	sp.Parent = c.Species
 	worlds := append([]int(nil), c.Systems...)
 	known := knownOf(c)
 	home := c.Home
 	w.endCiv(c, Transformed, why)
-	nc := w.spawnCiv(home, sp, -1)
+	nc := w.spawnCiv(home, sp, -1, "")
 	nc.Master = -1
 	for _, s := range worlds {
 		if s != home && w.Owner[s] < 0 {
@@ -285,9 +288,9 @@ func init() {
 			w.log("The %s change, and stay themselves. It is a matter of law with them what may not be altered.", c.Name)
 		},
 		Scar: func(w *World, c *Civ) {
-			sp := *c.Species
-			sp.Traits = append([]*species.Trait(nil), c.Species.Traits...)
-			c.Species = &sp
+			sp := c.Species.Branch() // the same people, no longer quite the same blood
+			c.Species = sp
+			w.register(sp)
 			t := species.Pick(w.R, "bio")
 			sp.Add(t.Key)
 			c.Scars[ScarChanged] = true

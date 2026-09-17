@@ -233,7 +233,7 @@ func (w *World) makerName(l *Legacy) string {
 	return "the " + w.Civs[l.Maker].Name
 }
 
-// kinship: 2 for one's own works, 1 for those of the same species, else 0.
+// kinship: 2 for one's own works, 1 for those of the same blood, else 0.
 func (w *World) kinship(c *Civ, l *Legacy) int {
 	if l.Maker < 0 {
 		return 0
@@ -242,7 +242,7 @@ func (w *World) kinship(c *Civ, l *Legacy) int {
 	switch {
 	case m == c:
 		return 2
-	case m.Species.Name == c.Species.Name || m.Species.Made == "a branch of the "+c.Name || c.Species.Made == "a branch of the "+m.Name:
+	case m.Species.Kin(c.Species):
 		return 1
 	}
 	return 0

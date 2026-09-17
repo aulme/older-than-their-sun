@@ -36,7 +36,6 @@ var dialTable = map[string]Dials{
 	"solitary":   {Loyalty: -0.2},
 	"collective": {Loyalty: 0.1},
 	"herd":       {Fear: 0.2},
-	"hive":       {Loyalty: 0.1, Fear: -0.1},
 }
 
 // scarDials is what a scar does, in a fixed order so sums are reproducible.
@@ -59,6 +58,7 @@ func (w *World) setDials(c *Civ) {
 	for _, t := range c.Species.Traits {
 		d.Add(dialTable[t.Key])
 	}
+	d.Add(c.Species.Profile().Dials)
 	for _, sd := range scarDials {
 		if c.Scars[sd.scar] {
 			d.Add(sd.d)
@@ -103,18 +103,18 @@ func (c *Civ) hostile() bool {
 	return mind.Hostile(c.posture()) || c.Has("xenophobic")
 }
 
-// difference is how alien two species are to each other: another kind
-// counts most, then the order of their societies, then senses and body,
-// then the world they came from.
+// difference is how alien two species are to each other: another
+// substrate or another shape counts most, then the order of their
+// societies, then senses and body, then the world they came from.
 func difference(a, b *species.Species) float64 {
 	d := 0.0
-	if a.Kind != b.Kind {
+	if a.Sub != b.Sub || !sameShape(a, b) {
 		d += 2.5
 	}
-	oa, ob := orgOf(a), orgOf(b)
+	oa, ob := orderOf(a), orderOf(b)
 	if oa != ob {
 		d += 0.5
-		if oa == "hive" || ob == "hive" || oa == "nonconscious" || ob == "nonconscious" {
+		if oa == "hive" || ob == "hive" || oa == "unconscious" || ob == "unconscious" {
 			d += 0.5
 		}
 	}
@@ -134,7 +134,22 @@ func difference(a, b *species.Species) float64 {
 	return d
 }
 
-func orgOf(s *species.Species) string {
+// sameShape says whether two species are alike beyond substrate and
+// order: the modifiers that change the body, and the swarm.
+func sameShape(a, b *species.Species) bool {
+	const order = species.Hive | species.Unconscious
+	return a.Mods&^order == b.Mods&^order && a.Has("swarming") == b.Has("swarming")
+}
+
+// orderOf is how a society is ordered: one mind, no mind, or the
+// organisation trait.
+func orderOf(s *species.Species) string {
+	switch {
+	case s.Is(species.Hive):
+		return "hive"
+	case s.Is(species.Unconscious):
+		return "unconscious"
+	}
 	for _, t := range s.Traits {
 		if t.Group == "org" {
 			return t.Key

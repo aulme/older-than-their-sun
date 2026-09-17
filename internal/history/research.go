@@ -2,7 +2,6 @@ package history
 
 import (
 	"worldgen/internal/mind"
-	"worldgen/internal/species"
 	"worldgen/internal/tech"
 )
 
@@ -14,7 +13,7 @@ import (
 // more still and are a conscious choice: the leap.
 func (w *World) research(c *Civ) {
 	per := 0.03
-	if c.Species.Kind == species.Swarm {
+	if c.Has("swarming") {
 		per = 0.015 // a nest is a small thing
 	}
 	holdings := len(c.Systems)
@@ -22,9 +21,6 @@ func (w *World) research(c *Civ) {
 		holdings = len(w.fleets(c))
 	}
 	rate := 0.12 * c.Species.Rate() * (1 + 0.08*c.Soc) * (1 + per*float64(holdings))
-	if c.Species.Kind == species.PlanetaryMind {
-		rate *= 1.3 // one vast mind
-	}
 	rate *= c.rateMul(w)
 	c.Progress += rate * w.dt
 	for c.Active() {

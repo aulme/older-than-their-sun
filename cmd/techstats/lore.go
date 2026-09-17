@@ -55,7 +55,7 @@ func loreReport(out io.Writer, recs []Rec) {
 	p("|---|---|---|---|---|---|")
 	kinds := map[string][]Rec{}
 	for _, r := range old {
-		kinds[r.Kind] = append(kinds[r.Kind], r)
+		kinds[r.kind()] = append(kinds[r.kind()], r)
 	}
 	var ks []string
 	for k := range kinds {

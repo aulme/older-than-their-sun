@@ -2,8 +2,6 @@ package history
 
 import (
 	"sort"
-
-	"worldgen/internal/species"
 )
 
 // Cosmic filters: supernovae, gamma-ray bursts, passing dark masses, and the
@@ -151,9 +149,7 @@ func (w *World) dyingSun(c *Civ) {
 		if c.Known["deep_root"] {
 			c.Endure *= 2 // the mind goes down into the crust
 		}
-		if c.Species.Kind == species.MachineBorn {
-			c.Endure *= 3 // cold is only cold
-		}
+		c.Endure *= c.Species.Profile().Endure
 		c.focus("propulsion", 2)
 		c.focus("biology", 1.5)
 		w.log("The sun of the %s is failing. %s grows harsher with every century. They have, perhaps, %d thousand years.", c.Name, c.HomeName, int(c.Endure))

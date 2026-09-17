@@ -101,7 +101,7 @@ func (w *World) recompute(c *Civ) {
 		mil, soc = mil-1, soc-1
 	}
 	// distance: colonies drift unless something holds them together
-	if n := len(c.Systems); n > 4 && !ansible && !c.Has("hive") {
+	if n := len(c.Systems); n > 4 && !ansible && !c.Species.Is(species.Hive) {
 		soc -= min(3, 0.15*float64(n-4))
 	}
 	// dominion: the held feed the master's armies, works and confidence, and
@@ -125,17 +125,13 @@ func (w *World) recompute(c *Civ) {
 			mil, sur, soc = mil-0.8, sur-0.4, soc-0.6
 		}
 	}
-	switch c.Species.Kind {
-	case species.Parasite:
+	p := c.Species.Profile()
+	env += p.Env
+	if c.Species.Sub == species.Parasite {
 		soc += min(2, 0.5*float64(c.Hosts+slaves)) // a parasite is as rich as its hosts
-	case species.PlanetaryMind:
-		if c.Known["grafting"] {
-			reach /= 0.3 // the kind's reach is a third until it learns to graft
-		}
-	case species.MachineBorn:
-		env += 2 // rock and vacuum are enough
-	case species.Evolver:
-		env++ // they change themselves instead of the world
+	}
+	if c.Species.Is(species.Planetary) && c.Known["grafting"] {
+		reach /= p.Reach // a world's reach is a third until it learns to graft
 	}
 	soc += c.Morale
 	c.Quality = clamp(mil, 0, 10)

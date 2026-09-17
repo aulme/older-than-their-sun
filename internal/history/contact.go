@@ -149,7 +149,7 @@ func (w *World) hearing(a, b *Civ) {
 		w.infection(a, b) // an idea needs no ship
 		return
 	}
-	if a.Species.Kind == species.Parasite || b.Species.Kind == species.Parasite {
+	if a.Species.Sub == species.Parasite || b.Species.Sub == species.Parasite {
 		return
 	}
 	if w.consider(a, b) || w.consider(b, a) {
@@ -173,10 +173,10 @@ func (w *World) primitives(old, young *Civ) bool {
 		w.Bio[young.Home] = BioSimple
 		w.endCiv(young, Extinct, sprintf("were scoured from %s by the %s before they had looked up", young.HomeName, old.Name))
 		return true
-	case old.hostile() && young.Species.Kind != species.Swarm && young.Species.Kind != species.PlanetaryMind && w.R.Float64() < 0.3*(0.5+old.Dials.Greed):
+	case old.hostile() && !young.Has("swarming") && !young.Species.Is(species.Planetary) && w.R.Float64() < 0.3*(0.5+old.Dials.Greed):
 		old.Met[young.ID], young.Met[old.ID] = true, true
 		w.log("The %s find the %s on %s, still at the plough, and take them. There is no war to speak of.", old.Name, young.Name, young.HomeName)
-		if old.Species.Kind == species.Parasite {
+		if old.Species.Sub == species.Parasite {
 			w.ride(old, young)
 		} else {
 			w.enslave(old, young)
@@ -202,17 +202,17 @@ func (w *World) encounter(a, b *Civ, watched, heard bool, at int) {
 	if b.Mil > a.Mil {
 		a, b = b, a
 	}
-	if a.Species.Kind == species.Parasite || b.Species.Kind == species.Parasite {
+	if a.Species.Sub == species.Parasite || b.Species.Sub == species.Parasite {
 		w.infection(a, b)
 		return
 	}
 	gap := a.Mil - b.Mil
 	switch {
-	case a.miracle("chorus") && !b.miracle("chorus") && !b.Has("hive") && !b.Has("nonconscious") && w.R.Float64() < 0.6:
+	case a.miracle("chorus") && !b.miracle("chorus") && !b.Species.Is(species.Hive) && !b.Species.Is(species.Unconscious) && w.R.Float64() < 0.6:
 		w.log("The %s find the %s, and speak. Within a generation the %s ask to be ruled.", a.Name, b.Name, b.Name)
 		w.vassal(a, b)
 		return
-	case b.miracle("chorus") && !a.miracle("chorus") && !a.Has("hive") && !a.Has("nonconscious") && w.R.Float64() < 0.6:
+	case b.miracle("chorus") && !a.miracle("chorus") && !a.Species.Is(species.Hive) && !a.Species.Is(species.Unconscious) && w.R.Float64() < 0.6:
 		w.log("The %s find the %s, and the %s speak. Within a generation the %s ask to be ruled.", a.Name, b.Name, b.Name, a.Name)
 		w.vassal(b, a)
 		return
@@ -266,10 +266,10 @@ func (w *World) encounter(a, b *Civ, watched, heard bool, at int) {
 // follows is fought by conversion and burning.
 func (w *World) infection(a, b *Civ) {
 	p, h := a, b
-	if p.Species.Kind != species.Parasite {
+	if p.Species.Sub != species.Parasite {
 		p, h = b, a
 	}
-	if h.Species.Kind == species.Parasite || h.Species.Kind == species.MachineBorn {
+	if h.Species.Sub == species.Parasite || h.Species.Sub == species.Machine {
 		w.log("The %s and the %s find each other, and find nothing in the other worth having.", a.Name, b.Name)
 		return
 	}
@@ -356,7 +356,7 @@ func (w *World) uplift(c *Civ) {
 	}
 	inclined := c.Has("curious") || c.Has("collective") || c.Has("contemplative")
 	p := 0.0001
-	if c.Species.Kind == species.Parasite {
+	if c.Species.Sub == species.Parasite {
 		inclined, p = true, 0.0003 // a rider makes riders
 	}
 	if !c.Active() || c.Era < 3 || c.Soc < 5 || !c.Free() || c.Uplifts >= 2 || !inclined || !w.chance(p) {
@@ -368,7 +368,7 @@ func (w *World) uplift(c *Civ) {
 			sp.Add("uplifted")
 			sp.Made = "uplifted by the " + c.Name
 			c.Uplifts++
-			nc := w.spawnCiv(t, sp, c.ID)
+			nc := w.spawnCiv(t, sp, c.ID, "")
 			nc.Vassal = true
 			nc.Seen = c.Declines
 			for _, k := range knownOf(c) {
@@ -388,15 +388,14 @@ func (w *World) uplift(c *Civ) {
 
 // breed turns a slave people into something the master wants: a made species.
 func (w *World) breed(m, s *Civ) {
-	sp := *s.Species
+	sp := s.Species.Branch()
 	sp.Name = names.Civ(w.R)
-	sp.Traits = append([]*species.Trait(nil), s.Species.Traits...)
 	sp.Add("bred")
 	sp.Made = "bred by the " + m.Name + " from the " + s.Name
 	home := s.Home
 	w.endCiv(s, Transformed, sprintf("were bred by the %s into something else", m.Name))
 	s.Into = "the " + sp.Name
-	nc := w.spawnCiv(home, &sp, m.ID)
+	nc := w.spawnCiv(home, sp, m.ID, "")
 	nc.Seen = m.Declines
 	w.log("The %s remake the %s into the %s: %s.", m.Name, s.Name, nc.Name, sp.Describe())
 	w.fact(FBred, m, s, home)

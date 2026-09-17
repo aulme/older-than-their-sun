@@ -4,8 +4,6 @@ import (
 	"slices"
 	"sort"
 	"strings"
-
-	"worldgen/internal/species"
 )
 
 // Tellings. The chronicle is what happened. What a people knows of it is a
@@ -585,24 +583,17 @@ func (w *World) tellOf(from, to *Civ) {
 }
 
 // memory is how well a people keeps a tale: a multiplier on the rate of
-// wear. Machines and planetary minds barely wear; a hive shares one
-// memory; the arts of writing, printing, networks and substrate minds
+// wear. What a people is made of and how it is shaped set the base (the
+// profile: machines and living worlds barely wear, a hive shares one
+// memory); the arts of writing, printing, networks and substrate minds
 // each slow the loss.
 func (w *World) memory(c *Civ) float64 {
-	m := 1.0
-	switch c.Species.Kind {
-	case species.MachineBorn:
-		m = 0.05
-	case species.PlanetaryMind:
-		m = 0.15
-	case species.Swarm:
-		m = 0.8
+	m := c.Species.Profile().Memory
+	if c.Has("swarming") {
+		m *= 0.8
 	}
-	if c.Has("hive") || c.Has("collective") {
+	if c.Has("collective") {
 		m *= 0.7
-	}
-	if c.Has("nonconscious") {
-		m *= 1.5
 	}
 	for _, row := range memoryTable {
 		if c.Known[row.node] {

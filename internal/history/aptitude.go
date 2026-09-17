@@ -4,6 +4,7 @@ import (
 	"sort"
 	"strings"
 
+	"worldgen/internal/species"
 	"worldgen/internal/tech"
 )
 
@@ -29,7 +30,7 @@ const (
 
 type apt struct {
 	node  string // node key, or "domain:x" for every node of a domain
-	when  string // trait key, "world:x", "kind:x"; a leading "!" negates
+	when  string // trait key, "trait:x", "world:x", "sub:x", "mod:x"; a leading "!" negates
 	mode  aptMode
 	mult  float64 // dear: the multiplier; world: the penalty once lifted
 	need  string  // world: what a colony must offer: sea, sky, fire
@@ -89,10 +90,10 @@ var aptitudes = []apt{
 	dear("states", "collective", 0.7), dear("mass_politics", "collective", 0.7), dear("deep_governance", "collective", 0.8),
 	dear("states", "herd", 0.7), dear("mass_politics", "herd", 0.5), dear("organised_religion", "herd", 0.5), dear("memetics", "herd", 0.7),
 	dear("states", "caste", 0.5), dear("mass_politics", "caste", 2), dear("posthuman_law", "caste", 0.7),
-	moot("writing", "hive"), moot("printing", "hive"), moot("states", "hive"), moot("mass_politics", "hive"), moot("organised_religion", "hive"), moot("doubt", "hive"), moot("burial", "hive"),
-	innate("networks", "hive"), dear("memetics", "hive", 2), dear("long_thought", "hive", 0.5),
-	moot("song", "nonconscious"), moot("religion", "nonconscious"), moot("organised_religion", "nonconscious"), moot("doubt", "nonconscious"), moot("burial", "nonconscious"), moot("mass_politics", "nonconscious"), moot("memetics", "nonconscious"),
-	dear("uploading", "nonconscious", 0.5), dear("transcendence", "nonconscious", 2), dear("philosophy", "nonconscious", 1.5),
+	moot("writing", "mod:hive"), moot("printing", "mod:hive"), moot("states", "mod:hive"), moot("mass_politics", "mod:hive"), moot("organised_religion", "mod:hive"), moot("doubt", "mod:hive"), moot("burial", "mod:hive"),
+	innate("networks", "mod:hive"), dear("memetics", "mod:hive", 2), dear("long_thought", "mod:hive", 0.5),
+	moot("song", "mod:unconscious"), moot("religion", "mod:unconscious"), moot("organised_religion", "mod:unconscious"), moot("doubt", "mod:unconscious"), moot("burial", "mod:unconscious"), moot("mass_politics", "mod:unconscious"), moot("memetics", "mod:unconscious"),
+	dear("uploading", "mod:unconscious", 0.5), dear("transcendence", "mod:unconscious", 2), dear("philosophy", "mod:unconscious", 1.5),
 	// stance
 	dear("firearms", "pacifist", 2), dear("mechanised_war", "pacifist", 2), dear("orbital_weapons", "pacifist", 2), dear("relativistic_weapons", "pacifist", 3), dear("nova_bombs", "pacifist", 3),
 	never("stellar_weapons", "pacifist", ""), never("unmaking", "pacifist", ""),
@@ -115,18 +116,19 @@ var aptitudes = []apt{
 	dear("writing", "memory", 0.5), dear("burial", "memory", 0.5), dear("deep_time", "memory", 0.7), dear("deep_governance", "memory", 0.7),
 	dear("computers", "symbiosis", 0.6), dear("machine_minds", "symbiosis", 0.7), dear("uploading", "symbiosis", 0.7),
 	dear("states", "eusocial", 0.7), dear("closed_ecologies", "eusocial", 0.8), dear("orbital_habitats", "eusocial", 0.8),
-	// kinds
-	moot("states", "kind:swarm"), moot("mass_politics", "kind:swarm"), moot("burial", "kind:swarm"),
-	dear("networks", "kind:swarm", 0.5), dear("uploading", "kind:swarm", 2), dear("orbital_habitats", "kind:swarm", 0.7), dear("closed_ecologies", "kind:swarm", 0.8),
-	moot("seafaring", "kind:planetary mind"), moot("states", "kind:planetary mind"), moot("mass_politics", "kind:planetary mind"), moot("burial", "kind:planetary mind"), moot("religion", "kind:planetary mind"),
-	dear("terraforming", "kind:planetary mind", 0.5), dear("panspermia", "kind:planetary mind", 0.5), dear("life_extension", "kind:planetary mind", 0.5), dear("uploading", "kind:planetary mind", 2), dear("rocketry", "kind:planetary mind", 2), dear("networks", "kind:planetary mind", 0.3), dear("memetics", "kind:planetary mind", 2),
-	moot("agriculture", "kind:parasite"), moot("states", "kind:parasite"), never("genetics", "kind:parasite", ""),
-	dear("medicine", "kind:parasite", 0.6), dear("neuroscience", "kind:parasite", 0.6), dear("memetics", "kind:parasite", 0.6),
-	innate("computers", "kind:machine-born"), innate("machine_minds", "kind:machine-born"), innate("hibernation", "kind:machine-born"),
-	moot("fire", "kind:machine-born"), moot("agriculture", "kind:machine-born"), moot("medicine", "kind:machine-born"), moot("genetics", "kind:machine-born"), moot("neuroscience", "kind:machine-born"), moot("burial", "kind:machine-born"), moot("closed_ecologies", "kind:machine-born"),
-	never("germline", "kind:machine-born", ""), never("directed_evolution", "kind:machine-born", ""),
-	dear("synthetic_biology", "kind:machine-born", 1.5), dear("panspermia", "kind:machine-born", 2), dear("uploading", "kind:machine-born", 0.3), dear("self_replication", "kind:machine-born", 0.5), dear("terraforming", "kind:machine-born", 1.5),
-	dear("domain:biology", "kind:evolver", 0.5), dear("metallurgy", "kind:evolver", 1.3), dear("industrial", "kind:evolver", 1.3), dear("self_replication", "kind:evolver", 1.5), dear("machine_minds", "kind:evolver", 1.5), dear("uploading", "kind:evolver", 2),
+	// the swarm
+	moot("states", "swarming"), moot("mass_politics", "swarming"), moot("burial", "swarming"),
+	dear("networks", "swarming", 0.5), dear("uploading", "swarming", 2), dear("orbital_habitats", "swarming", 0.7), dear("closed_ecologies", "swarming", 0.8),
+	// substrates and modifiers
+	moot("seafaring", "mod:planetary"), moot("states", "mod:planetary"), moot("mass_politics", "mod:planetary"), moot("burial", "mod:planetary"), moot("religion", "mod:planetary"),
+	dear("terraforming", "mod:planetary", 0.5), dear("panspermia", "mod:planetary", 0.5), dear("life_extension", "mod:planetary", 0.5), dear("uploading", "mod:planetary", 2), dear("rocketry", "mod:planetary", 2), dear("networks", "mod:planetary", 0.3), dear("memetics", "mod:planetary", 2),
+	moot("agriculture", "sub:parasite"), moot("states", "sub:parasite"), never("genetics", "sub:parasite", ""),
+	dear("medicine", "sub:parasite", 0.6), dear("neuroscience", "sub:parasite", 0.6), dear("memetics", "sub:parasite", 0.6),
+	innate("computers", "sub:machine"), innate("machine_minds", "sub:machine"), innate("hibernation", "sub:machine"),
+	moot("fire", "sub:machine"), moot("agriculture", "sub:machine"), moot("medicine", "sub:machine"), moot("genetics", "sub:machine"), moot("neuroscience", "sub:machine"), moot("burial", "sub:machine"), moot("closed_ecologies", "sub:machine"),
+	never("germline", "sub:machine", ""), never("directed_evolution", "sub:machine", ""),
+	dear("synthetic_biology", "sub:machine", 1.5), dear("panspermia", "sub:machine", 2), dear("uploading", "sub:machine", 0.3), dear("self_replication", "sub:machine", 0.5), dear("terraforming", "sub:machine", 1.5),
+	dear("domain:biology", "mod:evolver", 0.5), dear("metallurgy", "mod:evolver", 1.3), dear("industrial", "mod:evolver", 1.3), dear("self_replication", "mod:evolver", 1.5), dear("machine_minds", "mod:evolver", 1.5), dear("uploading", "mod:evolver", 2),
 }
 
 func init() {
@@ -151,8 +153,11 @@ func (c *Civ) applies(when string) bool {
 	switch {
 	case strings.HasPrefix(when, "world:"):
 		return c.Species.World.Key == when[6:]
-	case strings.HasPrefix(when, "kind:"):
-		return c.Species.Kind.String() == when[5:]
+	case strings.HasPrefix(when, "sub:"):
+		return c.Species.Sub.String() == when[4:]
+	case strings.HasPrefix(when, "mod:"):
+		m, ok := species.ModByKey(when[4:])
+		return ok && c.Species.Is(m)
 	case strings.HasPrefix(when, "trait:"):
 		return c.Has(when[6:])
 	}
@@ -206,6 +211,21 @@ func (w *World) lifted(c *Civ, need string) bool {
 	return false
 }
 
+// rank orders the modes for precedence when rows stack.
+func rank(m aptMode) int {
+	switch m {
+	case aptWorld:
+		return 1
+	case aptMoot:
+		return 2
+	case aptNever:
+		return 3
+	case aptInnate:
+		return 4
+	}
+	return 0
+}
+
 // aptitude resolves the table for one people and one node: the mode and,
 // for dear, the multiplier. A world block that has been lifted comes back
 // as dear with its penalty; one that has not comes back as aptWorld.
@@ -214,11 +234,9 @@ func (w *World) aptitude(c *Civ, n *tech.Node) (aptMode, float64) {
 		return aptAbsent, 0
 	}
 	mode, mult := aptDear, 1.0
-	rank := func(m aptMode) int {
-		return map[aptMode]int{aptDear: 0, aptWorld: 1, aptMoot: 2, aptNever: 3, aptInnate: 4}[m]
-	}
+	domain := "domain:" + n.Domain
 	for _, a := range aptitudes {
-		if a.node != n.Key && a.node != "domain:"+n.Domain {
+		if a.node != n.Key && a.node != domain {
 			continue
 		}
 		if !c.applies(a.when) {

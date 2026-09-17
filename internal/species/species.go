@@ -1,6 +1,8 @@
-// Package species generates a species from its home world: the world sets
-// physical facts and base traits, random traits are layered on top, and a
-// body-plan kind sets the flavour of everything the species builds.
+// Package species generates a species: a substrate (what it is made of),
+// modifiers (how it is shaped), a home world that sets physical facts and
+// base traits, and random traits layered on top. Substrates and modifiers
+// are registry entries (registry.go, one file each); the generator rolls
+// them as a chain of tilted rolls (generate.go).
 //
 // Traits are few and asymmetric: they move the three levels a little, tilt
 // research toward some domains, and (in the history package) change the
@@ -9,67 +11,11 @@
 package species
 
 import (
-	"math/rand/v2"
 	"strings"
-
-	"worldgen/internal/names"
 )
 
 // M is a domain weight map, keyed by tech domain name.
 type M = map[string]float64
-
-// Kind is the body plan.
-type Kind uint8
-
-const (
-	Standard Kind = iota
-	Swarm
-	PlanetaryMind
-	Parasite
-	MachineBorn
-	Evolver
-)
-
-func (k Kind) String() string {
-	return [...]string{"standard", "swarm", "planetary mind", "parasite", "machine-born", "evolver"}[k]
-}
-
-// Flavour is what a kind calls the things it builds.
-type Flavour struct {
-	Portrait string // "They are a swarm..."
-	Colony   string
-	Ship     string
-	Station  string
-}
-
-var flavours = [...]Flavour{
-	Standard:      {"", "colony", "colony ship", "station"},
-	Swarm:         {"They are a swarm, a million small bodies that think as one when they gather.", "nest", "seed-cloud", "hive-moon"},
-	PlanetaryMind: {"They are one mind, spread through the living substance of their world.", "graft", "spore-ark", "living moon"},
-	Parasite:      {"They are a parasite, and need the bodies of others to think and to build.", "host-world", "carrier", "hive"},
-	MachineBorn:   {"They are machines, and do not remember who built them.", "node", "probe", "array"},
-	Evolver:       {"They shape their own flesh, and breed what they need instead of building it.", "brood", "vacuum-whale", "grown moon"},
-}
-
-// Flavour returns the kind's vocabulary.
-func (k Kind) Flavour() Flavour { return flavours[k] }
-
-// Machine-born peoples never arise on their own: they are what is left when
-// someone else builds a mind that outgrows them.
-var kindWeights = [...]float64{Standard: 74, Swarm: 7, PlanetaryMind: 4, Parasite: 4, MachineBorn: 0, Evolver: 8}
-
-// kind modifiers: levels and domain tilt
-var kindMods = [...]struct {
-	mil, sur, soc, reach float64
-	dom                  M
-}{
-	Standard:      {0, 0, 0, 1, nil},
-	Swarm:         {0.5, 0.5, 0.5, 1, M{"computation": 0.8, "industry": 1.2}},
-	PlanetaryMind: {-1, 1, 2, 0.3, M{"propulsion": 0.4, "biology": 1.5, "society": 1.3}},
-	Parasite:      {0, 1, 0, 1, M{"biology": 1.4, "society": 1.2, "industry": 0.8}},
-	MachineBorn:   {0.5, 1.5, 0, 1, M{"computation": 1.3, "biology": 0.6, "industry": 1.1}},
-	Evolver:       {0, 1, 0, 1, M{"biology": 1.5, "industry": 0.8}},
-}
 
 // Archetype is a home world type.
 type Archetype struct {
@@ -116,8 +62,9 @@ type Trait struct {
 	Reach         float64 // multiplier, 0 means 1
 	Rate          float64 // research rate multiplier, 0 means 1
 	Domains       M
-	Miracle       string // tech node key of the miracle this species is born to
-	Quiet         bool   // the common case of its group; the legends do not say it
+	Miracle       string   // tech node key of the miracle this species is born to
+	Quiet         bool     // the common case of its group; the legends do not say it
+	Flavour       *Flavour // vocabulary the trait brings, over the substrate's; nil for none
 }
 
 // Traits is the pool. Groups org, stance, honour and drive are common and
@@ -131,8 +78,6 @@ var Traits = []*Trait{
 	{Key: "collective", Name: "a collective people", Group: "org", Weight: 30, Soc: 1, Domains: M{"society": 1.1}},
 	{Key: "herd", Name: "a herd people, who move as one", Group: "org", Weight: 10, Soc: 1.5, Mil: -0.5, Domains: M{"society": 1.1, "weapons": 0.9}},
 	{Key: "caste", Name: "a caste society", Group: "org", Weight: 15, Soc: 1, Mil: 0.5, Domains: M{"biology": 1.1, "computation": 0.9}},
-	{Key: "hive", Name: "a hive mind", Group: "org", Weight: 10, Soc: 2.5, Mil: 0.5, Domains: M{"society": 0.6, "computation": 0.8}},
-	{Key: "nonconscious", Name: "an intelligence without consciousness", Group: "org", Weight: 5, Soc: 1.5, Sur: 1, Mil: -0.5, Domains: M{"exotic": 0.6, "society": 0.4, "biology": 1.3}},
 	// posture toward others: how a people makes war
 	{Key: "pacifist", Name: "pacifists", Group: "stance", Weight: 12, Mil: -1.5, Soc: 1, Domains: M{"weapons": 0.3, "biology": 1.2, "society": 1.2}},
 	{Key: "defensive", Name: "who keep to themselves", Group: "stance", Weight: 28},
@@ -153,7 +98,8 @@ var Traits = []*Trait{
 	{Key: "xenophobic", Name: "xenophobic", Group: "drive", Weight: 15, Mil: 0.5, Soc: 0.5, Domains: M{"weapons": 1.2}},
 	{Key: "cautious", Name: "cautious", Group: "drive", Weight: 15, Sur: 0.5, Domains: M{"computation": 0.8, "exotic": 0.7}},
 	{Key: "pragmatic", Name: "pragmatic", Group: "drive", Weight: 10, Domains: M{"industry": 1.2, "energy": 1.1}},
-	// biology quirks
+	// biology quirks; swarming is drawn by its own tilted roll (TraitRolls), never from the group
+	{Key: "swarming", Name: "a swarm, a million small bodies that think as one when they gather", Group: "bio", Mil: 0.5, Sur: 0.5, Soc: 0.5, Domains: M{"computation": 0.8, "industry": 1.2}, Flavour: &Flavour{"nest", "seed-cloud", "hive-moon"}},
 	{Key: "shortlived", Name: "short-lived", Group: "bio", Weight: 20, Soc: -0.5, Rate: 1.2},
 	{Key: "longlived", Name: "very long-lived", Group: "bio", Weight: 20, Soc: 0.5, Rate: 0.85},
 	{Key: "dormancy", Name: "given to cyclical dormancy", Group: "bio", Weight: 15, Sur: 1, Soc: 0.5, Rate: 0.9},
@@ -176,6 +122,10 @@ var Traits = []*Trait{
 	{Key: "mindrider", Name: "who live as an idea in the minds of others", Group: "rider", Weight: 40, Domains: M{"society": 1.2, "computation": 1.1}},
 	// the way: nomads take to the sky when they can
 	{Key: "nomadic", Name: "nomads, who will not stay", Group: "way", Weight: 1, Domains: M{"propulsion": 1.3, "industry": 0.8}},
+	// the seat of a hive: only hives get one; a nomad hive's throne moves
+	{Key: "onequeen", Name: "of one queen", Group: "seat", Weight: 50},
+	{Key: "noqueen", Name: "of no queen", Group: "seat", Weight: 50},
+	{Key: "throne", Name: "of a moving throne", Group: "seat"},
 	// born to a miracle
 	{Key: "born_voice", Name: "minds that speak across any distance", Group: "power", Weight: 25, Miracle: "ansible"},
 	{Key: "born_flesh", Name: "masters of their own flesh", Group: "power", Weight: 25, Miracle: "directed_evolution"},
@@ -193,7 +143,6 @@ var Traits = []*Trait{
 	// made
 	{Key: "uplifted", Name: "uplifted", Group: "made", Soc: -0.5},
 	{Key: "bred", Name: "bred to serve", Group: "made", Soc: -1, Sur: 1},
-	{Key: "branch", Name: "a branch of an older people", Group: "made"},
 }
 
 var byKey = map[string]*Trait{}
@@ -207,93 +156,128 @@ func init() {
 // Get returns a trait by key.
 func Get(key string) *Trait { return byKey[key] }
 
-// Species is a people.
+// Species is a people's blood: what it is made of, how it is shaped, where
+// it arose and what it is like. The world holds one entry per species and
+// several peoples may share one; a people changes species only by a made
+// path (an uplift, a machine successor, a remaking, the Brood's change),
+// which makes a new entry with the old as Parent.
 type Species struct {
+	ID     int
 	Name   string
-	Kind   Kind
+	Sub    Substrate
+	Mods   Mod
+	Powers []string // eldritch powers, empty until the pool lands
 	World  *Archetype
 	Traits []*Trait
-	Made   string // who made them, "" if they arose naturally
+	Made   string   // who made them, "" if they arose naturally
+	Parent *Species // the species this one was made from, nil if none
+
+	profSub  Substrate
+	profMods Mod
+	prof     *Profile
 }
 
-func pickWeighted[T any](r *rand.Rand, xs []T, weight func(T) float64) T {
-	total := 0.0
-	for _, x := range xs {
-		total += weight(x)
+// Is says whether the species carries every modifier in m.
+func (s *Species) Is(m Mod) bool { return s.Mods.Has(m) }
+
+// entries lists the carried registry entries: the substrate, then the
+// modifiers in registry order.
+func (s *Species) entries() []*Entry {
+	out := []*Entry{&s.Sub.Def().Entry}
+	for _, d := range s.Mods.Defs() {
+		out = append(out, &d.Entry)
 	}
-	v := r.Float64() * total
-	for _, x := range xs {
-		v -= weight(x)
-		if v < 0 {
-			return x
-		}
-	}
-	return xs[len(xs)-1]
+	return out
 }
 
-func pickGroup(r *rand.Rand, group string) *Trait {
-	var pool []*Trait
-	for _, t := range Traits {
-		if t.Group == group {
-			pool = append(pool, t)
+// Profile is the composed profile of the carried entries, cached.
+func (s *Species) Profile() Profile {
+	if s.prof == nil || s.profSub != s.Sub || s.profMods != s.Mods {
+		var ps []Profile
+		for _, e := range s.entries() {
+			ps = append(ps, e.Profile)
 		}
+		p := Compose(ps...)
+		s.prof, s.profSub, s.profMods = &p, s.Sub, s.Mods
 	}
-	return pickWeighted(r, pool, func(t *Trait) float64 { return t.Weight })
+	return *s.prof
 }
 
-// Pick draws a trait from a group.
-func Pick(r *rand.Rand, group string) *Trait { return pickGroup(r, group) }
-
-// Generate rolls a species. mult is the home star's multiplicity.
-func Generate(r *rand.Rand, mult int) *Species { return GenerateOn(r, mult, "") }
-
-// GenerateOn generates a species for a home world of a given archetype
-// key, or a random one if the key is empty.
-func GenerateOn(r *rand.Rand, mult int, arch string) *Species {
-	s := &Species{Name: names.Civ(r)}
-	s.Kind = Kind(pickWeighted(r, []int{0, 1, 2, 3, 4, 5}, func(i int) float64 { return kindWeights[i] }))
-	s.World = ArchetypeByKey(arch)
-	if s.World == nil {
-		s.World = pickWeighted(r, Archetypes, func(a *Archetype) float64 { return a.Weight })
-		if s.Kind == PlanetaryMind && r.Float64() < 0.6 {
-			s.World = Archetypes[1] // living oceans are the usual planetary mind
+// Flavour is the vocabulary: the substrate's, overridden by each modifier's
+// in order and then by any trait that brings its own.
+func (s *Species) Flavour() Flavour {
+	f := s.Sub.Def().Flavour
+	over := func(o Flavour) {
+		if o.Colony != "" {
+			f.Colony = o.Colony
+		}
+		if o.Ship != "" {
+			f.Ship = o.Ship
+		}
+		if o.Station != "" {
+			f.Station = o.Station
 		}
 	}
-	for _, t := range s.World.Traits {
-		s.Add(t)
+	for _, d := range s.Mods.Defs() {
+		over(d.Flavour)
 	}
-	if mult == 3 {
-		s.Add("threesuns")
-	} else if mult == 2 {
-		s.Add("hardy")
-	}
-	s.Traits = append(s.Traits, pickGroup(r, "org"), pickGroup(r, "stance"), pickGroup(r, "honour"), pickGroup(r, "drive"))
-	if r.Float64() < 0.5 {
-		s.Traits = append(s.Traits, pickGroup(r, "bio"))
-	}
-	if r.Float64() < 0.4 {
-		s.Traits = append(s.Traits, pickGroup(r, "sense"))
-		if r.Float64() < 0.15 {
-			s.Add(pickGroup(r, "sense").Key)
+	for _, t := range s.Traits {
+		if t.Flavour != nil {
+			over(*t.Flavour)
 		}
 	}
-	if r.Float64() < 0.006 {
-		s.Traits = append(s.Traits, pickGroup(r, "power"))
-	}
-	if s.Kind == Parasite {
-		s.Traits = append(s.Traits, pickGroup(r, "rider"))
-	}
-	if r.Float64() < 0.08 && s.Kind != PlanetaryMind {
-		s.Add("nomadic")
-	}
-	return s
+	return f
 }
 
-// Fixed makes a known species for tests: a standard people of a lush world
-// with exactly the traits named, in that order, and no roll. Unknown keys
-// are ignored.
+// Portrait is the sentences the portrait opens with: the substrate's, then
+// one per modifier; none for a plain biological people.
+func (s *Species) Portrait() []string {
+	var out []string
+	for _, e := range s.entries() {
+		if e.Portrait != "" {
+			out = append(out, e.Portrait)
+		}
+	}
+	return out
+}
+
+// Arising is how the legends say the people came to be: "arise on" for the
+// plain case.
+func (s *Species) Arising() string {
+	if a := s.Sub.Def().Arising; a != "" {
+		return a
+	}
+	return "arise on"
+}
+
+// Nature names the substrate and the modifiers: "biological", "machine, hive".
+func (s *Species) Nature() string {
+	if s.Mods == 0 {
+		return s.Sub.String()
+	}
+	return s.Sub.String() + ", " + s.Mods.String()
+}
+
+// Kin says whether two species are the same blood: the same entry, or one
+// made from the other, or both made from the same one.
+func (s *Species) Kin(o *Species) bool {
+	return s == o || s.Parent == o || o.Parent == s || (s.Parent != nil && s.Parent == o.Parent)
+}
+
+// Branch is a copy of the species with this one as Parent: the same blood
+// changed, for a people that is made from it or that changes.
+func (s *Species) Branch() *Species {
+	b := *s
+	b.ID, b.Parent, b.prof = 0, s, nil
+	b.Traits = append([]*Trait(nil), s.Traits...)
+	return &b
+}
+
+// Fixed makes a known species for tests: a biological people of a lush
+// world with exactly the traits named, in that order, and no roll. Unknown
+// keys are ignored.
 func Fixed(traits ...string) *Species {
-	s := &Species{Name: "Fixed", Kind: Standard, World: ArchetypeByKey("lush")}
+	s := &Species{Name: "Fixed", World: ArchetypeByKey("lush")}
 	for _, t := range traits {
 		s.Add(t)
 	}
@@ -327,10 +311,10 @@ func (s *Species) Miracle() string {
 	return ""
 }
 
-// Base returns the base levels from world, kind and traits.
+// Base returns the base levels from world, profile and traits.
 func (s *Species) Base() (mil, sur, soc float64) {
-	k := kindMods[s.Kind]
-	mil, sur, soc = s.World.Mil+k.mil, s.World.Sur+k.sur, s.World.Soc+k.soc
+	p := s.Profile()
+	mil, sur, soc = s.World.Mil+p.Mil, s.World.Sur+p.Sur, s.World.Soc+p.Soc
 	for _, t := range s.Traits {
 		mil, sur, soc = mil+t.Mil, sur+t.Sur, soc+t.Soc
 	}
@@ -339,7 +323,7 @@ func (s *Species) Base() (mil, sur, soc float64) {
 
 // ReachMul is the species' multiplier on reach.
 func (s *Species) ReachMul() float64 {
-	m := kindMods[s.Kind].reach
+	m := s.Profile().Reach
 	for _, t := range s.Traits {
 		if t.Reach > 0 {
 			m *= t.Reach
@@ -350,7 +334,7 @@ func (s *Species) ReachMul() float64 {
 
 // Rate is the species' multiplier on research speed.
 func (s *Species) Rate() float64 {
-	m := 1.0
+	m := s.Profile().Rate
 	for _, t := range s.Traits {
 		if t.Rate > 0 {
 			m *= t.Rate
@@ -365,7 +349,7 @@ func (s *Species) DomainMul(d string) float64 {
 	if v, ok := s.World.Domains[d]; ok {
 		m *= v
 	}
-	if v, ok := kindMods[s.Kind].dom[d]; ok {
+	if v, ok := s.Profile().Dom[d]; ok {
 		m *= v
 	}
 	for _, t := range s.Traits {

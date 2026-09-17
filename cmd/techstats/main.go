@@ -32,7 +32,9 @@ type Rec struct {
 	Seed      uint64             `json:"seed"`
 	ID        int                `json:"id"`
 	Name      string             `json:"name"`
-	Kind      string             `json:"kind"`
+	Species   string             `json:"species"` // the blood's name; the people's own is Name
+	Sub       string             `json:"sub"`
+	Mods      []string           `json:"mods"`
 	Traits    []string           `json:"traits"`
 	Posture   string             `json:"posture"`
 	Honour    string             `json:"honour"`
@@ -165,7 +167,7 @@ func flatten(w *history.World) []Rec {
 			end = w.Present
 		}
 		r := Rec{
-			Seed: w.Seed, ID: c.ID, Name: c.Name, Kind: c.Species.Kind.String(), World: c.Species.World.Key, Made: c.Species.Made,
+			Seed: w.Seed, ID: c.ID, Name: c.Name, Species: c.Species.Name, Sub: c.Species.Sub.String(), World: c.Species.World.Key, Made: c.Species.Made,
 			Born: float64(c.Born-w.Cfg.Dawn) / 1e6, Lived: float64(end-c.Born) / 1e6,
 			Fate: c.Fate.String(), Cause: c.Cause, Into: c.Into, Standing: c.Active(),
 			Peak: c.Peak, Ruled: c.Ruled, Uplifts: c.Uplifts, Word: c.Word,
@@ -173,6 +175,9 @@ func flatten(w *history.World) []Rec {
 			Record: append([]string(nil), c.Record...), Mil: c.Mil, Sur: c.Sur, Soc: c.Soc,
 			Cycle: c.KnowsCycle, DarkAges: c.DarkAges, Renaiss: c.Renaissances,
 			ever: map[string]bool{},
+		}
+		for _, d := range c.Species.Mods.Defs() {
+			r.Mods = append(r.Mods, d.Key)
 		}
 		for _, t := range c.Species.Traits {
 			r.Traits = append(r.Traits, t.Key)
@@ -807,7 +812,7 @@ func report(out io.Writer, recs []Rec, seeds int, from uint64, at string, ageMea
 	p("")
 	sorted := append([]Rec(nil), recs...)
 	sort.Slice(sorted, func(i, j int) bool { return sorted[i].Lived > sorted[j].Lived })
-	p("| Seed | People | Kind | Born (Myr) | Lived (Myr) | Era | Nodes | Peak | Miracles | Frontier | End |")
+	p("| Seed | People | Nature | Born (Myr) | Lived (Myr) | Era | Nodes | Peak | Miracles | Frontier | End |")
 	p("|---|---|---|---|---|---|---|---|---|---|---|")
 	for i, r := range sorted {
 		if i >= 30 {
@@ -825,26 +830,42 @@ func report(out io.Writer, recs []Rec, seeds int, from uint64, at string, ageMea
 		if r.Cause != "" {
 			end += ": " + r.Cause
 		}
-		p("| %d | %s | %s | %.0f | %.1f | %d | %d | %d | %s | %s | %s |", r.Seed, r.Name, r.Kind, r.Born, r.Lived, r.Era, len(r.Ever), r.Peak, strings.Join(ms, ", "), r.frontier, end)
+		p("| %d | %s | %s | %.0f | %.1f | %d | %d | %d | %s | %s | %s |", r.Seed, r.Name, r.nature(), r.Born, r.Lived, r.Era, len(r.Ever), r.Peak, strings.Join(ms, ", "), r.frontier, end)
 	}
 	p("")
-	p("## Kinds")
+	p("## Natures")
+	p("")
+	p("Substrate and modifiers; a swarm is a biological people with the swarming trait, listed apart.")
 	p("")
 	kinds := newCounter()
 	for _, r := range recs {
-		kinds.add(r.Kind, r.Lived)
+		kinds.add(r.kind(), r.Lived)
 	}
-	p("| Kind | Peoples | Median life (Myr) | Reached era 3 | Lived 10+ Myr |")
+	p("| Nature | Peoples | Median life (Myr) | Reached era 3 | Lived 10+ Myr |")
 	p("|---|---|---|---|---|")
 	for _, k := range kinds.sorted() {
-		d := count(func(r Rec) bool { return r.Kind == k && deep(r) })
-		l := count(func(r Rec) bool { return r.Kind == k && long(r) })
-		label := k
-		if label == "" {
-			label = "standard"
-		}
-		p("| %s | %d | %.2f | %s | %s |", label, kinds.n[k], median(kinds.sub[k]), pct(d, kinds.n[k]), pct(l, kinds.n[k]))
+		d := count(func(r Rec) bool { return r.kind() == k && deep(r) })
+		l := count(func(r Rec) bool { return r.kind() == k && long(r) })
+		p("| %s | %d | %.2f | %s | %s |", k, kinds.n[k], median(kinds.sub[k]), pct(d, kinds.n[k]), pct(l, kinds.n[k]))
 	}
+}
+
+// nature is the substrate and the modifiers: "biological", "machine, hive".
+func (r Rec) nature() string {
+	if len(r.Mods) == 0 {
+		return r.Sub
+	}
+	return r.Sub + ", " + strings.Join(r.Mods, ", ")
+}
+
+// kind is the nature with the swarm told apart, for the tables.
+func (r Rec) kind() string {
+	for _, t := range r.Traits {
+		if t == "swarming" {
+			return r.nature() + " (swarm)"
+		}
+	}
+	return r.nature()
 }
 
 func row(recs []Rec, n *tech.Node) string {
@@ -882,8 +903,14 @@ func forMatches(f string, r Rec) bool {
 	switch {
 	case f == "":
 		return true
-	case strings.HasPrefix(f, "kind:"):
-		return r.Kind == f[5:]
+	case strings.HasPrefix(f, "sub:"):
+		return r.Sub == f[4:]
+	case strings.HasPrefix(f, "mod:"):
+		for _, m := range r.Mods {
+			if m == f[4:] {
+				return true
+			}
+		}
 	case strings.HasPrefix(f, "world:"):
 		return r.World == f[6:]
 	case strings.HasPrefix(f, "trait:"):

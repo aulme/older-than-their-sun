@@ -1,6 +1,6 @@
 # Substrates and modifiers: what a people is made of, with the horrors dissolved into it
 
-**Status:** Draft
+**Status:** In Progress (stage 1 landed at plan step 3, 2026-09-17: the registry, the profile, the chain generator with legacy numbers, every kind switch a profile read; stages 2 to 7 are plan steps 16 to 18)
 **Last updated:** 2026-09-17
 
 Assumes [one-tick](one-tick.md). Reads [plagues](plagues.md) (which plagues touch which minds; parasites as plagues; conscious plagues), [wisdom](wisdom.md) (the difference score and fathoming), [ossification](ossification.md) (who stiffens and who cannot), [resources-and-trade](resources-and-trade.md) (what each substrate eats), [morality](morality.md) (who is amoral by nature), [ships-and-garrisons](ships-and-garrisons.md) (how a world holds against what comes for it), [tellings](tellings.md) (facts, tales and what a people can know).

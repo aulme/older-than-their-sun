@@ -37,7 +37,7 @@ type Node struct {
 	Patience          float64 // kyr a civilisation must have lived before it can pursue this
 	Chance            float64 // if set, a finished pursuit only succeeds this often; failure wastes the work
 	Miracle           bool    // a power apart from the tree: rare, potent, dangerous
-	For               string  // only for these: "kind:swarm", "world:iceshell", "trait:fireless"; "" for everyone
+	For               string  // only for these: "sub:machine", "mod:planetary", "world:iceshell", "trait:fireless"; "" for everyone
 	Mil, Sur, Soc     float64
 	Reach             float64 // reach in light years this node grants; the highest known wins
 	Speed             float64 // colony ship speed in years per light year; the lowest known wins
@@ -72,11 +72,11 @@ var Nodes = []*Node{
 	{Key: "law", Name: "Law", Domain: Society, Prereqs: []string{"states", "writing"}, Soc: 0.2},
 	{Key: "organised_religion", Name: "Organised Religion", Domain: Society, Prereqs: []string{"religion", "states"}, Soc: 0.2, Mil: 0.2},
 	// era 0, only for some
-	{Key: "gathering", Name: "the Gathering", Domain: Society, For: "kind:swarm", Soc: 0.5, Mil: 0.5,
+	{Key: "gathering", Name: "the Gathering", Domain: Society, For: "trait:swarming", Soc: 0.5, Mil: 0.5,
 		Text: "The %s learn to gather on purpose: a million bodies, one mind, when it is wanted."},
-	{Key: "host_craft", Name: "Host-craft", Domain: Biology, For: "kind:parasite", Sur: 0.5, Soc: 0.5},
-	{Key: "maintenance", Name: "Maintenance", Domain: Industry, For: "kind:machine-born", Sur: 0.5},
-	{Key: "husbandry", Name: "Husbandry of the Self", Domain: Biology, For: "kind:evolver", Sur: 0.5, Focus: M{Biology: 1.2}},
+	{Key: "host_craft", Name: "Host-craft", Domain: Biology, For: "sub:parasite", Sur: 0.5, Soc: 0.5},
+	{Key: "maintenance", Name: "Maintenance", Domain: Industry, For: "sub:machine", Sur: 0.5},
+	{Key: "husbandry", Name: "Husbandry of the Self", Domain: Biology, For: "mod:evolver", Sur: 0.5, Focus: M{Biology: 1.2}},
 	{Key: "cold_chemistry", Name: "Cold Chemistry", Domain: Exotic, Era: 1, For: "trait:fireless",
 		Text: "The %s learn to make without burning. What fire did for others, patience does for them."},
 	// era 1
@@ -114,8 +114,8 @@ var Nodes = []*Node{
 	{Key: "fusion", Name: "Fusion Power", Domain: Energy, Era: 2, Prereqs: []string{"atomic", "computers"}, Mil: 0.3, Sur: 0.3, Milestone: true,
 		Text: "The %s light a small star of their own and keep it burning."},
 	{Key: "neuroscience", Name: "Neuroscience", Domain: Biology, Era: 2, Prereqs: []string{"medicine", "computers"}, Focus: M{Computation: 1.2}},
-	{Key: "broodline", Name: "Broodline", Domain: Biology, Era: 2, For: "kind:parasite", Prereqs: []string{"host_craft", "chemistry"}, Sur: 0.5, Focus: M{Biology: 1.2}},
-	{Key: "forking", Name: "Forking", Domain: Computation, Era: 2, For: "kind:machine-born", Prereqs: []string{"maintenance", "electricity"}, Sur: 0.5, Soc: 0.5},
+	{Key: "broodline", Name: "Broodline", Domain: Biology, Era: 2, For: "sub:parasite", Prereqs: []string{"host_craft", "chemistry"}, Sur: 0.5, Focus: M{Biology: 1.2}},
+	{Key: "forking", Name: "Forking", Domain: Computation, Era: 2, For: "sub:machine", Prereqs: []string{"maintenance", "electricity"}, Sur: 0.5, Soc: 0.5},
 	// era 3
 	{Key: "machine_minds", Name: "Machine Minds", Domain: Computation, Era: 3, Prereqs: []string{"computers", "neuroscience"}, Soc: 0.5, Filter: "machines", Milestone: true,
 		Focus: M{Energy: 1.2, Industry: 1.2, Biology: 1.2, Exotic: 1.2, Propulsion: 1.2, Weapons: 1.2},
@@ -147,14 +147,14 @@ var Nodes = []*Node{
 	{Key: "beamed_sails", Name: "Beamed Sails", Domain: Propulsion, Era: 3, Prereqs: []string{"slow_interstellar", "orbital_habitats"}, Reach: 18, Speed: 30},
 	{Key: "hibernation", Name: "Hibernation", Domain: Biology, Era: 3, Prereqs: []string{"medicine", "slow_interstellar"}, Sur: 0.5, Reach: 5},
 	// era 3, only for some: other ways to the stars, other ways to last
-	{Key: "seed_clouds", Name: "Seed-clouds", Domain: Propulsion, Era: 3, For: "kind:swarm", Prereqs: []string{"interplanetary", "gathering"}, Reach: 12, Speed: 300, Milestone: true,
+	{Key: "seed_clouds", Name: "Seed-clouds", Domain: Propulsion, Era: 3, For: "trait:swarming", Prereqs: []string{"interplanetary", "gathering"}, Reach: 12, Speed: 300, Milestone: true,
 		Text: "The %s reach the stars as spores: clouds of seed cast into the dark, and most of it lost, and enough of it not."},
-	{Key: "living_ships", Name: "Living Ships", Domain: Propulsion, Era: 3, For: "kind:evolver", Prereqs: []string{"interplanetary", "synthetic_biology"}, Reach: 12, Speed: 100, Milestone: true,
+	{Key: "living_ships", Name: "Living Ships", Domain: Propulsion, Era: 3, For: "mod:evolver", Prereqs: []string{"interplanetary", "synthetic_biology"}, Reach: 12, Speed: 100, Milestone: true,
 		Text: "The %s breed the vacuum-whale: a body that crosses the dark on its own, with them asleep inside it."},
-	{Key: "grafting", Name: "Grafting", Domain: Biology, Era: 3, For: "kind:planetary mind", Prereqs: []string{"slow_interstellar", "synthetic_biology"}, Sur: 0.5, Milestone: true,
+	{Key: "grafting", Name: "Grafting", Domain: Biology, Era: 3, For: "mod:planetary", Prereqs: []string{"slow_interstellar", "synthetic_biology"}, Sur: 0.5, Milestone: true,
 		Text: "The %s learn to grow a piece of themselves on another world. It is the same mind. It always was."},
-	{Key: "deep_root", Name: "Deep Root", Domain: Biology, Era: 3, For: "kind:planetary mind", Prereqs: []string{"closed_ecologies"}, Sur: 1},
-	{Key: "free_living", Name: "Free-living", Domain: Biology, Era: 3, Cost: 60, For: "kind:parasite", Prereqs: []string{"broodline", "closed_ecologies"}, Sur: 0.5, Milestone: true,
+	{Key: "deep_root", Name: "Deep Root", Domain: Biology, Era: 3, For: "mod:planetary", Prereqs: []string{"closed_ecologies"}, Sur: 1},
+	{Key: "free_living", Name: "Free-living", Domain: Biology, Era: 3, Cost: 60, For: "sub:parasite", Prereqs: []string{"broodline", "closed_ecologies"}, Sur: 0.5, Milestone: true,
 		Text: "The %s learn to live without a host. It is a poorer life, and it can be lived anywhere."},
 	// era 4: the deep tree. Each domain has a spine that costs a great deal
 	// to climb, and no one climbs all of them.

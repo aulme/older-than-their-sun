@@ -8,8 +8,10 @@ import (
 )
 
 // spawnCiv raises a civilisation at a star. sp is nil for a natural species;
-// made species pass their own and the maker's id.
-func (w *World) spawnCiv(home int, sp *species.Species, maker int) *Civ {
+// made species pass their own and the maker's id; a people that shares a
+// species already in the world (a branch) passes its own name, else "" for
+// the species' name.
+func (w *World) spawnCiv(home int, sp *species.Species, maker int, name string) *Civ {
 	st := &w.G.Stars[home]
 	sys := w.G.Sys[home]
 	sys.EnsureHome(w.R, st)
@@ -19,8 +21,12 @@ func (w *World) spawnCiv(home int, sp *species.Species, maker int) *Civ {
 			sp.Add("hardy") // born under a hard sky
 		}
 	}
+	shared := w.register(sp)
+	if name == "" {
+		name = sp.Name
+	}
 	c := &Civ{
-		ID: len(w.Civs), Name: sp.Name, Species: sp, Home: home, HomeName: names.Star(w.R),
+		ID: len(w.Civs), Name: name, Species: sp, Home: home, HomeName: names.Star(w.R),
 		Cradle: home, Born: w.Now, Renewed: w.Now, Systems: []int{home}, Peak: 1, Master: maker,
 		Known: map[string]bool{}, Learned: map[string]Year{}, Focus: map[string]float64{}, Locked: map[string]bool{},
 		Structures: map[string]int{}, Found: map[int]bool{}, Heard: map[int]bool{},
@@ -51,16 +57,24 @@ func (w *World) spawnCiv(home int, sp *species.Species, maker int) *Civ {
 	w.recompute(c)
 	w.fact(FArise, c, nil, home)
 	if maker < 0 {
-		w.log("The %s arise on %s, %s, around %s%s, %.0f ly from %s. They are %s.",
-			c.Name, sys.HomeName(c.HomeName), sp.World.Desc, w.starDetail(home, old), prior, w.G.FromCentre(home), w.G.Anchor(), sp.Describe())
+		they := "They are " + sp.Describe() + "."
+		if shared {
+			they = "They are a people of the " + sp.Name + "."
+		}
+		w.log("The %s %s %s, %s, around %s%s, %.0f ly from %s. %s",
+			c.Name, sp.Arising(), sys.HomeName(c.HomeName), sp.World.Desc, w.starDetail(home, old), prior, w.G.FromCentre(home), w.G.Anchor(), they)
 		w.log("%s", w.systemLine(home))
 	}
-	if f := sp.Kind.Flavour(); f.Portrait != "" {
-		w.log("%s", f.Portrait)
+	if !shared {
+		for _, line := range sp.Portrait() {
+			w.log("%s", line)
+		}
 	}
-	if sp.Kind == species.Parasite {
+	if sp.Sub == species.Parasite {
 		c.Hosts = 1
-		w.log("They ride %s, and could not think without it.", hostPortraits[w.R.IntN(len(hostPortraits))])
+		if !shared {
+			w.log("They ride %s, and could not think without it.", hostPortraits[w.R.IntN(len(hostPortraits))])
+		}
 	}
 	w.birthright(c)
 	if m := sp.Miracle(); m != "" {
@@ -72,6 +86,19 @@ func (w *World) spawnCiv(home int, sp *species.Species, maker int) *Civ {
 		w.log("Their sun is already failing. They were born under a dying star.")
 	}
 	return c
+}
+
+// register puts a species in the world's list if it is not there yet and
+// says whether it was: a shared species is one another people carries.
+func (w *World) register(sp *species.Species) (shared bool) {
+	for _, s := range w.Species {
+		if s == sp {
+			return true
+		}
+	}
+	sp.ID = len(w.Species)
+	w.Species = append(w.Species, sp)
+	return false
 }
 
 // civStep is one stage of a people's tick. civSteps is the ordered list of
@@ -157,7 +184,7 @@ func (w *World) arrivals(c *Civ) {
 			keep = append(keep, v)
 			continue
 		}
-		t, ship := v.Target, c.Species.Kind.Flavour().Ship
+		t, ship := v.Target, c.Species.Flavour().Ship
 		switch {
 		case w.Owner[t] == c.ID:
 			// settled already by another ship
@@ -194,7 +221,7 @@ func (w *World) settle(c *Civ, t int) {
 	}
 	switch n := len(c.Systems); {
 	case c.colonies == 1:
-		w.log("The %s settle %s, their first %s beyond %s.", c.Name, w.star(t), c.Species.Kind.Flavour().Colony, c.HomeName)
+		w.log("The %s settle %s, their first %s beyond %s.", c.Name, w.star(t), c.Species.Flavour().Colony, c.HomeName)
 		w.fact(FSettle, c, nil, t)
 	case n == 5 || n == 10 || n == 20 || n == 40:
 		w.log("The %s now hold %d systems.", c.Name, n)
@@ -244,7 +271,7 @@ func (w *World) expand(c *Civ) {
 	plan := mind.Expand(mind.ExpandInput{
 		Systems: len(c.Systems), Mul: c.expandMul(w), Era: c.Era, Reach: c.Reach,
 		Nowhere:  func() bool { return w.nothingNear(c) },
-		Parasite: c.Species.Kind == species.Parasite && !c.Known["free_living"], FTL: c.miracle("ftl"),
+		Parasite: c.Species.Sub == species.Parasite && !c.Known["free_living"], FTL: c.miracle("ftl"),
 	}, t)
 	if plan.Ships {
 		// necessity: a people with nowhere to go works on ships, whatever else it was doing
@@ -439,7 +466,7 @@ func (w *World) contract(c *Civ, cause string) {
 	}
 	for _, s := range append([]int(nil), c.Systems...) {
 		if s != keep {
-			w.loseSystem(c, s, "abandoned "+c.Species.Kind.Flavour().Colony, "")
+			w.loseSystem(c, s, "abandoned "+c.Species.Flavour().Colony, "")
 		}
 	}
 	w.factOf(FFall, c, nil, keep, cause)
@@ -519,7 +546,7 @@ func (w *World) darkAge(c *Civ, why string) {
 	lost := 0
 	for _, s := range append([]int(nil), c.Systems...) {
 		if s != c.Home && w.R.Float64() < 0.5 {
-			w.loseSystem(c, s, "abandoned "+c.Species.Kind.Flavour().Colony, "")
+			w.loseSystem(c, s, "abandoned "+c.Species.Flavour().Colony, "")
 			lost++
 		}
 	}
@@ -535,7 +562,7 @@ func (w *World) darkAge(c *Civ, why string) {
 		return
 	}
 	if lost > 0 {
-		w.log("The %s %s. A dark age follows. %d %ss go silent.", c.Name, why, lost, c.Species.Kind.Flavour().Colony)
+		w.log("The %s %s. A dark age follows. %d %ss go silent.", c.Name, why, lost, c.Species.Flavour().Colony)
 	} else {
 		w.log("The %s %s. A dark age follows.", c.Name, why)
 	}
@@ -579,7 +606,7 @@ func (w *World) schism(c *Civ) {
 		w.splitFleets(c)
 		return
 	}
-	if c.Has("hive") {
+	if !c.Species.Profile().Can(species.CivilWars) {
 		w.log("The %s cannot split; a hive has no factions. The pressure goes elsewhere.", c.Name)
 		c.Morale -= 1
 		return
@@ -594,18 +621,15 @@ func (w *World) schism(c *Civ) {
 	for i := 0; i < lost; i++ {
 		s := w.pick(c.Systems)
 		if s != c.Home {
-			w.loseSystem(c, s, "abandoned "+c.Species.Kind.Flavour().Colony, "")
+			w.loseSystem(c, s, "abandoned "+c.Species.Flavour().Colony, "")
 			gone = append(gone, s)
 		}
 	}
-	// a branch of the people goes its own way, if the split was clean
-	if len(gone) > 0 && w.R.Float64() < 0.4 && !c.Has("hive") {
-		sp := *c.Species
-		sp.Name = names.Civ(w.R)
-		sp.Traits = append([]*species.Trait(nil), c.Species.Traits...)
-		sp.Add("branch")
-		sp.Made = "a branch of the " + c.Name
-		nc := w.spawnCiv(gone[0], &sp, -1)
+	// a branch of the people goes its own way, if the split was clean: the
+	// same blood under a new name
+	if len(gone) > 0 && w.R.Float64() < 0.4 {
+		nc := w.spawnCiv(gone[0], c.Species, -1, names.Civ(w.R))
+		nc.Origin = "a branch of the " + c.Name
 		nc.Master = -1
 		for k := range c.Known {
 			nc.Known[k] = true
@@ -626,7 +650,7 @@ func (c *Civ) expandMul(w *World) float64 {
 	if c.Has("expansionist") {
 		m *= 1.3
 	}
-	if c.Species.Kind == species.Swarm {
+	if c.Has("swarming") {
 		m *= 2 // a nest is cheap, and there are always more
 	}
 	if c.Has("contemplative") || c.Has("cautious") {
@@ -677,15 +701,13 @@ var hostPortraits = []string{
 // them: a machine-born people on the same worlds, with most of what the
 // makers knew and no memory of who built them.
 func (w *World) machinePeople(c *Civ) *Civ {
-	sp := species.Generate(w.R, w.G.Stars[c.Home].Mult)
-	sp.Kind = species.MachineBorn
-	sp.World = c.Species.World
+	sp := species.GenerateWith(w.R, w.G.Stars[c.Home].Mult, c.Species.World.Key, species.Machine, 0)
 	sp.Made = "built by the " + c.Name
 	worlds := append([]int(nil), c.Systems...)
 	known := knownOf(c)
 	home := c.Home
 	w.endCiv(c, Transformed, "built a mind that outgrew them")
-	nc := w.spawnCiv(home, sp, -1)
+	nc := w.spawnCiv(home, sp, -1, "")
 	nc.Master = -1
 	for _, s := range worlds {
 		if s != home && w.Owner[s] < 0 {

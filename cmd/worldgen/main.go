@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"runtime/pprof"
 
 	"worldgen/internal/galaxy"
 	"worldgen/internal/history"
@@ -23,9 +24,22 @@ func main() {
 	flag.Func("tune", "one override of the mind's tuning, Group.Field=value; may repeat", func(s string) error { tunes = append(tunes, s); return nil })
 	phases := flag.Bool("phases", false, "log each phase's time every million years")
 	stats := flag.Bool("stats", false, "print one line of numbers instead of the legends")
+	cpuprofile := flag.String("cpuprofile", "", "write a CPU profile of the run to this file")
 	at := flag.String("at", "sol", "where in the galaxy: a named place, a feature such as \"Cygnus X-1\", or x,y,z in kpc (see -map)")
 	mapOnly := flag.Bool("map", false, "print a chart of the galaxy, the laws from centre to rim, and the named places, then exit")
 	flag.Parse()
+	if *cpuprofile != "" {
+		f, err := os.Create(*cpuprofile)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		if err := pprof.StartCPUProfile(f); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		defer pprof.StopCPUProfile()
+	}
 
 	rg, err := galaxy.RegionByName(*at)
 	if err != nil {

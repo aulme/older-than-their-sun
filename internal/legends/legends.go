@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"worldgen/internal/history"
+	"worldgen/internal/species"
 	"worldgen/internal/tech"
 )
 
@@ -271,10 +272,15 @@ func Write(out io.Writer, w *history.World, full bool) {
 		made := ""
 		if c.Species.Made != "" {
 			made = " (" + c.Species.Made + ")"
+		} else if c.Origin != "" {
+			made = " (" + c.Origin + ")"
 		}
 		kind := ""
-		if c.Species.Kind != 0 {
-			kind = "; " + c.Species.Kind.String()
+		if c.Species.Sub != species.Biological || c.Species.Mods != 0 {
+			kind = "; " + c.Species.Nature()
+		}
+		if c.Species.Name != c.Name {
+			kind += "; the " + c.Species.Name + " by blood"
 		}
 		seat := ""
 		if c.Home != c.Cradle {
