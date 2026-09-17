@@ -179,6 +179,10 @@ type Profile struct {
 	Dials         mind.Dials         // what it does to temperament
 	FilterDiff    map[string]float64 // what it does to each filter's difficulty
 	Cannot        Ability            // what it cannot do
+	// means: see the flow package and history's flow.go
+	Cradle          float64 // multiplier on what the cradle world yields the people that arose on it
+	Upkeep          M       // multiplier on the upkeep of each domain's nodes
+	OrganicAsEnergy bool    // every cost in organic matter is paid in energy instead
 }
 
 // Can says whether the profile allows an ability.
@@ -193,10 +197,15 @@ func mul(m float64) float64 {
 
 // Compose multiplies the entries' profiles together.
 func Compose(ps ...Profile) Profile {
-	out := Profile{Reach: 1, Rate: 1, Expand: 1, Memory: 1, Endure: 1, Dom: M{}, FilterDiff: map[string]float64{}}
+	out := Profile{Reach: 1, Rate: 1, Expand: 1, Memory: 1, Endure: 1, Cradle: 1, Dom: M{}, Upkeep: M{}, FilterDiff: map[string]float64{}}
 	for _, p := range ps {
 		out.Mil, out.Sur, out.Soc = out.Mil+p.Mil, out.Sur+p.Sur, out.Soc+p.Soc
 		out.Reach *= mul(p.Reach)
+		out.Cradle *= mul(p.Cradle)
+		out.OrganicAsEnergy = out.OrganicAsEnergy || p.OrganicAsEnergy
+		for k, v := range p.Upkeep {
+			out.Upkeep[k] = mul(out.Upkeep[k]) * v
+		}
 		out.Rate *= mul(p.Rate)
 		out.Expand *= mul(p.Expand)
 		out.Memory *= mul(p.Memory)

@@ -20,6 +20,7 @@ import (
 	"strings"
 	"sync"
 
+	"worldgen/internal/flow"
 	"worldgen/internal/galaxy"
 	"worldgen/internal/history"
 	"worldgen/internal/legends"
@@ -74,6 +75,10 @@ type Rec struct {
 	Myth      int                `json:"myth"`     // of them myth
 	Monsters  int                `json:"monsters"` // peoples remembered as monsters at the end
 	LoreDials history.Dials      `json:"lore_dials"`
+	Income    flow.Income        `json:"income"` // at the people's height of means
+	Upkeep    flow.Income        `json:"upkeep"`
+	Want      flow.Income        `json:"want"`
+	Shed      map[string]int     `json:"shed"` // ticks each node spent dark
 	ever      map[string]bool
 	frontier  string
 	signature string
@@ -149,6 +154,7 @@ func main() {
 	warReport(f, recs, wars, *seeds)
 	exploreReport(f, recs)
 	loreReport(f, recs)
+	meansReport(f, recs)
 	fmt.Printf("%d civilisations over %d worlds; wrote %s\n", len(recs), *seeds, *out)
 }
 
@@ -191,6 +197,11 @@ func flatten(w *history.World) []Rec {
 		r.Tally = c.Tally
 		r.Met = len(c.Met)
 		r.LoreDials = c.LoreDials
+		r.Income, r.Upkeep, r.Want = c.HighIncome, c.HighUpkeep, c.HighWant
+		r.Shed = map[string]int{}
+		for k, n := range c.ShedTicks {
+			r.Shed[k] = n
+		}
 		r.Held, r.Myth, r.Monsters = history.LoreCounts(w, c)
 		r.Nomad = c.Has("nomadic")
 		r.Stars = c.Starfaring > 0

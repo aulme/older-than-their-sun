@@ -111,6 +111,7 @@ type civStep struct {
 
 var civSteps = []civStep{
 	{"arrivals", (*World).arrivals},
+	{"flows", (*World).flows},
 	{"research", (*World).research},
 	{"wander", (*World).wander},
 	{"expand", (*World).expand},
@@ -569,12 +570,13 @@ func (w *World) darkAge(c *Civ, why string) {
 }
 
 // forget drops a fraction of known nodes, leaves first, so the tree stays
-// consistent. It returns what was forgotten.
+// consistent, and among the leaves the dormant ones first: what was not
+// fed is not missed. It returns what was forgotten.
 func (w *World) forget(c *Civ, frac float64) []string {
 	var forgotten []string
 	n := int(float64(len(c.Known))*frac + 0.5)
 	for i := 0; i < n; i++ {
-		var leaves []string
+		var leaves, dark []string
 		for _, k := range knownOf(c) {
 			if tech.Get(k).Era == 0 {
 				continue
@@ -589,13 +591,21 @@ func (w *World) forget(c *Civ, frac float64) []string {
 			}
 			if leaf {
 				leaves = append(leaves, k)
+				if c.Shed[k] {
+					dark = append(dark, k)
+				}
 			}
+		}
+		if len(dark) > 0 {
+			leaves = dark
 		}
 		if len(leaves) == 0 {
 			break
 		}
 		k := leaves[w.R.IntN(len(leaves))]
 		delete(c.Known, k)
+		delete(c.Shed, k)
+		delete(c.DormantSince, k)
 		forgotten = append(forgotten, k)
 	}
 	return forgotten

@@ -59,6 +59,7 @@ var templates = [...]string{
 	FStripped:     "{S} stripped {T} of its ships and its people, and {O} with it.",
 	FCycle:        "{S} learned that the galaxy had done all this before, and would again.",
 	FSurveyLost:   "{P} surveyors did not come back from {T}. {H} is there.",
+	FWant:         "{S} went without, and called them the lean years.",
 }
 
 // blamedTemplates are the woes that name their own cause, retold once
@@ -69,6 +70,7 @@ var blamedTemplates = map[FactKind]string{
 	FEnd:      "{S} were ended.",
 	FDeclined: "{S} were broken.",
 	FScarred:  "{S} were marked, and it did not heal.",
+	FWant:     "{S} were made to go without.",
 }
 
 // archetypes are what a people calls an enemy whose name it has lost.
@@ -354,6 +356,8 @@ func (w *World) mythOf(c *Civ, f *Fact) string {
 		return "what was let loose at " + w.star(f.Star)
 	case FDarkAge:
 		return "the dark age"
+	case FWant:
+		return "the lean years"
 	case FSchism:
 		return "the schism"
 	case FExodus:
@@ -380,6 +384,8 @@ func (w *World) blameOf(c *Civ, f *Fact) string {
 	switch f.Kind {
 	case FDarkAge:
 		return "brought the dark years on " + us
+	case FWant:
+		return "brought the lean years on " + us
 	case FFall, FDeclined, FScarred:
 		return "brought " + us + " low"
 	case FEnd:

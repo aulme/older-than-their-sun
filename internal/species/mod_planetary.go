@@ -15,6 +15,7 @@ var planetary = &ModDef{Mod: Planetary, Cradle: "ocean", CradleOdds: 0.6, Entry:
 		Dom:        M{"propulsion": 0.4, "biology": 1.5, "society": 1.3},
 		Memory:     0.15,
 		FilterDiff: map[string]float64{"plague": 2}, // one body to sicken
-		Cannot:     Flees,                           // a taken home is the end
+		Cannot:     Flees | Fields,                  // a taken home is the end; it does not farm, it is the world
+		Cradle:     2,                               // and the world feeds it as no field could
 	},
 }}

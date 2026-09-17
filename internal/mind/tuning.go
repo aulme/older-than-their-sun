@@ -21,23 +21,24 @@ import (
 
 // Tuning is every number the decisions use. Default() is today's sim.
 type Tuning struct {
-	Belief   BeliefTuning
-	Appraise AppraiseTuning
-	Bar      BarTuning
-	Council  CouncilTuning
-	Scout    ScoutTuning
-	Campaign CampaignTuning
-	Pact     PactTuning
-	Call     CallTuning
-	Forward  ForwardTuning
-	Survey   SurveyTuning
-	Sight    SightTuning
-	Find     FindTuning
-	Research ResearchTuning
-	Expand   ExpandTuning
-	Build    BuildTuning
-	Turn     TurnTuning
-	Roam     RoamTuning
+	Belief    BeliefTuning
+	Appraise  AppraiseTuning
+	Bar       BarTuning
+	Council   CouncilTuning
+	Scout     ScoutTuning
+	Campaign  CampaignTuning
+	Pact      PactTuning
+	Call      CallTuning
+	Forward   ForwardTuning
+	Survey    SurveyTuning
+	Sight     SightTuning
+	Find      FindTuning
+	Research  ResearchTuning
+	Expand    ExpandTuning
+	Build     BuildTuning
+	Direction DirectionTuning
+	Turn      TurnTuning
+	Roam      RoamTuning
 }
 
 // BeliefTuning: what a people thinks another's level is from its
@@ -216,6 +217,13 @@ type BuildTuning struct {
 	Rate float64 // per thousand years
 }
 
+// DirectionTuning: what bends the order the means are fed in.
+type DirectionTuning struct {
+	FearBar   float64 // fear above this, with a hostile neighbour in reach, puts arms first
+	HungerBar float64 // hunger above this puts the mind before the works
+	GreedBar  float64 // greed above this puts the road before the mind
+}
+
 // TurnTuning: a relief fleet seizing the world it keeps.
 type TurnTuning struct {
 	Faithful  float64 // per thousand years, by honour
@@ -250,16 +258,17 @@ func Default() *Tuning {
 			DefConfederate: 0.3, DefDefensive: 0.2, DefMeek: 0.1, DefOpportunist: 0.2, DefConqueror: 0.1,
 			Difference: 0.1, Infamy: 0.3, Renown: 0.15, Loyalty: 0.2,
 		},
-		Call:     CallTuning{Share: 0.3, Floor: 0.1, MinFloor: 1, HelpSlack: 1, SafeLeft: 2, SafeFear: 0.3, Base: 0.3, FearWeight: 0.6, Confederate: 0.2, Betrayed: 1, Want: 0.4, BlameAbove: 3},
-		Forward:  ForwardTuning{NeedStranger: 0.3, NeedMet: 0.5, NeedEnemy: 1, Designs: 0.6, Bar: 0.3},
-		Survey:   SurveyTuning{HungerWeight: 2, GreedWeight: 1, Necessity: 2, KeepHome: 1, MinMil: 2, MinReach: 1, NearMin: 5, Rate: 0.3, HopMin: 3, HopMax: 20, MaxTour: 6, MaxTourYears: 40_000},
-		Sight:    SightTuning{FearBar: 0.6, GrudgeBar: 0.5, Reads: 2, RangeMul: 2, RangeMin: 10},
-		Find:     FindTuning{Master: 1, Wield: 1.5, Seal: 1, Curious: 3, Reaching: 1, Cautious: 3, Wary: 1.5, Practical: 2, ThreatSeal: 2, Plain: 2, Own: 3},
-		Research: ResearchTuning{DepthBonus: 0.25},
-		Expand:   ExpandTuning{Rate: 0.04, MaxRate: 0.3, ParasiteReach: 0.3, Hop: 20, Blind: 0.2, NeedShipsBelow: 40, NeedShipsEra: 2, ShipFocus: 4},
-		Build:    BuildTuning{Rate: 0.004},
-		Turn:     TurnTuning{Faithful: 0.0005, Practical: 0.01, Faithless: 0.05, Hostile: 2, Vengeful: 3, Opening: 1, GreedBase: 0.5},
-		Roam:     RoamTuning{HopMin: 3, HopMax: 20},
+		Call:      CallTuning{Share: 0.3, Floor: 0.1, MinFloor: 1, HelpSlack: 1, SafeLeft: 2, SafeFear: 0.3, Base: 0.3, FearWeight: 0.6, Confederate: 0.2, Betrayed: 1, Want: 0.4, BlameAbove: 3},
+		Forward:   ForwardTuning{NeedStranger: 0.3, NeedMet: 0.5, NeedEnemy: 1, Designs: 0.6, Bar: 0.3},
+		Survey:    SurveyTuning{HungerWeight: 2, GreedWeight: 1, Necessity: 2, KeepHome: 1, MinMil: 2, MinReach: 1, NearMin: 5, Rate: 0.3, HopMin: 3, HopMax: 20, MaxTour: 6, MaxTourYears: 40_000},
+		Sight:     SightTuning{FearBar: 0.6, GrudgeBar: 0.5, Reads: 2, RangeMul: 2, RangeMin: 10},
+		Find:      FindTuning{Master: 1, Wield: 1.5, Seal: 1, Curious: 3, Reaching: 1, Cautious: 3, Wary: 1.5, Practical: 2, ThreatSeal: 2, Plain: 2, Own: 3},
+		Research:  ResearchTuning{DepthBonus: 0.25},
+		Expand:    ExpandTuning{Rate: 0.04, MaxRate: 0.3, ParasiteReach: 0.3, Hop: 20, Blind: 0.2, NeedShipsBelow: 40, NeedShipsEra: 2, ShipFocus: 4},
+		Build:     BuildTuning{Rate: 0.004},
+		Direction: DirectionTuning{FearBar: 0.6, HungerBar: 0.6, GreedBar: 0.6},
+		Turn:      TurnTuning{Faithful: 0.0005, Practical: 0.01, Faithless: 0.05, Hostile: 2, Vengeful: 3, Opening: 1, GreedBase: 0.5},
+		Roam:      RoamTuning{HopMin: 3, HopMax: 20},
 	}
 }
 

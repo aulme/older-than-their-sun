@@ -25,13 +25,20 @@ func (w *World) recompute(c *Civ) {
 	ansible := c.miracle("ansible")
 	for _, k := range knownOf(c) {
 		n := tech.Get(k)
+		era = max(era, n.Era)
+		if !c.working(k) {
+			// dormant: no levels, no reach; the envelope holds a while
+			if !c.starved(k, w.Now) {
+				env += n.Env
+			}
+			continue
+		}
 		mil, sur, soc = mil+n.Mil, sur+n.Sur, soc+n.Soc
 		reach = max(reach, n.Reach)
 		if n.Speed > 0 {
 			speed = min(speed, n.Speed)
 		}
 		env += n.Env
-		era = max(era, n.Era)
 	}
 	for _, key := range structureKeys {
 		cnt := c.Structures[key]

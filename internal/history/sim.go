@@ -44,6 +44,7 @@ func newWorld(seed uint64, cfg Config) *World {
 	if g.Sol >= 0 {
 		w.Bio[g.Sol] = BioSimple
 	}
+	w.Sources, w.sourcesAt = naturalSources(g)
 	w.makeCycle()
 	w.phases = []phase{
 		{"life", (*World).life},

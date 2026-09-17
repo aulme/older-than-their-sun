@@ -12,6 +12,7 @@ import (
 	"time"
 	"worldgen/internal/mind"
 
+	"worldgen/internal/flow"
 	"worldgen/internal/galaxy"
 	"worldgen/internal/species"
 )
@@ -156,6 +157,22 @@ type Civ struct {
 	Rested     bool    // a nomad people that came to rest, and will not rise again
 	Quality    float64 // for the aloft: the Military the tree would give, which the fleets grow toward
 
+	// flows: see flow.go and sources.go
+	Income       flow.Income     // this tick's yield by kind
+	Upkeep       flow.Income     // the needs of every use, fed or not
+	Surplus      flow.Income     // income less what the fed uses take
+	Want         flow.Income     // what more would feed everything
+	Order        flow.Order      // the direction this tick
+	Shed         map[string]bool // nodes dormant this tick
+	DormantSince map[string]Year // when each dormant node went dark
+	ShedSince    Year            // when the current stretch of shedding began; a stretch is running while Shed is not empty
+	Wanted       bool            // the lean years were written for this stretch
+	ShedTicks    map[string]int  // for the batch: ticks each node has spent dark
+	HighIncome   flow.Income     // income, upkeep and want at the people's height of means
+	HighUpkeep   flow.Income
+	HighWant     flow.Income
+	highUpkeep   float64
+
 	// filters
 	Faced        map[string]bool
 	Scars        map[string]bool
@@ -187,6 +204,10 @@ type Tally struct {
 	// tellings
 	Tales, Witnessed, Told, Read, Inherited              int
 	Forgot, Myths, Revised, Blamed, Testaments, Restored int
+	// flows: ticks lived, ticks shedding, both by era, and both alone (one system)
+	Ticks, Lean          int
+	TicksAt, LeanAt      [5]int
+	AloneAt, LeanAloneAt [5]int
 }
 
 // Living is true for active and remnant civilisations.
@@ -401,6 +422,8 @@ type World struct {
 	ThinStage int
 	Civs      []*Civ
 	Species   []*species.Species // every blood that has arisen or been made, by ID
+	Sources   []*Source          // everything with a yield, by ID; see sources.go
+	sourcesAt [][]int            // the sources that yield at each star, ranged ones included
 	Horrors   []*Horror
 	Ages      []*AgeRecord
 	Cycle     *Cycle

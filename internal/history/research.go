@@ -1,6 +1,7 @@
 package history
 
 import (
+	"worldgen/internal/flow"
 	"worldgen/internal/mind"
 	"worldgen/internal/tech"
 )
@@ -74,6 +75,7 @@ func (c *Civ) rateMul(w *World) float64 {
 	if c.Structures["dyson"] > 0 {
 		m *= tech.Structures["dyson"].Rate
 	}
+	m *= min(1.5, 1+0.1*c.Surplus[flow.E]) // the mind runs on spare energy
 	if len(c.held()) > 0 {
 		m *= 1.5 // the miracle pulls everything else along
 		if c.surging(w.Now) {

@@ -11,7 +11,8 @@ var evolver = &ModDef{Mod: Evolver, Entry: Entry{
 	Profile: Profile{
 		Sur:        1,
 		Dom:        M{"biology": 1.5, "industry": 0.8},
-		Env:        1, // they change themselves instead of the world
+		Env:        1,                                // they change themselves instead of the world
+		Upkeep:     M{"biology": 0.5, "industry": 2}, // flesh is cheap to them and metal dear
 		FilterDiff: map[string]float64{"brood": -1, "overshoot": 1},
 	},
 }}

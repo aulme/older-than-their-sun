@@ -216,6 +216,7 @@ func genSystem(r *rand.Rand, s *Star, cat *CatStar, rocky, metals float64) *Syst
 			p.Moons = 2 + r.IntN(30)
 		}
 	}
+	tagHeavy(sys, metals)
 	// belts: one inside the snow line if there is a gap, one beyond the last giant
 	if r.Float64() < 0.5 {
 		sys.Belts = append(sys.Belts, snow*(0.6+0.6*r.Float64()))
@@ -334,6 +335,27 @@ func (sys *System) EnsureHome(r *rand.Rand, s *Star) {
 	sys.Arch = pickArch(r, s, sys, lum)
 	if sys.Arch == "floater" || sys.Arch == "volcanic" {
 		sys.Arch = "lush"
+	}
+}
+
+// HeavyTag marks the world of a metal-rich star that holds the heavy
+// elements: the fissile ore a source of energy is dug from.
+const HeavyTag = "rich in heavy elements"
+
+// tagHeavy tags the largest untagged rocky world of a metal-rich star. It
+// draws nothing, so it changes no field that was generated before it.
+func tagHeavy(sys *System, metals float64) {
+	if metals < 0.15 {
+		return
+	}
+	best := -1
+	for i, p := range sys.Planets {
+		if (p.Kind == Rock || p.Kind == SuperEarth) && p.Tag == "" && (best < 0 || p.MassE > sys.Planets[best].MassE) {
+			best = i
+		}
+	}
+	if best >= 0 {
+		sys.Planets[best].Tag = HeavyTag
 	}
 }
 

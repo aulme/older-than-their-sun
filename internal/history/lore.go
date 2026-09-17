@@ -64,6 +64,7 @@ const (
 	FStripped
 	FCycle
 	FSurveyLost
+	FWant // the lean years: a stretch of shedding past a hundred thousand years
 )
 
 // Sort is the moral shape of a fact from the subject's side.
@@ -93,6 +94,7 @@ var factShape = [...]struct {
 	FOvercome: {Deed, 2}, FScarred: {Woe, 2}, FDeclined: {Woe, 3},
 	FMiracle: {Deed, 3}, FUplift: {Deed, 3}, FBred: {Crime, 4},
 	FCosmic: {Woe, 3}, FDoom: {Woe, 3}, FExodus: {Woe, 3}, FRest: {Deed, 2}, FStripped: {Crime, 3}, FCycle: {Deed, 3}, FSurveyLost: {Woe, 2},
+	FWant: {Woe, 1},
 }
 
 // Fact is one thing that happened, as it happened.
@@ -112,23 +114,23 @@ type Fact struct {
 func (f *Fact) sort() Sort      { return factShape[f.Kind].Sort }
 func (f *Fact) weight() float64 { return factShape[f.Kind].Weight }
 
-// Source is how a people came to know a tale.
-type Source uint8
+// Provenance is how a people came to know a tale.
+type Provenance uint8
 
 const (
-	Witnessed Source = iota
-	Told             // by another people, with their slant
-	Read             // from a ruin at a star, or a relic's testament
-	Inherited        // from the people this one came out of, or its own relic
+	Witnessed Provenance = iota
+	Told                 // by another people, with their slant
+	Read                 // from a ruin at a star, or a relic's testament
+	Inherited            // from the people this one came out of, or its own relic
 )
 
-func (s Source) String() string { return [...]string{"witnessed", "told", "read", "inherited"}[s] }
+func (s Provenance) String() string { return [...]string{"witnessed", "told", "read", "inherited"}[s] }
 
 // Tale is a fact as one people holds it.
 type Tale struct {
 	Fact    int
 	Learned Year
-	Source  Source
+	Source  Provenance
 	From    int  // who told it, or whose relic
 	Slant   int8 // the teller's regard for the other party when last told: -2 monsters, -1 enemies, 0 strangers, 1 friends
 	Wear    int8 // 0 exact, 1 worn, 2 myth
@@ -242,7 +244,7 @@ func (c *Civ) other(f *Fact) int {
 // learn adds a tale. A tale told by another people carries the teller's
 // regard for the other party when the learner has none of its own; that
 // is how a stranger comes to be a monster to peoples it never met.
-func (w *World) hold(c *Civ, f *Fact, src Source, from int, slant int8, wear int8) *Tale {
+func (w *World) hold(c *Civ, f *Fact, src Provenance, from int, slant int8, wear int8) *Tale {
 	if c.lore == nil {
 		c.lore = map[int]bool{}
 	}
