@@ -300,6 +300,7 @@ func (w *World) shipwright(c *Civ) {
 // tenth of its ships a thousand years; manned again when fed. Says
 // whether any fleet at a base is laid up.
 func (w *World) keep(c *Civ) bool {
+	w.salvageWorn(c)
 	laid := false
 	for _, x := range w.fleetsOf(c) {
 		shed := c.Shed["fleet:"+itoa(x.ID)]

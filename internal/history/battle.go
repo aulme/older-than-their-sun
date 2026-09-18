@@ -130,7 +130,7 @@ func (w *World) fight(x *Expedition, t int) {
 	atk := battle.Strength(x.Ships, w.quality(c))
 	won, la, ld := battle.Fight(w.R, atk, s.strength)
 	rec.Won = won
-	lostA := w.payAttacker(c, x, la)
+	lostA := w.payAttacker(c, x, t, la)
 	_, lostD := w.payDefender(wr, c, e, t, s, ld)
 	if x.Ships <= 0 {
 		rec.Outcome = "broken"
@@ -168,6 +168,9 @@ func (w *World) fight(x *Expedition, t int) {
 		}
 	case !fleets && guns == 0:
 		rec.Outcome = "taken"
+		if lostA > 0 && lostA >= x.Ships {
+			w.log("The %s take %s, and lose half their fleet doing it.", c.Name, w.star(t))
+		}
 		w.take(wr, x, c, e, t, false)
 	case !fleets && s.guard == nil && len(s.relief) == 0:
 		rec.Outcome = "guns" // the guns alone, and a gun still stands
@@ -185,11 +188,12 @@ func (w *World) fight(x *Expedition, t int) {
 }
 
 // payAttacker is a campaign fleet's losses, in ships at its owner's
-// quality; the fleet pays them all.
-func (w *World) payAttacker(c *Civ, x *Expedition, loss float64) int {
+// quality; the fleet pays them all, and they lie where they fell.
+func (w *World) payAttacker(c *Civ, x *Expedition, t int, loss float64) int {
 	k := battle.ToShips(w.R, loss, w.quality(c), x.Ships)
 	x.Ships -= k
 	c.Tally.ShipsLost += k
+	w.leaveField(c, k, t, w.pos(t), false)
 	return k
 }
 
@@ -232,6 +236,7 @@ func (w *World) payDefender(wr *War, c, e *Civ, t int, s sky, loss float64) (gun
 		f.Ships -= k
 		ships += k
 		o.Tally.ShipsLost += k
+		w.leaveField(o, k, t, w.pos(t), false)
 		if f.Ships <= 0 {
 			w.fleetBroken(wr, c, f, t)
 		}
@@ -243,6 +248,8 @@ func (w *World) payDefender(wr *War, c, e *Civ, t int, s sky, loss float64) (gun
 // fleet broken is a line and a loss the war counts.
 func (w *World) fleetBroken(wr *War, c *Civ, f *Expedition, t int) {
 	o := w.Civs[f.Owner]
+	w.leaveField(o, f.Ships, t, w.pos(t), false)
+	o.Tally.ShipsLost += f.Ships
 	f.Ships = 0
 	f.Over = true
 	w.fleetLost(f, t)
@@ -372,8 +379,11 @@ func (w *World) sail(x *Expedition, t int) {
 	}
 	x.From, x.Star = from, t
 	x.Base = -1
+	x.Path = nil
 	x.Launched = w.Now
 	x.Arrive = w.Now + Year(w.G.Dist(from, t)*c.Speed)
+	x.Drive = c.Speed
+	w.timetable(x)
 }
 
 // reliefsAt is the relief fleets of others standing with a people at a

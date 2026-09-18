@@ -172,6 +172,11 @@ type Civ struct {
 	GarrisonWant int     // what the garrison policy asked for last tick, summed over the holdings
 	Muster       *Muster // the campaign gathering, if one is
 
+	// sightings and salvage: see sighting.go, field.go
+	Sightings    map[int]*Sighting // what this people has seen of fleets in flight, by fleet
+	Salvage      int               // ships of others' make in the guards, crewed from a field
+	SalvageTaken int               // ships taken from fields since the last were lost: a tenth is lost each thousand years
+
 	// flows: see flow.go and sources.go
 	Income       flow.Income     // this tick's yield by kind
 	Upkeep       flow.Income     // the needs of every use, fed or not
@@ -256,6 +261,8 @@ type Tally struct {
 	// battles: fought as the attacker, won on the roll, worlds taken with nothing in the sky; garrison moves and musters ordered
 	Battles, Won, EmptySky int
 	Garrisons, Musters     int
+	// sightings: fleets seen by own eyes, interceptors sent, meetings fought, own fleets turned back or broken in the dark, pickets sent, ships crewed from fields
+	Sightings, Intercepts, Meetings, Caught, Pickets, Salvaged int
 }
 
 // Living is true for active and remnant civilisations.
@@ -310,10 +317,11 @@ const (
 	Sleeper
 	Law
 	Bounty // a thing still doing what it was made to do: a yield for whoever puts it to use
+	Field  // the wrecks and derelicts of a fleet, where they fell; see field.go
 )
 
 func (k LegacyKind) String() string {
-	return [...]string{"artifact", "structure", "threat", "sleeper", "law", "bounty"}[k]
+	return [...]string{"artifact", "structure", "threat", "sleeper", "law", "bounty", "field"}[k]
 }
 
 // LegacyState is what has happened to a legacy.
@@ -373,6 +381,10 @@ type Legacy struct {
 	Hardy     float64       // multiplier on the rate of decay; 0 never decays
 	Source    int           // the source record it is, for a bounty or a wielded artifact; -1 if none
 	Testament []Inscription // what its makers told of their age, as they left it
+	// a field of wrecks
+	Wrecks, Derelicts int
+	At                vec  // where it is, for a field adrift
+	Adrift            bool // between stars: Star is the nearer end
 }
 
 // Elder is a civilisation of an earlier age. No traits, only a portrait.
@@ -489,7 +501,10 @@ type World struct {
 	factsAt   map[int][]int // facts by star
 	// war and diplomacy
 	Wars        []*War
-	Battles     []*Battle // every battle at a world, for the batch; see battle.go
+	Battles     []*Battle   // every battle at a world, for the batch; see battle.go
+	Meetings    []*Meeting  // every battle in the dark, for the batch; see intercept.go
+	Watch       []*Sighting // every sighting, for the batch; see sighting.go
+	pending     []*Sighting // sightings queued on the timetable, not yet happened
 	Expeditions []*Expedition
 	Pacts       []*Pact
 	Messages    []*Message

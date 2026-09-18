@@ -1,6 +1,6 @@
 # Sightings and interception
 
-**Status:** Draft
+**Status:** In Progress (plan step 10, 2026-09-18: seeing, the timetable, the observatory and the works as eyes, meeting in the dark and turning back, wrecks as fields the Find reads, pickets; the sold sighting is plan step 12; see "Watching the sky" in `DESIGN_NOTES.md`)
 **Last updated:** 2026-09-17
 
 Assumes [one-tick](one-tick.md): every rate below is per thousand years, and "per tick" means a thousand-year tick, the same thing.

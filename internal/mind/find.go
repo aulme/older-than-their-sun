@@ -14,6 +14,8 @@ type FindInput struct {
 	Ruin                                                                                        bool // a ruin: nothing to use, nothing to guard
 	Law                                                                                         bool // a place where the state beneath shows through: only to be used
 	OldThings                                                                                   bool // the people is fixed on what the old ones left: eager to master
+	Field                                                                                       bool // a field of wrecks: ships to crew, nothing to seal
+	Known                                                                                       bool // the finder knows its art already: nothing to master
 }
 
 // Attempt is the weights.
@@ -63,6 +65,12 @@ func Find(in FindInput, t *Tuning) Attempt {
 	}
 	if in.Law {
 		a.Master, a.Seal = 0, 0
+	}
+	if in.Field {
+		a.Seal = 0
+		if in.Known {
+			a.Master = 0
+		}
 	}
 	return a
 }

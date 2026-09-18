@@ -60,6 +60,11 @@ func (w *World) reservations(c *Civ) []flow.Use {
 			cat, what = flow.Road, "the surveyors"
 		case Scout:
 			what = "the scout"
+			if x.Picket {
+				what = "the picket"
+			}
+		case Intercept:
+			what = "the interceptors"
 		case Guard:
 			what = "the guard"
 		case Roam:

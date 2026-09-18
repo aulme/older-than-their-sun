@@ -24,9 +24,8 @@ func (w *World) read(c *Civ, t int) bool {
 	if _, ok := c.Charted[t]; ok {
 		return true
 	}
-	r := c.watchRange()
 	for _, s := range w.holdings(c) {
-		if s == t || (r > 0 && w.G.Dist(s, t) <= r) {
+		if s == t || w.G.Dist(s, t) <= w.watchAt(c, s) {
 			return true
 		}
 	}
@@ -74,8 +73,8 @@ func (w *World) chart(c *Civ, t int, how string) {
 		if l.Star != t || (l.State != Buried && l.State != Sealed) || c.Found[l.ID] {
 			continue
 		}
-		if l.Maker >= 0 && c.Known[l.Node] {
-			continue // nothing to learn; a structure is taken over on settling
+		if l.Maker >= 0 && c.Known[l.Node] && l.ships() == 0 {
+			continue // nothing to learn; a structure is taken over on settling; a field with ships is worth the ships
 		}
 		if !visit {
 			if !c.Marked[t] {
@@ -141,6 +140,7 @@ func (w *World) explore(c *Civ) {
 		}
 	}
 	w.survey(c)
+	w.picket(c)
 }
 
 // sightMode turns the Sight outward when nothing threatens: it reads the
@@ -314,4 +314,87 @@ func (w *World) recallSurveys(c *Civ) {
 			x.Recalled = true
 		}
 	}
+}
+
+// picket keeps scouts out watching: one per enemy the policy names, at
+// the star nearest the midpoint between the people's nearest holding and
+// the enemy's nearest world, if that star is empty or its own. A picket
+// holds its post for a tour and comes home. Wartime does not recall it.
+func (w *World) picket(c *Civ) {
+	tn := w.Cfg.Tuning
+	if c.Aloft || c.Starfaring == 0 || !c.Free() || !w.chance(tn.Picket.Rate) {
+		return
+	}
+	for _, eid := range sortedInts(c.Met) {
+		e := w.Civs[eid]
+		if !e.Active() || w.allied(c, e) || c.Master == e.ID || e.Master == c.ID || w.picketAgainst(c, e) != nil {
+			continue
+		}
+		want := mind.WantPicket(mind.PicketInput{
+			AtWar: c.Wars[eid], Front: len(w.front(c, e)) > 0, Caught: c.Tally.Caught > 0,
+			Hostile: e.hostile(), InReach: w.inReach(e, c.Home), Fear: c.Dials.Fear, Ships: w.standing(c),
+		}, tn)
+		if !want.Send {
+			continue
+		}
+		t := w.picketStar(c, e)
+		if t < 0 {
+			continue
+		}
+		w.explain(c, "a picket against the "+e.Name, want)
+		x := w.launch(c, Scout, e, t, 1)
+		if x == nil {
+			return
+		}
+		x.Picket = true
+		c.Tally.Pickets++
+		if c.Tally.Pickets == 1 || w.Cfg.TraceAI {
+			w.log("The %s send a ship to %s to sit and watch the sky toward the %s.", c.Name, w.star(t), e.Name)
+		}
+		return
+	}
+}
+
+// picketAgainst is a people's picket sent against an enemy, or nil.
+func (w *World) picketAgainst(c, e *Civ) *Expedition {
+	for _, x := range w.fleetsOf(c) {
+		if x.Kind == Scout && x.Picket && x.Target == e.ID && !x.Returning {
+			return x
+		}
+	}
+	return nil
+}
+
+// picketStar is where a picket against an enemy sits: the star nearest
+// the midpoint between the people's nearest holding and the enemy's
+// nearest world, empty or the people's own, within a hop of the midpoint.
+func (w *World) picketStar(c, e *Civ) int {
+	_, ew := w.nearestEnemy(c, e)
+	h, _ := w.nearest(c, ew)
+	mid := w.pos(h).lerp(w.pos(ew), 0.5)
+	best, bd := -1, float64(fleetHop)
+	for s := range w.G.Stars {
+		if w.Held[s] >= 0 || (w.Owner[s] >= 0 && w.Owner[s] != c.ID) {
+			continue
+		}
+		if d := w.pos(s).dist(mid); d < bd {
+			best, bd = s, d
+		}
+	}
+	return best
+}
+
+// picketPost is a picket arriving: it stays, and it is an eye from now on.
+func (w *World) picketPost(x *Expedition) {
+	c := w.Civs[x.Owner]
+	x.Base, x.Fed = x.Star, w.Now
+	w.newEye(c, eye{star: x.Base, r: max(fleetEye, c.watchRange()/2), kind: eyePicket})
+}
+
+// picketStep is a picket at its post: home when its tour is done.
+func (w *World) picketStep(x *Expedition) {
+	if !x.Picket || float64(w.Now-x.Fed) < w.Cfg.Tuning.Picket.Tour {
+		return
+	}
+	w.goHome(x)
 }

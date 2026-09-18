@@ -39,6 +39,8 @@ var templates = [...]string{
 	FBetrayal:     "{S} {X}, and {O} paid for it.",
 	FRelief:       "{S} stood with {O} at {T}.",
 	FDefeat:       "{P} fleet was broken at {T} by {O}.",
+	FIntercept:    "{S} met the fleet of {O} in the dark near {T} and beat it.",
+	FCaught:       "{P} fleet was met in the dark near {T} by {O} and beaten.",
 	FFind:         "{S} found {L} at {T}.",
 	FMastered:     "{S} understood {L}, and how it was made.",
 	FSealed:       "{S} sealed {L} at {T} and set a watch on it.",
@@ -432,6 +434,8 @@ func (w *World) blameOf(c *Civ, f *Fact) string {
 		return "woke " + w.horrorName(f)
 	case FDefeat:
 		return "broke the fleet at " + w.star(f.Star)
+	case FCaught:
+		return "caught the fleet in the dark near " + w.star(f.Star)
 	case FCosmic, FDoom:
 		return "killed the sun"
 	case FExodus:

@@ -19,6 +19,7 @@ type Site struct {
 	Levels float64     // the levels it lifts, all three summed
 	Dock   bool        // it is one more dock: worth what ships are wanting
 	Guns   int         // the guns it stands in the sky there
+	Watch  float64     // how far it sees fleets from there, in light years
 }
 
 // BuildInput is what the choice is made from.
@@ -27,6 +28,7 @@ type BuildInput struct {
 	Want         flow.Income // what more by kind would run everything
 	Spare        flow.Income // what is left this tick after the fed uses
 	ShipsWanting int         // the want of ships less the ships in being
+	Fear         float64     // an eye on the sky is worth more to the fearful
 }
 
 // BuildChoice is the decision.
@@ -51,7 +53,8 @@ func (b BuildChoice) Why() string {
 // Build chooses a site. Only a site whose upkeep the spare covers Cover
 // times over is affordable. Among those, the one that meets most of the
 // want; with nothing wanting, or nothing meeting it, the one worth most:
-// its yield plus its levels weighted, and for a dock the ships wanting.
+// its yield plus its levels weighted, for a dock the ships wanting, for
+// guns the guns, and for an eye its range, worth more to the fearful.
 // Ties go to the earlier site.
 func Build(in BuildInput, t *Tuning) BuildChoice {
 	p := &t.Build
@@ -69,6 +72,7 @@ func Build(in BuildInput, t *Tuning) BuildChoice {
 			worth += p.DockWeight * float64(max(in.ShipsWanting, 0))
 		}
 		worth += p.GunWeight * float64(s.Guns)
+		worth += p.WatchWeight * s.Watch * (p.WatchBase + in.Fear)
 		switch {
 		case out.Pick < 0:
 		case fixes > out.Fixes:

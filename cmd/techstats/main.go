@@ -128,6 +128,10 @@ func main() {
 		recs    []Rec
 		wars    []WarRec
 		battles []BattleRec
+		sights  []SightRec
+		meets   []MeetRec
+		fleets  []FleetRec
+		fields  FieldRec
 		stats   string
 		ages    float64
 	}
@@ -144,7 +148,8 @@ func main() {
 			w := history.Generate(seed, cfg)
 			var sb strings.Builder
 			legends.Stats(&sb, w)
-			runs[i] = run{seed: seed, recs: flatten(w), wars: flattenWars(w), battles: flattenBattles(w), stats: sb.String(), ages: float64(w.Present-w.Cfg.Dawn) / 1e6}
+			sights, meets, fleets, fields := flattenSightings(w)
+			runs[i] = run{seed: seed, recs: flatten(w), wars: flattenWars(w), battles: flattenBattles(w), sights: sights, meets: meets, fleets: fleets, fields: fields, stats: sb.String(), ages: float64(w.Present-w.Cfg.Dawn) / 1e6}
 		}(i)
 	}
 	wg.Wait()
@@ -152,12 +157,20 @@ func main() {
 	var recs []Rec
 	var wars []WarRec
 	var battles []BattleRec
+	var sights []SightRec
+	var meets []MeetRec
+	var fleets []FleetRec
+	var fields []FieldRec
 	var stats []string
 	ageSum := 0.0
 	for _, r := range runs {
 		recs = append(recs, r.recs...)
 		wars = append(wars, r.wars...)
 		battles = append(battles, r.battles...)
+		sights = append(sights, r.sights...)
+		meets = append(meets, r.meets...)
+		fleets = append(fleets, r.fleets...)
+		fields = append(fields, r.fields)
 		stats = append(stats, r.stats)
 		ageSum += r.ages
 	}
@@ -174,6 +187,7 @@ func main() {
 	meansReport(f, recs)
 	shipsReport(f, recs)
 	battlesReport(f, recs, battles)
+	sightingsReport(f, recs, sights, meets, fleets, fields)
 	fmt.Printf("%d civilisations over %d worlds; wrote %s\n", len(recs), *seeds, *out)
 }
 
@@ -452,8 +466,8 @@ func effects(n *tech.Node) string {
 		}
 		e = append(e, "tilt "+strings.Join(fs, ", "))
 	}
-	if n.Structure != "" {
-		e = append(e, "unlocks "+tech.Structures[n.Structure].Name)
+	for _, k := range n.Structures {
+		e = append(e, "unlocks "+tech.Structures[k].Name)
 	}
 	if n.Filter != "" {
 		d, lv := history.FilterDiff(n.Filter)

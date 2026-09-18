@@ -21,16 +21,17 @@ import (
 // age and becomes, by survivorship, an elder legacy of the next.
 
 var remainDescs = map[string]string{
-	"arcology":   "a sealed city of the %s",
-	"shipyard":   "the yards of the %s",
-	"defences":   "the guns of the %s",
-	"silos":      "the silos of the %s",
-	"ansible":    "a relay of the %s",
-	"dyson":      "the swarm of the %s",
-	"mine":       "the mines of the %s",
-	"collectors": "the collectors of the %s",
-	"tap":        "the tap of the %s, still ringing the dead star",
-	"lifter":     "the lifter of the %s",
+	"arcology":    "a sealed city of the %s",
+	"shipyard":    "the yards of the %s",
+	"defences":    "the guns of the %s",
+	"silos":       "the silos of the %s",
+	"ansible":     "a relay of the %s",
+	"dyson":       "the swarm of the %s",
+	"mine":        "the mines of the %s",
+	"collectors":  "the collectors of the %s",
+	"tap":         "the tap of the %s, still ringing the dead star",
+	"lifter":      "the lifter of the %s",
+	"observatory": "the mirrors of the %s",
 }
 
 // relics: description and hardiness
@@ -193,10 +194,23 @@ func (w *World) tickLegacies() {
 	}
 }
 
-// Describe gives a legacy's description with its condition.
+// Describe gives a legacy's description with its condition; a field with
+// the ships in it.
 func (l *Legacy) Describe() string {
 	if l.Maker < 0 {
 		return l.Desc
+	}
+	if l.Kind == Field {
+		s := l.Desc
+		if n := l.ships(); n > 0 {
+			s += ", " + shipsWord(n)
+		} else {
+			s = "what is left of " + l.Desc
+		}
+		if l.Adrift {
+			s += ", adrift"
+		}
+		return s
 	}
 	switch l.Cond {
 	case Abandoned:
@@ -262,7 +276,7 @@ func (w *World) takeOver(c *Civ, star int) {
 		}
 		l.State = Wielded
 		l.Finder = c.ID
-		key := tech.Get(l.Node).Structure
+		key := tech.Get(l.Node).Structure()
 		c.Works = append(c.Works, Work{Key: key, Node: l.Node, Star: star, Legacy: l.ID})
 		c.Structures[key]++
 		if w.kinship(c, l) == 2 {

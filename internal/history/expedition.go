@@ -1,11 +1,8 @@
 package history
 
 import (
-	"math"
-
 	"worldgen/internal/mind"
 	"worldgen/internal/names"
-	"worldgen/internal/tech"
 )
 
 // Every ship is in a fleet, and this is the fleet: one object for the
@@ -24,13 +21,14 @@ const (
 	Campaign ExpKind = iota
 	Relief
 	Scout
-	Roam   // a nomad people's fleet; see nomad.go
-	Survey // surveyors reading the stars; see explore.go
-	Guard  // the ships at one of the people's stars: its garrison and its reserve; see ships.go
+	Roam      // a nomad people's fleet; see nomad.go
+	Survey    // surveyors reading the stars; see explore.go
+	Guard     // the ships at one of the people's stars: its garrison and its reserve; see ships.go
+	Intercept // sent to meet a fleet in the dark; see intercept.go
 )
 
 func (k ExpKind) String() string {
-	return [...]string{"campaign", "relief", "scout", "roam", "survey", "guard"}[k]
+	return [...]string{"campaign", "relief", "scout", "roam", "survey", "guard", "intercept"}[k]
 }
 
 // Expedition is one fleet.
@@ -56,13 +54,21 @@ type Expedition struct {
 	Battles   int
 	Wins      int
 	Turned    bool
-	Fed       Year // for a roaming fleet: when it reached its base
-	Tour      int  // for surveyors: stars read this trip
-	Recalled  bool // for surveyors: called home by a war; they finish the leg and turn
-	Out       Year // when the fleet first set out; Launched is the start of its current leg
-	Back      int  // for a campaign fleet that fell back: the world it returns to, or -1
-	Sieges    int  // times it fell back and came again
-	Withdrawn bool // for a relief fleet: moving between its host's worlds, not arriving anew
+	Fed       Year    // for a roaming fleet: when it reached its base
+	Tour      int     // for surveyors: stars read this trip
+	Recalled  bool    // for surveyors: called home by a war; they finish the leg and turn
+	Out       Year    // when the fleet first set out; Launched is the start of its current leg
+	Back      int     // for a campaign fleet that fell back: the world it returns to, or -1
+	Sieges    int     // times it fell back and came again
+	Withdrawn bool    // for a relief fleet: moving between its host's worlds, not arriving anew
+	Drive     float64 // years per light year on this leg
+	Path      *[2]vec // the leg's ends when either is a point in the dark, not a star; see geom.go
+	Warning   Year    // the most warning any people had of it: its arrival less the sighting
+	// interception: see intercept.go
+	Quarry int  // the fleet an interceptor was sent to meet
+	Meet   Year // when
+	Leg    Year // the quarry's Launched when it was seen: the leg the meeting was computed on
+	Picket bool // for a scout: it stays at its star and watches
 }
 
 // launch sends a fleet of n ships toward a star: the ships are taken
@@ -87,11 +93,15 @@ func (w *World) launch(c *Civ, kind ExpKind, target *Civ, star int, n int) *Expe
 	}
 	d := w.G.Dist(from, star)
 	x := &Expedition{ID: len(w.Expeditions), Owner: c.ID, Target: -1, Kind: kind, Star: star, From: from, Ships: n, Back: -1,
-		Launched: w.Now, Out: w.Now, Arrive: w.Now + Year(d*c.Speed), Base: -1, Manned: w.Now, Seen: map[int]bool{}}
+		Launched: w.Now, Out: w.Now, Arrive: w.Now + Year(d*c.Speed), Base: -1, Manned: w.Now, Seen: map[int]bool{}, Drive: c.Speed}
 	if target != nil {
 		x.Target = target.ID
 	}
 	w.Expeditions = append(w.Expeditions, x)
+	w.timetable(x)
+	if kind != Scout && kind != Survey {
+		w.newEye(c, eye{star: -1, r: max(fleetEye, c.watchRange()/2), fleet: x, kind: eyeFleet})
+	}
 	switch kind {
 	case Campaign:
 		c.Tally.Fleets++
@@ -123,10 +133,14 @@ func shareWord(n, total int) string {
 	return "a part"
 }
 
-// tickExpeditions moves every fleet a tick. A guard at its star has
-// nothing to do here, its keep and its rot being in the civ tick; a guard
-// in flight is on its way to another guard.
+// tickExpeditions moves every fleet a tick: first the sightings and the
+// meetings due before the next tick, in year order, so a crossing shorter
+// than a tick is seen and met before it arrives; then every fleet. A
+// guard at its star has nothing to do here, its keep and its rot being in
+// the civ tick; a guard in flight is on its way to another guard.
 func (w *World) tickExpeditions() {
+	w.sightingsDue()
+	w.meetingsDue()
 	for _, x := range w.Expeditions {
 		if x.Over {
 			continue
@@ -163,6 +177,10 @@ func (w *World) tickExpeditions() {
 		}
 		if x.Returning {
 			if w.Now >= x.Arrive {
+				if o := w.Owner[x.Star]; (x.Kind == Campaign || x.Kind == Relief || x.Kind == Intercept) && ((o >= 0 && o != c.ID) || w.Held[x.Star] >= 0) {
+					w.goHome(x) // turned back to a star somebody else holds: on from there
+					continue
+				}
 				if x.Report != nil && x.Target >= 0 {
 					if c.receive(x.Target, x.Report) {
 						c.Scouted[x.Target] = w.Now
@@ -176,7 +194,6 @@ func (w *World) tickExpeditions() {
 			continue
 		}
 		if x.Base < 0 {
-			w.watchSky(x)
 			if w.Now < x.Arrive {
 				continue
 			}
@@ -191,6 +208,8 @@ func (w *World) tickExpeditions() {
 			w.campaign(x)
 		case Relief:
 			w.station(x)
+		case Scout:
+			w.picketStep(x)
 		}
 	}
 }
@@ -201,7 +220,14 @@ func (w *World) arrive(x *Expedition) {
 	switch x.Kind {
 	case Survey:
 		w.surveyArrive(x)
+	case Intercept:
+		w.meetInDark(x)
 	case Scout:
+		w.scoutSeen(x)
+		if x.Picket {
+			w.picketPost(x)
+			return
+		}
 		if x.Target >= 0 {
 			if e := w.Civs[x.Target]; e.Living() {
 				rep := w.look(c, e, x.Star, 0.2)
@@ -334,8 +360,11 @@ func (w *World) goHome(x *Expedition) {
 	to, d := w.nearest(c, from)
 	x.Returning = true
 	x.Base = -1
+	x.Path = nil
 	x.From, x.Star = from, to
+	x.Launched = w.Now
 	x.Arrive = w.Now + Year(d*c.Speed)
+	x.Drive = c.Speed
 }
 
 // goNative is a fleet that never comes home: its captains keep what they
@@ -416,59 +445,6 @@ func (w *World) station(x *Expedition) {
 	}
 	if w.wouldTurn(x) {
 		w.turn(x)
-	}
-}
-
-// watchSky is everyone with a telescope seeing a fleet pass.
-func (w *World) watchSky(x *Expedition) {
-	if x.Kind == Scout || x.Kind == Roam || x.Kind == Survey || x.Kind == Guard {
-		return
-	}
-	c := w.Civs[x.Owner]
-	frac := clamp(float64(w.Now-x.Launched)/float64(max(1, x.Arrive-x.Launched)), 0, 1)
-	a, b := &w.G.Stars[x.From], &w.G.Stars[x.Star]
-	px, py, pz := a.X+frac*(b.X-a.X), a.Y+frac*(b.Y-a.Y), a.Z+frac*(b.Z-a.Z)
-	for _, o := range w.Civs {
-		if !o.Active() || o.ID == c.ID || x.Seen[o.ID] {
-			continue
-		}
-		r := o.watchRange()
-		if c.Speed <= 4 {
-			r *= 2 // a relativistic drive is a torch
-		}
-		seen := o.miracle("foresight") && !o.Searching && w.Owner[x.Star] == o.ID
-		if !seen && r > 0 {
-			for _, s := range o.Systems {
-				st := &w.G.Stars[s]
-				if math.Sqrt((st.X-px)*(st.X-px)+(st.Y-py)*(st.Y-py)+(st.Z-pz)*(st.Z-pz)) <= r {
-					seen = true
-					break
-				}
-			}
-		}
-		if seen {
-			x.Seen[o.ID] = true
-			w.fleetSeen(x, o)
-		}
-	}
-}
-
-// fleetSeen is what a people does with a fleet sighted.
-func (w *World) fleetSeen(x *Expedition, o *Civ) {
-	c := w.Civs[x.Owner]
-	switch {
-	case x.Kind == Campaign && x.Target == o.ID:
-		w.log("The %s see the fleet of the %s coming, %s out.", o.Name, c.Name, span(x.Arrive-w.Now))
-		o.Focus[tech.Weapons] = max(o.Focus[tech.Weapons], 3)
-		o.Summoned = true
-		if wr := w.warBetween(c.ID, o.ID); wr != nil {
-			wr.Will[wr.side(o.ID)] += 0.5
-			w.callAllies(o, c, wr)
-		}
-	case x.Kind == Relief && x.Target >= 0 && o.Wars[x.Target]:
-		h := w.Civs[x.Target]
-		i := w.observe(o, h, x.Star, 0.5)
-		i.Relief += float64(x.Ships)
 	}
 }
 

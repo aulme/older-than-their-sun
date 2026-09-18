@@ -42,6 +42,8 @@ type Tuning struct {
 	Trade     TradeTuning
 	Want      WantTuning
 	Garrison  GarrisonTuning
+	Intercept InterceptTuning
+	Picket    PicketTuning
 }
 
 // BeliefTuning: what a people thinks another's level is from its
@@ -226,6 +228,22 @@ type BuildTuning struct {
 	LevelWeight float64 // a level lifted is worth this much yield per tick, when nothing is wanting
 	DockWeight  float64 // a dock is worth this much yield per tick per ship wanting
 	GunWeight   float64 // a gun standing over a world is worth this much yield per tick
+	WatchWeight float64 // a light year of watch is worth this much yield per tick, times WatchBase plus fear
+	WatchBase   float64
+}
+
+// InterceptTuning: meeting a fleet in the dark.
+type InterceptTuning struct {
+	Muster  float64 // years from the sighting before an interceptor can sail
+	Samples int     // points along the rest of the quarry's line tried for a meeting
+}
+
+// PicketTuning: scouts that stay and watch.
+type PicketTuning struct {
+	Tour     float64 // years a picket holds its post
+	FearBar  float64 // above this fear a picket is kept against any hostile neighbour in reach, in peacetime
+	KeepHome float64 // ships that must stay home
+	Rate     float64 // launches per thousand years when one is wanted
 }
 
 // WantTuning: how many ships a people builds toward.
@@ -302,13 +320,15 @@ func Default() *Tuning {
 		Find:      FindTuning{Master: 1, Wield: 1.5, Seal: 1, Curious: 3, Reaching: 1, Cautious: 3, Wary: 1.5, Practical: 2, ThreatSeal: 2, Plain: 2, Own: 3},
 		Research:  ResearchTuning{DepthBonus: 0.25, Unfed: 0.25},
 		Expand:    ExpandTuning{Rate: 0.04, MaxRate: 0.3, ParasiteReach: 0.3, Hop: 20, Blind: 0.2, NeedShipsBelow: 40, NeedShipsEra: 2, ShipFocus: 4},
-		Build:     BuildTuning{Rate: 0.004, Cover: 2, LevelWeight: 2, DockWeight: 1, GunWeight: 1},
+		Build:     BuildTuning{Rate: 0.004, Cover: 2, LevelWeight: 2, DockWeight: 1, GunWeight: 1, WatchWeight: 0.05, WatchBase: 0.5},
 		Direction: DirectionTuning{FearBar: 0.6, HungerBar: 0.6, GreedBar: 0.6},
 		Turn:      TurnTuning{Faithful: 0.0005, Practical: 0.01, Faithless: 0.05, Hostile: 2, Vengeful: 3, Opening: 1, GreedBase: 0.5},
 		Roam:      RoamTuning{HopMin: 3, HopMax: 20},
 		Trade:     TradeTuning{CapBase: 0.25, CapFast: 0.5, CapDoor: 1, CapNomad: 0.5, GrudgeBar: 0.3, DifferentShare: 0.5, FearBar: 0.6, SpawnOrganic: 2, GraspWant: 2},
 		Want:      WantTuning{Floor: 1, FearWeight: 1},
 		Garrison:  GarrisonTuning{HomeBase: 0.5, HomeMin: 1, ColonyShare: 0.3},
+		Intercept: InterceptTuning{Muster: 50, Samples: 64},
+		Picket:    PicketTuning{Tour: 20_000, FearBar: 0.6, KeepHome: 1, Rate: 0.3},
 	}
 }
 

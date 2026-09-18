@@ -44,6 +44,15 @@ func (w *World) observe(c, e *Civ, star int, noise float64) *Intel {
 	return i
 }
 
+// observeDark is what a people learns of another from a battle between
+// fleets with no world in sight: the level, and the ships manned
+// everywhere as far as the fight could tell.
+func (w *World) observeDark(c, e *Civ) *Intel {
+	i := &Intel{Mil: e.Mil + w.R.NormFloat64()*0.3, Total: w.standing(e), Star: -1, Year: w.Now}
+	c.Intel[e.ID] = i
+	return i
+}
+
 // receive stores a report from elsewhere if it is newer than what is held.
 func (c *Civ) receive(about int, i *Intel) bool {
 	if old := c.Intel[about]; old != nil && old.Year >= i.Year {
@@ -123,15 +132,18 @@ func (w *World) forward(c *Civ, about *Civ, i *Intel) {
 	}
 }
 
-// watchTable is how far a people sees fleets, in light years, by the tree.
+// watchTable is how far a people's worlds see fleets, in light years, by
+// the tree; a grid or a swarm sees farther, but only where it stands
+// (tech.Structure.Watch), and an observatory farthest of all.
 var watchTable = []struct {
 	node  string
 	watch float64
 }{
-	{"astronomy", 2}, {"rocketry", 3}, {"computers", 5}, {"orbital_habitats", 8}, {"defence_grid", 12}, {"dyson", 15},
+	{"astronomy", 2}, {"rocketry", 3}, {"computers", 5}, {"orbital_habitats", 8},
 }
 
-// watchRange is how far out a people sees a fleet coming.
+// watchRange is how far out a people's worlds see a fleet coming, by the
+// tree alone; watchAt adds the works.
 func (c *Civ) watchRange() float64 {
 	r := 0.0
 	for _, row := range watchTable {

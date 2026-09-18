@@ -42,7 +42,8 @@ const (
 	MsgPact MsgKind = iota
 	MsgCall
 	MsgIntel
-	MsgNews // a fact, with the teller's slant
+	MsgNews     // a fact, with the teller's slant
+	MsgSighting // a fleet seen in flight, passed on
 )
 
 // Message is one thing said across the dark.
@@ -56,6 +57,7 @@ type Message struct {
 	Target   int      // the enemy, for proposals and calls
 	About    int      // the subject of a report
 	Intel    *Intel
+	Sighting *Sighting
 	Fact     int  // for news
 	Slant    int8 // the teller's regard for the other party in it
 }
@@ -98,6 +100,8 @@ func (w *World) tickMessages() {
 			w.news(to, from, m)
 		case MsgIntel:
 			to.receive(m.About, m.Intel)
+		case MsgSighting:
+			w.receiveSighting(to, m.Sighting)
 		case MsgPact:
 			w.answerPact(to, from, m)
 		case MsgCall:

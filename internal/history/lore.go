@@ -64,13 +64,15 @@ const (
 	FStripped
 	FCycle
 	FSurveyLost
-	FWant    // the lean years: a stretch of shedding past a hundred thousand years
-	FHarness // a first source of a kind put to use: mines in a belt, a tap on a dead star
-	FEmbargo // a people closed its ports to a partner in want
-	FCutOff  // a people's uses went dark when a partner stopped sending
-	FManna   // a people eats something that thinks
-	FRise    // what was grown for the table rose as a people
-	FLoose   // what was grown for the table got out
+	FWant      // the lean years: a stretch of shedding past a hundred thousand years
+	FHarness   // a first source of a kind put to use: mines in a belt, a tap on a dead star
+	FEmbargo   // a people closed its ports to a partner in want
+	FCutOff    // a people's uses went dark when a partner stopped sending
+	FManna     // a people eats something that thinks
+	FRise      // what was grown for the table rose as a people
+	FLoose     // what was grown for the table got out
+	FIntercept // a fleet met in the dark and beaten: the winner's
+	FCaught    // the loser's
 )
 
 // Sort is the moral shape of a fact from the subject's side.
@@ -103,6 +105,7 @@ var factShape = [...]struct {
 	FCosmic: {Woe, 3}, FDoom: {Woe, 3}, FExodus: {Woe, 3}, FRest: {Deed, 2}, FStripped: {Crime, 3}, FCycle: {Deed, 3}, FSurveyLost: {Woe, 2},
 	FWant: {Woe, 1}, FHarness: {Deed, 1},
 	FEmbargo: {Crime, 1}, FCutOff: {Woe, 2}, FManna: {Crime, 2}, FRise: {Deed, 3}, FLoose: {Folly, 4},
+	FIntercept: {Deed, 1}, FCaught: {Woe, 1},
 }
 
 // Fact is one thing that happened, as it happened.
@@ -168,6 +171,13 @@ func (w *World) fact(k FactKind, c, e *Civ, star int) *Fact {
 		w.witness(e, f)
 	}
 	w.spread(f)
+	return f
+}
+
+// factAt is a fact at a year inside the tick.
+func (w *World) factAt(y Year, k FactKind, c, e *Civ, star int) *Fact {
+	f := w.fact(k, c, e, star)
+	f.Year = y
 	return f
 }
 

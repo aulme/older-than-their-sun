@@ -383,7 +383,7 @@ func (w *World) build(c *Civ) {
 	if len(sites) == 0 {
 		return
 	}
-	b := mind.Build(mind.BuildInput{Sites: sites, Want: c.Want, Spare: c.Surplus.Less(c.Reserved), ShipsWanting: w.want(c).Ships - w.ships(c)}, w.Cfg.Tuning)
+	b := mind.Build(mind.BuildInput{Sites: sites, Want: c.Want, Spare: c.Surplus.Less(c.Reserved), ShipsWanting: w.want(c).Ships - w.ships(c), Fear: c.Dials.Fear}, w.Cfg.Tuning)
 	w.explain(c, "building", b)
 	if b.Pick < 0 {
 		return
@@ -397,7 +397,8 @@ func (w *World) build(c *Civ) {
 // sites lists where a people could build what: every structure whose node
 // it knows and works, at every world it holds where one more may stand.
 // A yielder is one per star or per belt; guns are one per star; the rest
-// are two per people and one per star. What is dug is not picked.
+// are two per people, or what the structure says, and one per star. What
+// is dug is not picked.
 func (w *World) sites(c *Civ) []mind.Site {
 	var out []mind.Site
 	for _, key := range tech.StructureKeys {
@@ -405,7 +406,7 @@ func (w *World) sites(c *Civ) []mind.Site {
 		if !c.Known[st.Node] || !c.working(st.Node) || st.Dug {
 			continue
 		}
-		if !st.Yields() && st.Guns == 0 && c.Structures[key] >= 2 {
+		if limit := max(st.Max, 2); !st.Yields() && st.Guns == 0 && c.Structures[key] >= limit {
 			continue
 		}
 		for _, s := range c.Systems {
@@ -427,7 +428,7 @@ func (w *World) sites(c *Civ) []mind.Site {
 			if key == "dyson" {
 				y = y.Less(w.workYield(c, Work{Key: "collectors", Star: s})) // what it adds over collectors already there
 			}
-			site := mind.Site{Key: key, Star: s, Yield: y, Upkeep: w.bend(c, st.Upkeep), Levels: st.Mil + st.Sur + st.Soc, Dock: key == "shipyard"}
+			site := mind.Site{Key: key, Star: s, Yield: y, Upkeep: w.bend(c, st.Upkeep), Levels: st.Mil + st.Sur + st.Soc, Dock: key == "shipyard", Watch: st.Watch}
 			if st.Guns > 0 {
 				site.Guns = w.gunsOf(c, st)
 			}

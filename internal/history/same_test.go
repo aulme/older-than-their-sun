@@ -11,7 +11,7 @@ import (
 // pinned at the start of step 2 (the mind). A refactor that must not change
 // behaviour keeps it green; a step that changes the sim on purpose re-pins
 // it and says so in its commit.
-const sameHistoryDigest = "599eb7480d108f025b702047bce0e586bdd0ed892f3798584917c31aebe1086c"
+const sameHistoryDigest = "b8ed735d3566f4be4b3cb3a8f39ddeb083a2c20558e3fa057bfd2ad73aebbe5c"
 
 func historyDigest(w *World) string {
 	h := sha256.New()

@@ -43,16 +43,16 @@ type Node struct {
 	Miracle           bool    // a power apart from the tree: rare, potent, dangerous
 	For               string  // only for these: "sub:machine", "mod:planetary", "world:iceshell", "trait:fireless"; "" for everyone
 	Mil, Sur, Soc     float64
-	Reach             float64 // reach in light years this node grants; the highest known wins
-	Speed             float64 // colony ship speed in years per light year; the lowest known wins
-	Env               int     // widens the habitable envelope
-	Focus             M       // research tilt after discovery
-	Filter            string  // filter key procced on discovery
-	Structure         string  // structure key unlocked
-	Gated             string  // a rarity without which the node cannot be learned at all; none is, and TestNoCatch22 keeps it so
-	Milestone         bool    // worth a line in the legends
-	Text              string  // legend text; %s is the civilisation name
-	Desc              string  // what it is, in one line; see desc.go
+	Reach             float64  // reach in light years this node grants; the highest known wins
+	Speed             float64  // colony ship speed in years per light year; the lowest known wins
+	Env               int      // widens the habitable envelope
+	Focus             M        // research tilt after discovery
+	Filter            string   // filter key procced on discovery
+	Structures        []string // structure keys unlocked; Structure() is the first
+	Gated             string   // a rarity without which the node cannot be learned at all; none is, and TestNoCatch22 keeps it so
+	Milestone         bool     // worth a line in the legends
+	Text              string   // legend text; %s is the civilisation name
+	Desc              string   // what it is, in one line; see desc.go
 }
 
 // EraNames label the derived era of a civilisation.
@@ -115,7 +115,7 @@ var Nodes = []*Node{
 	{Key: "networks", Name: "Global Networks", Domain: Computation, Era: 2, Prereqs: []string{"computers", "mass_politics"}, Soc: 0.5},
 	{Key: "genetics", Name: "Genetics", Domain: Biology, Era: 2, Prereqs: []string{"medicine", "chemistry"}, Sur: 0.5},
 	{Key: "ecology", Name: "Ecology", Domain: Biology, Era: 2, Prereqs: []string{"medicine", "mass_industry"}, Sur: 0.5, Focus: M{Society: 1.2}},
-	{Key: "orbital_weapons", Name: "Orbital Weapons", Domain: Weapons, Era: 2, Prereqs: []string{"rocketry", "atomic"}, Mil: 0.5, Structure: "silos"},
+	{Key: "orbital_weapons", Name: "Orbital Weapons", Domain: Weapons, Era: 2, Prereqs: []string{"rocketry", "atomic"}, Mil: 0.5, Structures: []string{"silos"}},
 	{Key: "fusion", Name: "Fusion Power", Domain: Energy, Era: 2, Prereqs: []string{"atomic", "computers"}, Mil: 0.3, Sur: 0.3, Milestone: true,
 		Text: "The %s light a small star of their own and keep it burning."},
 	{Key: "neuroscience", Name: "Neuroscience", Domain: Biology, Era: 2, Prereqs: []string{"medicine", "computers"}, Focus: M{Computation: 1.2}},
@@ -125,8 +125,8 @@ var Nodes = []*Node{
 	{Key: "machine_minds", Name: "Machine Minds", Domain: Computation, Era: 3, Prereqs: []string{"computers", "neuroscience"}, Soc: 0.5, Filter: "machines", Milestone: true,
 		Focus: M{Energy: 1.2, Industry: 1.2, Biology: 1.2, Exotic: 1.2, Propulsion: 1.2, Weapons: 1.2},
 		Text:  "The %s build a mind that is not one of theirs."},
-	{Key: "closed_ecologies", Name: "Closed Ecologies", Domain: Biology, Era: 3, Prereqs: []string{"ecology", "genetics"}, Sur: 0.5, Env: 1, Structure: "arcology"},
-	{Key: "orbital_habitats", Name: "Orbital Habitats", Domain: Industry, Era: 3, Prereqs: []string{"rocketry", "closed_ecologies"}, Sur: 0.5, Structure: "shipyard"},
+	{Key: "closed_ecologies", Name: "Closed Ecologies", Domain: Biology, Era: 3, Prereqs: []string{"ecology", "genetics"}, Sur: 0.5, Env: 1, Structures: []string{"arcology"}},
+	{Key: "orbital_habitats", Name: "Orbital Habitats", Domain: Industry, Era: 3, Prereqs: []string{"rocketry", "closed_ecologies"}, Sur: 0.5, Structures: []string{"shipyard", "observatory"}},
 	{Key: "interplanetary", Name: "Interplanetary Flight", Domain: Propulsion, Era: 3, Prereqs: []string{"rocketry", "fusion", "astronomy"}, Reach: 1},
 	{Key: "slow_interstellar", Name: "Slow Interstellar Travel", Domain: Propulsion, Era: 3, Prereqs: []string{"interplanetary", "closed_ecologies"}, Reach: 12, Speed: 100, Milestone: true,
 		Text: "The %s reach the stars. The first slow ships leave home, and will not arrive for centuries."},
@@ -136,14 +136,14 @@ var Nodes = []*Node{
 	{Key: "terraforming", Name: "Terraforming", Domain: Biology, Era: 3, Prereqs: []string{"closed_ecologies", "fusion"}, Env: 1, Sur: 0.5, Milestone: true,
 		Text: "The %s remake a dead world in the image of their own."},
 	{Key: "antimatter", Name: "Antimatter", Domain: Energy, Era: 3, Prereqs: []string{"fusion", "physics"}, Mil: 0.5},
-	{Key: "defence_grid", Name: "Planetary Defence", Domain: Weapons, Era: 3, Prereqs: []string{"orbital_weapons", "computers"}, Mil: 0.5, Structure: "defences"},
+	{Key: "defence_grid", Name: "Planetary Defence", Domain: Weapons, Era: 3, Prereqs: []string{"orbital_weapons", "computers"}, Mil: 0.5, Structures: []string{"defences"}},
 	{Key: "memetics", Name: "Memetic Engineering", Domain: Society, Era: 3, Prereqs: []string{"networks", "neuroscience"}, Soc: 1},
 	{Key: "relativistic", Name: "Relativistic Travel", Domain: Propulsion, Era: 3, Prereqs: []string{"antimatter", "slow_interstellar"}, Reach: 25, Speed: 4, Milestone: true,
 		Text: "The ships of the %s now cross the dark at a good fraction of the speed of light."},
 	{Key: "relativistic_weapons", Name: "Relativistic Weapons", Domain: Weapons, Era: 3, Prereqs: []string{"relativistic"}, Mil: 1.5, Milestone: true,
 		Text: "The %s learn that a fast enough rock is the end of any world. Everything is a weapon now."},
 	{Key: "uploading", Name: "Mind Uploading", Domain: Computation, Era: 3, Prereqs: []string{"machine_minds", "neuroscience"}, Soc: 0.5, Sur: 0.5},
-	{Key: "dyson", Name: "Dyson Swarms", Domain: Industry, Era: 3, Prereqs: []string{"self_replication", "antimatter"}, Sur: 0.5, Structure: "dyson", Milestone: true,
+	{Key: "dyson", Name: "Dyson Swarms", Domain: Industry, Era: 3, Prereqs: []string{"self_replication", "antimatter"}, Sur: 0.5, Structures: []string{"dyson"}, Milestone: true,
 		Text: "The %s begin to take their star apart for the light."},
 	{Key: "germline", Name: "Germline Engineering", Domain: Biology, Era: 3, Prereqs: []string{"terraforming", "life_extension"}, Env: 1, Sur: 1},
 	{Key: "quantum_computing", Name: "Quantum Computing", Domain: Computation, Era: 3, Prereqs: []string{"computers", "physics"}, Focus: M{Exotic: 1.3, Computation: 1.2}},
@@ -163,14 +163,14 @@ var Nodes = []*Node{
 		Text: "The %s learn to live without a host. It is a poorer life, and it can be lived anywhere."},
 	// era 4: the deep tree. Each domain has a spine that costs a great deal
 	// to climb, and no one climbs all of them.
-	{Key: "stellar_engineering", Name: "Stellar Engineering", Domain: Exotic, Era: 4, Prereqs: []string{"dyson", "physics"}, Sur: 1, Mil: 1, Filter: "stellar", Structure: "tap", Milestone: true,
+	{Key: "stellar_engineering", Name: "Stellar Engineering", Domain: Exotic, Era: 4, Prereqs: []string{"dyson", "physics"}, Sur: 1, Mil: 1, Filter: "stellar", Structures: []string{"tap"}, Milestone: true,
 		Text: "The %s reach into their star."},
 	{Key: "wormhole_physics", Name: "Wormhole Physics", Domain: Exotic, Era: 4, Prereqs: []string{"antimatter", "physics", "quantum_computing"}, Milestone: true,
 		Text: "The %s prove that space can be folded. It is only a proof, for now."},
 	{Key: "exotic_matter", Name: "Exotic Matter", Domain: Exotic, Era: 4, Cost: 500, Prereqs: []string{"wormhole_physics", "antimatter"}, Mil: 0.5, Sur: 0.5},
 	{Key: "causal_physics", Name: "Causal Physics", Domain: Exotic, Era: 4, Cost: 600, Prereqs: []string{"wormhole_physics", "quantum_computing"}, Soc: 0.5, Focus: M{Exotic: 1.3}},
 	{Key: "transcendence", Name: "Transcendence", Domain: Exotic, Era: 4, Cost: 500, Prereqs: []string{"uploading", "wormhole_physics", "memetics"}, Filter: "transcend"},
-	{Key: "star_lifting", Name: "Star Lifting", Domain: Exotic, Era: 4, Cost: 500, Prereqs: []string{"stellar_engineering"}, Sur: 1, Structure: "lifter", Milestone: true,
+	{Key: "star_lifting", Name: "Star Lifting", Domain: Exotic, Era: 4, Cost: 500, Prereqs: []string{"stellar_engineering"}, Sur: 1, Structures: []string{"lifter"}, Milestone: true,
 		Text: "The %s learn to feed and drain their star. They will never need to fear it again."},
 	{Key: "deep_time", Name: "Deep Time", Domain: Exotic, Era: 4, Cost: 600, Prereqs: []string{"star_lifting", "causal_physics"}, Patience: 4000, Chance: 0.3, Soc: 0.5, Milestone: true,
 		Text: "The %s read the ages in the ash of dead stars and learn that the galaxy has done this before."},
@@ -189,7 +189,7 @@ var Nodes = []*Node{
 	// miracles: powers apart from the tree. Reached by a conscious leap
 	// after a deep spine, or found and mastered, or born with. Each carries
 	// its own filter, faced on the leap or the find but never by the born.
-	{Key: "ansible", Name: "the Voice", Domain: Exotic, Era: 4, Miracle: true, Cost: 600, Prereqs: []string{"causal_physics", "substrate_minds"}, Structure: "ansible", Filter: "openline", Milestone: true,
+	{Key: "ansible", Name: "the Voice", Domain: Exotic, Era: 4, Miracle: true, Cost: 600, Prereqs: []string{"causal_physics", "substrate_minds"}, Structures: []string{"ansible"}, Filter: "openline", Milestone: true,
 		Text: "The %s make the leap. They can speak across any distance without delay. Their worlds are one world, and every mind among them is in the room."},
 	{Key: "directed_evolution", Name: "the Flesh", Domain: Biology, Era: 4, Miracle: true, Cost: 600, Prereqs: []string{"panspermia", "life_extension"}, Filter: "brood", Milestone: true,
 		Text: "The %s make the leap. They can remake themselves in a generation, and they do: for every world, a body."},
@@ -253,8 +253,10 @@ func init() {
 				panic("tech: unknown prerequisite " + p + " of " + n.Key)
 			}
 		}
-		if n.Structure != "" && Structures[n.Structure] == nil {
-			panic("tech: unknown structure " + n.Structure + " of " + n.Key)
+		for _, k := range n.Structures {
+			if Structures[k] == nil {
+				panic("tech: unknown structure " + k + " of " + n.Key)
+			}
 		}
 	}
 	for _, st := range Structures {
@@ -266,6 +268,14 @@ func init() {
 
 // Get returns a node by key.
 func Get(key string) *Node { return byKey[key] }
+
+// Structure is the first structure a node unlocks, or "".
+func (n *Node) Structure() string {
+	if len(n.Structures) == 0 {
+		return ""
+	}
+	return n.Structures[0]
+}
 
 // Closure returns the node and everything it depends on, prerequisites first.
 func Closure(key string) []string {
@@ -303,21 +313,24 @@ type Structure struct {
 	Modern        bool          // one gun more per weapons era the builder knows beyond the node's
 	Repair        bool          // its guns are remade a thousand years each while the world is held, a siege or no; else only between sieges
 	Dug           bool          // raised by dig, at every world a people holds, never by the pick
+	Watch         float64       // how far it sees a fleet in flight, in light years; an eye where it stands
+	Max           int           // the most a people may raise; 0 is the usual two
 	Text          string        // %s civ, %s star
 }
 
 // Structures by key.
 var Structures = map[string]*Structure{
-	"arcology":   {Key: "arcology", Name: "arcology", Node: "closed_ecologies", Sur: 1, Upkeep: flow.Income{flow.E: 1}, Cat: flow.Fields, Hardy: 1.2, Text: "The %s seal a city at %s against everything outside it."},
-	"shipyard":   {Key: "shipyard", Name: "shipyard", Node: "orbital_habitats", Upkeep: flow.Income{flow.E: 1, flow.M: 1}, Cat: flow.Arms, Hardy: 1.6, Text: "Yards turn above %s, building ships for the %s."},
-	"defences":   {Key: "defences", Name: "defence grid", Node: "defence_grid", Upkeep: flow.Income{flow.E: 1, flow.M: 1}, Cat: flow.Arms, Hardy: 0.7, Guns: 3, Modern: true, Repair: true, Text: "The %s ring %s with guns that watch the sky."},
-	"silos":      {Key: "silos", Name: "silos", Node: "orbital_weapons", Upkeep: flow.Income{flow.M: 0.5}, Cat: flow.Arms, Hardy: 1.8, Guns: 2, Dug: true, Text: "The %s dig silos at %s: nukes on rockets, aimed at the sky."},
-	"ansible":    {Key: "ansible", Name: "ansible net", Node: "ansible", Soc: 1.5, Upkeep: flow.Income{flow.E: 2}, Cat: flow.Mind, Hardy: 0.9, Text: "The %s link %s to home without delay."},
-	"dyson":      {Key: "dyson", Name: "Dyson swarm", Node: "dyson", Sur: 0.5, Upkeep: flow.Income{flow.M: 2}, Cat: flow.Works, Per: "star", Hardy: 0.3, Text: "The %s enclose %s in a swarm of collectors. The star dims from outside."},
-	"mine":       {Key: "mine", Name: "mines", Node: "orbital_habitats", Upkeep: flow.Income{flow.E: 1}, Cat: flow.Works, Per: "belt", Hardy: 1.4, Text: "The %s put mines in the belt at %s."},
-	"collectors": {Key: "collectors", Name: "collectors", Node: "orbital_habitats", Upkeep: flow.Income{flow.M: 1}, Cat: flow.Works, Per: "star", Hardy: 0.5, Text: "The %s ring %s with collectors, and live on its light."},
-	"tap":        {Key: "tap", Name: "accretion tap", Node: "stellar_engineering", Upkeep: flow.Income{flow.E: 1, flow.M: 2}, Cat: flow.Works, Per: "star", Hardy: 0.4, Text: "The %s ring the dead star at %s with a tap and draw on what falls in."},
-	"lifter":     {Key: "lifter", Name: "star lifter", Node: "star_lifting", Upkeep: flow.Income{flow.M: 3}, Cat: flow.Works, Per: "star", Hardy: 0.4, Text: "The %s set a lifter on %s and take the star itself for metal."},
+	"arcology":    {Key: "arcology", Name: "arcology", Node: "closed_ecologies", Sur: 1, Upkeep: flow.Income{flow.E: 1}, Cat: flow.Fields, Hardy: 1.2, Text: "The %s seal a city at %s against everything outside it."},
+	"shipyard":    {Key: "shipyard", Name: "shipyard", Node: "orbital_habitats", Upkeep: flow.Income{flow.E: 1, flow.M: 1}, Cat: flow.Arms, Hardy: 1.6, Watch: 3, Text: "Yards turn above %s, building ships for the %s."},
+	"defences":    {Key: "defences", Name: "defence grid", Node: "defence_grid", Upkeep: flow.Income{flow.E: 1, flow.M: 1}, Cat: flow.Arms, Hardy: 0.7, Guns: 3, Modern: true, Repair: true, Watch: 12, Text: "The %s ring %s with guns that watch the sky."},
+	"silos":       {Key: "silos", Name: "silos", Node: "orbital_weapons", Upkeep: flow.Income{flow.M: 0.5}, Cat: flow.Arms, Hardy: 1.8, Guns: 2, Dug: true, Text: "The %s dig silos at %s: nukes on rockets, aimed at the sky."},
+	"ansible":     {Key: "ansible", Name: "ansible net", Node: "ansible", Soc: 1.5, Upkeep: flow.Income{flow.E: 2}, Cat: flow.Mind, Hardy: 0.9, Text: "The %s link %s to home without delay."},
+	"dyson":       {Key: "dyson", Name: "Dyson swarm", Node: "dyson", Sur: 0.5, Upkeep: flow.Income{flow.M: 2}, Cat: flow.Works, Per: "star", Hardy: 0.3, Watch: 15, Text: "The %s enclose %s in a swarm of collectors. The star dims from outside."},
+	"mine":        {Key: "mine", Name: "mines", Node: "orbital_habitats", Upkeep: flow.Income{flow.E: 1}, Cat: flow.Works, Per: "belt", Hardy: 1.4, Watch: 0.5, Text: "The %s put mines in the belt at %s."},
+	"collectors":  {Key: "collectors", Name: "collectors", Node: "orbital_habitats", Upkeep: flow.Income{flow.M: 1}, Cat: flow.Works, Per: "star", Hardy: 0.5, Watch: 2, Text: "The %s ring %s with collectors, and live on its light."},
+	"tap":         {Key: "tap", Name: "accretion tap", Node: "stellar_engineering", Upkeep: flow.Income{flow.E: 1, flow.M: 2}, Cat: flow.Works, Per: "star", Hardy: 0.4, Watch: 2, Text: "The %s ring the dead star at %s with a tap and draw on what falls in."},
+	"observatory": {Key: "observatory", Name: "observatory", Node: "orbital_habitats", Upkeep: flow.Income{flow.E: 1}, Cat: flow.Mind, Hardy: 0.6, Watch: 40, Max: 1, Text: "The %s hang mirrors across %s, a telescope with a baseline of light-hours. Little moves within forty light years that they do not see."},
+	"lifter":      {Key: "lifter", Name: "star lifter", Node: "star_lifting", Upkeep: flow.Income{flow.M: 3}, Cat: flow.Works, Per: "star", Hardy: 0.4, Watch: 2, Text: "The %s set a lifter on %s and take the star itself for metal."},
 }
 
 // StructureKeys is every structure in a fixed order, for loops that must

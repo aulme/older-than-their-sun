@@ -30,8 +30,8 @@ func (w *World) find(c *Civ) {
 		if (l.State != Buried && l.State != Sealed) || c.Found[l.ID] {
 			continue
 		}
-		if l.Maker >= 0 && c.Known[l.Node] {
-			continue // nothing to learn; a structure is taken over on settling
+		if l.Maker >= 0 && c.Known[l.Node] && l.ships() == 0 {
+			continue // nothing to learn; a structure is taken over on settling; a field with ships is worth the ships
 		}
 		d := w.G.Dist(c.Home, l.Star)
 		for _, s := range c.Systems {
@@ -141,7 +141,7 @@ func (w *World) discover(c *Civ, l *Legacy, how string) {
 		Xenophobic: c.Has("xenophobic"), Contemplative: c.Has("contemplative"), Pragmatic: c.Has("pragmatic"), Conqueror: c.Has("conqueror"),
 		Threat: l.Kind == Sleeper || l.Kind == Threat, Plain: n != nil && n.Miracle && l.Kind == Artifact,
 		Own: w.kinship(c, l) == 2, Ruin: l.Maker >= 0 && l.Cond == Ruin, Law: l.Kind == Law,
-		OldThings: c.fixed(OldThings),
+		OldThings: c.fixed(OldThings), Field: l.Kind == Field, Known: l.Node == "" || c.Known[l.Node],
 	}, w.Cfg.Tuning)
 	w.explain(c, "weighing what to do with "+l.Describe(), a)
 	switch a.Pick(w.R.Float64()) {
@@ -155,6 +155,10 @@ func (w *World) discover(c *Civ, l *Legacy, how string) {
 }
 
 func (w *World) attemptMaster(c *Civ, l *Legacy) {
+	if l.Maker >= 0 && l.Node == "" {
+		w.attemptWield(c, l) // nothing to read in it
+		return
+	}
 	diff := 7.5 + c.traitDiff("find")
 	if l.Kind == Sleeper {
 		diff = 9
@@ -235,6 +239,17 @@ func (w *World) attemptWield(c *Civ, l *Legacy) {
 		diff -= 1 + 1.5*float64(w.kinship(c, l))
 		diff += l.condAdj()
 	}
+	if l.Kind == Field {
+		// hulls: crewed, or not; nothing in a field gets loose
+		if c.Mil+w.R.NormFloat64()*1.5 >= diff {
+			l.State = Wielded
+			c.Record = append(c.Record, "crewed the wrecks of "+w.makerName(l))
+			w.salvage(c, l)
+		} else {
+			w.log("The %s try to crew the hulls, and cannot make them fly.", c.Name)
+		}
+		return
+	}
 	if n := l.node(); n != nil && n.Miracle {
 		diff -= 1.5 // a miracle is made to be used; that is what makes it a miracle
 	}
@@ -248,7 +263,7 @@ func (w *World) attemptWield(c *Civ, l *Legacy) {
 			if !contains(c.Systems, l.Star) {
 				w.settle(c, l.Star)
 			}
-			key := tech.Get(l.Node).Structure
+			key := tech.Get(l.Node).Structure()
 			c.Works = append(c.Works, Work{Key: key, Node: l.Node, Star: l.Star, Legacy: l.ID})
 			c.Structures[key]++
 			if c.Known[l.Node] {
