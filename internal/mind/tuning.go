@@ -44,6 +44,7 @@ type Tuning struct {
 	Garrison  GarrisonTuning
 	Intercept InterceptTuning
 	Picket    PicketTuning
+	Wisdom    WisdomTuning
 }
 
 // BeliefTuning: what a people thinks another's level is from its
@@ -246,6 +247,25 @@ type PicketTuning struct {
 	Rate     float64 // launches per thousand years when one is wanted
 }
 
+// WisdomTuning: how Wisdom moves an act toward the estimate. Nothing here
+// changes what is believed or wanted.
+type WisdomTuning struct {
+	Tail          float64 // the tail term of the acted-on odds shrinks by this per point of Wisdom
+	GrudgeFade    float64 // the Wisdom at which the grudge discount on the bar is gone
+	VengefulBelow float64 // below this Wisdom the vengeful act on their hope against the grudge target
+	Compulsion    float64 // a conqueror's compulsion shrinks by this per point
+	Folly         float64 // the noise on a worth or a score, per point below ten
+	ThreatSeal    float64 // per point, on the seal of a sleeper or a threat
+	AboveEras     int     // a remain this many eras above the finder's is beyond it
+	AboveWield    float64 // per point, off the wield of what is beyond
+	AboveSeal     float64 // per point, on its seal
+	LeapMargin    float64 // below this expected margin a people asks whether it can
+	LeapBar       float64 // and seals instead when Wisdom and the roll clear this
+	LeapNoise     float64 // the roll's spread
+	TeachWeaker   float64 // a hostile or fixed posture does not explain itself to a people this many levels weaker
+	BrokerRate    float64 // unpaid brokering, per thousand years, by a shared pact or a confederate
+}
+
 // WantTuning: how many ships a people builds toward.
 type WantTuning struct {
 	Floor      int     // ships kept whatever else is wanted
@@ -329,6 +349,7 @@ func Default() *Tuning {
 		Garrison:  GarrisonTuning{HomeBase: 0.5, HomeMin: 1, ColonyShare: 0.3},
 		Intercept: InterceptTuning{Muster: 50, Samples: 64},
 		Picket:    PicketTuning{Tour: 20_000, FearBar: 0.6, KeepHome: 1, Rate: 0.3},
+		Wisdom:    WisdomTuning{Tail: 0.08, GrudgeFade: 10, VengefulBelow: 7, Compulsion: 0.08, Folly: 0.04, ThreatSeal: 0.3, AboveEras: 2, AboveWield: 0.07, AboveSeal: 0.2, LeapMargin: -1.5, LeapBar: 6, LeapNoise: 1.5, TeachWeaker: 0, BrokerRate: 0.02},
 	}
 }
 

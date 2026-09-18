@@ -92,6 +92,7 @@ type AppraiseInput struct {
 	Speed      float64 // years per light year
 	Prize      float64 // what the target is worth to the attacker: its yield the attacker wants, and rarities it lacks
 	Loss       float64 // what a war on the enemy costs the attacker in trade: what the enemy sends it
+	Wis        float64 // the attacker's Wisdom: pulls what it acts on toward the mean
 }
 
 // Appraisal is what a people thinks of a fight.
@@ -120,10 +121,12 @@ func (a Appraisal) Why() string {
 // Appraise estimates a fight: the believed enemy level with what is
 // believed to stand in the target's sky, its ships, its guns and the
 // relief with it, against the attacker's strength, as odds with a spread,
-// and what the attacker acts on by its risk. A world is held by nothing
-// but what is in its sky: the home has no flat defence and a grid is its
-// guns. The prize is what the target is worth less what the war would
-// lose in trade, and moves the bar either way.
+// and what the attacker acts on by its risk, the tail shrunk by its
+// Wisdom: at ten it acts on the estimate, at nought on its hope or its
+// dread. A world is held by nothing but what is in its sky: the home has
+// no flat defence and a grid is its guns. The prize is what the target is
+// worth less what the war would lose in trade, and moves the bar either
+// way.
 func Appraise(in AppraiseInput, t *Tuning) Appraisal {
 	p := &t.Appraise
 	d := in.Believed + in.EnemyBonus + ShipLevels(in.Ships+in.Guns+in.Relief)
@@ -137,7 +140,7 @@ func Appraise(in AppraiseInput, t *Tuning) Appraisal {
 	a.Odds = phi(a.Margin / p.Scale)
 	a.Low = phi((a.Margin - in.Spread) / p.Scale)
 	a.High = phi((a.Margin + in.Spread) / p.Scale)
-	a.Acted = phi((a.Margin + (2*in.Risk-1)*in.Spread) / p.Scale)
+	a.Acted = phi((a.Margin + (2*in.Risk-1)*in.Spread*max(0, 1-t.Wisdom.Tail*in.Wis)) / p.Scale)
 	return a
 }
 
@@ -148,10 +151,13 @@ type BarInput struct {
 	Grudge  bool // holds a grudge against the target
 	Aloft   bool // a horde fights from where it is, never by fleet
 	NoShips bool // not a ship manned: nothing to strike with
+	Wis     float64
 }
 
 // Bar is the odds a posture needs before it strikes, whether it would
-// strike at all, and whether it would send a fleet beyond the front to do it.
+// strike at all, and whether it would send a fleet beyond the front to do
+// it. A grudge lowers the bar less the wiser the people: the grudge is
+// counted at its price, not ignored.
 func Bar(in BarInput, t *Tuning) (bar float64, wants, far bool) {
 	b := &t.Bar
 	if in.Posture == Pacifist || in.NoShips {
@@ -171,7 +177,7 @@ func Bar(in BarInput, t *Tuning) (bar float64, wants, far bool) {
 		}
 	}
 	if wants && in.Grudge && in.Posture != Vengeful {
-		bar -= b.GrudgeDiscount
+		bar -= b.GrudgeDiscount * max(0, 1-in.Wis/t.Wisdom.GrudgeFade)
 	}
 	if in.Aloft {
 		far = false

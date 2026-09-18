@@ -73,6 +73,8 @@ const (
 	FLoose     // what was grown for the table got out
 	FIntercept // a fleet met in the dark and beaten: the winner's
 	FCaught    // the loser's
+	FFathomed  // a people came to understand another
+	FBrokered  // a people spoke for another to a third
 )
 
 // Sort is the moral shape of a fact from the subject's side.
@@ -106,6 +108,7 @@ var factShape = [...]struct {
 	FWant: {Woe, 1}, FHarness: {Deed, 1},
 	FEmbargo: {Crime, 1}, FCutOff: {Woe, 2}, FManna: {Crime, 2}, FRise: {Deed, 3}, FLoose: {Folly, 4},
 	FIntercept: {Deed, 1}, FCaught: {Woe, 1},
+	FFathomed: {Bond, 1}, FBrokered: {Deed, 1},
 }
 
 // Fact is one thing that happened, as it happened.
@@ -319,13 +322,17 @@ func (w *World) judgeLine(c *Civ, f *Fact, t *Tale) {
 	}
 }
 
-// monster says whether a people remembers another as a thing that does
-// harm: enough crimes held against it, weighed by whom they were done to
-// and how far into myth they have gone. Reckoned once a tick.
-func (w *World) monster(c, e *Civ) bool { return c.monsters[e.ID] }
+// monster says whether a people reads another as a thing that does harm:
+// enough crimes held against it, weighed by whom they were done to and
+// how far into myth they have gone, reckoned once a tick; or a people met
+// and not yet fathomed (wisdom.go), which is a monster until it is
+// understood.
+func (w *World) monster(c, e *Civ) bool { return c.monsters[e.ID] || w.unfathomed(c, e) }
 
-// reckon works out whom a people remembers as monsters.
+// reckon works out whom a people remembers as monsters, and counts what
+// it went through.
 func (w *World) reckon(c *Civ) {
+	w.experienced(c)
 	x := map[int]float64{}
 	for _, t := range c.Lore {
 		if t.Forgot {

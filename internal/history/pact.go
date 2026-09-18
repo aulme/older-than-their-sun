@@ -81,7 +81,9 @@ func (w *World) send(from, to *Civ, m *Message) {
 	w.Messages = append(w.Messages, m)
 }
 
-// tickMessages delivers what has arrived.
+// tickMessages delivers what has arrived. A message from a sender the
+// recipient does not fathom is dropped unread: intel, news, a call, a
+// pact, an offer.
 func (w *World) tickMessages() {
 	pending := w.Messages
 	w.Messages = nil
@@ -94,6 +96,10 @@ func (w *World) tickMessages() {
 		from, to := w.Civs[m.From], w.Civs[m.To]
 		if !to.Active() || (!from.Living() && m.Kind != MsgNews) {
 			continue
+		}
+		if !to.Fathomed[from.ID] {
+			to.Tally.Dropped++
+			continue // a message from a people not understood means nothing on arrival
 		}
 		switch m.Kind {
 		case MsgNews:
@@ -160,6 +166,7 @@ func (w *World) threat(c *Civ) *Civ {
 
 // proposePact is a council's diplomacy: confederates seek defence against
 // a threat both can see, conquerors and the vengeful seek partners in war.
+// Only a people that understands and is understood is asked.
 func (w *World) proposePact(c *Civ) {
 	plan := mind.ProposePact(c.posture(), w.Cfg.Tuning)
 	kind := Defensive
@@ -189,7 +196,7 @@ func (w *World) proposePact(c *Civ) {
 	}
 	for _, fid := range sortedInts(c.Met) {
 		f := w.Civs[fid]
-		if f == target || !f.Active() || !f.Free() || f.Wars[c.ID] || w.allied(c, f) || c.hates(f) || f.hates(c) {
+		if f == target || !f.Active() || !f.Free() || f.Wars[c.ID] || w.allied(c, f) || c.hates(f) || f.hates(c) || !w.mutual(c, f) {
 			continue
 		}
 		if c.Asked[fid]+Year(w.Cfg.Tuning.Pact.AskAgain) > w.Now {
@@ -214,9 +221,9 @@ func (w *World) proposePact(c *Civ) {
 }
 
 // answerPact is a people weighing an offer: the appraisal with posture on
-// top, less the proposer's infamy.
+// top, less the proposer's infamy, the score read through its folly.
 func (w *World) answerPact(f, c *Civ, m *Message) {
-	if !f.Active() || !c.Active() || f.hates(c) || c.hates(f) || f.Wars[c.ID] || w.allied(f, c) {
+	if !f.Active() || !c.Active() || f.hates(c) || c.hates(f) || f.Wars[c.ID] || w.allied(f, c) || !w.mutual(f, c) {
 		return
 	}
 	var e *Civ
@@ -229,6 +236,7 @@ func (w *World) answerPact(f, c *Civ, m *Message) {
 	in := mind.AnswerInput{
 		Aggressive: m.PactKind == Aggressive, Posture: f.posture(), Target: e != nil, Mil: f.Mil, ProposerMil: c.Mil,
 		Difference: f.differs(c), Infamy: w.infamy(c), Renown: w.renown(c), Dials: f.Dials,
+		Wis: f.Wis, Noise: w.R.NormFloat64(),
 	}
 	against := "whoever comes"
 	if e != nil {

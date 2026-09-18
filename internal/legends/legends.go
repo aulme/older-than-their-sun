@@ -58,7 +58,11 @@ func commas(n int64) string {
 }
 
 func levels(c *history.Civ) string {
-	return fmt.Sprintf("military %s, survival %s, social %s", history.LevelName(c.Mil), history.LevelName(c.Sur), history.LevelName(c.Soc))
+	s := fmt.Sprintf("military %s, survival %s, social %s", history.LevelName(c.Mil), history.LevelName(c.Sur), history.LevelName(c.Soc))
+	if word := history.WisdomWord(c.Wis); word != "" {
+		s += ", " + word
+	}
+	return s
 }
 
 // arms is the military line of the portrait: the level, and the ships in

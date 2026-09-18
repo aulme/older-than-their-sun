@@ -68,6 +68,8 @@ var templates = [...]string{
 	FManna:        "{S} ate what thought.",
 	FRise:         "{S} were grown for the table of {O}, and rose.",
 	FLoose:        "{S} let loose what they grew for the table, and it ate {T}.",
+	FFathomed:     "{S} came to understand {O}.",
+	FBrokered:     "{S} spoke for {O} to the {X}.",
 }
 
 // blamedTemplates are the woes that name their own cause, retold once

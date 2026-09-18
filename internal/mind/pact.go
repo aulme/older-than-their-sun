@@ -78,6 +78,8 @@ type AnswerInput struct {
 	Infamy      float64 // the proposer's
 	Renown      float64
 	Dials       Dials
+	Wis         float64 // the asked people's Wisdom
+	Noise       float64 // a standard normal draw: the folly on the score
 }
 
 // Answer is the verdict on an offer.
@@ -99,7 +101,8 @@ func (a Answer) Why() string {
 }
 
 // AnswerPact weighs an offer: the appraisal with posture on top, less the
-// proposer's infamy and the difference between them.
+// proposer's infamy and the difference between them, the score read
+// through folly noise that Wisdom quiets.
 func AnswerPact(in AnswerInput, t *Tuning) Answer {
 	p := &t.Pact
 	score := 0.0
@@ -168,6 +171,7 @@ func AnswerPact(in AnswerInput, t *Tuning) Answer {
 	score -= p.Infamy * in.Infamy
 	score += p.Renown * in.Renown
 	score += p.Loyalty * (in.Dials.Loyalty - 0.5)
+	score = Folly(score, in.Wis, in.Noise, t)
 	return Answer{Accept: score > p.Accept, Score: score}
 }
 

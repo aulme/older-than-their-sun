@@ -37,6 +37,7 @@ func (w *World) spawnCiv(home int, sp *species.Species, maker int, name string) 
 		Intel:  map[int]*Intel{}, Grudge: map[int]float64{}, Truce: map[int]Year{}, Fought: map[int]int{},
 		Watched: map[int]bool{}, Asked: map[int]Year{}, Scouted: map[int]Year{}, Ridden: map[int]bool{},
 		Charted: map[int]Year{home: w.Now}, Marked: map[int]bool{},
+		Sire: maker, Fathomed: map[int]bool{}, FathomTried: map[int]Year{},
 		LastDark: -1 << 40, foeNow: -1,
 	}
 	if st.Real {
@@ -131,6 +132,7 @@ var civSteps = []civStep{
 	{"find", (*World).find},
 	{"explore", (*World).explore},
 	{"lore", (*World).loreStep},
+	{"fathoming", (*World).fathoming},
 	{"intel", (*World).intelStep},
 	{"council", (*World).council},
 	{"garrison", (*World).garrison},
@@ -654,6 +656,7 @@ func (w *World) darkAge(c *Civ, why string) {
 		w.leaveRelic(c, best, c.Home)
 	}
 	w.forgetting(c)
+	w.forgetFathomed(c)
 	w.factOf(FDarkAge, c, nil, c.Home, why)
 	lost := 0
 	for _, s := range append([]int(nil), c.Systems...) {

@@ -31,6 +31,7 @@ type JudgeInput struct {
 	Front     int  // enemy worlds within strike reach
 	Vengeful  bool // against the grudge target the cost is not counted
 	Compelled bool // honour compels a lower bar this council
+	Wis       float64
 }
 
 // Verdict is the judgment on one enemy.
@@ -55,7 +56,8 @@ func (v Verdict) Why() string {
 // clear the bar, scout when the spread straddles it, watch below it.
 // Nothing when there is no front and the posture sends no fleet. A prize
 // lowers the bar: a rich neighbour is worth more to a wanting people; a
-// partner that sends raises it.
+// partner that sends raises it. The vengeful act on their hope against the
+// grudge target unless they are wise enough to count what revenge costs.
 func Judge(in JudgeInput, t *Tuning) Verdict {
 	v := Verdict{Bar: min(1, max(0, in.Bar-in.Appraisal.Prize)), Acted: in.Appraisal.Acted, Low: in.Appraisal.Low, High: in.Appraisal.High}
 	if in.Compelled {
@@ -64,7 +66,7 @@ func Judge(in JudgeInput, t *Tuning) Verdict {
 	if in.Front == 0 && !in.Far {
 		return v
 	}
-	if in.Vengeful {
+	if in.Vengeful && in.Wis < t.Wisdom.VengefulBelow {
 		v.Acted = in.Appraisal.High
 	}
 	v.Margin = v.Acted - v.Bar
@@ -77,6 +79,16 @@ func Judge(in JudgeInput, t *Tuning) Verdict {
 		v.Action = Watch
 	}
 	return v
+}
+
+// Compulsion is the chance a conqueror's honour compels it to a lower bar
+// this council: a wise conqueror is still a conqueror, but it stops
+// striking on impulse at the strong.
+func Compulsion(conqueror bool, wis float64, t *Tuning) float64 {
+	if !conqueror {
+		return 0
+	}
+	return t.Council.Compulsion * max(0, 1-t.Wisdom.Compulsion*wis)
 }
 
 // Council picks whom to strike among judged enemies: the largest margin

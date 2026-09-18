@@ -12,6 +12,7 @@ var parasite = &SubstrateDef{Sub: Parasite, Entry: Entry{
 	Own:      []string{"rider"},
 	Profile: Profile{
 		Sur: 1,
+		Wis: 0.5, // knows its hosts from inside
 		Dom: M{"biology": 1.4, "society": 1.2, "industry": 0.8},
 	},
 }}

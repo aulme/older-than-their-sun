@@ -144,7 +144,7 @@ func (w *World) hearing(a, b *Civ) {
 		w.log("The %s hear the %s across %.0f light years: a signal, then a conversation %.0f years to the answer. Neither can reach the other yet.", a.Name, b.Name, d, 2*d)
 	}
 	w.fact(FMet, a, b, -1)
-	w.exchange(a, b)
+	w.fathomPair(a, b)
 	if a.Has("mindrider") || b.Has("mindrider") {
 		w.infection(a, b) // an idea needs no ship
 		return
@@ -155,11 +155,9 @@ func (w *World) hearing(a, b *Civ) {
 	if w.consider(a, b) || w.consider(b, a) {
 		return
 	}
-	if w.monster(a, b) || w.monster(b, a) {
-		return
+	if w.mutual(a, b) {
+		w.openPair(a, b)
 	}
-	a.Trade[b.ID], b.Trade[a.ID] = true, true
-	w.fact(FTrade, a, b, -1)
 }
 
 // primitives: an old civilisation finds a pre-atomic one. Returns true if
@@ -192,11 +190,13 @@ func (w *World) primitives(old, young *Civ) bool {
 }
 
 // encounter is a first meeting between equals: the miracles and the
-// postures that settle it without a council, then each side's council on
-// the other, and trade if nobody strikes.
+// postures that settle it without a council, each side's roll to fathom
+// the other, then each side's council on the other, and the tales and
+// trade if nobody strikes and each understands the other.
 func (w *World) encounter(a, b *Civ, watched, heard bool, at int) {
 	w.observe(a, b, b.Home, 0.5)
 	w.observe(b, a, a.Home, 0.5)
+	w.fathomPair(a, b) // each rolls once at once, whatever follows
 	finder, found := a, b
 	// the stronger side is the one with the initiative
 	if b.Mil > a.Mil {
@@ -242,22 +242,14 @@ func (w *World) encounter(a, b *Civ, watched, heard bool, at int) {
 		w.log("The %s and the %s find each other.", a.Name, b.Name)
 	}
 	w.fact(FMet, finder, found, at)
-	w.exchange(a, b)
 	if a.Wars[b.ID] {
 		return // already at war by fleet; now there is a front
 	}
 	if w.consider(a, b) || w.consider(b, a) {
 		return
 	}
-	if w.monster(a, b) || w.monster(b, a) {
-		return // what is remembered of them is not traded with
-	}
-	a.Trade[b.ID], b.Trade[a.ID] = true, true
-	w.fact(FTrade, a, b, -1)
-	w.log("Slow messages cross the dark between the %s and the %s for generations, and then trade.", a.Name, b.Name)
-	if (a.Faced["plague"] || b.Faced["plague"]) && w.R.Float64() < 0.3 {
-		a.Plagued, b.Plagued = true, true
-		w.log("Something crosses with the messages and the trade. Both the %s and the %s begin to sicken.", a.Name, b.Name)
+	if w.mutual(a, b) {
+		w.openPair(a, b) // the tales and the trade, when each understands the other
 	}
 }
 

@@ -105,6 +105,7 @@ type Civ struct {
 
 	// derived each tick
 	Mil, Sur, Soc float64
+	Wis           float64 // see wisdom.go: the capacity to see the counterintuitive
 	Reach         float64
 	Speed         float64 // years per light year
 	Envelope      int
@@ -171,6 +172,14 @@ type Civ struct {
 	// garrisons and the muster: see garrison.go
 	GarrisonWant int     // what the garrison policy asked for last tick, summed over the holdings
 	Muster       *Muster // the campaign gathering, if one is
+
+	// wisdom: see wisdom.go
+	Sire        int          // the people that raised or bred this one, -1: kin understand each other at once
+	Fathomed    map[int]bool // the peoples this one understands
+	FathomTried map[int]Year // when this one first tried to understand each: the meeting, or the dark age that lost it
+	PeakWis     float64      // the most Wisdom ever had, for the batch
+	WisFrom     wisParts     // where the Wisdom comes from, as last derived
+	experience  int          // woes and follies remembered as one's own, counted by reckon
 
 	// sightings and salvage: see sighting.go, field.go
 	Sightings    map[int]*Sighting // what this people has seen of fleets in flight, by fleet
@@ -263,6 +272,10 @@ type Tally struct {
 	Garrisons, Musters     int
 	// sightings: fleets seen by own eyes, interceptors sent, meetings fought, own fleets turned back or broken in the dark, pickets sent, ships crewed from fields
 	Sightings, Intercepts, Meetings, Caught, Pickets, Salvaged int
+	// wisdom: peoples fathomed, fathomings lost to a dark age, brokered attempts made for others, wars that ended unfathomed, remains sealed by looking before the leap; messages dropped unread; councils' verdicts and the sum of the acted-on odds' distance from the mean
+	Fathomed, Unfathomed, Brokered, Misunderstood, Leaps int
+	Dropped, Judged                                      int
+	ActedGap                                             float64
 }
 
 // Living is true for active and remnant civilisations.
@@ -467,38 +480,39 @@ func DefaultConfig() Config {
 
 // World is the whole simulated history.
 type World struct {
-	Cfg       Config
-	Seed      uint64
-	G         *galaxy.Galaxy
-	Law       galaxy.Law // the laws of the place
-	R         *rand.Rand
-	Now       Year
-	Present   Year    // when the simulation stopped; years are printed relative to this
-	Waning    Year    // when the waning was declared
-	Capped    bool    // the age never ended on its own; stopped at MaxFades
-	Ticks     int     // ticks run in the current age
-	dt        float64 // current tick in kyr
-	phases    []phase // the tick, in order; see sim.go
-	phaseTime map[string]time.Duration
-	Bio       []BioState
-	Owner     []int // civ id owning each star, -1 if none
-	Held      []int // horror id holding each star, -1 if none
-	Hazard    float64
-	Thin      float64 // how worn the wall between this and the state beneath is; see beneath.go
-	ThinStage int
-	Civs      []*Civ
-	Species   []*species.Species // every blood that has arisen or been made, by ID
-	Sources   []*Source          // everything with a yield, by ID; see sources.go
-	sourcesAt [][]int            // the sources that yield at each star, ranged ones included
-	mobile    []int              // the sources that move with a holder, by ID; see rarity.go
-	Horrors   []*Horror
-	Ages      []*AgeRecord
-	Cycle     *Cycle
-	Legacies  []*Legacy
-	Traces    []Trace
-	Events    []Event
-	Facts     []*Fact       // what happened, as it happened; see lore.go
-	factsAt   map[int][]int // facts by star
+	Cfg        Config
+	Seed       uint64
+	G          *galaxy.Galaxy
+	Law        galaxy.Law // the laws of the place
+	R          *rand.Rand
+	Now        Year
+	Present    Year    // when the simulation stopped; years are printed relative to this
+	Waning     Year    // when the waning was declared
+	Capped     bool    // the age never ended on its own; stopped at MaxFades
+	Ticks      int     // ticks run in the current age
+	dt         float64 // current tick in kyr
+	phases     []phase // the tick, in order; see sim.go
+	phaseTime  map[string]time.Duration
+	Bio        []BioState
+	Owner      []int // civ id owning each star, -1 if none
+	Held       []int // horror id holding each star, -1 if none
+	Hazard     float64
+	Thin       float64 // how worn the wall between this and the state beneath is; see beneath.go
+	ThinStage  int
+	Civs       []*Civ
+	Species    []*species.Species // every blood that has arisen or been made, by ID
+	Sources    []*Source          // everything with a yield, by ID; see sources.go
+	sourcesAt  [][]int            // the sources that yield at each star, ranged ones included
+	mobile     []int              // the sources that move with a holder, by ID; see rarity.go
+	Horrors    []*Horror
+	Ages       []*AgeRecord
+	Cycle      *Cycle
+	Fathomings []Fathoming // every understanding reached, for the batch; see wisdom.go
+	Legacies   []*Legacy
+	Traces     []Trace
+	Events     []Event
+	Facts      []*Fact       // what happened, as it happened; see lore.go
+	factsAt    map[int][]int // facts by star
 	// war and diplomacy
 	Wars        []*War
 	Battles     []*Battle   // every battle at a world, for the batch; see battle.go

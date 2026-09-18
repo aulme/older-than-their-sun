@@ -446,26 +446,67 @@ func (w *World) ride(p, h *Civ) {
 }
 
 // judge decides whether a war goes on. While a fleet is in flight nothing
-// is decided: the war it was sent to has not begun.
+// is decided: the war it was sent to has not begun. Peace with terms
+// needs each side to understand the other; a war between two peoples
+// neither of whom fathoms the other ends only when a side falls or both
+// wills run out.
 func (w *World) judge(wr *War) {
 	a, b := w.Civs[wr.Sides[0]], w.Civs[wr.Sides[1]]
 	if w.fleetInFlight(a, b) || w.fleetInFlight(b, a) {
 		return
 	}
 	switch {
-	case wr.Will[0] <= 0 && wr.Will[1] <= 0:
+	case wr.Will[0] <= 0 && wr.Will[1] <= 0 && w.canTreat(wr):
 		w.peace(wr, "both sides tired of it")
+	case wr.Will[0] <= 0 && wr.Will[1] <= 0:
+		w.exhausted(wr)
 	case wr.Will[0] <= 0:
 		w.yield(wr, 0)
 	case wr.Will[1] <= 0:
 		w.yield(wr, 1)
 	}
-	_ = a
-	_ = b
+}
+
+// canTreat says whether a war can end with terms: each side understands
+// the other, or the war is an infection, which is no negotiation and
+// needs no understanding.
+func (w *World) canTreat(wr *War) bool {
+	return wr.Cause == "infection" || w.mutual(w.Civs[wr.Sides[0]], w.Civs[wr.Sides[1]])
+}
+
+// exhausted is both wills gone between peoples that do not understand
+// each other: the fighting stops, and nothing is signed. A side that
+// fathoms the other sues it for a truce; otherwise the war is simply over.
+func (w *World) exhausted(wr *War) {
+	a, b := w.Civs[wr.Sides[0]], w.Civs[wr.Sides[1]]
+	switch {
+	case a.Fathomed[b.ID]:
+		w.truce(wr, a, b)
+	case b.Fathomed[a.ID]:
+		w.truce(wr, b, a)
+	default:
+		a.Tally.Misunderstood++
+		b.Tally.Misunderstood++
+		w.log("The %s and the %s stop fighting, both sides tired of it, after %s. Neither ever understood what the other wanted, and nothing is signed.", a.Name, b.Name, w.warSpan(wr))
+		w.endWar(wr, "exhaustion")
+	}
+}
+
+// truce is a people that understands its enemy, and is not understood,
+// suing for the one thing it knows how to ask for: no new war for a
+// time. Nothing with terms.
+func (w *World) truce(wr *War, l, v *Civ) {
+	l.Tally.Misunderstood++
+	v.Tally.Misunderstood++
+	w.log("The %s sue the %s for a truce, which is all they know how to ask for, after %s. The fighting stops; nothing is settled.", l.Name, v.Name, w.warSpan(wr))
+	w.factOf(FPeace, l, v, -1, "truce")
+	w.endWar(wr, "truce")
 }
 
 // yield is one side's will gone while the other's holds: capitulation if
-// the winner still has something to take, peace otherwise.
+// the winner still has something to take, peace otherwise. A loser that
+// does not understand the winner cannot yield, and one that is not
+// understood can only sue for a truce.
 func (w *World) yield(wr *War, li int) {
 	l, v := w.Civs[wr.Sides[li]], w.Civs[wr.Sides[1-li]]
 	switch {
@@ -486,6 +527,12 @@ func (w *World) yield(wr *War, li int) {
 		if !wr.Over {
 			w.peace(wr, sprintf("the %s taking what they wanted and moving on", v.Name))
 		}
+		return
+	case w.canTreat(wr):
+	case !l.Fathomed[v.ID]:
+		return // the offer would mean nothing: the war goes on until the other side tires too
+	default:
+		w.truce(wr, l, v)
 		return
 	}
 	if len(w.front(v, l)) == 0 && len(w.fleetFront(v, l)) == 0 {

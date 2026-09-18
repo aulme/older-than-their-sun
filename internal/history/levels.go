@@ -18,10 +18,12 @@ var structureKeys = func() []string {
 }()
 
 // recompute derives the three levels, reach, speed, envelope and era from
-// species, known tech, structures, wielded artifacts, scars and morale.
+// species, known tech, structures, wielded artifacts, scars and morale,
+// and Wisdom after them (wisdom.go).
 func (w *World) recompute(c *Civ) {
 	mil, sur, soc := c.Species.Base()
 	reach, speed, env, era := 0.0, 100.0, 0, 0
+	wis := 0.0
 	ansible := c.miracle("ansible")
 	for _, k := range knownOf(c) {
 		n := tech.Get(k)
@@ -33,7 +35,7 @@ func (w *World) recompute(c *Civ) {
 			}
 			continue
 		}
-		mil, sur, soc = mil+n.Mil, sur+n.Sur, soc+n.Soc
+		mil, sur, soc, wis = mil+n.Mil, sur+n.Sur, soc+n.Soc, wis+n.Wis
 		reach = max(reach, n.Reach)
 		if n.Speed > 0 {
 			speed = min(speed, n.Speed)
@@ -138,6 +140,7 @@ func (w *World) recompute(c *Civ) {
 	}
 	soc += c.Morale
 	c.Mil, c.Sur, c.Soc = clamp(mil, 0, 10), clamp(sur, 0, 10), clamp(soc, 0, 10)
+	w.setWisdom(c, wis)
 	w.setDials(c)
 	reach *= c.Species.ReachMul()
 	if !c.Free() {

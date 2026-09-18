@@ -1,6 +1,10 @@
 package history
 
-import "worldgen/internal/mind"
+import (
+	"math"
+
+	"worldgen/internal/mind"
+)
 
 // The council is where a people decides: whom to strike, whether to send a
 // fleet or a scout first, whom to ask for a pact. It sits on a cadence and
@@ -28,7 +32,7 @@ func (w *World) council(c *Civ) {
 	}
 	var cands []cand
 	var verdicts []mind.Verdict
-	compelled := c.posture() == mind.Conqueror && w.R.Float64() < t.Council.Compulsion
+	compelled := w.R.Float64() < mind.Compulsion(c.posture() == mind.Conqueror, c.Wis, t)
 	for _, eid := range sortedInts(c.Met) {
 		e := w.Civs[eid]
 		if !e.Active() || !e.Free() || c.Wars[eid] || w.allied(c, e) || c.Truce[eid] > w.Now {
@@ -58,8 +62,12 @@ func (w *World) council(c *Civ) {
 // weigh is the council's view of one enemy, with the scout or the watch
 // it calls for done at once.
 func (w *World) weigh(c, e *Civ, ap Appraisal, bar float64, far, compelled bool) mind.Verdict {
-	v := mind.Judge(mind.JudgeInput{Appraisal: ap.Appraisal, Bar: bar, Far: far, Front: len(ap.Front), Vengeful: c.posture() == mind.Vengeful, Compelled: compelled}, w.Cfg.Tuning)
+	v := mind.Judge(mind.JudgeInput{Appraisal: ap.Appraisal, Bar: bar, Far: far, Front: len(ap.Front), Vengeful: c.posture() == mind.Vengeful, Compelled: compelled, Wis: c.Wis}, w.Cfg.Tuning)
 	w.explain(c, "on the "+e.Name, v)
+	if v.Action != mind.Nothing {
+		c.Tally.Judged++
+		c.Tally.ActedGap += math.Abs(ap.Acted - ap.Odds)
+	}
 	switch v.Action {
 	case mind.ScoutFirst:
 		w.maybeScout(c, e)
@@ -85,7 +93,7 @@ func (w *World) consider(c, e *Civ) bool {
 		return false
 	}
 	ap := w.appraise(c, e, -1)
-	v := mind.Judge(mind.JudgeInput{Appraisal: ap.Appraisal, Bar: bar, Far: far, Front: len(ap.Front), Vengeful: c.posture() == mind.Vengeful}, w.Cfg.Tuning)
+	v := mind.Judge(mind.JudgeInput{Appraisal: ap.Appraisal, Bar: bar, Far: far, Front: len(ap.Front), Vengeful: c.posture() == mind.Vengeful, Wis: c.Wis}, w.Cfg.Tuning)
 	w.explain(c, "at the meeting of the "+e.Name, v)
 	switch v.Action {
 	case mind.Strike:

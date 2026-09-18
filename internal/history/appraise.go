@@ -40,7 +40,8 @@ func (w *World) strength(c, e *Civ) float64 {
 }
 
 // appraise estimates c's fight against e at a world: the nearest front
-// world, or the given one, or e's home if nothing is in reach.
+// world, or the given one, or e's home if nothing is in reach. An enemy
+// not fathomed carries a level more of spread.
 func (w *World) appraise(c, e *Civ, target int) Appraisal {
 	a := Appraisal{Target: target}
 	a.Front = w.front(c, e)
@@ -52,9 +53,12 @@ func (w *World) appraise(c, e *Civ, target int) Appraisal {
 		}
 	}
 	mil, spread := w.believe(c, e)
+	if w.unfathomed(c, e) {
+		spread++ // it cannot tell what they are or want
+	}
 	in := mind.AppraiseInput{
 		Strength: w.strength(c, e), Believed: mil, Spread: spread, EnemyBonus: e.warBonus(),
-		Risk: c.Dials.Risk, Speed: c.Speed,
+		Risk: c.Dials.Risk, Speed: c.Speed, Wis: c.Wis,
 		Weakened: e.Plagued || float64(w.Now-e.LastDark) < w.Cfg.Tuning.Appraise.DarkAge,
 	}
 	in.Ships, in.Guns, in.Relief = w.believeSky(c, e, a.Target)
@@ -115,7 +119,7 @@ func (w *World) nearest(c *Civ, star int) (int, float64) {
 // would strike at all; far says whether it would send a fleet beyond the
 // front to do it.
 func (w *World) bar(c, e *Civ) (bar float64, wants, far bool) {
-	return mind.Bar(mind.BarInput{Posture: c.posture(), Hates: c.hates(e), Grudge: c.Grudge[e.ID] > 0 || e.Embargo[c.ID], Aloft: c.Aloft, NoShips: w.standing(c) == 0}, w.Cfg.Tuning)
+	return mind.Bar(mind.BarInput{Posture: c.posture(), Hates: c.hates(e), Grudge: c.Grudge[e.ID] > 0 || e.Embargo[c.ID], Aloft: c.Aloft, NoShips: w.standing(c) == 0, Wis: c.Wis}, w.Cfg.Tuning)
 }
 
 // explain logs a decision's reason under -ai.

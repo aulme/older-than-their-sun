@@ -1,7 +1,7 @@
 # Wisdom: understanding others, and judging well
 
-**Status:** Draft
-**Last updated:** 2026-09-17
+**Status:** In Progress (plan step 11, 2026-09-18: the level, fathoming with the unpaid broker, and the judgment rules are built; the `broker` contract term and the worth noise on contract terms land with plan step 12; see "Wisdom" in `DESIGN_NOTES.md`)
+**Last updated:** 2026-09-18
 
 Assumes [one-tick](one-tick.md): every rate below is per thousand years, and "per tick" means a thousand-year tick, the same thing.
 

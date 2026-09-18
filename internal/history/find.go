@@ -136,15 +136,31 @@ func (w *World) discover(c *Civ, l *Legacy, how string) {
 		return
 	}
 	n := l.node()
+	t := w.Cfg.Tuning
 	a := mind.Find(mind.FindInput{
 		Curious: c.Has("curious"), Expansionist: c.Has("expansionist"), Symbiotic: c.Has("symbiosis"), Cautious: c.Has("cautious"),
 		Xenophobic: c.Has("xenophobic"), Contemplative: c.Has("contemplative"), Pragmatic: c.Has("pragmatic"), Conqueror: c.Has("conqueror"),
 		Threat: l.Kind == Sleeper || l.Kind == Threat, Plain: n != nil && n.Miracle && l.Kind == Artifact,
 		Own: w.kinship(c, l) == 2, Ruin: l.Maker >= 0 && l.Cond == Ruin, Law: l.Kind == Law,
 		OldThings: c.fixed(OldThings), Field: l.Kind == Field, Known: l.Node == "" || c.Known[l.Node],
-	}, w.Cfg.Tuning)
+		Above: n != nil && (l.Kind == Artifact || l.Kind == Structure) && n.Era-c.Era >= t.Wisdom.AboveEras, Wis: c.Wis,
+	}, t)
 	w.explain(c, "weighing what to do with "+l.Describe(), a)
-	switch a.Pick(w.R.Float64()) {
+	pick := a.Pick(w.R.Float64())
+	// whichever way the die falls, a wise people asks whether it can
+	// before it tries
+	if pick < 2 && a.Seal > 0 {
+		margin := c.level("mil", "sur", "soc") - w.masterDiff(c, l)
+		if pick == 1 {
+			margin = c.Mil - w.wieldDiff(c, l)
+		}
+		if mind.Leap(mind.LeapInput{Margin: margin, Wis: c.Wis, Noise: w.R.NormFloat64()}, t) {
+			c.Tally.Leaps++
+			w.log("The %s, who are wise, look hard at it and count what it would take of them, and do not try.", c.Name)
+			pick = 2
+		}
+	}
+	switch pick {
 	case 0:
 		w.attemptMaster(c, l)
 	case 1:
@@ -154,11 +170,9 @@ func (w *World) discover(c *Civ, l *Legacy, how string) {
 	}
 }
 
-func (w *World) attemptMaster(c *Civ, l *Legacy) {
-	if l.Maker >= 0 && l.Node == "" {
-		w.attemptWield(c, l) // nothing to read in it
-		return
-	}
+// masterDiff is what understanding a remain takes: read against the
+// mean of the three levels.
+func (w *World) masterDiff(c *Civ, l *Legacy) float64 {
 	diff := 7.5 + c.traitDiff("find")
 	if l.Kind == Sleeper {
 		diff = 9
@@ -171,6 +185,29 @@ func (w *World) attemptMaster(c *Civ, l *Legacy) {
 	if n := l.node(); n != nil {
 		diff += 0.5 * float64(n.Era-c.Era)
 	}
+	return diff
+}
+
+// wieldDiff is what using a remain without understanding it takes: read
+// against the military level.
+func (w *World) wieldDiff(c *Civ, l *Legacy) float64 {
+	diff := 4.5 + c.traitDiff("find")
+	if l.Maker >= 0 {
+		diff -= 1 + 1.5*float64(w.kinship(c, l))
+		diff += l.condAdj()
+	}
+	if n := l.node(); n != nil && n.Miracle && l.Kind != Field {
+		diff -= 1.5 // a miracle is made to be used; that is what makes it a miracle
+	}
+	return diff
+}
+
+func (w *World) attemptMaster(c *Civ, l *Legacy) {
+	if l.Maker >= 0 && l.Node == "" {
+		w.attemptWield(c, l) // nothing to read in it
+		return
+	}
+	diff := w.masterDiff(c, l)
 	if c.level("mil", "sur", "soc")+w.R.NormFloat64()*1.5 >= diff {
 		l.State = Mastered
 		c.Record = append(c.Record, "mastered a legacy of "+w.makerName(l))
@@ -234,11 +271,7 @@ func (w *World) attemptWield(c *Civ, l *Legacy) {
 		w.log("The %s cannot make it do anything for them. It goes on doing what it did, for no one.", c.Name)
 		return
 	}
-	diff := 4.5 + c.traitDiff("find")
-	if l.Maker >= 0 {
-		diff -= 1 + 1.5*float64(w.kinship(c, l))
-		diff += l.condAdj()
-	}
+	diff := w.wieldDiff(c, l)
 	if l.Kind == Field {
 		// hulls: crewed, or not; nothing in a field gets loose
 		if c.Mil+w.R.NormFloat64()*1.5 >= diff {
@@ -249,9 +282,6 @@ func (w *World) attemptWield(c *Civ, l *Legacy) {
 			w.log("The %s try to crew the hulls, and cannot make them fly.", c.Name)
 		}
 		return
-	}
-	if n := l.node(); n != nil && n.Miracle {
-		diff -= 1.5 // a miracle is made to be used; that is what makes it a miracle
 	}
 	if c.Mil+w.R.NormFloat64()*1.5 >= diff {
 		l.State = Wielded

@@ -16,6 +16,8 @@ type FindInput struct {
 	OldThings                                                                                   bool // the people is fixed on what the old ones left: eager to master
 	Field                                                                                       bool // a field of wrecks: ships to crew, nothing to seal
 	Known                                                                                       bool // the finder knows its art already: nothing to master
+	Above                                                                                       bool // its art is eras beyond the finder's: a wise people wields it less and seals it more
+	Wis                                                                                         float64
 }
 
 // Attempt is the weights.
@@ -29,7 +31,9 @@ func (a Attempt) Why() string {
 // Total is the sum of the weights.
 func (a Attempt) Total() float64 { return a.Master + a.Wield + a.Seal }
 
-// Find weighs the three attempts by temperament and by what the remain is.
+// Find weighs the three attempts by temperament and by what the remain
+// is, and by Wisdom: a wise people seals a sleeper or a threat more, and
+// wields less what is beyond it.
 func Find(in FindInput, t *Tuning) Attempt {
 	p := &t.Find
 	a := Attempt{p.Master, p.Wield, p.Seal}
@@ -50,7 +54,11 @@ func Find(in FindInput, t *Tuning) Attempt {
 	}
 	if in.Threat {
 		a.Wield = 0
-		a.Seal += p.ThreatSeal
+		a.Seal += p.ThreatSeal + t.Wisdom.ThreatSeal*in.Wis
+	}
+	if in.Above && !in.Threat {
+		a.Wield *= max(0, 1-t.Wisdom.AboveWield*in.Wis)
+		a.Seal += t.Wisdom.AboveSeal * in.Wis
 	}
 	if in.Plain {
 		a.Wield += p.Plain

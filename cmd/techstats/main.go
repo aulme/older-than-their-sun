@@ -68,6 +68,9 @@ type Rec struct {
 	Mil       float64            `json:"mil"`
 	Sur       float64            `json:"sur"`
 	Soc       float64            `json:"soc"`
+	Wis       float64            `json:"wis"`      // at the end
+	PeakWis   float64            `json:"peak_wis"` // the most ever
+	WisFrom   [5]float64         `json:"wis_from"` // species, tech, experience, boons, scars, as last derived
 	Cycle     bool               `json:"knows_cycle"`
 	DarkAges  int                `json:"dark_ages"`
 	Renaiss   int                `json:"renaissances"`
@@ -132,6 +135,7 @@ func main() {
 		meets   []MeetRec
 		fleets  []FleetRec
 		fields  FieldRec
+		pairs   []PairRec
 		stats   string
 		ages    float64
 	}
@@ -149,7 +153,7 @@ func main() {
 			var sb strings.Builder
 			legends.Stats(&sb, w)
 			sights, meets, fleets, fields := flattenSightings(w)
-			runs[i] = run{seed: seed, recs: flatten(w), wars: flattenWars(w), battles: flattenBattles(w), sights: sights, meets: meets, fleets: fleets, fields: fields, stats: sb.String(), ages: float64(w.Present-w.Cfg.Dawn) / 1e6}
+			runs[i] = run{seed: seed, recs: flatten(w), wars: flattenWars(w), battles: flattenBattles(w), sights: sights, meets: meets, fleets: fleets, fields: fields, pairs: flattenPairs(w), stats: sb.String(), ages: float64(w.Present-w.Cfg.Dawn) / 1e6}
 		}(i)
 	}
 	wg.Wait()
@@ -161,6 +165,7 @@ func main() {
 	var meets []MeetRec
 	var fleets []FleetRec
 	var fields []FieldRec
+	var pairs []PairRec
 	var stats []string
 	ageSum := 0.0
 	for _, r := range runs {
@@ -171,6 +176,7 @@ func main() {
 		meets = append(meets, r.meets...)
 		fleets = append(fleets, r.fleets...)
 		fields = append(fields, r.fields)
+		pairs = append(pairs, r.pairs...)
 		stats = append(stats, r.stats)
 		ageSum += r.ages
 	}
@@ -188,6 +194,7 @@ func main() {
 	shipsReport(f, recs)
 	battlesReport(f, recs, battles)
 	sightingsReport(f, recs, sights, meets, fleets, fields)
+	wisdomReport(f, recs, pairs)
 	fmt.Printf("%d civilisations over %d worlds; wrote %s\n", len(recs), *seeds, *out)
 }
 
@@ -212,6 +219,7 @@ func flatten(w *history.World) []Rec {
 			Peak: c.Peak, Ruled: c.Ruled, Uplifts: c.Uplifts, Word: c.Word,
 			Miracles: map[string]string{}, Learned: map[string]float64{},
 			Record: append([]string(nil), c.Record...), Mil: c.Mil, Sur: c.Sur, Soc: c.Soc,
+			Wis: c.Wis, PeakWis: c.PeakWis, WisFrom: history.WisdomParts(c),
 			Cycle: c.KnowsCycle, DarkAges: c.DarkAges, Renaiss: c.Renaissances,
 			ever: map[string]bool{},
 		}

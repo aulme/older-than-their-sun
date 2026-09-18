@@ -169,6 +169,7 @@ const (
 // nothing.
 type Profile struct {
 	Mil, Sur, Soc float64            // adds to the base levels
+	Wis           float64            // adds to Wisdom: what the substrate or shape can see past
 	Reach         float64            // multiplier on reach
 	Rate          float64            // multiplier on research
 	Expand        float64            // multiplier on the colony rate
@@ -200,6 +201,7 @@ func Compose(ps ...Profile) Profile {
 	out := Profile{Reach: 1, Rate: 1, Expand: 1, Memory: 1, Endure: 1, Cradle: 1, Dom: M{}, Upkeep: M{}, FilterDiff: map[string]float64{}}
 	for _, p := range ps {
 		out.Mil, out.Sur, out.Soc = out.Mil+p.Mil, out.Sur+p.Sur, out.Soc+p.Soc
+		out.Wis += p.Wis
 		out.Reach *= mul(p.Reach)
 		out.Cradle *= mul(p.Cradle)
 		out.OrganicAsEnergy = out.OrganicAsEnergy || p.OrganicAsEnergy
