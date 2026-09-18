@@ -81,7 +81,7 @@ func (w *World) sendGoods(a *Civ) {
 				continue
 			}
 			wants[i] = b.OwnWant[k] * choices[i].Mul[k]
-			caps[i] = choices[i].Cap
+			caps[i] = choices[i].CapOf(k)
 		}
 		sent := flow.Share(spare[k], wants, caps)
 		for i, b := range partners {
@@ -113,10 +113,11 @@ func (w *World) sendGoods(a *Civ) {
 // willing asks the mind what a people sends a partner.
 func (w *World) willing(a, b *Civ) mind.TradeChoice {
 	in := mind.TradeInput{
-		Monster: w.monster(a, b), Grudge: a.Grudge[b.ID],
-		Xenophobe: a.Has("xenophobic"), Different: difference(a.Species, b.Species) >= 1,
+		Monster: w.monster(a, b), Grudge: a.Grudge[b.ID], Embargoed: b.Embargo[a.ID],
+		Xenophobe: a.Has("xenophobic"), Different: a.differs(b) >= 1,
 		Fear: a.Dials.Fear, Hostile: b.hostile(),
 		Nomad: a.Aloft || b.Aloft, Drive: w.drive(a), InReach: w.partnerInReach(a, b),
+		Holding: a.fixed(Holding), Spawning: a.fixed(Spawning), Grasping: b.fixed(Holding),
 	}
 	if i := a.Intel[b.ID]; i != nil {
 		in.Stronger = i.Mil > a.Mil
@@ -148,22 +149,25 @@ func (w *World) partnerInReach(a, b *Civ) bool {
 }
 
 // embargoStep keeps the books on refusal: a refusal while the partner
-// wants what the refuser has spare, once it has lasted, is an embargo.
+// wants what the refuser has spare, once it has lasted, is an embargo. It
+// stands until the refuser relents; a want that comes and goes does not
+// open and close the ports.
 func (w *World) embargoStep(a, b *Civ, ch mind.TradeChoice, spare flow.Income) {
+	if !ch.Refuse {
+		delete(a.Refused, b.ID)
+		if a.Embargo[b.ID] {
+			delete(a.Embargo, b.ID)
+			w.log("The %s open their ports to the %s again.", a.Name, b.Name)
+		}
+		return
+	}
 	wanting := false
 	for k := range spare {
 		if b.OwnWant[k] > 0 && spare[k] > 0 {
 			wanting = true
 		}
 	}
-	if !ch.Refuse || !wanting {
-		if a.Refused[b.ID] != 0 {
-			delete(a.Refused, b.ID)
-		}
-		if a.Embargo[b.ID] {
-			delete(a.Embargo, b.ID)
-			w.log("The %s open their ports to the %s again.", a.Name, b.Name)
-		}
+	if !wanting || a.Embargo[b.ID] {
 		return
 	}
 	if a.Refused == nil {
@@ -174,7 +178,11 @@ func (w *World) embargoStep(a, b *Civ, ch mind.TradeChoice, spare flow.Income) {
 		a.Refused[b.ID] = w.Now
 		return
 	}
-	if a.Embargo[b.ID] || w.Now-since < embargoYears {
+	if w.Now-since < embargoYears {
+		return
+	}
+	if ch.Holds {
+		w.tire(b, a)
 		return
 	}
 	if a.Embargo == nil {
@@ -184,6 +192,17 @@ func (w *World) embargoStep(a, b *Civ, ch mind.TradeChoice, spare flow.Income) {
 	w.fact(FEmbargo, a, b, -1)
 	w.log("The %s have what the %s want, and will not send it. The %s call it an embargo.", a.Name, b.Name, b.Name)
 	w.cutTrade(b, a, "the embargo")
+}
+
+// tire is a partner giving up on a people fixed on holding: it has sent
+// and got nothing back for as long as an embargo takes, and the trade
+// ends. No fact: nobody closed a port; the holders are what they are.
+func (w *World) tire(b, a *Civ) {
+	delete(a.Refused, b.ID)
+	delete(a.Trade, b.ID)
+	delete(b.Trade, a.ID)
+	w.cutTrade(a, b, "the "+b.Name+" tiring of them")
+	w.log("The %s tire of the %s, who take and send nothing back, and the trade between them ends.", b.Name, a.Name)
 }
 
 // depend is a people learning what it hangs on: when its own income does

@@ -71,6 +71,7 @@ func (w *World) spawnCiv(home int, sp *species.Species, maker int, name string) 
 			w.log("%s", line)
 		}
 	}
+	w.bornMorality(c)
 	if sp.Sub == species.Parasite {
 		c.Hosts = 1
 		if !shared {
@@ -728,6 +729,7 @@ func (w *World) schism(c *Civ) {
 		w.forget(nc, 0.2)
 		w.recompute(nc)
 		w.log("Schism among the %s. Half their worlds go dark, and at %s the %s declare themselves a new people.", c.Name, w.star(gone[0]), nc.Name)
+		w.branchMorality(nc, c)
 		w.fact(FSchism, c, nc, gone[0])
 		w.inherit(nc, c, 0)
 		return
@@ -815,6 +817,7 @@ func (w *World) machinePeople(c *Civ) *Civ {
 	w.recompute(nc)
 	c.Into = "the " + nc.Name
 	w.log("The %s are gone. What they built at %s thinks on without them, and calls itself the %s: %s.", c.Name, c.HomeName, nc.Name, sp.Describe())
+	w.machineMorality(nc, c)
 	w.inherit(nc, c, 0)
 	return nc
 }

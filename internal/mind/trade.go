@@ -1,6 +1,10 @@
 package mind
 
-import "fmt"
+import (
+	"fmt"
+
+	"worldgen/internal/flow"
+)
 
 // Trade is what a people is willing to send a partner, and how much can
 // cross. The arithmetic of what goes is flow.Share; this is the will and
@@ -18,15 +22,29 @@ type TradeInput struct {
 	InReach   bool    // a holding of the sender is within its reach of a holding of the partner
 	Nomad     bool    // either side lives as fleets
 	Drive     int     // the sender's road: 0 slow, 1 sails or near-light, 2 the Door or wormholes
+	Embargoed bool    // the partner has closed its ports to the sender
+	Holding   bool    // the sender is fixed on holding what it has
+	Spawning  bool    // the sender is fixed on more of itself
+	Grasping  bool    // the partner is fixed on holding: its want is filled first
 }
 
 // TradeChoice is the answer: a cap on what crosses, a multiplier on each
 // kind's want, and whether the sender refuses outright.
 type TradeChoice struct {
-	Cap    float64
-	Mul    [3]float64 // by kind: organic matter, energy, metal
-	Refuse bool
-	reason string
+	Cap     float64
+	Organic float64    // the cap on organic matter, when it differs
+	Mul     [3]float64 // by kind: organic matter, energy, metal
+	Refuse  bool
+	Holds   bool // refuses because it holds what it has: not a closing of ports, a way of being
+	reason  string
+}
+
+// CapOf is the cap for a kind.
+func (c TradeChoice) CapOf(k flow.Kind) float64 {
+	if k == flow.O && c.Organic > 0 {
+		return c.Organic
+	}
+	return c.Cap
 }
 
 // Why says the choice in a line.
@@ -53,6 +71,10 @@ func Trade(in TradeInput, t *Tuning) TradeChoice {
 		return TradeChoice{Refuse: true, reason: "they are remembered as monsters"}
 	case in.Grudge > p.GrudgeBar:
 		return TradeChoice{Refuse: true, reason: fmt.Sprintf("a grudge of %.1f is held against them", in.Grudge)}
+	case in.Holding:
+		return TradeChoice{Refuse: true, Holds: true, reason: "they hold what they have"}
+	case in.Embargoed:
+		return TradeChoice{Refuse: true, reason: "the partner has closed its ports to them"}
 	}
 	switch {
 	case !in.InReach:
@@ -76,6 +98,14 @@ func Trade(in TradeInput, t *Tuning) TradeChoice {
 	if in.Fear > p.FearBar && in.Stronger && in.Hostile {
 		c.Mul[2] = 0
 		c.reason = "no metal to a stronger people that strikes first"
+	}
+	if in.Spawning {
+		c.Organic = min(1, c.Cap*p.SpawnOrganic)
+	}
+	if in.Grasping {
+		c.Mul[0] *= p.GraspWant
+		c.Mul[1] *= p.GraspWant
+		c.Mul[2] *= p.GraspWant
 	}
 	return c
 }

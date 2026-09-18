@@ -17,8 +17,10 @@ type DirectionInput struct {
 	HostileNear func() bool // a hostile neighbour in reach; asked only when fear is high
 	Hunger      float64
 	Greed       float64
-	NoFields    bool // a planetary mind, a machine: nothing to farm
-	Nomad       bool // aloft: no works, and the road first
+	NoFields    bool          // a planetary mind, a machine: nothing to farm
+	Nomad       bool          // aloft: no works, and the road first
+	Fixed       bool          // the people is fixed on one good
+	Fixation    flow.Category // and this is what it feeds first
 }
 
 // Direction is the order and the reasons for it.
@@ -28,6 +30,7 @@ type Direction struct {
 	RoadFirst bool
 	MindFirst bool // the mind before the works
 	RoadAhead bool // the road before the mind
+	FixFirst  bool // the fixation's category before everything
 }
 
 // Why explains the order.
@@ -45,6 +48,9 @@ func (d Direction) Why() string {
 	if d.RoadAhead {
 		why = append(why, "the road before the mind: greedy")
 	}
+	if d.FixFirst {
+		why = append(why, "the fixation first")
+	}
 	if len(why) == 0 {
 		return "nothing pressing"
 	}
@@ -54,7 +60,9 @@ func (d Direction) Why() string {
 // Direct decides the order. War or fear with a hostile neighbour in reach
 // puts arms first; hunger puts the mind before the works; greed the road
 // before the mind; a people with no fields drops them; a nomad drops the
-// works and puts the road first, after arms if arms come first.
+// works and puts the road first, after arms if arms come first. A
+// fixation puts its category first before every other rule; only a fleet
+// in flight, which flow.Direct keeps, comes before it.
 func Direct(in DirectionInput, t *Tuning) Direction {
 	p := &t.Direction
 	d := Direction{}
@@ -79,6 +87,10 @@ func Direct(in DirectionInput, t *Tuning) Direction {
 	if in.NoFields {
 		order = without(order, flow.Fields)
 	}
+	if in.Fixed && index(order, in.Fixation) >= 0 {
+		d.FixFirst = true
+		order = before(order, in.Fixation, order[0])
+	}
 	d.Order = order
 	return d
 }
@@ -86,7 +98,7 @@ func Direct(in DirectionInput, t *Tuning) Direction {
 // before moves a so that it sits just before b, if a is after b.
 func before(o flow.Order, a, b flow.Category) flow.Order {
 	ia, ib := index(o, a), index(o, b)
-	if ia < 0 || ib < 0 || ia < ib {
+	if a == b || ia < 0 || ib < 0 || ia < ib {
 		return o
 	}
 	o = without(o, a)

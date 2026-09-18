@@ -13,6 +13,7 @@ type FindInput struct {
 	Own                                                                                         bool // the people's own lost work
 	Ruin                                                                                        bool // a ruin: nothing to use, nothing to guard
 	Law                                                                                         bool // a place where the state beneath shows through: only to be used
+	OldThings                                                                                   bool // the people is fixed on what the old ones left: eager to master
 }
 
 // Attempt is the weights.
@@ -30,7 +31,7 @@ func (a Attempt) Total() float64 { return a.Master + a.Wield + a.Seal }
 func Find(in FindInput, t *Tuning) Attempt {
 	p := &t.Find
 	a := Attempt{p.Master, p.Wield, p.Seal}
-	if in.Curious {
+	if in.Curious || in.OldThings {
 		a.Master += p.Curious
 	}
 	if in.Expansionist || in.Symbiotic {

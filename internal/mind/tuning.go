@@ -232,6 +232,8 @@ type TradeTuning struct {
 	GrudgeBar      float64 // a grudge above this and nothing is sent
 	DifferentShare float64 // what a xenophobe sends a people it counts as different
 	FearBar        float64 // fear above this sends no metal to a stronger, hostile partner
+	SpawnOrganic   float64 // a people fixed on spawning gives organic matter at this times its cap
+	GraspWant      float64 // a partner fixed on holding has its want weighed this much more in the share
 }
 
 // DirectionTuning: what bends the order the means are fed in.
@@ -286,7 +288,7 @@ func Default() *Tuning {
 		Direction: DirectionTuning{FearBar: 0.6, HungerBar: 0.6, GreedBar: 0.6},
 		Turn:      TurnTuning{Faithful: 0.0005, Practical: 0.01, Faithless: 0.05, Hostile: 2, Vengeful: 3, Opening: 1, GreedBase: 0.5},
 		Roam:      RoamTuning{HopMin: 3, HopMax: 20},
-		Trade:     TradeTuning{CapBase: 0.25, CapFast: 0.5, CapDoor: 1, CapNomad: 0.5, GrudgeBar: 0.3, DifferentShare: 0.5, FearBar: 0.6},
+		Trade:     TradeTuning{CapBase: 0.25, CapFast: 0.5, CapDoor: 1, CapNomad: 0.5, GrudgeBar: 0.3, DifferentShare: 0.5, FearBar: 0.6, SpawnOrganic: 2, GraspWant: 2},
 	}
 }
 

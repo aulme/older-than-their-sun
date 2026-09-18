@@ -161,5 +161,5 @@ func orderOf(s *species.Species) string {
 // hates is true when a xenophobe finds another people too different to
 // treat as anything but a thing to end.
 func (c *Civ) hates(e *Civ) bool {
-	return c.Has("xenophobic") && difference(c.Species, e.Species) >= 2.5
+	return c.Has("xenophobic") && c.differs(e) >= 2.5
 }

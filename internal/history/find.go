@@ -54,12 +54,22 @@ func (w *World) find(c *Civ) {
 	case own != nil && w.chance(0.05):
 		l = own
 		how = "own"
-	case w.chance(0.0001):
+	case w.chance(findChance(c)):
 		l = cands[w.R.IntN(len(cands))]
 	default:
 		return
 	}
 	w.discover(c, l, how)
+}
+
+// findChance is the rate per thousand years at which a people comes upon
+// a remain in its reach by chance; a people fixed on the old things looks
+// harder.
+func findChance(c *Civ) float64 {
+	if c.fixed(OldThings) {
+		return 0.0002
+	}
+	return 0.0001
 }
 
 // discover is the Find itself: a people comes upon a remain, by a survey,
@@ -131,6 +141,7 @@ func (w *World) discover(c *Civ, l *Legacy, how string) {
 		Xenophobic: c.Has("xenophobic"), Contemplative: c.Has("contemplative"), Pragmatic: c.Has("pragmatic"), Conqueror: c.Has("conqueror"),
 		Threat: l.Kind == Sleeper || l.Kind == Threat, Plain: n != nil && n.Miracle && l.Kind == Artifact,
 		Own: w.kinship(c, l) == 2, Ruin: l.Maker >= 0 && l.Cond == Ruin, Law: l.Kind == Law,
+		OldThings: c.fixed(OldThings),
 	}, w.Cfg.Tuning)
 	w.explain(c, "weighing what to do with "+l.Describe(), a)
 	switch a.Pick(w.R.Float64()) {

@@ -379,6 +379,7 @@ func (w *World) uplift(c *Civ) {
 			w.forget(nc, 0.3)
 			w.recompute(nc)
 			w.log("The %s raise the %s from the beasts of %s. They are %s, and grateful, for now.", c.Name, nc.Name, w.star(t), sp.Describe())
+			w.upliftMorality(nc, c)
 			w.fact(FUplift, c, nc, t)
 			w.inherit(nc, c, 1)
 			return

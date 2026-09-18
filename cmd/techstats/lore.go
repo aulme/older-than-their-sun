@@ -105,4 +105,53 @@ func loreReport(out io.Writer, recs []Rec) {
 	}
 	p("")
 	p("Peoples that held somebody to be a monster at the end: %d of %d (%s).", with, len(recs), pct(with, len(recs)))
+	moralityReport(out, recs)
+}
+
+// moralityReport: peoples by what they count as wrong, the monsters each
+// morality holds, and how often the same fact is a crime to one people
+// and a deed to another.
+func moralityReport(out io.Writer, recs []Rec) {
+	p := func(format string, args ...any) { fmt.Fprintf(out, format+"\n", args...) }
+	p("")
+	p("### Morality")
+	p("")
+	p("What each people counts as wrong, rolled at birth from its nature. Monsters are the peoples it remembered as things that do harm at the end, over peoples that lived a million years or more; excused is tales held whose fact is a crime and the holder's judgment is not, condemned the reverse.")
+	p("")
+	p("| Morality | Peoples | Share | Lived 1 Myr+ | Monsters per people | Held a monster | Excused per people | Condemned per people |")
+	p("|---|---|---|---|---|---|---|---|")
+	by := map[string][]Rec{}
+	for _, r := range recs {
+		by[r.Morality] = append(by[r.Morality], r)
+	}
+	for _, k := range sortedKeys(by) {
+		rs := by[k]
+		var old []Rec
+		for _, r := range rs {
+			if r.Lived >= 1 {
+				old = append(old, r)
+			}
+		}
+		monsters, with, excused, condemned := 0, 0, 0, 0
+		for _, r := range old {
+			monsters += r.Monsters
+			if r.Monsters > 0 {
+				with++
+			}
+		}
+		for _, r := range rs {
+			excused += r.Excused
+			condemned += r.Condemned
+		}
+		n := float64(max(1, len(old)))
+		p("| %s | %d | %s | %d | %.2f | %s | %.1f | %.1f |", k, len(rs), pct(len(rs), len(recs)), len(old), float64(monsters)/n, pct(with, len(old)),
+			float64(excused)/float64(len(rs)), float64(condemned)/float64(len(rs)))
+	}
+	split, shared := 0, 0
+	for _, r := range recs {
+		split += r.Split
+		shared += r.Shared
+	}
+	p("")
+	p("Crimes known to two peoples or more: %d; of them a crime to one and a deed to another: %d (%s).", shared, split, pct(split, shared))
 }

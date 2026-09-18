@@ -223,7 +223,7 @@ func (w *World) answerPact(f, c *Civ, m *Message) {
 	}
 	in := mind.AnswerInput{
 		Aggressive: m.PactKind == Aggressive, Posture: f.posture(), Target: e != nil, Mil: f.Mil, ProposerMil: c.Mil,
-		Difference: difference(f.Species, c.Species), Infamy: w.infamy(c), Renown: w.renown(c), Dials: f.Dials,
+		Difference: f.differs(c), Infamy: w.infamy(c), Renown: w.renown(c), Dials: f.Dials,
 	}
 	against := "whoever comes"
 	if e != nil {

@@ -74,6 +74,11 @@ type Rec struct {
 	Held      int                `json:"held"`     // tales held at the end
 	Myth      int                `json:"myth"`     // of them myth
 	Monsters  int                `json:"monsters"` // peoples remembered as monsters at the end
+	Morality  string             `json:"morality"` // what the people counts as wrong: amoral, individual, herd, fixed on X
+	Excused   int                `json:"excused"`   // tales held whose fact is a crime and the people's judgment is not
+	Condemned int                `json:"condemned"` // tales held whose fact is no crime and the people's judgment is one
+	Split     int                `json:"split,omitempty"`  // on the first people of a world: facts a crime to one people that knows them and a deed to another
+	Shared    int                `json:"shared,omitempty"` // on the first people of a world: crimes known to two peoples or more
 	LoreDials history.Dials      `json:"lore_dials"`
 	Income    flow.Income        `json:"income"` // at the people's height of means
 	Upkeep    flow.Income        `json:"upkeep"`
@@ -214,6 +219,11 @@ func flatten(w *history.World) []Rec {
 			r.Shed[k] = n
 		}
 		r.Held, r.Myth, r.Monsters = history.LoreCounts(w, c)
+		r.Morality = c.Morality.Word()
+		r.Excused, r.Condemned = history.Judged(w, c)
+		if len(out) == 0 {
+			r.Split, r.Shared = history.SplitFacts(w)
+		}
 		r.FellDep = c.FellDependent
 		for _, src := range w.Sources {
 			if src.Form == "" || src.Maker != c.ID {

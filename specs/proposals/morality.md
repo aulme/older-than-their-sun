@@ -1,7 +1,7 @@
 # Morality: what a people counts as wrong
 
-**Status:** Draft
-**Last updated:** 2026-09-17
+**Status:** Implemented (plan step 7; see the Morality bullet in `DESIGN_NOTES.md`)
+**Last updated:** 2026-09-18
 
 Assumes [one-tick](one-tick.md): every rate below is per thousand years, and "per tick" means a thousand-year tick, the same thing.
 

@@ -19,6 +19,7 @@ func partners(t *testing.T, seed uint64) (*World, *Civ, *Civ) {
 	a.Met[b.ID], b.Met[a.ID] = true, true
 	b.Known["firearms"] = true // weapons, era 1: 1 M, and b has no metal
 	for _, c := range []*Civ{a, b} {
+		c.Morality = Morality{Kind: Individual} // whatever was rolled: a holding people sends nothing
 		w.flows(c)
 		c.Reach = 1000
 	}

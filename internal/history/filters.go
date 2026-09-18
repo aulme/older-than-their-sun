@@ -546,6 +546,7 @@ func init() {
 		Scar: func(w *World, c *Civ) {
 			c.Scars[ScarChurch] = true
 			w.log("A century of burning among the %s, and the church wins. It outranks every state after that.", c.Name)
+			w.churchMorality(c)
 		},
 		Decline: func(w *World, c *Civ) {
 			if w.R.Float64() < 0.5 {

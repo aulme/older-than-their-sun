@@ -101,7 +101,7 @@ func (w *World) tell(c *Civ, t *Tale) string {
 			line = bl // the cause it gave itself is gone; the blame sentence carries it
 		}
 	}
-	sort := f.sort()
+	sort, _ := sortFor(c, f)
 	if sort == Bond && obj == c.ID {
 		subj, obj = obj, subj // we come first in what we did together
 	}
@@ -151,7 +151,32 @@ func (w *World) tell(c *Civ, t *Tale) string {
 	)
 	s := r.Replace(line)
 	s = w.frame(c, t, f, s, we, sort, sl)
+	if we != 1 && sort != f.sort() {
+		s += judged(f.sort(), sort)
+	}
 	return sentences(s)
+}
+
+// judged is what a teller adds when its judgment of another's act is not
+// the fact's own.
+func judged(was, is Sort) string {
+	switch {
+	case was == Crime && is == Deed:
+		return " Among us that is counted a deed."
+	case was == Crime && is == Nothing:
+		return " We count it no crime."
+	case was == Crime && is == Folly:
+		return " It was a folly, no more."
+	case was == Crime && is == Woe:
+		return " We bore it."
+	case is == Crime:
+		return " We call it a crime."
+	case is == Folly:
+		return " Among us it is counted a folly."
+	case is == Nothing:
+		return " It is nothing to us."
+	}
+	return ""
 }
 
 func pronoun(us bool) string {
@@ -431,6 +456,14 @@ func (w *World) deedOf(f *Fact) string {
 		return "stripped " + w.star(f.Star)
 	case FUnleashed, FHorrorMade:
 		return "let it loose"
+	case FWar:
+		return "made war on the " + w.Civs[f.Object].Name
+	case FEmbargo:
+		return "closed their ports to the " + w.Civs[f.Object].Name
+	case FBred:
+		return "remade the " + w.Civs[f.Object].Name
+	case FManna:
+		return "ate what thought"
 	}
 	return "did it"
 }

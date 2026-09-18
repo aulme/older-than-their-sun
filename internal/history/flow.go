@@ -246,7 +246,10 @@ func (w *World) needOf(c *Civ, n *tech.Node) flow.Income {
 
 // order asks the mind for the direction.
 func (w *World) order(c *Civ) mind.Direction {
+	fix, fixed := c.Morality.fixation()
 	return mind.Direct(mind.DirectionInput{
+		Fixed:       fixed,
+		Fixation:    fix,
 		AtWar:       len(c.Wars) > 0,
 		Fear:        c.Dials.Fear,
 		HostileNear: func() bool { return w.hostileNear(c) },

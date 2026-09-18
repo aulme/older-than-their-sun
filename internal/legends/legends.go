@@ -282,6 +282,7 @@ func Write(out io.Writer, w *history.World, full bool) {
 		if c.Species.Name != c.Name {
 			kind += "; the " + c.Species.Name + " by blood"
 		}
+		kind += "; " + c.Morality.Word()
 		seat := ""
 		if c.Home != c.Cradle {
 			seat = ", later seated on " + c.HomeName

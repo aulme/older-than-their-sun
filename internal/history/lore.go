@@ -82,6 +82,7 @@ const (
 	Woe               // the subject suffered; the object, if any, is the cause
 	Bond              // the two did something together
 	Folly             // the subject brought something on itself
+	Nothing           // no judgment: what a morality passes over; never a fact's own sort
 )
 
 // factShape is the sort and weight of each kind. Weight is how much a
@@ -280,11 +281,31 @@ func (w *World) hold(c *Civ, f *Fact, src Provenance, from int, slant int8, wear
 // friend is held against the doer, and a crime by a stranger against
 // anyone is a thing to be feared.
 func (w *World) takeToHeart(c *Civ, f *Fact, t *Tale) {
-	if f.sort() != Crime || f.Subject == c.ID || t.Source == Witnessed && f.Object == c.ID {
+	w.judgeLine(c, f, t)
+	s, wt := sortFor(c, f)
+	if s != Crime || f.Subject == c.ID || t.Source == Witnessed && f.Object == c.ID {
 		return
 	}
 	if f.Object >= 0 && f.Object != c.ID && w.regard(c, f.Object) > 0 {
-		c.Grudge[f.Subject] += 0.1 * f.weight() / 3
+		c.Grudge[f.Subject] += 0.1 * wt / 3
+	}
+}
+
+// judgeLine is the note, now and then, that a people's judgment of a
+// thing it has just learned is not the fact's own: a crime it counts no
+// crime, a deed it calls one.
+func (w *World) judgeLine(c *Civ, f *Fact, t *Tale) {
+	if t.Source == Inherited || f.Subject == c.ID || f.Object == c.ID || !judges(c, f) || w.R.Float64() >= 0.05 {
+		return
+	}
+	s, _ := sortFor(c, f)
+	switch {
+	case f.sort() == Crime && s == Deed:
+		w.log("The %s hear that the %s %s, and count it a deed.", c.Name, w.Civs[f.Subject].Name, w.deedOf(f))
+	case f.sort() == Crime && s == Nothing:
+		w.log("The %s hear that the %s %s, and count it no crime.", c.Name, w.Civs[f.Subject].Name, w.deedOf(f))
+	case f.sort() != Crime && s == Crime:
+		w.log("The %s hear what the %s did, and call it a crime.", c.Name, w.Civs[f.Subject].Name)
 	}
 }
 
@@ -301,7 +322,8 @@ func (w *World) reckon(c *Civ) {
 			continue
 		}
 		f := w.Facts[t.Fact]
-		if f.sort() == Woe {
+		s, wt := sortFor(c, f)
+		if s == Woe {
 			if t.Blamed < 0 || t.Blamed == c.ID {
 				continue
 			}
@@ -309,10 +331,10 @@ func (w *World) reckon(c *Civ) {
 			if f.Subject == c.ID {
 				v = 2
 			}
-			x[t.Blamed] += v * f.weight() / 3 * (1 + 0.5*float64(t.Wear))
+			x[t.Blamed] += v * wt / 3 * (1 + 0.5*float64(t.Wear))
 			continue
 		}
-		if f.Subject == c.ID || (f.sort() != Crime && f.sort() != Folly) {
+		if f.Subject == c.ID || (s != Crime && s != Folly) {
 			continue
 		}
 		v := 0.5
@@ -326,7 +348,7 @@ func (w *World) reckon(c *Civ) {
 		if t.Blamed >= 0 {
 			who = t.Blamed
 		}
-		x[who] += v * f.weight() / 3 * (1 + 0.5*float64(t.Wear))
+		x[who] += v * wt / 3 * (1 + 0.5*float64(t.Wear))
 	}
 	c.monsters = map[int]bool{}
 	for id, v := range x {
@@ -459,7 +481,7 @@ func (w *World) testament(c *Civ, l *Legacy) {
 // dearness is how much a tale matters to its teller: the fact's weight,
 // more for its own part in it, less for strangers' business.
 func (w *World) dearness(c *Civ, f *Fact, t *Tale) float64 {
-	x := f.weight()
+	_, x := sortFor(c, f)
 	switch {
 	case f.Subject == c.ID || f.Object == c.ID:
 		x *= 1.5
@@ -640,17 +662,18 @@ func (w *World) wear(c *Civ) {
 		if age < 0.05 {
 			continue
 		}
-		rate := 0.002 * m * min(1+age, 3) / f.weight()
+		s, wt := sortFor(c, f)
+		rate := 0.002 * m * min(1+age, 3) / max(wt, 0.5)
 		own := f.Subject == c.ID || f.Object == c.ID
 		switch {
-		case f.Subject == c.ID && f.sort() == Crime, f.Subject == c.ID && f.sort() == Folly:
+		case f.Subject == c.ID && s == Crime, f.Subject == c.ID && s == Folly:
 			rate *= 2 // what we did is easier to forget
 		case own:
 			rate *= 0.6
 		case t.Slant == 0:
 			rate *= 1.5
 		}
-		if t.Wear >= 2 && own && f.weight() >= 3 {
+		if t.Wear >= 2 && own && wt >= 3 {
 			rate *= 0.25 // the old songs
 		}
 		if !w.chance(rate) {
@@ -674,10 +697,11 @@ func (w *World) wearStep(c *Civ, t *Tale, f *Fact) {
 	}
 	c.Tally.Myths++
 	blame := false
+	s, wt := sortFor(c, f)
 	switch {
-	case f.sort() == Folly && f.Subject == c.ID:
+	case s == Folly && f.Subject == c.ID:
 		blame = w.R.Float64() < 0.4 // our own folly becomes somebody's doing
-	case (f.sort() == Crime || f.sort() == Folly) && f.Subject != c.ID && t.Slant == 0:
+	case (s == Crime || s == Folly) && f.Subject != c.ID && t.Slant == 0:
 		blame = w.R.Float64() < 0.3 // a stranger's crime is hung on the enemy of the day
 	}
 	if blame {
@@ -690,7 +714,7 @@ func (w *World) wearStep(c *Civ, t *Tale, f *Fact) {
 			return
 		}
 	}
-	if f.weight() >= 4 && (f.Subject == c.ID || f.Object == c.ID) && w.R.Float64() < 0.15 {
+	if wt >= 4 && (f.Subject == c.ID || f.Object == c.ID) && w.R.Float64() < 0.15 {
 		w.log("Among the %s, %s has become a story told to children.", c.Name, w.mythOf(c, f))
 	}
 }
@@ -733,7 +757,7 @@ func (w *World) scapegoat(c *Civ, e int) {
 			continue
 		}
 		f := w.Facts[t.Fact]
-		s := f.sort()
+		s, _ := sortFor(c, f)
 		if s != Crime && s != Folly && s != Woe {
 			continue
 		}
@@ -897,27 +921,28 @@ func (w *World) loreDials(c *Civ) Dials {
 			continue
 		}
 		f := w.Facts[t.Fact]
+		s, _ := sortFor(c, f)
 		k := 1 + 0.5*float64(t.Wear)
 		self := f.Subject == c.ID
 		switch {
-		case f.Kind == FBetrayal && f.Object == c.ID:
+		case f.Kind == FBetrayal && f.Object == c.ID && s == Crime:
 			d.Loyalty -= 0.10 * k
 			d.Fear += 0.06 * k
-		case f.sort() == Crime && f.Object == c.ID:
+		case s == Crime && f.Object == c.ID:
 			d.Hate += 0.06 * k
 			d.Fear += 0.04 * k
 			d.Patience += 0.04 * k
 		case self && (f.Kind == FTaken || f.Kind == FHomeBroken || f.Kind == FYield || f.Kind == FHorrorBeaten):
 			d.Aggression += 0.06 * k
 			d.Greed += 0.04 * k
-		case self && f.sort() == Folly:
+		case self && s == Folly:
 			d.Risk -= 0.10 * k
-		case self && f.sort() == Woe:
+		case self && s == Woe:
 			d.Fear += 0.04 * k
 			d.Risk -= 0.04 * k
 		case self && (f.Kind == FFind || f.Kind == FMastered || f.Kind == FCycle):
 			d.Hunger += 0.06 * k
-		case f.sort() == Bond && (self || f.Object == c.ID):
+		case s == Bond && (self || f.Object == c.ID):
 			d.Loyalty += 0.04 * k
 		}
 	}

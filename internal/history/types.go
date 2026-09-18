@@ -86,6 +86,7 @@ type Civ struct {
 	Into       string          // what it became, if transformed
 	Word       string          // the people's word for the state beneath, once they have reached into it
 	Hosts      int             // for parasites: host species ridden, the local one included
+	Morality   Morality        // what the people counts as wrong; see morality.go
 	Lifted     map[string]bool // world blocks lifted by a colony: sea, sky, fire
 	Systems    []int
 	Peak       int
