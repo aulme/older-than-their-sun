@@ -8,38 +8,37 @@ import (
 	"worldgen/internal/tech"
 )
 
-// TestLaunchNeedsSpare: a fleet is a reservation of the means. With no
-// spare it does not go; with spare it goes and the spare is taken.
-func TestLaunchNeedsSpare(t *testing.T) {
+// TestLaunchNeedsShips: a fleet is ships taken from the guards. With no
+// ship manned it does not go; with one it goes, the guard is emptied, and
+// the ship out is a use in flight that keeps what it kept at home.
+func TestLaunchNeedsShips(t *testing.T) {
 	w := newTestWorld(t, 12, 30)
 	c := spawnAt(w, 0, species.Fixed("cooperative"))
 	e := spawnAt(w, 1, species.Fixed("cooperative"))
-	c.Mil = 4
-	c.Surplus = flow.Income{}
 	if x := w.launch(c, Scout, e, e.Home, 1); x != nil {
-		t.Fatal("a scout sailed with nothing spare")
+		t.Fatal("a scout sailed with no ship")
 	}
-	c.Surplus = flow.Income{flow.E: 1.5, flow.M: 1.5}
+	w.addGuard(c, c.Home, 1)
 	x := w.launch(c, Scout, e, e.Home, 1)
 	if x == nil {
-		t.Fatal("a scout stayed home with the spare to cover it")
+		t.Fatal("a scout stayed home with a ship in the guard")
 	}
-	if c.Reserved != (flow.Income{flow.E: 1, flow.M: 1}) {
-		t.Errorf("the scout reserved %v, want 1 E 1 M", c.Reserved)
+	if w.standing(c) != 0 || w.ships(c) != 1 {
+		t.Errorf("after the launch %d standing and %d in being, want 0 and 1", w.standing(c), w.ships(c))
 	}
-	// a second this tick finds the spare gone
+	// a second this tick finds the guard empty
 	if y := w.launch(c, Scout, e, e.Home, 1); y != nil {
-		t.Error("a second scout sailed on spare the first had taken")
+		t.Error("a second scout sailed on a ship the first had taken")
 	}
-	// and the fleet out is a use in flight
+	// and the fleet out is a use in flight, at the ship's keep
 	found := false
 	for _, u := range w.uses(c) {
 		if u.Key == "fleet:"+itoa(x.ID) {
-			found = u.Flight && u.Need == (flow.Income{flow.E: 1, flow.M: 1})
+			found = u.Flight && u.Need == w.keepOf(c)
 		}
 	}
 	if !found {
-		t.Error("the scout out is not a use in flight")
+		t.Error("the scout out is not a use in flight at the ship's keep")
 	}
 }
 

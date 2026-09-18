@@ -40,17 +40,20 @@ type Tuning struct {
 	Turn      TurnTuning
 	Roam      RoamTuning
 	Trade     TradeTuning
+	Want      WantTuning
 }
 
 // BeliefTuning: what a people thinks another's level is from its
 // intelligence, and how sure.
 type BeliefTuning struct {
-	UnknownBase   float64 // never seen: the lights of their cities are a guess at their age
-	UnknownPerEra float64
-	UnknownSpread float64
-	Spread        float64 // a fresh report's spread, in levels
-	SpreadPerKyr  float64 // widening per thousand years since the look
-	MaxSpread     float64
+	UnknownBase        float64 // never seen: the lights of their cities are a guess at their age
+	UnknownPerEra      float64
+	UnknownSpread      float64
+	Spread             float64 // a fresh report's spread, in levels
+	SpreadPerKyr       float64 // widening per thousand years since the look
+	MaxSpread          float64
+	UnknownShips       float64 // never seen: the ships guessed, plus this per era
+	UnknownShipsPerEra float64
 }
 
 // AppraiseTuning: the estimate of a fight.
@@ -83,19 +86,19 @@ type CouncilTuning struct {
 	Compelled  float64 // the bar it is compelled to
 }
 
-// ScoutTuning: when a report is worth a level.
+// ScoutTuning: when a report is worth a ship.
 type ScoutTuning struct {
-	KeepHome   float64 // levels that must stay after the scout leaves
+	KeepHome   float64 // ships that must stay after the scout leaves
 	FearBar    float64 // above this fear a small people does not scout
-	FearMil    float64 // small means below this
+	FearShips  int     // small means fewer ships than this
 	SightNoise float64 // the Sight's reading is nearly exact
 }
 
 // CampaignTuning: sizing a fleet.
 type CampaignTuning struct {
-	Floor        float64 // share of the whole strength a fleet is at least
-	MinFloor     float64 // and at least this many levels
-	FearCap      float64 // how much of the level fear keeps home, at full fear
+	Floor        float64 // share of the ships in being a fleet is at least
+	MinFloor     int     // and at least this many ships
+	FearCap      float64 // how much of the ships fear keeps home, at full fear
 	MaxLag       float64 // years of crossing beyond which nobody sends a fleet
 	ConquerorLag float64 // but a conqueror will
 }
@@ -135,18 +138,18 @@ type PactTuning struct {
 
 // CallTuning: whether an ally comes.
 type CallTuning struct {
-	Share       float64 // of the level sent as relief
-	Floor       float64 // of the whole strength, at least
-	MinFloor    float64
-	HelpSlack   float64 // relief helps when it and the host reach the attacker less this
-	SafeLeft    float64 // levels that must stay home
+	Share       float64 // of the ships that could sail, sent as relief
+	Floor       float64 // of the ships in being, at least
+	MinFloor    int
+	HelpSlack   float64 // relief helps when it and the host reach the attacker less this, in levels
+	SafeLeft    float64 // ships that must stay home
 	SafeFear    float64 // unless fear is below this
 	Base        float64 // want: loyalty less fear times FearWeight plus this
 	FearWeight  float64
 	Confederate float64
 	Betrayed    float64 // off the want when the caller broke faith before
 	Want        float64 // the want it takes to come
-	BlameAbove  float64 // not coming is a betrayal when the level is at least this
+	BlameAbove  float64 // not coming is a betrayal when the ships are at least this
 }
 
 // ForwardTuning: passing a report to an ally.
@@ -163,9 +166,8 @@ type SurveyTuning struct {
 	HungerWeight float64
 	GreedWeight  float64
 	Necessity    int     // the era from which a people with nothing to settle sends one
-	KeepHome     float64 // levels that must stay home
-	MinMil       float64 // no surveyors below this level
-	MinReach     float64 // or this reach
+	KeepHome     float64 // ships that must stay home
+	MinReach     float64 // no surveyors below this reach
 	NearMin      float64 // the least range within which unread stars are looked for
 	Rate         float64 // launches per thousand years when short
 	HopMin       float64 // the next star on a tour lies within a hop
@@ -221,6 +223,13 @@ type BuildTuning struct {
 	Rate        float64 // per thousand years
 	Cover       float64 // the spare must cover a structure's upkeep this many times over before it is built
 	LevelWeight float64 // a level lifted is worth this much yield per tick, when nothing is wanting
+	DockWeight  float64 // a dock is worth this much yield per tick per ship wanting
+}
+
+// WantTuning: how many ships a people builds toward.
+type WantTuning struct {
+	Floor      int     // ships kept whatever else is wanted
+	FearWeight float64 // more by fear, rounded
 }
 
 // TradeTuning: what a people sends a partner.
@@ -263,11 +272,11 @@ type RoamTuning struct {
 // Default is today's numbers.
 func Default() *Tuning {
 	return &Tuning{
-		Belief:   BeliefTuning{UnknownBase: 1, UnknownPerEra: 1.2, UnknownSpread: 3, Spread: 0.3, SpreadPerKyr: 0.1, MaxSpread: 3},
+		Belief:   BeliefTuning{UnknownBase: 1, UnknownPerEra: 1.2, UnknownSpread: 3, Spread: 0.3, SpreadPerKyr: 0.1, MaxSpread: 3, UnknownShips: 1, UnknownShipsPerEra: 1},
 		Appraise: AppraiseTuning{Defence: 1, HomeDefence: 2.5, Grid: 0.5, Weakened: 1, OtherWar: 0.3, AllyShare: 0.5, Scale: 2, DarkAge: 50_000, PrizeWeight: 0.02, PrizeMax: 0.15},
 		Bar:      BarTuning{Hate: 0.35, Opportunist: 0.75, Conqueror: 0.4, Vengeful: 0.3, GrudgeDiscount: 0.1},
 		Council:  CouncilTuning{Cadence: 0.3, Compulsion: 0.1, Compelled: 0.25},
-		Scout:    ScoutTuning{KeepHome: 1, FearBar: 0.8, FearMil: 4, SightNoise: 0.1},
+		Scout:    ScoutTuning{KeepHome: 1, FearBar: 0.8, FearShips: 3, SightNoise: 0.1},
 		Campaign: CampaignTuning{Floor: 0.1, MinFloor: 1, FearCap: 0.4, MaxLag: 20_000, ConquerorLag: 40_000},
 		Pact: PactTuning{
 			Rate: 0.08, Confederate: 0.5, Defensive: 0.15, Aggressor: 0.2, AskAgain: 30_000,
@@ -279,16 +288,17 @@ func Default() *Tuning {
 		},
 		Call:      CallTuning{Share: 0.3, Floor: 0.1, MinFloor: 1, HelpSlack: 1, SafeLeft: 2, SafeFear: 0.3, Base: 0.3, FearWeight: 0.6, Confederate: 0.2, Betrayed: 1, Want: 0.4, BlameAbove: 3},
 		Forward:   ForwardTuning{NeedStranger: 0.3, NeedMet: 0.5, NeedEnemy: 1, Designs: 0.6, Bar: 0.3},
-		Survey:    SurveyTuning{HungerWeight: 2, GreedWeight: 1, Necessity: 2, KeepHome: 1, MinMil: 2, MinReach: 1, NearMin: 5, Rate: 0.3, HopMin: 3, HopMax: 20, MaxTour: 6, MaxTourYears: 40_000},
+		Survey:    SurveyTuning{HungerWeight: 2, GreedWeight: 1, Necessity: 2, KeepHome: 1, MinReach: 1, NearMin: 5, Rate: 0.3, HopMin: 3, HopMax: 20, MaxTour: 6, MaxTourYears: 40_000},
 		Sight:     SightTuning{FearBar: 0.6, GrudgeBar: 0.5, Reads: 2, RangeMul: 2, RangeMin: 10},
 		Find:      FindTuning{Master: 1, Wield: 1.5, Seal: 1, Curious: 3, Reaching: 1, Cautious: 3, Wary: 1.5, Practical: 2, ThreatSeal: 2, Plain: 2, Own: 3},
 		Research:  ResearchTuning{DepthBonus: 0.25, Unfed: 0.25},
 		Expand:    ExpandTuning{Rate: 0.04, MaxRate: 0.3, ParasiteReach: 0.3, Hop: 20, Blind: 0.2, NeedShipsBelow: 40, NeedShipsEra: 2, ShipFocus: 4},
-		Build:     BuildTuning{Rate: 0.004, Cover: 2, LevelWeight: 2},
+		Build:     BuildTuning{Rate: 0.004, Cover: 2, LevelWeight: 2, DockWeight: 1},
 		Direction: DirectionTuning{FearBar: 0.6, HungerBar: 0.6, GreedBar: 0.6},
 		Turn:      TurnTuning{Faithful: 0.0005, Practical: 0.01, Faithless: 0.05, Hostile: 2, Vengeful: 3, Opening: 1, GreedBase: 0.5},
 		Roam:      RoamTuning{HopMin: 3, HopMax: 20},
 		Trade:     TradeTuning{CapBase: 0.25, CapFast: 0.5, CapDoor: 1, CapNomad: 0.5, GrudgeBar: 0.3, DifferentShare: 0.5, FearBar: 0.6, SpawnOrganic: 2, GraspWant: 2},
+		Want:      WantTuning{Floor: 1, FearWeight: 1},
 	}
 }
 

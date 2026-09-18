@@ -3,16 +3,20 @@ package history
 import (
 	"math"
 
+	"worldgen/internal/battle"
 	"worldgen/internal/mind"
 	"worldgen/internal/names"
 	"worldgen/internal/tech"
 )
 
-// An expedition is the army far from home: a share of a people's Military
-// that leaves for the duration, crosses at ship speed, and fights from a
-// base in enemy territory with no reinforcement. A relief fleet is the
-// same thing sent to stand with an ally. A scout is a fleet of one level
-// that only looks.
+// Every ship is in a fleet, and this is the fleet: one object for the
+// guard at a star, the campaign sent against an enemy, the relief sent to
+// stand with a host, the scout that only looks, the surveyors, and a
+// horde's fleet. A fleet has a count of ships, a base or a line in flight,
+// an owner and a kind; it changes kind by order, splits when ships are
+// taken out of it and merges with another of its owner and kind at a
+// base. Its strength is its ships at its owner's quality; the arithmetic
+// of a fight is internal/battle.
 
 // ExpKind is what a fleet is for.
 type ExpKind uint8
@@ -23,10 +27,11 @@ const (
 	Scout
 	Roam   // a nomad people's fleet; see nomad.go
 	Survey // surveyors reading the stars; see explore.go
+	Guard  // the ships at one of the people's stars: its garrison and its reserve; see ships.go
 )
 
 func (k ExpKind) String() string {
-	return [...]string{"campaign", "relief", "scout", "roam", "survey"}[k]
+	return [...]string{"campaign", "relief", "scout", "roam", "survey", "guard"}[k]
 }
 
 // Expedition is one fleet.
@@ -37,12 +42,15 @@ type Expedition struct {
 	Kind      ExpKind
 	Star      int // destination
 	From      int // where it set out from
-	Mil       float64
+	Ships     int
 	Launched  Year
 	Arrive    Year
 	Base      int // where it operates from; -1 in flight
 	Returning bool
 	Over      bool
+	LaidUp    bool  // the flow does not keep it: it neither fights nor moves, and it rots
+	Laid      Year  // when it was last laid up
+	Manned    Year  // when it was last manned again
 	Held      []int // worlds it took and its people still hold
 	Seen      map[int]bool
 	Report    *Intel // a scout's report, carried home without the Voice
@@ -54,35 +62,33 @@ type Expedition struct {
 	Recalled  bool // for surveyors: called home by a war; they finish the leg and turn
 }
 
-// launch sends a fleet. The strength leaves the home level at once, and
-// the fleet reserves its share of the means: with no spare to cover it
-// this tick, it does not go, and nil is returned.
-func (w *World) launch(c *Civ, kind ExpKind, target *Civ, star int, mil float64) *Expedition {
+// launch sends a fleet of n ships toward a star: the ships are taken
+// from the guards, nearest the holding it sets out from first. With too
+// few ships manned it does not go, and nil is returned. The ships were
+// kept already; a fleet in flight keeps them still.
+func (w *World) launch(c *Civ, kind ExpKind, target *Civ, star int, n int) *Expedition {
 	from, d := w.nearest(c, star)
-	need := w.fleetReservation(c, mil, from)
-	if !w.afford(c, need) {
+	total := w.ships(c)
+	if w.takeShips(c, from, n) == 0 {
 		if w.Cfg.TraceAI {
-			w.log("[the %s cannot spare a %s for %s: %v short]", c.Name, kind, w.star(star), need.Less(c.Surplus.Less(c.Reserved)))
+			w.log("[the %s cannot man a %s of %s for %s]", c.Name, kind, shipsWord(n), w.star(star))
 		}
 		return nil
 	}
-	w.reserve(c, need)
-	x := &Expedition{ID: len(w.Expeditions), Owner: c.ID, Target: -1, Kind: kind, Star: star, From: from, Mil: mil,
-		Launched: w.Now, Arrive: w.Now + Year(d*c.Speed), Base: -1, Seen: map[int]bool{}}
+	x := &Expedition{ID: len(w.Expeditions), Owner: c.ID, Target: -1, Kind: kind, Star: star, From: from, Ships: n,
+		Launched: w.Now, Arrive: w.Now + Year(d*c.Speed), Base: -1, Manned: w.Now, Seen: map[int]bool{}}
 	if target != nil {
 		x.Target = target.ID
 	}
-	total := c.Mil + c.Away
-	c.Away += mil
-	w.recompute(c)
 	w.Expeditions = append(w.Expeditions, x)
 	switch kind {
 	case Campaign:
 		c.Tally.Fleets++
-		w.log("The %s send %s of their strength against the %s: a fleet bound for %s, %s away.", c.Name, shareWord(mil, total), target.Name, w.star(star), span(x.Arrive-w.Now))
+		c.WantShips = 0
+		w.log("The %s send %s of their ships against the %s: a fleet of %s bound for %s, %s away.", c.Name, shareWord(n, total), target.Name, shipsWord(n), w.star(star), span(x.Arrive-w.Now))
 	case Relief:
 		c.Tally.Relief++
-		w.log("The %s send a fleet to stand with the %s at %s, %s away.", c.Name, target.Name, w.star(star), span(x.Arrive-w.Now))
+		w.log("The %s send %s to stand with the %s at %s, %s away.", c.Name, shipsWord(n), target.Name, w.star(star), span(x.Arrive-w.Now))
 	case Scout:
 		c.Tally.Scouts++
 		if w.Cfg.TraceAI {
@@ -94,8 +100,8 @@ func (w *World) launch(c *Civ, kind ExpKind, target *Civ, star int, mil float64)
 	return x
 }
 
-func shareWord(mil, total float64) string {
-	switch f := mil / max(total, 0.01); {
+func shareWord(n, total int) string {
+	switch f := float64(n) / float64(max(total, 1)); {
 	case f >= 0.6:
 		return "most"
 	case f >= 0.4:
@@ -106,13 +112,24 @@ func shareWord(mil, total float64) string {
 	return "a part"
 }
 
-// tickExpeditions moves every fleet a tick.
+// tickExpeditions moves every fleet a tick. A guard at its star has
+// nothing to do here, its keep and its rot being in the civ tick; a guard
+// in flight is on its way to another guard.
 func (w *World) tickExpeditions() {
 	for _, x := range w.Expeditions {
 		if x.Over {
 			continue
 		}
 		c := w.Civs[x.Owner]
+		if x.Kind == Guard {
+			if !c.Active() {
+				x.Over = true
+				continue
+			}
+			if x.Base >= 0 {
+				continue
+			}
+		}
 		if x.Kind == Roam {
 			if !c.Active() {
 				x.Over = true
@@ -131,12 +148,10 @@ func (w *World) tickExpeditions() {
 			continue
 		}
 		if x.Base >= 0 && w.rarityAt(x.Base, "horizon") != nil {
-			x.Mil *= 1 - horizonLoss // a fleet based at a black hole is lost a little at a time
+			x.Ships -= w.count(horizonLoss * float64(x.Ships)) // a fleet based at a black hole is lost a little at a time
 		}
 		if x.Returning {
 			if w.Now >= x.Arrive {
-				c.Away = max(0, c.Away-x.Mil)
-				w.land(x, x.Star)
 				if x.Report != nil && x.Target >= 0 {
 					if c.receive(x.Target, x.Report) {
 						c.Scouted[x.Target] = w.Now
@@ -145,8 +160,7 @@ func (w *World) tickExpeditions() {
 					}
 					c.Summoned = true
 				}
-				x.Over = true
-				w.recompute(c)
+				w.mergeInto(x, x.Star)
 			}
 			continue
 		}
@@ -157,6 +171,9 @@ func (w *World) tickExpeditions() {
 			}
 			w.arrive(x)
 			continue
+		}
+		if x.LaidUp {
+			continue // inoperable until the flow comes back
 		}
 		switch x.Kind {
 		case Campaign:
@@ -248,6 +265,8 @@ func (w *World) campaignTarget(x *Expedition, e *Civ) int {
 }
 
 // campaign is a fleet's tick in enemy territory: attrition, then battles.
+// Each battle is the fleet's ships at its owner's quality against the
+// world's defence; both sides pay the losses in ships.
 func (w *World) campaign(x *Expedition) {
 	c, e := w.Civs[x.Owner], w.Civs[x.Target]
 	wr := w.warBetween(c.ID, e.ID)
@@ -256,9 +275,9 @@ func (w *World) campaign(x *Expedition) {
 		return
 	}
 	if !w.canLive(c, x.Base) {
-		x.Mil *= 1 - 0.03*w.dt
+		x.Ships -= w.count(0.03 * float64(x.Ships))
 	}
-	if x.Mil < 1 {
+	if x.Ships <= 0 {
 		w.log("The fleet of the %s wastes away at %s, far from anything it could live on.", c.Name, w.star(x.Base))
 		w.resolve(x)
 		return
@@ -271,14 +290,17 @@ func (w *World) campaign(x *Expedition) {
 		}
 		x.Battles++
 		i := wr.side(c.ID)
-		atk := x.Mil + c.warBonus() + w.R.NormFloat64()*1.5
-		def := w.defence(e, t) + w.R.NormFloat64()*1.5
+		atk := battle.Strength(x.Ships, w.quality(c))
+		def := w.defence(e, t)
 		w.observe(c, e, t, 0.3)
-		if atk < def {
-			x.Mil *= 0.7
+		won := battle.Roll(w.R, atk, def)
+		la, ld := battle.Losses(w.R, atk, def)
+		w.pay(c, x, t, la)
+		w.pay(e, nil, t, ld)
+		if !won {
 			wr.Will[i] -= 0.1
 			wr.Will[1-i] += 0.1
-			if x.Mil < 1 {
+			if x.Ships <= 0 {
 				w.log("The fleet of the %s is broken at %s.", c.Name, w.star(t))
 				w.fact(FDefeat, c, e, t)
 				w.resolve(x)
@@ -322,12 +344,10 @@ func (w *World) resolve(x *Expedition) {
 			return
 		}
 	}
-	if x.Mil < 1 && len(held) == 0 {
-		c.Away = max(0, c.Away-x.Mil)
+	if x.Ships <= 0 && len(held) == 0 {
 		c.Morale -= 0.5
 		x.Over = true
 		w.fleetLost(x, max(x.Base, x.Star))
-		w.recompute(c)
 		return
 	}
 	w.goHome(x)
@@ -336,7 +356,7 @@ func (w *World) resolve(x *Expedition) {
 // horizonLoss is the share of a fleet lost per tick based at a black hole.
 const horizonLoss = 0.05
 
-// goHome turns a fleet for the nearest holding.
+// goHome turns a fleet for the nearest holding, where it joins the guard.
 func (w *World) goHome(x *Expedition) {
 	c := w.Civs[x.Owner]
 	from := x.Base
@@ -351,7 +371,8 @@ func (w *World) goHome(x *Expedition) {
 }
 
 // goNative is a fleet that never comes home: its captains keep what they
-// hold as a people of their own, a successor state with the parent's tree.
+// hold as a people of their own, a successor state with the parent's tree,
+// and the fleet is its guard.
 func (w *World) goNative(x *Expedition) {
 	c := w.Civs[x.Owner]
 	var held []int
@@ -362,7 +383,6 @@ func (w *World) goNative(x *Expedition) {
 	}
 	if len(held) == 0 {
 		x.Over = true
-		c.Away = max(0, c.Away-x.Mil)
 		w.fleetLost(x, max(x.Base, x.Star))
 		return
 	}
@@ -391,11 +411,14 @@ func (w *World) goNative(x *Expedition) {
 	}
 	w.forget(nc, 0.1)
 	w.recompute(nc)
-	c.Away = max(0, c.Away-x.Mil)
+	x.Owner = nc.ID
+	x.Over = true
+	if x.Ships > 0 {
+		w.addGuard(nc, home, x.Ships)
+	}
 	c.Morale -= 1
 	c.Tally.Native++
 	w.recompute(c)
-	x.Over = true
 }
 
 // station is a relief fleet's tick with its host.
@@ -406,9 +429,9 @@ func (w *World) station(x *Expedition) {
 		return
 	}
 	if !w.canLive(c, x.Base) {
-		x.Mil *= 1 - 0.03*w.dt
+		x.Ships -= w.count(0.03 * float64(x.Ships))
 	}
-	if x.Mil < 1 {
+	if x.Ships <= 0 {
 		w.resolve(x)
 		return
 	}
@@ -424,15 +447,15 @@ func (w *World) station(x *Expedition) {
 	}
 }
 
-// reliefAt is the strength of others standing with a people at a world.
-func (w *World) reliefAt(h *Civ, t int) float64 {
-	r := 0.0
+// reliefAt is the ships of others standing with a people at a world.
+func (w *World) reliefAt(h *Civ, t int) int {
+	r := 0
 	for _, x := range w.Expeditions {
-		if x.Over || x.Kind != Relief || x.Base < 0 || x.Target != h.ID || x.Returning {
+		if x.Over || x.Kind != Relief || x.Base < 0 || x.Target != h.ID || x.Returning || x.LaidUp {
 			continue
 		}
 		if w.G.Dist(x.Base, t) <= 20 {
-			r += x.Mil
+			r += x.Ships
 		}
 	}
 	return r
@@ -440,7 +463,7 @@ func (w *World) reliefAt(h *Civ, t int) float64 {
 
 // watchSky is everyone with a telescope seeing a fleet pass.
 func (w *World) watchSky(x *Expedition) {
-	if x.Kind == Scout || x.Kind == Roam || x.Kind == Survey {
+	if x.Kind == Scout || x.Kind == Roam || x.Kind == Survey || x.Kind == Guard {
 		return
 	}
 	c := w.Civs[x.Owner]
@@ -487,7 +510,7 @@ func (w *World) fleetSeen(x *Expedition, o *Civ) {
 	case x.Kind == Relief && x.Target >= 0 && o.Wars[x.Target]:
 		h := w.Civs[x.Target]
 		i := w.observe(o, h, x.Star, 0.5)
-		i.Relief += x.Mil
+		i.Relief += float64(x.Ships)
 	}
 }
 
@@ -497,14 +520,15 @@ func (w *World) wouldTurn(x *Expedition) bool {
 	c, h := w.Civs[x.Owner], w.Civs[x.Target]
 	u := mind.Turn(mind.TurnInput{
 		Honour: c.honour(), Posture: c.posture(), Betrayed: w.betrayed(h, c),
-		HostMil: h.Mil + h.warBonus(), Relief: w.reliefAt(h, x.Base), Mil: x.Mil,
+		HostMil: h.Mil + h.warBonus(), HostShips: float64(w.standing(h)), Relief: float64(w.reliefAt(h, x.Base) - x.Ships),
+		Mil: c.Mil + c.warBonus(), Ships: x.Ships,
 		AtHome: x.Base == h.Home, Grid: h.Known["defence_grid"], Greed: c.Dials.Greed,
 	}, w.Cfg.Tuning)
 	return u.Rate > 0 && w.chance(u.Rate)
 }
 
 // turn is the betrayal that makes history: the relief fleet seizes the
-// world it was sent to keep.
+// world it was sent to keep, on the same roll as any battle.
 func (w *World) turn(x *Expedition) {
 	c, h := w.Civs[x.Owner], w.Civs[x.Target]
 	w.log("The fleet of the %s, sent to keep %s for the %s, takes it for themselves.", c.Name, w.star(x.Base), h.Name)
@@ -517,19 +541,16 @@ func (w *World) turn(x *Expedition) {
 		return
 	}
 	wr.Will[wr.side(c.ID)] += 1
-	def := h.Mil + h.warBonus() + 1 + w.R.NormFloat64()*1.5
-	if x.Base == h.Home {
-		def += 2.5
-	}
-	if h.Known["defence_grid"] {
-		def += 0.5
-	}
-	if x.Mil+c.warBonus()+w.R.NormFloat64()*1.5 >= def {
+	atk := battle.Strength(x.Ships, w.quality(c))
+	def := w.defence(h, x.Base)
+	won := battle.Roll(w.R, atk, def)
+	la, ld := battle.Losses(w.R, atk, def)
+	w.pay(c, x, x.Base, la)
+	w.pay(h, nil, x.Base, ld)
+	if won {
 		w.takeWorld(wr, c, h, x.Base)
 		if w.Owner[x.Base] == c.ID {
 			x.Held = append(x.Held, x.Base)
 		}
-	} else {
-		x.Mil *= 0.7
 	}
 }

@@ -71,12 +71,12 @@ type Rec struct {
 	Cycle     bool               `json:"knows_cycle"`
 	DarkAges  int                `json:"dark_ages"`
 	Renaiss   int                `json:"renaissances"`
-	Held      int                `json:"held"`     // tales held at the end
-	Myth      int                `json:"myth"`     // of them myth
-	Monsters  int                `json:"monsters"` // peoples remembered as monsters at the end
-	Morality  string             `json:"morality"` // what the people counts as wrong: amoral, individual, herd, fixed on X
-	Excused   int                `json:"excused"`   // tales held whose fact is a crime and the people's judgment is not
-	Condemned int                `json:"condemned"` // tales held whose fact is no crime and the people's judgment is one
+	Held      int                `json:"held"`             // tales held at the end
+	Myth      int                `json:"myth"`             // of them myth
+	Monsters  int                `json:"monsters"`         // peoples remembered as monsters at the end
+	Morality  string             `json:"morality"`         // what the people counts as wrong: amoral, individual, herd, fixed on X
+	Excused   int                `json:"excused"`          // tales held whose fact is a crime and the people's judgment is not
+	Condemned int                `json:"condemned"`        // tales held whose fact is no crime and the people's judgment is one
 	Split     int                `json:"split,omitempty"`  // on the first people of a world: facts a crime to one people that knows them and a deed to another
 	Shared    int                `json:"shared,omitempty"` // on the first people of a world: crimes known to two peoples or more
 	LoreDials history.Dials      `json:"lore_dials"`
@@ -90,6 +90,9 @@ type Rec struct {
 	Granted   []string           `json:"granted"`           // nodes learned with their grant had
 	FellDep   bool               `json:"fell_dependent"`    // depended on a partner at the moment of its fall
 	Objects   []string           `json:"objects,omitempty"` // objects made: kind:form:fate, with "thinks" and cuttings given
+	Ships     int                `json:"ships"`             // the most ships ever in being
+	ShipsEnd  int                `json:"ships_end"`         // ships in being at the end, and of them laid up
+	LaidUp    int                `json:"laid_up"`
 	ever      map[string]bool
 	frontier  string
 	signature string
@@ -166,6 +169,7 @@ func main() {
 	exploreReport(f, recs)
 	loreReport(f, recs)
 	meansReport(f, recs)
+	shipsReport(f, recs)
 	fmt.Printf("%d civilisations over %d worlds; wrote %s\n", len(recs), *seeds, *out)
 }
 
@@ -225,6 +229,8 @@ func flatten(w *history.World) []Rec {
 			r.Split, r.Shared = history.SplitFacts(w)
 		}
 		r.FellDep = c.FellDependent
+		r.Ships = c.PeakShips
+		r.ShipsEnd, _, r.LaidUp = history.ShipsOf(w, c)
 		for _, src := range w.Sources {
 			if src.Form == "" || src.Maker != c.ID {
 				continue

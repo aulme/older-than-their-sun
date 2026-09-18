@@ -115,7 +115,7 @@ var noHints = moralHints{Against: 255}
 // multiplied and the named objects tilted.
 type moralTilt struct {
 	when    func(sp *species.Species, h moralHints) bool
-	kinds   [4]float64        // amoral, individual, herd, fixation; 1 leaves a weight alone
+	kinds   [4]float64         // amoral, individual, herd, fixation; 1 leaves a weight alone
 	objects map[string]float64 // fixation objects tilted
 }
 

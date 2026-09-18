@@ -8,13 +8,15 @@ import (
 )
 
 // Nomads are a people that takes to the sky when it can and lives as
-// fleets, with no worlds. A fleet has a strength and a base, any star; a
-// star feeds it for a few thousand years and then it must move on, which is
-// the engine of wandering. The fleets are the people's Military, split and
+// fleets, with no worlds. A fleet has ships and a base, any star; a star
+// feeds it for a few thousand years and then it must move on, which is
+// the engine of wandering. The fleets are the people: they keep their
+// numbers in hulls and feed them by grazing, and a horde that cannot meet
+// the keep lays ships up, which for a horde is thinning. They split and
 // merge, carry what they know between the settled, and when they win a
-// world they strip it: its share of the loser's strength becomes a fleet of
-// theirs. They cannot be enslaved, only broken fleet by fleet, and they
-// never capitulate; their peace is leaving. A few come to rest.
+// world they strip it: its ships and its people join the horde. They
+// cannot be enslaved, only broken fleet by fleet, and they never
+// capitulate; their peace is leaving. A few come to rest.
 
 // nomad says whether a people has the way and has not settled for good.
 func (c *Civ) nomad() bool { return c.Has("nomadic") && !c.Rested }
@@ -28,15 +30,6 @@ func (w *World) fleets(c *Civ) []*Expedition {
 		}
 	}
 	return out
-}
-
-// ships is the strength of all a people's fleets.
-func (w *World) ships(c *Civ) float64 {
-	s := 0.0
-	for _, x := range w.fleets(c) {
-		s += x.Mil
-	}
-	return s
 }
 
 // holdings are the stars a people acts from: its worlds, and for the aloft
@@ -73,21 +66,22 @@ func (w *World) wander(c *Civ) {
 	}
 }
 
-// takeSky turns a settled nomad people into fleets and empties its worlds.
-func (w *World) takeSky(c *Civ, why string) {
+// takeSky turns a settled nomad people into fleets and empties its
+// worlds: the guards become the horde, and a world with no guard sends
+// one ship of what it had. A people with no ships cannot go.
+func (w *World) takeSky(c *Civ, why string) bool {
 	if c.Aloft || len(c.Systems) == 0 {
-		return
+		return false
 	}
-	total := max(1, c.Mil+c.Away)
 	worlds := append([]int(nil), c.Systems...)
-	each := total / float64(len(worlds))
 	c.Aloft = true
 	c.Dying = false
 	c.Voyages = nil
+	w.aloftGuards(c)
 	for _, s := range worlds {
-		x := &Expedition{ID: len(w.Expeditions), Owner: c.ID, Target: -1, Kind: Roam, Star: s, From: s, Mil: each,
-			Launched: w.Now, Arrive: w.Now, Base: s, Fed: w.Now, Seen: map[int]bool{}}
-		w.Expeditions = append(w.Expeditions, x)
+		if w.guardAt(c, s) == nil {
+			w.addGuard(c, s, 1)
+		}
 		w.loseSystem(c, s, "empty cradle of the "+c.Name, "")
 	}
 	c.Record = append(c.Record, "took to the sky")
@@ -99,16 +93,33 @@ func (w *World) takeSky(c *Civ, why string) {
 	}
 	w.seat(c)
 	w.recompute(c)
+	return true
+}
+
+// aloftGuards turns a people's guards into a horde's fleets, wherever
+// they are, and its fleets in flight come home to the horde.
+func (w *World) aloftGuards(c *Civ) {
+	for _, x := range w.fleetsOf(c) {
+		if x.Kind == Guard {
+			x.Kind = Roam
+			x.Fed = w.Now
+		}
+	}
 }
 
 // flee is a settled people whose last world is gone taking to the sky with
-// what escaped: refugees under the nomad rules, without the way. Returns
+// what escaped: refugees under the nomad rules, without the way. The guard
+// at the lost world is what got away, and one ship at the least. Returns
 // false if nothing could get away.
 func (w *World) flee(c *Civ, lost int, cause string) bool {
 	if c.Reach < 1 || !c.Species.Profile().Can(species.Flees) || c.Aloft {
 		return false
 	}
-	strength := max(0.5, 0.3*(c.Mil+c.Away))
+	ships := 1
+	if g := w.guardAt(c, lost); g != nil {
+		ships = max(1, g.Ships)
+		g.Over = true
+	}
 	base := lost
 	for _, t := range w.G.Near(lost, min(max(c.Reach, 3), 20)) {
 		if w.Owner[t] < 0 && w.Held[t] < 0 {
@@ -119,10 +130,8 @@ func (w *World) flee(c *Civ, lost int, cause string) bool {
 	c.Aloft = true
 	c.Dying = false
 	c.Voyages = nil
-	c.Away = 0
-	x := &Expedition{ID: len(w.Expeditions), Owner: c.ID, Target: -1, Kind: Roam, Star: base, From: lost, Mil: strength,
-		Launched: w.Now, Arrive: w.Now, Base: base, Fed: w.Now, Seen: map[int]bool{}}
-	w.Expeditions = append(w.Expeditions, x)
+	w.aloftGuards(c)
+	w.addGuard(c, base, ships)
 	c.Record = append(c.Record, "took to the sky")
 	c.Morale -= 1
 	w.log("The %s %s. What got away is a fleet at %s, and it is all of them now.", c.Name, cause, w.star(base))
@@ -136,7 +145,7 @@ func (w *World) flee(c *Civ, lost int, cause string) bool {
 func (w *World) greatestFleet(c *Civ) *Expedition {
 	var best *Expedition
 	for _, x := range w.fleets(c) {
-		if best == nil || x.Mil > best.Mil {
+		if best == nil || x.Ships > best.Ships {
 			best = x
 		}
 	}
@@ -161,8 +170,10 @@ func (w *World) seat(c *Civ) {
 	}
 }
 
-// roam is a nomad people's tick: fleets merge, feed, grow, thin, move on
-// and split; the seat moves; what they know moves with them.
+// roam is a nomad people's tick: fleets merge, feed, thin, move on and
+// split; the seat moves; what they know moves with them. The horde grows
+// at its docks, which are its fleets at base, and thins by the keep it
+// cannot pay; a laid-up fleet stays where it is.
 func (w *World) roam(c *Civ) {
 	fl := w.fleets(c)
 	if len(fl) == 0 {
@@ -173,40 +184,37 @@ func (w *World) roam(c *Civ) {
 	for i := 0; i < len(fl); i++ {
 		for j := i + 1; j < len(fl); j++ {
 			if fl[i].Base >= 0 && fl[i].Base == fl[j].Base && !fl[j].Over {
-				fl[i].Mil += fl[j].Mil
+				fl[i].Ships += fl[j].Ships
+				fl[i].LaidUp = fl[i].LaidUp && fl[j].LaidUp
 				fl[j].Over = true
 			}
 		}
 	}
 	fl = w.fleets(c)
 	hop := mind.RoamHop(c.Reach, w.Cfg.Tuning)
-	cap := c.Quality + 2
 	for _, x := range fl {
-		if x.Base < 0 {
-			continue // in flight
+		if x.Base < 0 || x.LaidUp {
+			continue // in flight, or not kept
 		}
-		// a fleet feeds where it is and on the way; a star is grazed out in a
-		// few thousand years, and a fleet that cannot move on thins
-		if w.ships(c) < cap {
-			x.Mil += 0.02 * w.dt * max(1, c.Quality/5)
-		}
+		// a star is grazed out in a few thousand years, and a fleet that
+		// cannot move on thins
 		if float64(w.Now-x.Fed) > 4000 {
 			if t := w.nextStar(c, x, hop); t >= 0 {
 				w.moveFleet(c, x, t)
 				continue
 			}
-			x.Mil *= 1 - 0.03*w.dt
+			x.Ships -= w.count(0.03 * float64(x.Ships))
 		}
-		if x.Mil < 0.3 {
+		if x.Ships <= 0 {
 			x.Over = true
 			w.fleetLost(x, x.Base)
 			continue
 		}
-		if x.Mil > 4 && len(fl) < 8 && w.chance(0.1) {
+		if x.Ships > 4 && len(fl) < 8 && w.chance(0.1) {
 			if t := w.nextStar(c, x, hop); t >= 0 {
-				nx := &Expedition{ID: len(w.Expeditions), Owner: c.ID, Target: -1, Kind: Roam, Star: t, From: x.Base, Mil: x.Mil / 2,
-					Launched: w.Now, Base: -1, Fed: w.Now, Seen: map[int]bool{}}
-				x.Mil /= 2
+				nx := &Expedition{ID: len(w.Expeditions), Owner: c.ID, Target: -1, Kind: Roam, Star: t, From: x.Base, Ships: x.Ships / 2,
+					Launched: w.Now, Base: -1, Fed: w.Now, Manned: w.Now, Seen: map[int]bool{}}
+				x.Ships -= nx.Ships
 				nx.Arrive = w.Now + Year(w.G.Dist(x.Base, t)*c.Speed)
 				w.Expeditions = append(w.Expeditions, nx)
 			}
@@ -289,16 +297,19 @@ func (w *World) carry(c *Civ, hop float64) {
 }
 
 // strip is a nomad victory at a world: its ships and people join the horde
-// and the world is left empty.
+// and the world is left empty. The guard there, if any, changes hands
+// whole; the people are one ship more.
 func (w *World) strip(wr *War, c, e *Civ, t int) {
 	i := wr.side(c.ID)
-	share := max(0.5, e.Mil/float64(max(1, len(e.Systems))))
+	share := 1
+	if g := w.guardAt(e, t); g != nil {
+		share += g.Ships
+		g.Over = true
+	}
 	home := t == e.Home
 	c.Loot.Add(w.yieldAt(e, t)) // the rest, once
 	w.loseSystem(e, t, "stripped by the horde", sprintf("were swallowed by the horde of the %s", c.Name))
-	x := &Expedition{ID: len(w.Expeditions), Owner: c.ID, Target: -1, Kind: Roam, Star: t, From: t, Mil: share,
-		Launched: w.Now, Arrive: w.Now, Base: t, Fed: w.Now, Seen: map[int]bool{}}
-	w.Expeditions = append(w.Expeditions, x)
+	w.addGuard(c, t, share)
 	wr.Taken[i]++
 	wr.Lost[1-i]++
 	c.Tally.Taken++
@@ -323,17 +334,17 @@ func (w *World) strip(wr *War, c, e *Civ, t int) {
 	}
 }
 
-// hitFleet is a strike at a nomad fleet: broken by a third, or ended.
+// hitFleet is a won strike at a nomad fleet: the losses were paid in the
+// battle, and a fleet with nothing left is broken.
 func (w *World) hitFleet(wr *War, c, e *Civ, t int) {
 	i := wr.side(c.ID)
 	for _, x := range w.fleets(e) {
 		if x.Base != t {
 			continue
 		}
-		x.Mil *= 0.7
 		wr.Will[i] += 0.2
 		wr.Will[1-i] -= 0.2
-		if x.Mil < 1 {
+		if x.Ships <= 0 {
 			x.Over = true
 			wr.Glassed[i]++
 			w.log("The %s break a fleet of the %s at %s.", c.Name, e.Name, w.star(t))
@@ -347,22 +358,13 @@ func (w *World) hitFleet(wr *War, c, e *Civ, t int) {
 	}
 }
 
-// fleetAt is the strength of a nomad people's fleet at a star.
-func (w *World) fleetAt(e *Civ, t int) float64 {
-	for _, x := range w.fleets(e) {
-		if x.Base == t {
-			return x.Mil
-		}
-	}
-	return 0
-}
-
-// rest is a nomad people settling for good, usually after a scar.
+// rest is a nomad people settling for good, usually after a scar. Its
+// fleets become the guard of the world it rests at.
 func (w *World) rest(c *Civ, why string) {
 	hop := min(max(c.Reach, 3), 20)
 	var best *Expedition
 	for _, x := range w.fleets(c) {
-		if x.Base >= 0 && (best == nil || x.Mil > best.Mil) {
+		if x.Base >= 0 && (best == nil || x.Ships > best.Ships) {
 			best = x
 		}
 	}
@@ -383,12 +385,15 @@ func (w *World) rest(c *Civ, why string) {
 	if t < 0 {
 		return
 	}
-	for _, x := range w.fleets(c) {
-		w.land(x, t)
-		x.Over = true
-	}
 	c.Aloft, c.Rested = false, true
-	c.Away = 0
+	for _, x := range w.fleets(c) {
+		if x.Base >= 0 {
+			w.mergeInto(x, t)
+		} else {
+			x.Kind = Guard // in flight: it lands where it was going and finds its way to the guard
+			x.Returning, x.Star = true, t
+		}
+	}
 	c.Systems = []int{t}
 	w.Owner[t] = c.ID
 	c.Home, c.HomeName = t, w.star(t)
@@ -441,6 +446,7 @@ func (w *World) splitFleets(c *Civ) {
 	for _, k := range knownOf(c) {
 		nc.Known[k] = true
 	}
+	w.aloftGuards(nc)
 	w.seat(nc)
 	w.recompute(nc)
 	w.log("Schism in the fleets of the %s. Half of them go their own way as the %s.", c.Name, nc.Name)

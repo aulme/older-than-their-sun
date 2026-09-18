@@ -16,6 +16,7 @@ func phi(x float64) float64 { return 0.5 * math.Erfc(-x/math.Sqrt2) }
 type BeliefInput struct {
 	Seen     bool    // any report at all
 	Mil      float64 // the level in the report
+	Ships    int     // the ships in the report
 	AgeKyr   float64 // thousands of years since the look
 	EnemyEra int     // for the guess when nothing was seen
 }
@@ -30,19 +31,31 @@ func Believe(in BeliefInput, t *Tuning) (mil, spread float64) {
 	return in.Mil, min(b.MaxSpread, b.Spread+b.SpreadPerKyr*in.AgeKyr)
 }
 
+// BelieveShips is how many ships a people thinks another has: the count
+// in the report, or a guess by era when nothing was seen.
+func BelieveShips(in BeliefInput, t *Tuning) float64 {
+	b := &t.Belief
+	if !in.Seen {
+		return b.UnknownShips + b.UnknownShipsPerEra*float64(in.EnemyEra)
+	}
+	return float64(in.Ships)
+}
+
 // StrengthInput is what a people brings against one enemy.
 type StrengthInput struct {
 	Mil       float64   // its level at home
 	Bonus     float64   // its miracles
-	Allies    []float64 // levels of the allies who would actually join
+	Ships     int       // its ships standing, manned
+	Allies    []float64 // the strength in levels of the allies who would actually join
 	OtherWars int       // its other wars
 }
 
-// Strength is the level a people brings: its own, a share of each ally's,
-// less what its other wars take.
+// Strength is what a people brings, in levels: its level and its
+// miracles, its ships as levels, a share of each ally's, less what its
+// other wars take.
 func Strength(in StrengthInput, t *Tuning) float64 {
 	a := &t.Appraise
-	s := in.Mil + in.Bonus
+	s := in.Mil + in.Bonus + ShipLevels(float64(in.Ships))
 	for _, m := range in.Allies {
 		s += a.AllyShare * m
 	}
@@ -58,9 +71,10 @@ type AppraiseInput struct {
 	Believed   float64 // the enemy's level as believed
 	Spread     float64 // and how sure
 	EnemyBonus float64 // the enemy's miracles
+	Ships      float64 // the enemy's ships believed at the target
 	AtHome     bool    // the target is the enemy's home
 	Grid       bool    // a defence grid was seen
-	Relief     float64 // others seen standing at the target
+	Relief     float64 // others' ships seen standing at the target
 	Weakened   bool    // the enemy is plagued or in a dark age
 	OtherWars  int     // the enemy's other wars
 	Risk       float64 // the attacker's risk dial
@@ -93,20 +107,20 @@ func (a Appraisal) Why() string {
 	return s
 }
 
-// Appraise estimates a fight: the believed enemy level with terrain on top
-// against the attacker's strength, as odds with a spread, and what the
-// attacker acts on by its risk. The prize is what the target is worth less
-// what the war would lose in trade, and moves the bar either way.
+// Appraise estimates a fight: the believed enemy level with its ships and
+// the terrain on top against the attacker's strength, as odds with a
+// spread, and what the attacker acts on by its risk. The prize is what the
+// target is worth less what the war would lose in trade, and moves the bar
+// either way.
 func Appraise(in AppraiseInput, t *Tuning) Appraisal {
 	p := &t.Appraise
-	d := in.Believed + in.EnemyBonus + p.Defence
+	d := in.Believed + in.EnemyBonus + p.Defence + ShipLevels(in.Ships+in.Relief)
 	if in.AtHome {
 		d += p.HomeDefence
 	}
 	if in.Grid {
 		d += p.Grid
 	}
-	d += in.Relief
 	if in.Weakened {
 		d -= p.Weakened
 	}
@@ -127,13 +141,14 @@ type BarInput struct {
 	Hates   bool // a xenophobe against the different
 	Grudge  bool // holds a grudge against the target
 	Aloft   bool // a horde fights from where it is, never by fleet
+	NoShips bool // not a ship manned: nothing to strike with
 }
 
 // Bar is the odds a posture needs before it strikes, whether it would
 // strike at all, and whether it would send a fleet beyond the front to do it.
 func Bar(in BarInput, t *Tuning) (bar float64, wants, far bool) {
 	b := &t.Bar
-	if in.Posture == Pacifist {
+	if in.Posture == Pacifist || in.NoShips {
 		return 0, false, false
 	}
 	if in.Hates {

@@ -12,7 +12,7 @@ import (
 type SurveyInput struct {
 	Free  bool // not held, not aloft
 	Reach float64
-	Mil   float64
+	Ships int // ships at home, manned
 	AtWar bool
 	Era   int
 	Dials Dials
@@ -26,18 +26,19 @@ type SurveyInput struct {
 // SurveyWant is how many surveyors a people wants out.
 type SurveyWant struct {
 	Want   int
+	Asked  int // the want before the ships were counted: what the docks are asked for
 	Reason string
 }
 
 // Why says the want.
 func (s SurveyWant) Why() string { return fmt.Sprintf("wants %d surveyors out: %s", s.Want, s.Reason) }
 
-// Survey is how many surveyors hunger and greed want and the level can
+// Survey is how many surveyors hunger and greed want and the ships can
 // spare: none in wartime, at least one when there is nothing read to
 // settle and stars still unread, one when only stale stars are left.
 func Survey(in SurveyInput, t *Tuning) SurveyWant {
 	p := &t.Survey
-	if !in.Free || in.Reach < p.MinReach || in.Mil < p.MinMil {
+	if !in.Free || in.Reach < p.MinReach {
 		return SurveyWant{Reason: "no ships to spare"}
 	}
 	s := SurveyWant{Want: int(math.Round(p.HungerWeight*in.Dials.Hunger + p.GreedWeight*in.Dials.Greed)), Reason: "hunger and greed"}
@@ -50,8 +51,9 @@ func Survey(in SurveyInput, t *Tuning) SurveyWant {
 	if s.Want > 1 && !in.NeverRead() {
 		s.Want, s.Reason = 1, "only stale charts to renew"
 	}
-	if keep := int(in.Mil - p.KeepHome); s.Want > keep {
-		s.Want, s.Reason = keep, "a level must stay home"
+	s.Asked = s.Want
+	if keep := int(float64(in.Ships) - p.KeepHome); s.Want > keep {
+		s.Want, s.Reason = max(keep, 0), "a ship must stay home"
 	}
 	return s
 }

@@ -1,6 +1,11 @@
 package mind
 
-import "fmt"
+import (
+	"fmt"
+	"math"
+
+	"worldgen/internal/battle"
+)
 
 // The council is where a people decides whom to strike, whether to scout
 // first, or to watch. Each candidate enemy is judged on its own; the
@@ -89,10 +94,10 @@ func Council(verdicts []Verdict) int {
 	return best
 }
 
-// ScoutInput is whether a report is worth a level.
+// ScoutInput is whether a report is worth a ship.
 type ScoutInput struct {
-	Sight bool    // holds the Sight and it is on the borders: it reads for free
-	Mil   float64 // level at home
+	Sight bool // holds the Sight and it is on the borders: it reads for free
+	Ships int  // ships at home, manned
 	Fear  float64
 	Out   bool // a scout is already on its way to them
 }
@@ -112,19 +117,19 @@ func (s ScoutChoice) Why() string {
 	case s.Send:
 		return "a scout is sent"
 	case s.Kept:
-		return "no level can be spared for a scout"
+		return "no ship can be spared for a scout"
 	}
 	return "a scout is already out"
 }
 
-// Scout sends a scout when the level can be spared and none is out; the
+// Scout sends a scout when a ship can be spared and none is out; the
 // Sight reads instead.
 func Scout(in ScoutInput, t *Tuning) ScoutChoice {
 	s := &t.Scout
 	if in.Sight {
 		return ScoutChoice{Look: true}
 	}
-	if in.Mil-1 < s.KeepHome || (in.Fear > s.FearBar && in.Mil < s.FearMil) {
+	if float64(in.Ships)-1 < s.KeepHome || (in.Fear > s.FearBar && in.Ships < s.FearShips) {
 		return ScoutChoice{Kept: true}
 	}
 	if in.Out {
@@ -136,9 +141,11 @@ func Scout(in ScoutInput, t *Tuning) ScoutChoice {
 // CampaignInput is the sizing of a fleet against one world.
 type CampaignInput struct {
 	Appraisal Appraisal
-	Strength  float64 // the attacker's, as appraised
+	Strength  float64 // the attacker's, as appraised, in levels
 	Mil       float64 // level at home
-	Away      float64 // level already out
+	Bonus     float64 // its miracles
+	Ships     int     // ships that could sail: manned, at a base
+	Total     int     // ships in being, all of them
 	Risk      float64
 	Fear      float64
 	Conqueror bool
@@ -147,10 +154,11 @@ type CampaignInput struct {
 // Campaign is the sized fleet.
 type Campaign struct {
 	Send  bool
-	Share float64 // the level to send
-	Need  float64 // what even odds would take, by belief and risk
-	Floor float64
-	Cap   float64
+	Share int  // the ships to send
+	Need  int  // what even odds would take, by belief and risk
+	Floor int  // at least a share of the whole
+	Cap   int  // at most what fear leaves
+	Short bool // the need is more than could sail: ships are wanted
 	LagOK bool
 }
 
@@ -160,21 +168,23 @@ func (c Campaign) Why() string {
 	if !c.Send {
 		verdict = "and it stays home"
 	}
-	return fmt.Sprintf("a fleet would need %.1f, at least %.1f, at most %.1f, crossing in time %v, %s", c.Need, c.Floor, c.Cap, c.LagOK, verdict)
+	return fmt.Sprintf("a fleet would need %d ships, at least %d, at most %d, crossing in time %v, %s", c.Need, c.Floor, c.Cap, c.LagOK, verdict)
 }
 
-// SizeCampaign sizes a fleet: what the belief says even odds would take,
-// tilted by risk, at least a share of the whole, at most what fear leaves.
-// Nobody sends a fleet that cannot take its first world, or one that
-// would cross for too long.
+// SizeCampaign sizes a fleet in ships: what the belief says even odds
+// would take at the attacker's quality, tilted by risk, at least a share
+// of the whole, at most what fear leaves of what could sail. Nobody sends
+// a fleet that cannot take its first world, or one that would cross for
+// too long.
 func SizeCampaign(in CampaignInput, t *Tuning) Campaign {
 	p := &t.Campaign
-	def := in.Strength - in.Appraisal.Margin
-	c := Campaign{Need: def - (2*in.Risk-1)*in.Appraisal.Spread}
-	total := in.Mil + in.Away
-	c.Floor = max(p.Floor*total, p.MinFloor)
-	c.Cap = in.Mil * (1 - p.FearCap*in.Fear)
+	def := in.Strength - in.Appraisal.Margin // the defender, in levels, with its ships and terrain
+	needLevels := def - (2*in.Risk-1)*in.Appraisal.Spread - (in.Mil + in.Bonus)
+	c := Campaign{Need: max(1, int(math.Ceil(battle.Quality(needLevels)-1e-9)))}
+	c.Floor = max(int(math.Ceil(p.Floor*float64(in.Total)-1e-9)), p.MinFloor)
+	c.Cap = int(float64(in.Ships) * (1 - p.FearCap*in.Fear))
 	c.Share = min(max(c.Need, c.Floor), c.Cap)
+	c.Short = c.Cap < c.Need
 	c.LagOK = in.Appraisal.Lag < p.MaxLag || (in.Conqueror && in.Appraisal.Lag < p.ConquerorLag)
 	c.Send = !(c.Share < c.Need || c.Share < c.Floor || !c.LagOK)
 	return c

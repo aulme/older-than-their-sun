@@ -77,12 +77,12 @@ const (
 type Sort uint8
 
 const (
-	Deed  Sort = iota // the subject did well; the object, if any, gained by it
-	Crime             // the subject harmed the object
-	Woe               // the subject suffered; the object, if any, is the cause
-	Bond              // the two did something together
-	Folly             // the subject brought something on itself
-	Nothing           // no judgment: what a morality passes over; never a fact's own sort
+	Deed    Sort = iota // the subject did well; the object, if any, gained by it
+	Crime               // the subject harmed the object
+	Woe                 // the subject suffered; the object, if any, is the cause
+	Bond                // the two did something together
+	Folly               // the subject brought something on itself
+	Nothing             // no judgment: what a morality passes over; never a fact's own sort
 )
 
 // factShape is the sort and weight of each kind. Weight is how much a

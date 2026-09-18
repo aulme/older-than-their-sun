@@ -312,6 +312,13 @@ func (w *World) enslave(m, s *Civ) {
 		}
 	}
 	m.Peak = max(m.Peak, len(m.Systems))
+	// the slave's fleets become the master's guards, where they stand
+	for _, x := range w.fleetsOf(s) {
+		x.Owner = m.ID
+		if x.Kind == Roam {
+			x.Kind = Guard
+		}
+	}
 	s.Morale -= 1
 	w.log("The %s are enslaved by the %s. They keep %s and little else.", s.Name, m.Name, s.HomeName)
 	w.fact(FEnslaved, m, s, s.Home)

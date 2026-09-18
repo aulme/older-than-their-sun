@@ -1,6 +1,9 @@
 package mind
 
-import "fmt"
+import (
+	"fmt"
+	"math"
+)
 
 // Pacts: whom to ask, whether to answer yes, whether to come when called,
 // whether to pass a report on.
@@ -170,10 +173,11 @@ func AnswerPact(in AnswerInput, t *Tuning) Answer {
 
 // CallInput is a call for help as the ally sees it.
 type CallInput struct {
-	Mil         float64 // the ally's level at home
-	Away        float64 // and out
-	VictimMil   float64
-	Believed    float64 // the attacker's level as believed
+	Ships       int     // the ally's ships that could sail: manned, at a base
+	Total       int     // its ships in being
+	Q           float64 // its quality: what each ship is worth
+	Victim      float64 // the victim's strength at the world called for: ships at its quality
+	Believed    float64 // the attacker's strength as believed, in levels
 	Confederate bool
 	Betrayed    bool // the caller broke faith with us before
 	Dials       Dials
@@ -182,7 +186,7 @@ type CallInput struct {
 // Coming is the answer to a call.
 type Coming struct {
 	Come  bool
-	Share float64 // the relief sent
+	Share int // the ships sent
 	Want  float64
 	Helps bool // relief and the host together would reach the attacker
 	Safe  bool // home stays safe without it
@@ -192,7 +196,7 @@ type Coming struct {
 // Why says the answer.
 func (c Coming) Why() string {
 	if c.Come {
-		return fmt.Sprintf("comes with %.1f: want %.2f", c.Share, c.Want)
+		return fmt.Sprintf("comes with %d ships: want %.2f", c.Share, c.Want)
 	}
 	return fmt.Sprintf("does not come: want %.2f, helps %v, safe %v", c.Want, c.Helps, c.Safe)
 }
@@ -201,10 +205,9 @@ func (c Coming) Why() string {
 // fear, when the relief would help and home stays safe.
 func AnswerCall(in CallInput, t *Tuning) Coming {
 	p := &t.Call
-	total := in.Mil + in.Away
-	c := Coming{Share: max(p.Share*in.Mil, max(p.Floor*total, p.MinFloor))}
-	c.Helps = c.Share+in.VictimMil >= in.Believed-p.HelpSlack
-	c.Safe = in.Mil-c.Share >= p.SafeLeft || in.Dials.Fear < p.SafeFear
+	c := Coming{Share: max(int(math.Ceil(p.Share*float64(in.Ships)-1e-9)), int(math.Ceil(p.Floor*float64(in.Total)-1e-9)), p.MinFloor)}
+	c.Helps = ShipLevels(float64(c.Share)*in.Q+in.Victim) >= in.Believed-p.HelpSlack
+	c.Safe = float64(in.Ships-c.Share) >= p.SafeLeft || in.Dials.Fear < p.SafeFear
 	c.Want = in.Dials.Loyalty - p.FearWeight*in.Dials.Fear + p.Base
 	if in.Confederate {
 		c.Want += p.Confederate
@@ -212,8 +215,8 @@ func AnswerCall(in CallInput, t *Tuning) Coming {
 	if in.Betrayed {
 		c.Want -= p.Betrayed
 	}
-	c.Come = c.Want > p.Want && c.Helps && c.Safe && c.Share <= in.Mil
-	c.Blame = !c.Come && in.Mil >= p.BlameAbove
+	c.Come = c.Want > p.Want && c.Helps && c.Safe && c.Share <= in.Ships
+	c.Blame = !c.Come && float64(in.Ships) >= p.BlameAbove
 	return c
 }
 

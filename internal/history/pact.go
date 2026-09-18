@@ -3,6 +3,7 @@ package history
 import (
 	"math"
 
+	"worldgen/internal/battle"
 	"worldgen/internal/mind"
 )
 
@@ -332,7 +333,8 @@ func (w *World) answerCall(m, v, a *Civ) {
 		return
 	}
 	milA, _ := w.believe(m, a)
-	k := mind.AnswerCall(mind.CallInput{Mil: m.Mil, Away: m.Away, VictimMil: v.Mil, Believed: milA, Confederate: m.posture() == mind.Confederate, Betrayed: w.betrayed(m, v), Dials: m.Dials}, w.Cfg.Tuning)
+	believed := milA + a.warBonus() + mind.ShipLevels(w.believeShips(m, a))
+	k := mind.AnswerCall(mind.CallInput{Ships: w.standing(m), Total: w.ships(m), Q: w.quality(m), Victim: battle.Strength(w.standing(v), w.quality(v)), Believed: believed, Confederate: m.posture() == mind.Confederate, Betrayed: w.betrayed(m, v), Dials: m.Dials}, w.Cfg.Tuning)
 	w.explain(m, "called by the "+v.Name+" against the "+a.Name, k)
 	if k.Come {
 		w.launch(m, Relief, v, v.Home, k.Share)

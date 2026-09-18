@@ -61,6 +61,33 @@ func levels(c *history.Civ) string {
 	return fmt.Sprintf("military %s, survival %s, social %s", history.LevelName(c.Mil), history.LevelName(c.Sur), history.LevelName(c.Soc))
 }
 
+// arms is the military line of the portrait: the level, and the ships in
+// being, in how many fleets, how many laid up, and the docks at work.
+func arms(w *history.World, c *history.Civ) string {
+	ships, fleets, laid := history.ShipsOf(w, c)
+	if ships == 0 {
+		return "no ships"
+	}
+	s := fmt.Sprintf("%d ships in %d fleets", ships, fleets)
+	if fleets == 1 {
+		s = fmt.Sprintf("%d ships in one fleet", ships)
+	}
+	if ships == 1 {
+		s = "one ship"
+	}
+	if laid > 0 {
+		s += fmt.Sprintf(", %d laid up", laid)
+	}
+	switch d := history.Docks(w, c); d {
+	case 0:
+	case 1:
+		s += ", one dock at work"
+	default:
+		s += fmt.Sprintf(", %d docks at work", d)
+	}
+	return s
+}
+
 // Write prints the full legends: the ages of myth, deep time, the current
 // age at both grains, and the present.
 func Write(out io.Writer, w *history.World, full bool) {
@@ -140,9 +167,9 @@ func Write(out io.Writer, w *history.World, full bool) {
 		p("Still standing in the waning of the age: %d.", standing)
 		for _, c := range w.Civs {
 			if c.Active() && c.Aloft {
-				p("  The %s, aloft, seated for now at %s, %s, in %d fleets. %s. Now: %s.", c.Name, c.HomeName, tech.EraNames[c.Era], fleetsOf(w, c), c.Species.Describe(), levels(c))
+				p("  The %s, aloft, seated for now at %s, %s, in %d fleets. %s. Now: %s; %s.", c.Name, c.HomeName, tech.EraNames[c.Era], fleetsOf(w, c), c.Species.Describe(), levels(c), arms(w, c))
 			} else if c.Active() {
-				p("  The %s on %s, %s, holding %s. %s. Now: %s.", c.Name, c.HomeName, tech.EraNames[c.Era], systems(len(c.Systems)), c.Species.Describe(), levels(c))
+				p("  The %s on %s, %s, holding %s. %s. Now: %s; %s.", c.Name, c.HomeName, tech.EraNames[c.Era], systems(len(c.Systems)), c.Species.Describe(), levels(c), arms(w, c))
 			}
 		}
 	}

@@ -130,7 +130,6 @@ type Civ struct {
 	Seen     int // master declines this civ has reacted to
 
 	// war and diplomacy: see dials.go, intel.go, war.go, expedition.go, pact.go
-	Away       float64         // Military out with fleets and scouts, subtracted from the level
 	Dials      Dials           // temperament as numbers
 	Intel      map[int]*Intel  // what this people believes about each other people
 	Grudge     map[int]float64 // what each other people has done to them
@@ -153,10 +152,17 @@ type Civ struct {
 	foeNow     int          // the enemy of the day, or -1; a new one gets the old blame
 	monsters   map[int]bool // peoples remembered as things that do harm
 	LastDark   Year
-	Summoned   bool    // an event calls the council this tick
-	Aloft      bool    // a nomad people living as fleets, with no worlds
-	Rested     bool    // a nomad people that came to rest, and will not rise again
-	Quality    float64 // for the aloft: the Military the tree would give, which the fleets grow toward
+	Summoned   bool // an event calls the council this tick
+	Aloft      bool // a nomad people living as fleets, with no worlds
+	Rested     bool // a nomad people that came to rest, and will not rise again
+
+	// ships: see ships.go
+	DockRate   map[int]float64 // the rate each dock worked at last tick, by star: its draw this tick
+	WantShips  int             // the need of the campaign the council last sized and could not man
+	WantSince  Year            // when; the want stands for a while
+	SurveyWant int             // surveyors the exploring policy asked for last tick, before the ships were counted
+	PeakShips  int             // the most ships ever in being, for the batch
+	firstShip  bool            // the dock's first ship was written
 
 	// flows: see flow.go and sources.go
 	Income       flow.Income     // this tick's yield by kind
@@ -235,6 +241,10 @@ type Tally struct {
 	// trade: what was sent and what came, over the life; partners ever, and partners ever sent to
 	Sent, Got     flow.Income
 	Partners, Fed int
+	// ships: built, lost in battle, rotted laid up; ship-kyr of flow spent building; ticks starfaring, at the want, with ships laid up
+	Built, ShipsLost, Rotted    int
+	Building                    float64
+	StarTicks, AtWant, LaidTick int
 }
 
 // Living is true for active and remnant civilisations.

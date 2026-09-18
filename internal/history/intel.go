@@ -13,8 +13,10 @@ import (
 // Intel is one people's latest belief about another.
 type Intel struct {
 	Mil    float64 // the level seen, with the noise of the seeing
+	Ships  int     // the ships seen manned: the whole standing force, until garrisons put them at worlds
+	Guns   int     // the guns seen at Star; none until guns land
 	Grid   bool    // a defence grid was seen
-	Relief float64 // strength of others seen standing with them at Star
+	Relief float64 // ships of others seen standing with them at Star
 	Star   int     // where the look was taken
 	Year   Year
 }
@@ -23,8 +25,9 @@ type Intel struct {
 func (w *World) look(c, e *Civ, star int, noise float64) *Intel {
 	return &Intel{
 		Mil:    e.Mil + w.R.NormFloat64()*noise,
+		Ships:  w.standing(e),
 		Grid:   e.Known["defence_grid"],
-		Relief: w.reliefAt(e, star),
+		Relief: float64(w.reliefAt(e, star)),
 		Star:   star,
 		Year:   w.Now,
 	}
@@ -54,6 +57,16 @@ func (w *World) believe(c, e *Civ) (mil, spread float64) {
 		in.Seen, in.Mil, in.AgeKyr = true, i.Mil, float64(w.Now-i.Year)/1000
 	}
 	return mind.Believe(in, w.Cfg.Tuning)
+}
+
+// believeShips is how many ships c thinks e has: the last count, or a
+// guess by era.
+func (w *World) believeShips(c, e *Civ) float64 {
+	in := mind.BeliefInput{EnemyEra: e.Era}
+	if i := c.Intel[e.ID]; i != nil {
+		in.Seen, in.Ships = true, i.Ships
+	}
+	return mind.BelieveShips(in, w.Cfg.Tuning)
 }
 
 // intelStep is what a people learns each tick without trying: trade

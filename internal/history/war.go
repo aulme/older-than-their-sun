@@ -3,6 +3,8 @@ package history
 import (
 	"sort"
 
+	"worldgen/internal/battle"
+
 	"worldgen/internal/species"
 	"worldgen/internal/tech"
 )
@@ -271,18 +273,25 @@ func (w *World) strikes(wr *War, i int) {
 	}
 }
 
-// strike resolves one strike at a world. Both sides learn from the exchange.
+// strike resolves one strike at a world: the striker's standing ships at
+// its quality against the world's defence, on the battle roll, with both
+// sides paying the losses in ships. Both sides learn from the exchange.
+// Until garrisons land the whole standing force strikes and the whole
+// standing force defends, as the whole level did.
 func (w *World) strike(wr *War, c, e *Civ, t int) bool {
 	i := wr.side(c.ID)
-	atk := c.Mil + c.warBonus() + w.R.NormFloat64()*1.5
-	if c.Aloft {
-		from, _ := w.nearest(c, t)
-		atk = w.fleetAt(c, from) + c.warBonus() + w.R.NormFloat64()*1.5
+	atk := w.strikeForce(c)
+	if atk <= 0 {
+		return false // nothing to strike with
 	}
-	def := w.defence(e, t) + w.R.NormFloat64()*1.5
+	def := w.defence(e, t)
 	w.observe(c, e, t, 0.3)
 	w.observe(e, c, c.Home, 0.3)
-	if atk < def {
+	won := battle.Roll(w.R, atk, def)
+	la, ld := battle.Losses(w.R, atk, def)
+	w.pay(c, nil, t, la)
+	w.pay(e, nil, t, ld)
+	if !won {
 		wr.Will[i] -= 0.1
 		wr.Will[1-i] += 0.1
 		return false
@@ -298,20 +307,29 @@ func (w *World) strike(wr *War, c, e *Civ, t int) bool {
 	return true
 }
 
-// defence is what a world is held with: the defender fights with the whole
-// world's industry behind it, and the home with everything it has.
+// defence is what a world is held with, as a strength: the defender's
+// standing ships at its quality and the relief standing there, and the
+// world itself as one ship when nothing is in its sky; the world's
+// industry, the home and a grid are levels on top, as the appraisal has
+// them. Guns land at the next step.
 func (w *World) defence(e *Civ, t int) float64 {
+	a := &w.Cfg.Tuning.Appraise
+	ships := float64(w.standing(e))
 	if e.Aloft {
-		return w.fleetAt(e, t) + e.warBonus() + 1
+		ships = 0
+		if g := w.guardAt(e, t); g != nil && !g.LaidUp {
+			ships = float64(g.Ships)
+		}
 	}
-	d := e.Mil + e.warBonus() + w.reliefAt(e, t) + 1
+	d := max(ships, 1)*w.quality(e) + w.reliefStrength(e, t)
+	terrain := a.Defence
 	if t == e.Home {
-		d += 2.5
+		terrain += a.HomeDefence
 	}
 	if e.Known["defence_grid"] {
-		d += 0.5
+		terrain += a.Grid
 	}
-	return d
+	return d * battle.Quality(terrain)
 }
 
 // takeWorld is a won strike or battle at a world: conquered, glassed or

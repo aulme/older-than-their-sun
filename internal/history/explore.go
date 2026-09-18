@@ -204,11 +204,12 @@ func (w *World) unread(c *Civ, within float64) bool {
 func (w *World) survey(c *Civ) {
 	tn := w.Cfg.Tuning
 	want := mind.Survey(mind.SurveyInput{
-		Free: c.Free() && !c.Aloft, Reach: c.Reach, Mil: c.Mil, AtWar: len(c.Wars) > 0, Era: c.Era, Dials: c.Dials,
+		Free: c.Free() && !c.Aloft, Reach: c.Reach, Ships: w.standing(c), AtWar: len(c.Wars) > 0, Era: c.Era, Dials: c.Dials,
 		ToSettle:  func() bool { return w.anyToSettle(c) },
 		Unread:    func() bool { return w.unread(c, max(c.Reach, tn.Survey.NearMin)) },
 		NeverRead: func() bool { return w.neverRead(c) },
 	}, tn)
+	c.SurveyWant = want.Asked
 	out := 0
 	for _, x := range w.Expeditions {
 		if !x.Over && x.Kind == Survey && x.Owner == c.ID {
@@ -288,10 +289,9 @@ func (w *World) surveyArrive(x *Expedition) {
 	if h := w.Held[t]; h >= 0 && w.R.Float64() < 0.5 {
 		w.log("The surveyors of the %s do not come back from %s. What they sent before the end says enough: %s is there.", c.Name, w.star(t), w.Horrors[h].Name)
 		w.factH(FSurveyLost, c, t, w.Horrors[h])
-		c.Away = max(0, c.Away-x.Mil)
 		c.Morale -= 0.3
 		x.Over = true
-		w.recompute(c)
+		w.fleetLost(x, t)
 		return
 	}
 	x.Tour++

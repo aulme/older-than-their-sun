@@ -17,13 +17,15 @@ type Site struct {
 	Yield  flow.Income // what it would give there, per tick
 	Upkeep flow.Income // what it would cost
 	Levels float64     // the levels it lifts, all three summed
+	Dock   bool        // it is one more dock: worth what ships are wanting
 }
 
 // BuildInput is what the choice is made from.
 type BuildInput struct {
-	Sites []Site
-	Want  flow.Income // what more by kind would run everything
-	Spare flow.Income // what is left this tick after the fed uses
+	Sites        []Site
+	Want         flow.Income // what more by kind would run everything
+	Spare        flow.Income // what is left this tick after the fed uses
+	ShipsWanting int         // the want of ships less the ships in being
 }
 
 // BuildChoice is the decision.
@@ -48,7 +50,8 @@ func (b BuildChoice) Why() string {
 // Build chooses a site. Only a site whose upkeep the spare covers Cover
 // times over is affordable. Among those, the one that meets most of the
 // want; with nothing wanting, or nothing meeting it, the one worth most:
-// its yield plus its levels weighted. Ties go to the earlier site.
+// its yield plus its levels weighted, and for a dock the ships wanting.
+// Ties go to the earlier site.
 func Build(in BuildInput, t *Tuning) BuildChoice {
 	p := &t.Build
 	out := BuildChoice{Pick: -1}
@@ -61,6 +64,9 @@ func Build(in BuildInput, t *Tuning) BuildChoice {
 			fixes += min(s.Yield[k], in.Want[k])
 		}
 		worth := s.Yield.Total() + p.LevelWeight*s.Levels
+		if s.Dock {
+			worth += p.DockWeight * float64(max(in.ShipsWanting, 0))
+		}
 		switch {
 		case out.Pick < 0:
 		case fixes > out.Fixes:

@@ -14,10 +14,11 @@ type Appraisal struct {
 	Target int   // the world appraised, or -1
 }
 
-// strength is what c brings against e: its level at home, its miracles,
-// its allies who would actually join, less what its other wars take.
+// strength is what c brings against e, in levels: its level at home, its
+// miracles, its manned ships, its allies who would actually join, less
+// what its other wars take.
 func (w *World) strength(c, e *Civ) float64 {
-	in := mind.StrengthInput{Mil: c.Mil, Bonus: c.warBonus()}
+	in := mind.StrengthInput{Mil: c.Mil, Bonus: c.warBonus(), Ships: w.standing(c)}
 	for _, pid := range c.Pacts {
 		p := w.Pacts[pid]
 		if p.Over || p.Kind == Defensive && !c.Wars[e.ID] {
@@ -26,7 +27,7 @@ func (w *World) strength(c, e *Civ) float64 {
 		for _, mid := range p.Members {
 			m := w.Civs[mid]
 			if m != c && m.Active() && len(w.front(m, e)) > 0 {
-				in.Allies = append(in.Allies, m.Mil)
+				in.Allies = append(in.Allies, w.levelOf(m))
 			}
 		}
 	}
@@ -52,7 +53,7 @@ func (w *World) appraise(c, e *Civ, target int) Appraisal {
 	}
 	mil, spread := w.believe(c, e)
 	in := mind.AppraiseInput{
-		Strength: w.strength(c, e), Believed: mil, Spread: spread, EnemyBonus: e.warBonus(),
+		Strength: w.strength(c, e), Believed: mil, Spread: spread, EnemyBonus: e.warBonus(), Ships: w.believeShips(c, e),
 		AtHome: a.Target == e.Home, Risk: c.Dials.Risk, Speed: c.Speed,
 		Weakened: e.Plagued || float64(w.Now-e.LastDark) < w.Cfg.Tuning.Appraise.DarkAge,
 	}
@@ -119,7 +120,7 @@ func (w *World) nearest(c *Civ, star int) (int, float64) {
 // would strike at all; far says whether it would send a fleet beyond the
 // front to do it.
 func (w *World) bar(c, e *Civ) (bar float64, wants, far bool) {
-	return mind.Bar(mind.BarInput{Posture: c.posture(), Hates: c.hates(e), Grudge: c.Grudge[e.ID] > 0 || e.Embargo[c.ID], Aloft: c.Aloft}, w.Cfg.Tuning)
+	return mind.Bar(mind.BarInput{Posture: c.posture(), Hates: c.hates(e), Grudge: c.Grudge[e.ID] > 0 || e.Embargo[c.ID], Aloft: c.Aloft, NoShips: w.standing(c) == 0}, w.Cfg.Tuning)
 }
 
 // explain logs a decision's reason under -ai.

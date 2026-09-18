@@ -305,8 +305,8 @@ type Structure struct {
 // Structures by key.
 var Structures = map[string]*Structure{
 	"arcology":   {Key: "arcology", Name: "arcology", Node: "closed_ecologies", Sur: 1, Upkeep: flow.Income{flow.E: 1}, Cat: flow.Fields, Hardy: 1.2, Text: "The %s seal a city at %s against everything outside it."},
-	"shipyard":   {Key: "shipyard", Name: "shipyard", Node: "orbital_habitats", Mil: 0.5, Upkeep: flow.Income{flow.E: 1, flow.M: 1}, Cat: flow.Arms, Hardy: 1.6, Text: "Yards turn above %s, building ships for the %s."},
-	"defences":   {Key: "defences", Name: "defence grid", Node: "defence_grid", Mil: 1.5, Upkeep: flow.Income{flow.E: 1, flow.M: 1}, Cat: flow.Arms, Hardy: 0.7, Text: "The %s ring %s with guns that watch the sky."},
+	"shipyard":   {Key: "shipyard", Name: "shipyard", Node: "orbital_habitats", Upkeep: flow.Income{flow.E: 1, flow.M: 1}, Cat: flow.Arms, Hardy: 1.6, Text: "Yards turn above %s, building ships for the %s."},
+	"defences":   {Key: "defences", Name: "defence grid", Node: "defence_grid", Upkeep: flow.Income{flow.E: 1, flow.M: 1}, Cat: flow.Arms, Hardy: 0.7, Text: "The %s ring %s with guns that watch the sky."},
 	"ansible":    {Key: "ansible", Name: "ansible net", Node: "ansible", Soc: 1.5, Upkeep: flow.Income{flow.E: 2}, Cat: flow.Mind, Hardy: 0.9, Text: "The %s link %s to home without delay."},
 	"dyson":      {Key: "dyson", Name: "Dyson swarm", Node: "dyson", Sur: 0.5, Upkeep: flow.Income{flow.M: 2}, Cat: flow.Works, Per: "star", Hardy: 0.3, Text: "The %s enclose %s in a swarm of collectors. The star dims from outside."},
 	"mine":       {Key: "mine", Name: "mines", Node: "orbital_habitats", Upkeep: flow.Income{flow.E: 1}, Cat: flow.Works, Per: "belt", Hardy: 1.4, Text: "The %s put mines in the belt at %s."},

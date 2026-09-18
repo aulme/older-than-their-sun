@@ -137,11 +137,6 @@ func (w *World) recompute(c *Civ) {
 		reach /= p.Reach // a world's reach is a third until it learns to graft
 	}
 	soc += c.Morale
-	c.Quality = clamp(mil, 0, 10)
-	if c.Aloft {
-		mil = w.ships(c) // the fleets are the people
-	}
-	mil -= c.Away // what is out with the fleets
 	c.Mil, c.Sur, c.Soc = clamp(mil, 0, 10), clamp(sur, 0, 10), clamp(soc, 0, 10)
 	w.setDials(c)
 	reach *= c.Species.ReachMul()
@@ -155,6 +150,7 @@ func (w *World) recompute(c *Civ) {
 	c.Reach, c.Speed, c.Era = reach, speed, era
 	if c.Starfaring == 0 && reach >= 1 {
 		c.Starfaring = w.Now
+		w.firstGuard(c) // a people that reached the stars built at least one ship
 	}
 	c.Envelope = env
 	if c.Sur >= 5 {

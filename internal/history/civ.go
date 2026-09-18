@@ -119,6 +119,7 @@ type civStep struct {
 var civSteps = []civStep{
 	{"arrivals", (*World).arrivals},
 	{"flows", (*World).flows},
+	{"shipwright", (*World).shipwright},
 	{"objects", (*World).objects},
 	{"research", (*World).research},
 	{"wander", (*World).wander},
@@ -379,7 +380,7 @@ func (w *World) build(c *Civ) {
 	if len(sites) == 0 {
 		return
 	}
-	b := mind.Build(mind.BuildInput{Sites: sites, Want: c.Want, Spare: c.Surplus.Less(c.Reserved)}, w.Cfg.Tuning)
+	b := mind.Build(mind.BuildInput{Sites: sites, Want: c.Want, Spare: c.Surplus.Less(c.Reserved), ShipsWanting: w.want(c).Ships - w.ships(c)}, w.Cfg.Tuning)
 	w.explain(c, "building", b)
 	if b.Pick < 0 {
 		return
@@ -423,7 +424,7 @@ func (w *World) sites(c *Civ) []mind.Site {
 			if key == "dyson" {
 				y = y.Less(w.workYield(c, Work{Key: "collectors", Star: s})) // what it adds over collectors already there
 			}
-			out = append(out, mind.Site{Key: key, Star: s, Yield: y, Upkeep: w.bend(c, st.Upkeep), Levels: st.Mil + st.Sur + st.Soc})
+			out = append(out, mind.Site{Key: key, Star: s, Yield: y, Upkeep: w.bend(c, st.Upkeep), Levels: st.Mil + st.Sur + st.Soc, Dock: key == "shipyard"})
 		}
 	}
 	return out
@@ -483,6 +484,18 @@ func (w *World) loseSystem(c *Civ, s int, kind string, cause string) {
 	c.Systems = remove(c.Systems, s)
 	w.Owner[s] = -1
 	w.trace(s, kind, c.ID)
+	// the guard in its sky: a laid-up one is lost with it, a manned one
+	// withdraws to the nearest holding left
+	if !c.Aloft {
+		if g := w.guardAt(c, s); g != nil {
+			if g.LaidUp || len(c.Systems) == 0 {
+				w.fleetLost(g, s)
+				g.Over = true
+			} else {
+				w.goHome(g)
+			}
+		}
+	}
 	keep := c.Works[:0]
 	for _, wk := range c.Works {
 		if wk.Star == s {

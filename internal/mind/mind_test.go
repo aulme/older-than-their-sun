@@ -22,7 +22,7 @@ func TestAppraise(t *testing.T) {
 	}{
 		{"even worlds", AppraiseInput{Strength: 4, Believed: 3, Spread: 0.3, Risk: 0.5}, 0},
 		{"the home", AppraiseInput{Strength: 4, Believed: 3, Spread: 0.3, Risk: 0.5, AtHome: true}, -2.5},
-		{"a grid and relief", AppraiseInput{Strength: 6, Believed: 3, Spread: 1, Risk: 0.5, Grid: true, Relief: 1}, 0.5},
+		{"a grid and relief", AppraiseInput{Strength: 6, Believed: 3, Spread: 1, Risk: 0.5, Grid: true, Relief: 1.25}, 0.5},
 		{"a weakened enemy in two other wars", AppraiseInput{Strength: 4, Believed: 4, Spread: 1, Risk: 0.5, Weakened: true, OtherWars: 2}, 0.6},
 	}
 	for _, c := range cases {
@@ -135,36 +135,70 @@ func TestCouncil(t *testing.T) {
 
 func TestScoutAndCampaign(t *testing.T) {
 	tn := Default()
-	if s := Scout(ScoutInput{Sight: true, Mil: 1}, tn); !s.Look {
+	if s := Scout(ScoutInput{Sight: true, Ships: 1}, tn); !s.Look {
 		t.Error("the Sight reads for free")
 	}
-	if s := Scout(ScoutInput{Mil: 1.5, Fear: 0.2}, tn); !s.Kept {
-		t.Error("a level must stay home")
+	if s := Scout(ScoutInput{Ships: 1, Fear: 0.2}, tn); !s.Kept {
+		t.Error("a ship must stay home")
 	}
-	if s := Scout(ScoutInput{Mil: 3, Fear: 0.9}, tn); !s.Kept {
+	if s := Scout(ScoutInput{Ships: 2, Fear: 0.9}, tn); !s.Kept {
 		t.Error("the fearful and small do not scout")
 	}
-	if s := Scout(ScoutInput{Mil: 3, Fear: 0.2, Out: true}, tn); s.Send || s.Kept {
+	if s := Scout(ScoutInput{Ships: 3, Fear: 0.2, Out: true}, tn); s.Send || s.Kept {
 		t.Error("one scout at a time")
 	}
-	if s := Scout(ScoutInput{Mil: 3, Fear: 0.2}, tn); !s.Send {
+	if s := Scout(ScoutInput{Ships: 3, Fear: 0.2}, tn); !s.Send {
 		t.Error("a scout goes")
 	}
-	a := Appraise(AppraiseInput{Strength: 6, Believed: 3, Spread: 0.5, Risk: 0.5, Dist: 10, Speed: 100}, tn)
-	k := SizeCampaign(CampaignInput{Appraisal: a, Strength: 6, Mil: 6, Away: 0, Risk: 0.5, Fear: 0.2}, tn)
-	if !k.Send || !near(k.Need, 4) || !near(k.Share, 4) {
+	// six ships at level four against four at level three behind a world's
+	// defence: even odds want four ships, and the fleet is sized in ships
+	strength := Strength(StrengthInput{Mil: 4, Ships: 6}, tn)
+	a := Appraise(AppraiseInput{Strength: strength, Believed: 3, Ships: 4, Spread: 0.5, Risk: 0.5, Dist: 10, Speed: 100}, tn)
+	k := SizeCampaign(CampaignInput{Appraisal: a, Strength: strength, Mil: 4, Ships: 6, Total: 6, Risk: 0.5, Fear: 0.2}, tn)
+	if !k.Send || k.Need != 4 || k.Share != 4 || k.Short {
 		t.Errorf("even odds at need 4: %s", k.Why())
 	}
-	k = SizeCampaign(CampaignInput{Appraisal: a, Strength: 6, Mil: 6, Risk: 0.5, Fear: 1}, tn)
-	if k.Send {
-		t.Errorf("full fear caps the fleet below the need: %s", k.Why())
+	k = SizeCampaign(CampaignInput{Appraisal: a, Strength: strength, Mil: 4, Ships: 6, Total: 6, Risk: 0.5, Fear: 1}, tn)
+	if k.Send || !k.Short {
+		t.Errorf("full fear caps the fleet below the need, and ships are wanted: %s", k.Why())
 	}
-	far := Appraise(AppraiseInput{Strength: 6, Believed: 3, Spread: 0.5, Risk: 0.5, Dist: 300, Speed: 100}, tn)
-	if k := SizeCampaign(CampaignInput{Appraisal: far, Strength: 6, Mil: 6, Risk: 0.5, Fear: 0.2}, tn); k.Send {
+	far := Appraise(AppraiseInput{Strength: strength, Believed: 3, Ships: 4, Spread: 0.5, Risk: 0.5, Dist: 300, Speed: 100}, tn)
+	if k := SizeCampaign(CampaignInput{Appraisal: far, Strength: strength, Mil: 4, Ships: 6, Total: 6, Risk: 0.5, Fear: 0.2}, tn); k.Send {
 		t.Error("nobody crosses for thirty thousand years")
 	}
-	if k := SizeCampaign(CampaignInput{Appraisal: far, Strength: 6, Mil: 6, Risk: 0.5, Fear: 0.2, Conqueror: true}, tn); !k.Send {
+	if k := SizeCampaign(CampaignInput{Appraisal: far, Strength: strength, Mil: 4, Ships: 6, Total: 6, Risk: 0.5, Fear: 0.2, Conqueror: true}, tn); !k.Send {
 		t.Error("a conqueror crosses for thirty thousand years")
+	}
+}
+
+// TestShipsAndWant: a count of ships is worth its logarithm at the battle
+// base, one ship or nothing is worth nothing, and the want sums what the
+// policies ask for over a floor that rises with fear.
+func TestShipsAndWant(t *testing.T) {
+	tn := Default()
+	if l := ShipLevels(0); l != 0 {
+		t.Errorf("no ships: %.2f levels", l)
+	}
+	if l := ShipLevels(1.953125); !near(l, 3) {
+		t.Errorf("two ships less a bit are three levels: %.3f", l)
+	}
+	if b := Believe; b == nil {
+		t.Fatal("unreachable")
+	}
+	if n := BelieveShips(BeliefInput{EnemyEra: 3}, tn); n != 4 {
+		t.Errorf("unseen at era 3: %.1f ships", n)
+	}
+	if n := BelieveShips(BeliefInput{Seen: true, Ships: 7, EnemyEra: 3}, tn); n != 7 {
+		t.Errorf("seen: %.1f ships", n)
+	}
+	if w := WantShips(WantInput{Campaign: 4, Explorers: 2, Fear: 0.3}, tn); w.Ships != 7 || w.Floor != 1 {
+		t.Errorf("a calm people: %s", w.Why())
+	}
+	if w := WantShips(WantInput{Garrisons: 3, Fear: 0.9}, tn); w.Ships != 5 || w.Floor != 2 {
+		t.Errorf("a fearful people: %s", w.Why())
+	}
+	if _, wants, _ := Bar(BarInput{Posture: Conqueror, NoShips: true}, tn); wants {
+		t.Error("a conqueror with no ship manned wants a war")
 	}
 }
 
@@ -222,26 +256,26 @@ func TestAnswerPact(t *testing.T) {
 func TestAnswerCall(t *testing.T) {
 	tn := Default()
 	for _, h := range honours {
-		in := CallInput{Mil: 6, VictimMil: 3, Believed: 5, Dials: Dials{Fear: 0.4, Loyalty: h.loyalty}}
+		in := CallInput{Ships: 6, Total: 6, Q: 2, Victim: 4, Believed: 6, Dials: Dials{Fear: 0.4, Loyalty: h.loyalty}}
 		k := AnswerCall(in, tn)
 		want := h.name != Faithless
 		if k.Come != want {
 			t.Errorf("%s called: %s, want come %v", h.name, k.Why(), want)
 		}
-		if !near(k.Share, 1.8) {
-			t.Errorf("%s share %.2f, want a third of six", h.name, k.Share)
+		if k.Share != 2 {
+			t.Errorf("%s share %d, want a third of six", h.name, k.Share)
 		}
 	}
-	if k := AnswerCall(CallInput{Mil: 6, VictimMil: 1, Believed: 9, Dials: Dials{Fear: 0.4, Loyalty: 0.9}}, tn); k.Come || k.Helps {
+	if k := AnswerCall(CallInput{Ships: 6, Total: 6, Q: 2, Victim: 1, Believed: 20, Dials: Dials{Fear: 0.4, Loyalty: 0.9}}, tn); k.Come || k.Helps {
 		t.Errorf("relief that cannot help: %s", k.Why())
 	}
-	if k := AnswerCall(CallInput{Mil: 2, VictimMil: 3, Believed: 3, Dials: Dials{Fear: 0.5, Loyalty: 0.9}}, tn); k.Come || k.Blame {
-		t.Errorf("a small people keeps its level and is not blamed: %s", k.Why())
+	if k := AnswerCall(CallInput{Ships: 2, Total: 2, Q: 2, Victim: 4, Believed: 3, Dials: Dials{Fear: 0.5, Loyalty: 0.9}}, tn); k.Come || k.Blame {
+		t.Errorf("a small people keeps its ships and is not blamed: %s", k.Why())
 	}
-	if k := AnswerCall(CallInput{Mil: 6, VictimMil: 3, Believed: 5, Betrayed: true, Dials: Dials{Fear: 0.4, Loyalty: 0.9}}, tn); k.Come {
+	if k := AnswerCall(CallInput{Ships: 6, Total: 6, Q: 2, Victim: 4, Believed: 6, Betrayed: true, Dials: Dials{Fear: 0.4, Loyalty: 0.9}}, tn); k.Come {
 		t.Errorf("a betrayer calling: %s", k.Why())
 	}
-	if k := AnswerCall(CallInput{Mil: 6, VictimMil: 3, Believed: 5, Confederate: true, Dials: Dials{Fear: 0.9, Loyalty: 0.4}}, tn); k.Come {
+	if k := AnswerCall(CallInput{Ships: 6, Total: 6, Q: 2, Victim: 4, Believed: 6, Confederate: true, Dials: Dials{Fear: 0.9, Loyalty: 0.4}}, tn); k.Come {
 		t.Errorf("a fearful confederate that cannot leave home safe: %s", k.Why())
 	}
 }
@@ -276,7 +310,7 @@ func TestForwardAndTurn(t *testing.T) {
 func TestSurveyAndSight(t *testing.T) {
 	tn := Default()
 	yes, no := func() bool { return true }, func() bool { return false }
-	in := SurveyInput{Free: true, Reach: 10, Mil: 5, Dials: Dials{Hunger: 0.8, Greed: 0.6}, ToSettle: yes, Unread: yes, NeverRead: yes}
+	in := SurveyInput{Free: true, Reach: 10, Ships: 5, Dials: Dials{Hunger: 0.8, Greed: 0.6}, ToSettle: yes, Unread: yes, NeverRead: yes}
 	if s := Survey(in, tn); s.Want != 2 {
 		t.Errorf("hunger and greed: %s", s.Why())
 	}
@@ -288,11 +322,11 @@ func TestSurveyAndSight(t *testing.T) {
 	if s := Survey(in, tn); s.Want != 1 {
 		t.Errorf("stale only: %s", s.Why())
 	}
-	in.NeverRead, in.Mil = yes, 2.5
-	if s := Survey(in, tn); s.Want != 1 {
-		t.Errorf("a level stays home: %s", s.Why())
+	in.NeverRead, in.Ships = yes, 2
+	if s := Survey(in, tn); s.Want != 1 || s.Asked != 2 {
+		t.Errorf("a ship stays home: %s", s.Why())
 	}
-	in = SurveyInput{Free: true, Reach: 10, Mil: 5, Era: 2, Dials: Dials{Hunger: 0.1, Greed: 0.1}, ToSettle: no, Unread: yes, NeverRead: yes}
+	in = SurveyInput{Free: true, Reach: 10, Ships: 5, Era: 2, Dials: Dials{Hunger: 0.1, Greed: 0.1}, ToSettle: no, Unread: yes, NeverRead: yes}
 	if s := Survey(in, tn); s.Want != 1 {
 		t.Errorf("necessity: %s", s.Why())
 	}

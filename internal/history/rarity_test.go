@@ -68,12 +68,12 @@ func TestFleetLostBuriesRarity(t *testing.T) {
 		t.Fatal("the wielded artifact is not had")
 	}
 	s := w.Sources[l.Source]
-	x := &Expedition{ID: len(w.Expeditions), Owner: c.ID, Target: e.ID, Kind: Campaign, Star: 1, From: 0, Mil: 0.5, Base: 1, Seen: map[int]bool{}}
+	x := &Expedition{ID: len(w.Expeditions), Owner: c.ID, Target: e.ID, Kind: Campaign, Star: 1, From: 0, Ships: 0, Base: 1, Seen: map[int]bool{}}
 	w.Expeditions = append(w.Expeditions, x)
 	s.Carried, s.Star = x.ID, -1
 	w.resolve(x)
 	if !x.Over {
-		t.Fatal("a fleet of half a level with nothing held did not end")
+		t.Fatal("a fleet with no ships and nothing held did not end")
 	}
 	if l.State != Buried || l.Star != 1 {
 		t.Errorf("the artifact is %s at %d, want buried at 1", l.State, l.Star)

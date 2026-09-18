@@ -193,6 +193,8 @@ func shedKey(k string) string {
 		return "fleet"
 	case len(k) > 5 && k[:5] == "ship:":
 		return "ship"
+	case len(k) > 5 && k[:5] == "dock:":
+		return "dock"
 	}
 	return k
 }

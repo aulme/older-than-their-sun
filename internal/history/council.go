@@ -106,7 +106,7 @@ func (w *World) maybeScout(c, e *Civ) {
 			break
 		}
 	}
-	s := mind.Scout(mind.ScoutInput{Sight: c.miracle("foresight") && !c.Searching, Mil: c.Mil, Fear: c.Dials.Fear, Out: out}, w.Cfg.Tuning)
+	s := mind.Scout(mind.ScoutInput{Sight: c.miracle("foresight") && !c.Searching, Ships: w.standing(c), Fear: c.Dials.Fear, Out: out}, w.Cfg.Tuning)
 	w.explain(c, "scouting the "+e.Name, s)
 	switch {
 	case s.Look:
@@ -171,32 +171,27 @@ func (w *World) maybeCampaign(c, e *Civ, cause string) bool {
 	return false
 }
 
+// sizeCampaign sizes a fleet in ships and sends it. A need the ships
+// cannot meet is written down as a want, and the docks build toward it
+// for a while; the muster lands with garrisons.
 func (w *World) sizeCampaign(c, e *Civ, cause string, target int) bool {
 	ap := w.appraise(c, e, target)
 	k := mind.SizeCampaign(mind.CampaignInput{
-		Appraisal: ap.Appraisal, Strength: w.strength(c, e), Mil: c.Mil, Away: c.Away,
+		Appraisal: ap.Appraisal, Strength: w.strength(c, e), Mil: c.Mil, Bonus: c.warBonus(), Ships: w.standing(c), Total: w.ships(c),
 		Risk: c.Dials.Risk, Fear: c.Dials.Fear, Conqueror: c.posture() == mind.Conqueror,
 	}, w.Cfg.Tuning)
 	w.explain(c, "sizing a fleet against the "+e.Name+" at "+w.star(target), k)
+	if k.Short && k.LagOK {
+		c.WantShips, c.WantSince = k.Need, w.Now
+	}
 	if !k.Send {
 		return false
-	}
-	if from, _ := w.nearest(c, target); !w.afford(c, w.fleetReservation(c, k.Share, from)) {
-		w.explain(c, "a fleet against the "+e.Name, noMeans{})
-		return false // no war is declared for a fleet that cannot sail
 	}
 	if w.warBetween(c.ID, e.ID) == nil {
 		w.declare(c, e, cause)
 	}
 	w.launch(c, Campaign, e, target, k.Share)
 	return true
-}
-
-// noMeans is the reason a fleet stays home for want of the means.
-type noMeans struct{}
-
-func (noMeans) Why() string {
-	return "the spare does not cover the fleet's reservation, and it stays home"
 }
 
 // nearestEnemy is e's world nearest to any of c's, and the distance.
