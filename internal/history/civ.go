@@ -78,9 +78,14 @@ func (w *World) spawnCiv(home int, sp *species.Species, maker int, name string) 
 		}
 	}
 	w.birthright(c)
+	if sp.Has("kinfed") {
+		w.fact(FManna, c, nil, home) // a fact every other people judges by its own lights, once known
+	}
 	if m := sp.Miracle(); m != "" {
-		c.Miracles[m] = "born"             // the surge begins when they can first use it: see tickCivs
-		c.Faced[tech.Get(m).Filter] = true // what is evolved is not a leap; nothing to fall from
+		c.Miracles[m] = "born" // the surge begins when they can first use it: see tickCivs
+		if f := tech.Get(m).Filter; f != "" {
+			c.Faced[f] = true // what is evolved is not a leap; nothing to fall from
+		}
 		w.log("They are born to a miracle: %s. What others will spend ages reaching for, they have from the first.", miracleNames[m])
 	}
 	if st.Failing {
@@ -113,6 +118,7 @@ type civStep struct {
 var civSteps = []civStep{
 	{"arrivals", (*World).arrivals},
 	{"flows", (*World).flows},
+	{"objects", (*World).objects},
 	{"research", (*World).research},
 	{"wander", (*World).wander},
 	{"expand", (*World).expand},
@@ -546,6 +552,7 @@ func (w *World) contract(c *Civ, cause string) {
 	w.factOf(FFall, c, nil, keep, cause)
 	c.Stage, c.Fate, c.Cause, c.Ended = Remnant, Contracted, cause, w.Now
 	c.Fell = w.Now
+	c.FellDependent = len(c.Dependent) > 0
 	c.Title = names.Title(w.R)
 	c.Voyages = nil
 	w.endWars(c, "the fall of a side")
@@ -577,6 +584,7 @@ func (w *World) endCiv(c *Civ, f Fate, cause string) {
 	c.Fate, c.Cause, c.Ended = f, cause, w.Now
 	if !wasRemnant {
 		c.Fell = w.Now
+		c.FellDependent = len(c.Dependent) > 0
 	}
 	c.Voyages = nil
 	w.endWars(c, "the fall of a side")

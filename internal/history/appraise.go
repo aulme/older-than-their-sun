@@ -69,6 +69,7 @@ func (w *World) appraise(c, e *Civ, target int) Appraisal {
 	}
 	_, in.Dist = w.nearest(c, a.Target)
 	in.Prize = w.prize(c, a.Target)
+	in.Loss = w.tradeLoss(c, e)
 	a.Appraisal = mind.Appraise(in, w.Cfg.Tuning)
 	return a
 }
@@ -118,7 +119,7 @@ func (w *World) nearest(c *Civ, star int) (int, float64) {
 // would strike at all; far says whether it would send a fleet beyond the
 // front to do it.
 func (w *World) bar(c, e *Civ) (bar float64, wants, far bool) {
-	return mind.Bar(mind.BarInput{Posture: c.posture(), Hates: c.hates(e), Grudge: c.Grudge[e.ID] > 0, Aloft: c.Aloft}, w.Cfg.Tuning)
+	return mind.Bar(mind.BarInput{Posture: c.posture(), Hates: c.hates(e), Grudge: c.Grudge[e.ID] > 0 || e.Embargo[c.ID], Aloft: c.Aloft}, w.Cfg.Tuning)
 }
 
 // explain logs a decision's reason under -ai.

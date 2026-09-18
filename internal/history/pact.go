@@ -402,6 +402,8 @@ func (w *World) breakPacts(c, h *Civ) {
 			p.Over, p.Ended = true, w.Now
 		}
 	}
+	w.cutTrade(c, h, "the pact left")
+	w.cutTrade(h, c, "the pact left")
 	delete(c.Trade, h.ID)
 	delete(h.Trade, c.ID)
 }

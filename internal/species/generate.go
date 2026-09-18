@@ -139,7 +139,7 @@ func Roll(r *rand.Rand, mult int, o Options) *Species {
 		return false
 	}
 	pick := func(group string) *Trait {
-		return pickWeighted(r, pool(group), func(t *Trait) float64 { return t.Weight * tilt(t.Key) })
+		return pickWeighted(r, poolFor(group, s), func(t *Trait) float64 { return t.Weight * tilt(t.Key) })
 	}
 	for _, g := range groupRolls {
 		if (g.own && !owned(g.group)) || skips(g.group) {
@@ -199,13 +199,21 @@ func tilted(r *rand.Rand, base, tilt float64) bool {
 }
 
 // pool is the traits of a group that the group draw can pick: those with
-// a weight.
-func pool(group string) []*Trait {
+// a weight and no fit, since nothing is known of the species.
+func pool(group string) []*Trait { return poolFor(group, nil) }
+
+// poolFor is the traits of a group a species could roll: those with a
+// weight whose fit, if any, the species meets.
+func poolFor(group string, s *Species) []*Trait {
 	var out []*Trait
 	for _, t := range Traits {
-		if t.Group == group && t.Weight > 0 {
-			out = append(out, t)
+		if t.Group != group || t.Weight <= 0 {
+			continue
 		}
+		if t.Fit != nil && (s == nil || !t.Fit(s)) {
+			continue
+		}
+		out = append(out, t)
 	}
 	return out
 }

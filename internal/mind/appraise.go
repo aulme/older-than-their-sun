@@ -67,6 +67,7 @@ type AppraiseInput struct {
 	Dist       float64 // to the target, in light years
 	Speed      float64 // years per light year
 	Prize      float64 // what the target is worth to the attacker: its yield the attacker wants, and rarities it lacks
+	Loss       float64 // what a war on the enemy costs the attacker in trade: what the enemy sends it
 }
 
 // Appraisal is what a people thinks of a fight.
@@ -78,7 +79,7 @@ type Appraisal struct {
 	High   float64 // on the hopeful tail
 	Acted  float64 // what this people acts on, by its risk dial
 	Lag    float64 // years for a strike or a fleet to arrive
-	Prize  float64 // what the bar drops by for the target's worth
+	Prize  float64 // what the bar drops by for the target's worth, less what the war loses in trade; negative raises it
 }
 
 // Why says the appraisal in a line.
@@ -86,13 +87,16 @@ func (a Appraisal) Why() string {
 	s := fmt.Sprintf("odds %.2f (%.2f to %.2f), acting on %.2f, margin %.1f, %.0f years away", a.Odds, a.Low, a.High, a.Acted, a.Margin, a.Lag)
 	if a.Prize > 0 {
 		s += fmt.Sprintf(", a prize worth %.2f off the bar", a.Prize)
+	} else if a.Prize < 0 {
+		s += fmt.Sprintf(", trade worth %.2f on the bar", -a.Prize)
 	}
 	return s
 }
 
 // Appraise estimates a fight: the believed enemy level with terrain on top
 // against the attacker's strength, as odds with a spread, and what the
-// attacker acts on by its risk.
+// attacker acts on by its risk. The prize is what the target is worth less
+// what the war would lose in trade, and moves the bar either way.
 func Appraise(in AppraiseInput, t *Tuning) Appraisal {
 	p := &t.Appraise
 	d := in.Believed + in.EnemyBonus + p.Defence
@@ -109,7 +113,7 @@ func Appraise(in AppraiseInput, t *Tuning) Appraisal {
 	for i := 0; i < in.OtherWars; i++ {
 		d -= p.OtherWar
 	}
-	a := Appraisal{Margin: in.Strength - d, Spread: in.Spread, Lag: in.Dist * in.Speed, Prize: min(p.PrizeMax, p.PrizeWeight*in.Prize)}
+	a := Appraisal{Margin: in.Strength - d, Spread: in.Spread, Lag: in.Dist * in.Speed, Prize: max(-p.PrizeMax, min(p.PrizeMax, p.PrizeWeight*(in.Prize-in.Loss)))}
 	a.Odds = phi(a.Margin / p.Scale)
 	a.Low = phi((a.Margin - in.Spread) / p.Scale)
 	a.High = phi((a.Margin + in.Spread) / p.Scale)

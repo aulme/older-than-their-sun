@@ -123,6 +123,8 @@ func (w *World) cause(c, e *Civ) string {
 		return "extermination"
 	case c.Fought[e.ID] > 0:
 		return "the old quarrel"
+	case e.Embargo[c.ID]:
+		return "the embargo"
 	}
 	switch c.posture() {
 	case mind.Opportunist:

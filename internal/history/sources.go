@@ -56,6 +56,13 @@ type Source struct {
 	Legacy  int             // the remain it is, for a bounty or a wielded artifact, or -1
 	Since   Year            // when it was first put to use, for what wears
 	Wear    Year            // years from Since until the yield is gone; 0 never wears
+	// an object of a miracle: see objects.go
+	Form     string // the form it rolled, "" for anything that is not an object
+	Sentient bool   // a Manna that thinks
+	Maker    int    // the people that made it, or -1 for an elder's
+	Made     Year
+	Given    int    // cuttings given
+	Fate     string // "" while it is; else "rose", "loose", "doom", "through"
 }
 
 // worldYield is what a habitable world yields in organic matter by archetype.
@@ -98,6 +105,8 @@ const (
 	// a nomad fleet grazes a star it does not hold
 	grazeFree    = 0.5  // at an unowned star
 	grazePartner = 0.25 // at a trade partner's
+	// a people that eats its own
+	kinfedYield = 3.0 // organic matter per held world
 )
 
 // naturalSources places the natural sources of a galaxy. It reads only
@@ -235,18 +244,38 @@ func covered(g *galaxy.Galaxy, s *Source) []int {
 }
 
 // addSource registers a source made during the age: a bounty, a wielded
-// artifact. The caller sets Holder, Carried and Legacy, -1 for none. It
-// yields at the stars it covers; a mobile one at none, since it is had by
-// its holder wherever it is.
+// artifact, an object. The caller sets Holder, Carried and Legacy, -1 for
+// none. It yields at the stars it covers; a mobile one at none, since it
+// is had by its holder wherever it is, and goes on the mobile index.
 func (w *World) addSource(s *Source) *Source {
 	s.ID = len(w.Sources)
 	w.Sources = append(w.Sources, s)
-	if !s.Mobile {
+	if s.Mobile {
+		w.mobile = append(w.mobile, s.ID)
+	} else {
 		for _, i := range covered(w.G, s) {
 			w.sourcesAt[i] = append(w.sourcesAt[i], s.ID)
 		}
 	}
 	return s
+}
+
+// mobileYield is what the mobile things a people holds give it: an object
+// of a miracle, wherever it is.
+func (w *World) mobileYield(c *Civ) flow.Income {
+	var in flow.Income
+	for _, id := range w.mobile {
+		s := w.Sources[id]
+		if s.Holder != c.ID || s.Yield == (flow.Income{}) {
+			continue
+		}
+		y := s.Yield
+		if s.Wear > 0 {
+			y = y.Scale(max(0, 1-float64(w.Now-s.Since)/float64(s.Wear)))
+		}
+		in.Add(y)
+	}
+	return in
 }
 
 // harnessed says whether a people knows what a source needs. A bounty is
@@ -382,8 +411,9 @@ func (c *Civ) worksAt(key string, star int) int {
 }
 
 // income is what a people takes in this tick: the sources at every
-// holding, the vacuum tap at each, what a horde stripped last tick, and
-// for a parasite riding hosts, the hosts' income too.
+// holding, the vacuum tap at each, the mobile things it holds, what a horde
+// stripped last tick, what its partners sent last tick, and for a parasite
+// riding hosts, the hosts' income too.
 func (w *World) income(c *Civ) flow.Income {
 	var in flow.Income
 	holdings := w.holdings(c)
@@ -393,8 +423,17 @@ func (w *World) income(c *Civ) flow.Income {
 	if c.Known["vacuum_energy"] && c.working("vacuum_energy") {
 		in[flow.E] += vacuumYield * float64(len(holdings))
 	}
+	if c.Has("kinfed") {
+		in[flow.O] += kinfedYield * float64(len(holdings))
+	}
+	in.Add(w.mobileYield(c))
 	in.Add(c.Loot)
 	c.Loot = flow.Income{}
+	c.Received = flow.Income{}
+	for _, p := range sortedInts(c.From) {
+		c.Received.Add(c.From[p])
+	}
+	in.Add(c.Received)
 	if len(c.Ridden) > 0 {
 		for _, h := range sortedInts(c.Ridden) {
 			if o := w.Civs[h]; o.Living() && o.Master == c.ID {

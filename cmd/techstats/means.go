@@ -113,6 +113,95 @@ func meansReport(out io.Writer, recs []Rec) {
 		}
 	}
 	worksReport(out, recs)
+	tradeReport(out, recs)
+}
+
+// tradeReport is trade: what moved by kind, how many partner pairs moved
+// anything, dependence at the moment of a fall, and the objects of the
+// Ember and the Manna with what came of them.
+func tradeReport(out io.Writer, recs []Rec) {
+	p := func(format string, args ...any) { fmt.Fprintf(out, format+"\n", args...) }
+	p("")
+	p("Trade, by the deepest era a people reached: what it sent and what it got over its life, per people; partners it ever had, and partners it ever sent anything to.")
+	p("")
+	p("| Deepest era | Peoples | Sent O / E / M | Got O / E / M | Partners | Sent to | Share |")
+	p("|---|---|---|---|---|---|---|")
+	for e := 0; e <= 4; e++ {
+		var sent, got flow.Income
+		n, partners, fed := 0, 0, 0
+		for _, r := range recs {
+			if r.Era != e {
+				continue
+			}
+			n++
+			sent.Add(r.Tally.Sent)
+			got.Add(r.Tally.Got)
+			partners += r.Tally.Partners
+			fed += r.Tally.Fed
+		}
+		if n == 0 {
+			continue
+		}
+		f := 1 / float64(n)
+		p("| %d %s | %d | %.0f / %.0f / %.0f | %.0f / %.0f / %.0f | %d | %d | %s |", e, tech.EraNames[e], n,
+			sent[flow.O]*f, sent[flow.E]*f, sent[flow.M]*f, got[flow.O]*f, got[flow.E]*f, got[flow.M]*f, partners, fed, pct(fed, partners))
+	}
+	falls, dep := 0, 0
+	for _, r := range recs {
+		if r.Fate == "active" {
+			continue
+		}
+		falls++
+		if r.FellDep {
+			dep++
+		}
+	}
+	p("")
+	p("Peoples dependent on a partner's sending at the moment they fell: %d of %d falls (%s).", dep, falls, pct(dep, falls))
+	objects := map[string]int{}
+	thinks, given, fates := map[string]int{}, map[string]int{}, map[string]int{}
+	total := 0
+	for _, r := range recs {
+		for _, o := range r.Objects {
+			parts := strings.Split(o, ":")
+			kind := parts[0] + ":" + parts[1]
+			objects[kind]++
+			total++
+			for _, x := range parts[2:] {
+				switch {
+				case x == "thinks":
+					thinks[kind]++
+				case strings.HasPrefix(x, "given"):
+					given[kind]++
+				default:
+					fates[kind+":"+x]++
+				}
+			}
+		}
+	}
+	if total == 0 {
+		p("")
+		p("No Ember or Manna was made.")
+		return
+	}
+	p("")
+	p("The Ember and the Manna: %d objects made over every people. By form, with how many thought, how many gave cuttings, and what came of them.", total)
+	p("")
+	p("| Object | Form | Made | Thought | Gave cuttings | Fates |")
+	p("|---|---|---|---|---|---|")
+	for _, k := range sortedKeys(objects) {
+		var fs []string
+		for _, f := range []string{"rose", "loose", "doom", "through"} {
+			if n := fates[k+":"+f]; n > 0 {
+				fs = append(fs, fmt.Sprintf("%s %d", f, n))
+			}
+		}
+		if len(fs) == 0 {
+			fs = []string{"-"}
+		}
+		kind, form, _ := strings.Cut(k, ":")
+		p("| %s | %s | %d | %d | %d | %s |", kind, form, objects[k], thinks[k], given[k], strings.Join(fs, ", "))
+	}
 }
 
 // worksReport is the rest of the Means: structures raised by kind, sources

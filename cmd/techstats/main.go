@@ -78,11 +78,13 @@ type Rec struct {
 	Income    flow.Income        `json:"income"` // at the people's height of means
 	Upkeep    flow.Income        `json:"upkeep"`
 	Want      flow.Income        `json:"want"`
-	Shed      map[string]int     `json:"shed"`      // ticks each node spent dark
-	Had       []string           `json:"had"`       // rarities ever had, by key
-	Harnessed []string           `json:"harnessed"` // source kinds ever harnessed, by key
-	Built     map[string]int     `json:"built"`     // structures raised, by key
-	Granted   []string           `json:"granted"`   // nodes learned with their grant had
+	Shed      map[string]int     `json:"shed"`              // ticks each node spent dark
+	Had       []string           `json:"had"`               // rarities ever had, by key
+	Harnessed []string           `json:"harnessed"`         // source kinds ever harnessed, by key
+	Built     map[string]int     `json:"built"`             // structures raised, by key
+	Granted   []string           `json:"granted"`           // nodes learned with their grant had
+	FellDep   bool               `json:"fell_dependent"`    // depended on a partner at the moment of its fall
+	Objects   []string           `json:"objects,omitempty"` // objects made: kind:form:fate, with "thinks" and cuttings given
 	ever      map[string]bool
 	frontier  string
 	signature string
@@ -212,6 +214,23 @@ func flatten(w *history.World) []Rec {
 			r.Shed[k] = n
 		}
 		r.Held, r.Myth, r.Monsters = history.LoreCounts(w, c)
+		r.FellDep = c.FellDependent
+		for _, src := range w.Sources {
+			if src.Form == "" || src.Maker != c.ID {
+				continue
+			}
+			o := src.Key + ":" + src.Form
+			if src.Sentient {
+				o += ":thinks"
+			}
+			if src.Given > 0 {
+				o += fmt.Sprintf(":given %d", src.Given)
+			}
+			if src.Fate != "" {
+				o += ":" + src.Fate
+			}
+			r.Objects = append(r.Objects, o)
+		}
 		r.Nomad = c.Has("nomadic")
 		r.Stars = c.Starfaring > 0
 		r.Rested = c.Rested

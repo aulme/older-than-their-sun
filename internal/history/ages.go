@@ -86,6 +86,21 @@ const miracleShare = 0.4
 
 var structureNodes = []string{"stellar_engineering", "dyson", "wormhole_physics", "star_lifting"}
 
+// elderMiracle picks the miracle an elder artifact stands for: one of the
+// six, or now and then an object.
+func (w *World) elderMiracle() string {
+	if w.R.Float64() < objectShare {
+		return objectKeys[w.R.IntN(len(objectKeys))]
+	}
+	var six []string
+	for _, n := range tech.Miracles {
+		if objectForms[n.Key] == nil {
+			six = append(six, n.Key)
+		}
+	}
+	return six[w.R.IntN(len(six))]
+}
+
 // runAges writes the myth. Each earlier turn of the cycle is an age: a
 // surge of elder civilisations that fades as the galaxy's fertility fades,
 // with a cosmic event to sweep up what is left. The current age's surge is
@@ -155,7 +170,7 @@ func (w *World) leaveLegacy(e *Elder, at Year) {
 	case x < 0.5:
 		l.Kind = Artifact
 		if w.R.Float64() < miracleShare {
-			l.Node = tech.Miracles[w.R.IntN(len(tech.Miracles))].Key
+			l.Node = w.elderMiracle()
 		} else {
 			l.Node = artifactNodes[w.R.IntN(len(artifactNodes))]
 		}

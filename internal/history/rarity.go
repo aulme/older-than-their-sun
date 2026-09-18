@@ -7,9 +7,9 @@ import (
 
 // Rarities: a source with a grant, levels or reach, that a people has or
 // does not have. Having it means holding or being based at its star, holding
-// a star within its radius, or holding it as a mobile thing; from step 6, a
-// partner sharing it. One instance is enough; a second is worth nothing to
-// the same people, which is what will make them worth trading. A grant
+// a star within its radius, holding it as a mobile thing, or a partner
+// holding an immobile one. One instance is enough; a second is worth nothing
+// to the same people, which is what makes them worth trading. A grant
 // halves the price of a node and never bars it: no node is impossible
 // without a rarity, and tech.TestNoCatch22 keeps it so.
 //
@@ -150,56 +150,101 @@ func (w *World) firstHarness(c *Civ, s *Source) {
 	w.factOf(FHarness, c, nil, max(s.Star, c.Home), s.Name)
 }
 
-// rare works out what a people has this tick: the rarities at its
-// holdings and in reach of them, and the mobile ones it holds. It writes
-// the had set and the grants, names each rarity the first time, and says
-// whether the set changed since last tick.
-func (w *World) rare(c *Civ) bool {
-	had := map[string]bool{}
-	grants := map[string]bool{}
-	var firsts []*Source
-	take := func(s *Source) {
-		if !s.Rarity {
+// had is one rarity a people has, and the partner it has it through, or -1.
+type had struct {
+	s   *Source
+	via int
+}
+
+// rarities lists what a people has, each key once: the rarities at its
+// holdings and within their reach, the mobile things it holds, and its
+// partners' immobile ones that grant or reach, since partners share access
+// to what stands still and is worth a war, grants and levels only; the
+// yield goes through the surplus, and a luxury is the sky its holder was
+// born under.
+func (w *World) rarities(c *Civ) []had {
+	seen := map[string]bool{}
+	var out []had
+	take := func(s *Source, via int) {
+		if !s.Rarity || seen[s.Key] {
 			return
 		}
-		if !had[s.Key] && !c.Had[s.Key] {
-			firsts = append(firsts, s)
+		seen[s.Key] = true
+		out = append(out, had{s, via})
+	}
+	for _, h := range w.holdings(c) {
+		for _, id := range w.sourcesAt[h] {
+			take(w.Sources[id], -1)
 		}
-		had[s.Key] = true
-		for _, k := range s.Grants {
+	}
+	for _, id := range w.mobile {
+		if s := w.Sources[id]; s.Holder == c.ID {
+			take(s, -1)
+		}
+	}
+	for _, pid := range sortedInts(c.Trade) {
+		p := w.Civs[pid]
+		if !p.Active() {
+			continue
+		}
+		for _, h := range w.holdings(p) {
+			for _, id := range w.sourcesAt[h] {
+				if s := w.Sources[id]; !s.Mobile && (len(s.Grants) > 0 || s.Reach > 0) {
+					take(s, pid) // what grants or reaches; a partner's moon is its own
+				}
+			}
+		}
+	}
+	return out
+}
+
+// rare is the rarity walk each tick: what a people has now, by key, and
+// the nodes those grant. It marks the holder on the immobile rarities at
+// its holdings, logs each kind the first time it is had, and says whether
+// the set changed, so the levels are recomputed.
+func (w *World) rare(c *Civ) bool {
+	now := map[string]bool{}
+	grants := map[string]bool{}
+	var firsts []had
+	for _, x := range w.rarities(c) {
+		if !c.Had[x.s.Key] {
+			firsts = append(firsts, x)
+		}
+		now[x.s.Key] = true
+		for _, k := range x.s.Grants {
 			grants[k] = true
 		}
 	}
 	for _, h := range w.holdings(c) {
 		for _, id := range w.sourcesAt[h] {
-			s := w.Sources[id]
-			take(s)
-			if s.Rarity && s.Star == h && !s.Mobile {
+			if s := w.Sources[id]; s.Rarity && s.Star == h && !s.Mobile {
 				s.Holder = c.ID
 			}
 		}
 	}
-	for _, s := range w.Sources {
-		if s.Mobile && s.Holder == c.ID {
-			take(s)
-		}
-	}
-	changed := len(had) != len(c.Rare)
-	for k := range had {
+	changed := len(now) != len(c.Rare)
+	for k := range now {
 		if !c.Rare[k] {
 			changed = true
 		}
 	}
-	c.Rare, c.Grants = had, grants
+	c.Rare, c.Grants = now, grants
 	if c.Had == nil {
 		c.Had = map[string]bool{}
 	}
-	for _, s := range firsts {
+	for _, x := range firsts {
+		s := x.s
 		c.Had[s.Key] = true
 		// a luxury at the cradle is the sky they were born under; what
 		// grants or reaches, or is come upon elsewhere, is worth a line
-		if line := rarityLines[s.Key]; line != "" && (s.Star != c.Cradle || len(s.Grants) > 0 || s.Reach > 0) {
-			w.log(line, c.Name, s.Name)
+		matters := len(s.Grants) > 0 || s.Reach > 0
+		switch {
+		case x.via >= 0 && matters:
+			w.log("The %s have the use of %s, by the grace of the %s.", c.Name, s.Name, w.Civs[x.via].Name)
+		case x.via < 0:
+			if line := rarityLines[s.Key]; line != "" && (s.Star != c.Cradle || matters) {
+				w.log(line, c.Name, s.Name)
+			}
 		}
 	}
 	return changed
@@ -220,25 +265,9 @@ func (w *World) rarityAt(star int, key string) *Source {
 
 // levelsFromRarities sums what the rarities had give: levels and reach.
 func (w *World) levelsFromRarities(c *Civ) (mil, sur, soc, reach float64) {
-	seen := map[string]bool{}
-	var keys []int
-	for _, h := range w.holdings(c) {
-		keys = append(keys, w.sourcesAt[h]...)
-	}
-	add := func(s *Source) {
-		if !s.Rarity || seen[s.Key] {
-			return
-		}
-		seen[s.Key] = true
+	for _, x := range w.rarities(c) {
+		s := x.s
 		mil, sur, soc, reach = mil+s.Levels[0], sur+s.Levels[1], soc+s.Levels[2], reach+s.Reach
-	}
-	for _, id := range keys {
-		add(w.Sources[id])
-	}
-	for _, s := range w.Sources {
-		if s.Mobile && s.Holder == c.ID {
-			add(s)
-		}
 	}
 	return
 }
@@ -250,8 +279,8 @@ func (w *World) levelsFromRarities(c *Civ) (mil, sur, soc, reach float64) {
 // mobileHeld lists a people's mobile rarities at a star.
 func (w *World) mobileHeld(c *Civ, star int) []*Source {
 	var out []*Source
-	for _, s := range w.Sources {
-		if s.Mobile && s.Holder == c.ID && s.Star == star && s.Carried < 0 {
+	for _, id := range w.mobile {
+		if s := w.Sources[id]; s.Holder == c.ID && s.Star == star && s.Carried < 0 {
 			out = append(out, s)
 		}
 	}
@@ -262,6 +291,9 @@ func (w *World) mobileHeld(c *Civ, star int) []*Source {
 // that took the star, or straight home when the front took it.
 func (w *World) carryOff(c, e *Civ, star int, x *Expedition) {
 	for _, s := range w.mobileHeld(e, star) {
+		if w.taken(c, e, s, star) {
+			continue // it did not survive the taking
+		}
 		w.transfer(s, e, c)
 		if x != nil {
 			s.Carried, s.Star = x.ID, -1
@@ -274,7 +306,9 @@ func (w *World) carryOff(c, e *Civ, star int, x *Expedition) {
 }
 
 // transfer moves a mobile rarity, and the remain it is, from one holder
-// to another, or to nobody.
+// to another, or to nobody. An object lost is remembered by its loser,
+// who may make another after a while; an object moved pays its form's
+// price.
 func (w *World) transfer(s *Source, from, to *Civ) {
 	if from != nil && s.Legacy >= 0 {
 		keep := from.Wielded[:0]
@@ -285,6 +319,12 @@ func (w *World) transfer(s *Source, from, to *Civ) {
 		}
 		from.Wielded = keep
 	}
+	if from != nil && s.Form != "" {
+		if from.Remade == nil {
+			from.Remade = map[string]Year{}
+		}
+		from.Remade[s.Key] = w.Now
+	}
 	s.Holder = -1
 	if to == nil {
 		return
@@ -294,8 +334,17 @@ func (w *World) transfer(s *Source, from, to *Civ) {
 		l := w.Legacies[s.Legacy]
 		l.Finder = to.ID
 		l.State = Wielded
-		to.Wielded = append(to.Wielded, l)
+		held := false
+		for _, x := range to.Wielded {
+			if x == l {
+				held = true
+			}
+		}
+		if !held {
+			to.Wielded = append(to.Wielded, l)
+		}
 	}
+	w.moved(to, s)
 }
 
 // bury leaves a mobile rarity where it is, for somebody to find.
@@ -320,8 +369,8 @@ func (w *World) dropRarities(c *Civ, star int) {
 // carriedBy lists what a fleet carries.
 func (w *World) carriedBy(x *Expedition) []*Source {
 	var out []*Source
-	for _, s := range w.Sources {
-		if s.Mobile && s.Carried == x.ID {
+	for _, id := range w.mobile {
+		if s := w.Sources[id]; s.Carried == x.ID {
 			out = append(out, s)
 		}
 	}
@@ -346,9 +395,10 @@ func (w *World) fleetLost(x *Expedition, star int) {
 
 // stow puts a nomad people's mobile rarities aboard its greatest fleet.
 func (w *World) stow(c *Civ, best *Expedition) {
-	for _, s := range w.Sources {
-		if s.Mobile && s.Holder == c.ID && s.Carried != best.ID {
+	for _, id := range w.mobile {
+		if s := w.Sources[id]; s.Holder == c.ID && s.Carried != best.ID {
 			s.Carried, s.Star = best.ID, -1
+			w.moved(c, s)
 		}
 	}
 }

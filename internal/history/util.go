@@ -23,7 +23,7 @@ func knownOf(c *Civ) []string {
 }
 
 // sortedInts lists the keys of an int set in order, for the same reason.
-func sortedInts(m map[int]bool) []int {
+func sortedInts[V any](m map[int]V) []int {
 	out := make([]int, 0, len(m))
 	for k := range m {
 		out = append(out, k)

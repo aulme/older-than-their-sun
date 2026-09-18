@@ -28,7 +28,18 @@ func (w *World) flows(c *Civ) {
 	c.Reserved = flow.Income{}
 	rareChanged := w.rare(c)
 	c.Income = w.income(c)
-	uses := w.uses(c)
+	w.direct(c, w.uses(c), rareChanged)
+	w.tallyFlows(c)
+}
+
+// direct chooses the order and feeds the uses in it, and writes what came
+// of it: the spare, the want, what went dark, and the levels if the
+// working set changed. Goods that came by trade feed uses only, so the
+// spare is capped at what the people's own income would leave. The own
+// want is the want without what partners sent, which is what trade is
+// asked for; the working need is what the fed uses take, which is what a
+// partner's sending may be keeping fed.
+func (w *World) direct(c *Civ, uses []flow.Use, rareChanged bool) {
 	d := w.order(c)
 	if w.Cfg.TraceAI && !sameOrder(c.Order, d.Order) {
 		w.log("[the %s, direction: %s]", c.Name, d.Why())
@@ -36,9 +47,31 @@ func (w *World) flows(c *Civ) {
 	c.Order = d.Order
 	a := flow.Direct(c.Income, uses, d.Order)
 	c.Surplus, c.Want = a.Surplus, a.Want
-	c.Upkeep = flow.Income{}
+	if c.Received != (flow.Income{}) {
+		// what partners sent feeds the uses and nothing else: the spare
+		// that launches and builds draw on is never more than the people's
+		// own income would leave
+		own := flow.Direct(c.Income.Less(c.Received), uses, d.Order)
+		for k := range c.Surplus {
+			c.Surplus[k] = min(c.Surplus[k], own.Surplus[k])
+		}
+	}
+	c.Upkeep, c.WorkingNeed = flow.Income{}, flow.Income{}
 	for i := range uses {
 		c.Upkeep.Add(uses[i].Need)
+	}
+	dormant := map[string]bool{}
+	for _, k := range a.Dormant {
+		dormant[k] = true
+	}
+	for i := range uses {
+		if !dormant[uses[i].Key] {
+			c.WorkingNeed.Add(uses[i].Need)
+		}
+	}
+	own := c.Income.Less(c.Received)
+	for k := range c.OwnWant {
+		c.OwnWant[k] = max(0, c.Upkeep[k]-own[k])
 	}
 	if c.Upkeep.Total() > c.highUpkeep {
 		c.highUpkeep = c.Upkeep.Total()
@@ -48,7 +81,15 @@ func (w *World) flows(c *Civ) {
 	if changed || rareChanged {
 		w.recompute(c)
 	}
-	w.tallyFlows(c)
+}
+
+// redirect is a people losing part of its income within the tick, when a
+// partner's sending stops: what was counted is taken back and the uses are
+// fed again from what is left, so what the sending kept fed goes dark now.
+func (w *World) redirect(c *Civ, lost flow.Income) {
+	c.Income = c.Income.Less(lost)
+	c.Received = c.Received.Less(lost)
+	w.direct(c, w.uses(c), false)
 }
 
 // setShed writes the dormant set and its timing, and says whether the

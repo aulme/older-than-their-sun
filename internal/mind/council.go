@@ -49,9 +49,10 @@ func (v Verdict) Why() string {
 // Judge is the council's view of one enemy: strike when the acted odds
 // clear the bar, scout when the spread straddles it, watch below it.
 // Nothing when there is no front and the posture sends no fleet. A prize
-// lowers the bar: a rich neighbour is worth more to a wanting people.
+// lowers the bar: a rich neighbour is worth more to a wanting people; a
+// partner that sends raises it.
 func Judge(in JudgeInput, t *Tuning) Verdict {
-	v := Verdict{Bar: max(0, in.Bar-in.Appraisal.Prize), Acted: in.Appraisal.Acted, Low: in.Appraisal.Low, High: in.Appraisal.High}
+	v := Verdict{Bar: min(1, max(0, in.Bar-in.Appraisal.Prize)), Acted: in.Appraisal.Acted, Low: in.Appraisal.Low, High: in.Appraisal.High}
 	if in.Compelled {
 		v.Bar = min(v.Bar, t.Council.Compelled)
 	}

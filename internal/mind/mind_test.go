@@ -487,3 +487,35 @@ func TestPrize(t *testing.T) {
 		t.Errorf("bar below zero: %.3f", v.Bar)
 	}
 }
+
+// TestTrade: the will and the road. A monster or a grudge gets nothing; a
+// xenophobe sends half to the different; fear withholds metal from a
+// stronger, hostile partner; the cap follows the drive, halves for a
+// nomad, and is nothing out of reach.
+func TestTrade(t *testing.T) {
+	tn := Default()
+	if c := Trade(TradeInput{Monster: true, InReach: true}, tn); !c.Refuse {
+		t.Error("sent to a monster")
+	}
+	if c := Trade(TradeInput{Grudge: 0.5, InReach: true}, tn); !c.Refuse {
+		t.Error("sent over a grudge")
+	}
+	if c := Trade(TradeInput{Grudge: 0.2, InReach: true}, tn); c.Refuse || c.Cap != 0.25 {
+		t.Errorf("a small grudge: %s", c.Why())
+	}
+	if c := Trade(TradeInput{Xenophobe: true, Different: true, InReach: true, Drive: 1}, tn); c.Mul != [3]float64{0.5, 0.5, 0.5} || c.Cap != 0.5 {
+		t.Errorf("a xenophobe to the different: %s %v", c.Why(), c.Mul)
+	}
+	if c := Trade(TradeInput{Fear: 0.8, Stronger: true, Hostile: true, InReach: true, Drive: 2}, tn); c.Mul != [3]float64{1, 1, 0} || c.Cap != 1 {
+		t.Errorf("fear withholds metal: %s %v", c.Why(), c.Mul)
+	}
+	if c := Trade(TradeInput{Fear: 0.8, Stronger: true, InReach: true}, tn); c.Mul[2] != 1 {
+		t.Error("fear withheld metal from a people that does not strike first")
+	}
+	if c := Trade(TradeInput{InReach: true, Nomad: true, Drive: 2}, tn); c.Cap != 0.5 {
+		t.Errorf("a nomad partner: %s", c.Why())
+	}
+	if c := Trade(TradeInput{Drive: 2}, tn); c.Cap != 0 || c.Refuse {
+		t.Errorf("out of reach: %s", c.Why())
+	}
+}

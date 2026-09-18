@@ -252,9 +252,15 @@ func (w *World) attemptWield(c *Civ, l *Legacy) {
 		l.Level = "all"
 		if n := l.node(); n != nil && n.Miracle {
 			l.Level = "miracle"
-			w.log("The %s learn to use it without understanding it. It is %s, and it is theirs for as long as it lasts.", c.Name, miracleNames[n.Key])
+			if objectForms[n.Key] != nil {
+				w.wieldObject(c, l) // the thing is the miracle
+			} else {
+				w.log("The %s learn to use it without understanding it. It is %s, and it is theirs for as long as it lasts.", c.Name, miracleNames[n.Key])
+			}
 			w.gain(c, n.Key, "wielded")
-			w.face(c, n.Filter, 0)
+			if n.Filter != "" {
+				w.face(c, n.Filter, 0)
+			}
 			return
 		} else if n != nil {
 			switch n.Domain {
@@ -325,6 +331,10 @@ func (w *World) unleash(c *Civ, l *Legacy) {
 		w.blast(l.Star, 5, "a broken law", "Around %s, for a moment, physics is negotiable.", 3)
 	case Artifact:
 		n := l.node()
+		if n.Miracle && objectForms[n.Key] != nil {
+			w.unleashObject(c, l) // the thing is the miracle, and it gets out
+			return
+		}
 		if n.Miracle {
 			// the miracle's own danger, at its worst
 			w.log("It works, once, in a way nobody chose.")

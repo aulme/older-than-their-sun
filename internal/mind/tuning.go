@@ -39,6 +39,7 @@ type Tuning struct {
 	Direction DirectionTuning
 	Turn      TurnTuning
 	Roam      RoamTuning
+	Trade     TradeTuning
 }
 
 // BeliefTuning: what a people thinks another's level is from its
@@ -222,6 +223,17 @@ type BuildTuning struct {
 	LevelWeight float64 // a level lifted is worth this much yield per tick, when nothing is wanting
 }
 
+// TradeTuning: what a people sends a partner.
+type TradeTuning struct {
+	CapBase        float64 // the share of the spare that can cross by slow ships
+	CapFast        float64 // with beamed sails or near-light travel
+	CapDoor        float64 // with the Door or wormholes
+	CapNomad       float64 // to or from a people that lives as fleets, whatever the drive
+	GrudgeBar      float64 // a grudge above this and nothing is sent
+	DifferentShare float64 // what a xenophobe sends a people it counts as different
+	FearBar        float64 // fear above this sends no metal to a stronger, hostile partner
+}
+
 // DirectionTuning: what bends the order the means are fed in.
 type DirectionTuning struct {
 	FearBar   float64 // fear above this, with a hostile neighbour in reach, puts arms first
@@ -274,6 +286,7 @@ func Default() *Tuning {
 		Direction: DirectionTuning{FearBar: 0.6, HungerBar: 0.6, GreedBar: 0.6},
 		Turn:      TurnTuning{Faithful: 0.0005, Practical: 0.01, Faithless: 0.05, Hostile: 2, Vengeful: 3, Opening: 1, GreedBase: 0.5},
 		Roam:      RoamTuning{HopMin: 3, HopMax: 20},
+		Trade:     TradeTuning{CapBase: 0.25, CapFast: 0.5, CapDoor: 1, CapNomad: 0.5, GrudgeBar: 0.3, DifferentShare: 0.5, FearBar: 0.6},
 	}
 }
 

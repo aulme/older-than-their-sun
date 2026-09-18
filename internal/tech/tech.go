@@ -201,6 +201,13 @@ var Nodes = []*Node{
 		Text: "The %s make the leap. Their thought takes root in any mind that hears it. Whoever meets them joins them."},
 	{Key: "foresight", Name: "the Sight", Domain: Exotic, Era: 4, Miracle: true, Cost: 600, Prereqs: []string{"causal_physics", "long_thought"}, Filter: "sight", Milestone: true,
 		Text: "The %s make the leap. They see what is coming, and they are never surprised again."},
+	// the Ember and the Manna: miracles that make an object, with a form
+	// and a price; the object is the thing, and its consequences are its
+	// filter. See history/objects.go.
+	{Key: "ember", Name: "the Ember", Domain: Energy, Era: 4, Miracle: true, Cost: 600, Prereqs: []string{"antimatter", "exotic_matter"}, Milestone: true,
+		Text: "The %s make the leap. They kindle something that should not burn, and it burns for them."},
+	{Key: "manna", Name: "the Manna", Domain: Biology, Era: 4, Miracle: true, Cost: 600, Prereqs: []string{"synthetic_biology", "germline"}, Milestone: true,
+		Text: "The %s make the leap. They grow something that feeds them, and it does not stop."},
 }
 
 // EraCosts is the default research cost of a node by era.

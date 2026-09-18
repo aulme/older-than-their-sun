@@ -107,6 +107,8 @@ var Descs = map[string]string{
 	"unmaking":           "Matter ended at any distance that can be seen. Nothing can be defended against it.",
 	"chorus":             "A thought that takes root in any mind that hears it. Whoever meets them joins them.",
 	"foresight":          "Knowledge of what is coming. Half of every filter is seen and stepped around.",
+	"ember":              "A fire that should not burn, made once and carried. A swarm's worth of energy, and a form with a price.",
+	"manna":              "A thing that feeds them and does not stop, grown once and given as cuttings. A swarm's worth of food, and it may think.",
 }
 
 func init() {

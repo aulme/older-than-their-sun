@@ -62,9 +62,10 @@ type Trait struct {
 	Reach         float64 // multiplier, 0 means 1
 	Rate          float64 // research rate multiplier, 0 means 1
 	Domains       M
-	Miracle       string   // tech node key of the miracle this species is born to
-	Quiet         bool     // the common case of its group; the legends do not say it
-	Flavour       *Flavour // vocabulary the trait brings, over the substrate's; nil for none
+	Miracle       string                // tech node key of the miracle this species is born to
+	Quiet         bool                  // the common case of its group; the legends do not say it
+	Flavour       *Flavour              // vocabulary the trait brings, over the substrate's; nil for none
+	Fit           func(s *Species) bool // rolled only for a species this is true of; nil for any
 }
 
 // Traits is the pool. Groups org, stance, honour and drive are common and
@@ -109,6 +110,8 @@ var Traits = []*Trait{
 	{Key: "eusocial", Name: "eusocial", Group: "bio", Weight: 10, Soc: 0.5, Mil: 0.5},
 	{Key: "symbiosis", Name: "bonded to their machines", Group: "bio", Weight: 8, Mil: 0.5, Domains: M{"computation": 1.5}},
 	{Key: "memory", Name: "of unbroken memory across generations", Group: "bio", Weight: 8, Soc: 1, Domains: M{"society": 1.2}},
+	{Key: "kinfed", Name: "who eat their own; a caste is bred for the table", Group: "bio", Weight: 4, Soc: -0.5,
+		Fit: func(s *Species) bool { return s.Sub == Biological && (s.Has("caste") || s.Is(Hive)) }},
 	// senses: what they have beyond, or instead of, the usual five
 	{Key: "eyeless", Name: "eyeless, who see by sound", Group: "sense", Weight: 6, Domains: M{"exotic": 0.8}},
 	{Key: "deaf", Name: "without hearing", Group: "sense", Weight: 4},
@@ -132,6 +135,7 @@ var Traits = []*Trait{
 	{Key: "born_sight", Name: "touched by foresight", Group: "power", Weight: 20, Miracle: "foresight"},
 	{Key: "born_chorus", Name: "whose thought takes root in any mind", Group: "power", Weight: 15, Miracle: "chorus"},
 	{Key: "born_door", Name: "who walk between the stars", Group: "power", Weight: 15, Miracle: "ftl"},
+	{Key: "born_manna", Name: "who keep something that feeds them", Group: "power", Weight: 10, Miracle: "manna"},
 	// world-given
 	{Key: "cooperative", Name: "cooperative by necessity", Group: "world", Soc: 0.5},
 	{Key: "hardy", Name: "hardy", Group: "world", Sur: 0.5},
@@ -143,6 +147,7 @@ var Traits = []*Trait{
 	// made
 	{Key: "uplifted", Name: "uplifted", Group: "made", Soc: -0.5},
 	{Key: "bred", Name: "bred to serve", Group: "made", Soc: -1, Sur: 1},
+	{Key: "table", Name: "grown for the table", Group: "made", Soc: -0.5, Sur: 0.5},
 }
 
 var byKey = map[string]*Trait{}

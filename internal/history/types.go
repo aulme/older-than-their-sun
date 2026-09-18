@@ -174,6 +174,19 @@ type Civ struct {
 	highUpkeep   float64
 	Loot         flow.Income // taken once, added to the next tick's income: what a horde strips from a world
 	Reserved     flow.Income // what launches and builds took of the spare this tick
+	WorkingNeed  flow.Income // the needs of the uses fed this tick
+
+	// trade: see trade.go
+	From          map[int]flow.Income // what each partner sent last tick; counted in this tick's income
+	Received      flow.Income         // the sum of From as it was counted
+	OwnWant       flow.Income         // the want less what partners send: what trade is asked for
+	Dependent     map[int]bool        // partners whose sending keeps the fed uses fed
+	Refused       map[int]Year        // since when each partner has been refused while it wanted
+	Embargo       map[int]bool        // partners this people has closed its ports to
+	FellDependent bool                // was dependent on a partner at the moment it fell
+	partners      map[int]bool        // partners ever traded with, for the batch
+	fed           map[int]bool        // partners ever sent anything, for the batch
+	Remade        map[string]Year     // when the object of a miracle was last lost; another comes a million years on
 
 	// rarities: see rarity.go
 	Rare      map[string]bool // the rarities had this tick, by key
@@ -218,6 +231,9 @@ type Tally struct {
 	Ticks, Lean          int
 	TicksAt, LeanAt      [5]int
 	AloneAt, LeanAloneAt [5]int
+	// trade: what was sent and what came, over the life; partners ever, and partners ever sent to
+	Sent, Got     flow.Income
+	Partners, Fed int
 }
 
 // Living is true for active and remnant civilisations.
@@ -440,6 +456,7 @@ type World struct {
 	Species   []*species.Species // every blood that has arisen or been made, by ID
 	Sources   []*Source          // everything with a yield, by ID; see sources.go
 	sourcesAt [][]int            // the sources that yield at each star, ranged ones included
+	mobile    []int              // the sources that move with a holder, by ID; see rarity.go
 	Horrors   []*Horror
 	Ages      []*AgeRecord
 	Cycle     *Cycle
@@ -467,4 +484,5 @@ type scratch struct {
 	wreck       *Wreckage   // set while a filter's outcome runs
 	finding     bool        // set while the Find teaches a civilisation what it mastered
 	fleet       *Expedition // the fleet taking a world, while it does; what it carries off rides with it
+	loose       []int       // objects that got loose in a taking this tick, by source; see objects.go
 }

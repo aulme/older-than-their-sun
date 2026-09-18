@@ -24,6 +24,8 @@ var miracleNames = map[string]string{
 	"unmaking":           "the Unmaking, the end of matter at any distance",
 	"chorus":             "the Chorus, thought that takes root in any mind",
 	"foresight":          "the Sight, knowledge of what is coming",
+	"ember":              "the Ember, a fire that should not burn",
+	"manna":              "the Manna, a thing that feeds them and does not stop",
 }
 
 // gain records a miracle gained by leap, find or wielding, and starts the
@@ -116,6 +118,19 @@ func (c *Civ) leapWeight(key string) float64 {
 	case "foresight":
 		if c.Has("contemplative") {
 			m *= 2.5
+		}
+	case "ember":
+		m *= objectLeap // an object is a rarer shape for a people than a power
+		if c.Has("pragmatic") {
+			m *= 2
+		}
+	case "manna":
+		m *= objectLeap
+		if c.Has("caste") || c.Species.Is(species.Hive) {
+			m *= 2
+		}
+		if c.Species.Profile().OrganicAsEnergy {
+			m = 0 // nothing to feed
 		}
 	}
 	return m

@@ -149,6 +149,8 @@ func (w *World) declare(c, e *Civ, cause string) *War {
 	wr.Will = [2]float64{w.initialWill(c, e, true), w.initialWill(e, c, false)}
 	w.Wars = append(w.Wars, wr)
 	c.Wars[e.ID], e.Wars[c.ID] = true, true
+	w.cutTrade(c, e, "the war")
+	w.cutTrade(e, c, "the war")
 	delete(c.Trade, e.ID)
 	delete(e.Trade, c.ID)
 	delete(c.Watched, e.ID)
