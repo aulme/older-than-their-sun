@@ -167,16 +167,9 @@ func (w *World) uses(c *Civ) []flow.Use {
 	var out []flow.Use
 	for _, k := range knownOf(c) {
 		n := tech.Get(k)
-		need := n.Upkeep()
+		need := w.needOf(c, n)
 		if need == (flow.Income{}) {
 			continue
-		}
-		if m, ok := p.Upkeep[n.Domain]; ok {
-			need = need.Scale(m)
-		}
-		if p.OrganicAsEnergy {
-			need[flow.E] += need[flow.O]
-			need[flow.O] = 0
 		}
 		cat := n.Cat()
 		if cat == flow.Fields && !p.Can(species.Fields) {
@@ -194,6 +187,20 @@ func (w *World) uses(c *Civ) []flow.Use {
 	out = append(out, w.works(c)...)
 	out = append(out, w.reservations(c)...)
 	return out
+}
+
+// needOf is what a node costs a people each tick: the table's upkeep bent
+// by the profile, so a machine pays organic matter in energy and an
+// evolver's flesh is cheap and its metal dear.
+func (w *World) needOf(c *Civ, n *tech.Node) flow.Income {
+	need := n.Upkeep()
+	if need == (flow.Income{}) {
+		return need
+	}
+	if m, ok := c.Species.Profile().Upkeep[n.Domain]; ok {
+		need = need.Scale(m)
+	}
+	return w.bend(c, need)
 }
 
 // order asks the mind for the direction.

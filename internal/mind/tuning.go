@@ -200,6 +200,7 @@ type FindTuning struct {
 // ResearchTuning: the pick of the next pursuit.
 type ResearchTuning struct {
 	DepthBonus float64 // per node already known in the domain
+	Unfed      float64 // multiplier on a node whose upkeep the spare does not cover
 }
 
 // ExpandTuning: colony ships.
@@ -267,7 +268,7 @@ func Default() *Tuning {
 		Survey:    SurveyTuning{HungerWeight: 2, GreedWeight: 1, Necessity: 2, KeepHome: 1, MinMil: 2, MinReach: 1, NearMin: 5, Rate: 0.3, HopMin: 3, HopMax: 20, MaxTour: 6, MaxTourYears: 40_000},
 		Sight:     SightTuning{FearBar: 0.6, GrudgeBar: 0.5, Reads: 2, RangeMul: 2, RangeMin: 10},
 		Find:      FindTuning{Master: 1, Wield: 1.5, Seal: 1, Curious: 3, Reaching: 1, Cautious: 3, Wary: 1.5, Practical: 2, ThreatSeal: 2, Plain: 2, Own: 3},
-		Research:  ResearchTuning{DepthBonus: 0.25},
+		Research:  ResearchTuning{DepthBonus: 0.25, Unfed: 0.25},
 		Expand:    ExpandTuning{Rate: 0.04, MaxRate: 0.3, ParasiteReach: 0.3, Hop: 20, Blind: 0.2, NeedShipsBelow: 40, NeedShipsEra: 2, ShipFocus: 4},
 		Build:     BuildTuning{Rate: 0.004, Cover: 2, LevelWeight: 2},
 		Direction: DirectionTuning{FearBar: 0.6, HungerBar: 0.6, GreedBar: 0.6},

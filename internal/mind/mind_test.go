@@ -351,6 +351,16 @@ func TestFindAndChoose(t *testing.T) {
 	if i, _ := Choose(nil, r, tn); i != -1 {
 		t.Error("nothing open")
 	}
+	// a node the spare cannot feed is pursued a quarter as often, not never
+	open = []Pursuit{{Weight: 1, Domain: 1, Focus: 1, Aptitude: 1, Unfed: true}, {Weight: 1, Domain: 1, Focus: 1, Aptitude: 1}}
+	counts = [2]int{}
+	for range 10_000 {
+		i, _ := Choose(open, r, tn)
+		counts[i]++
+	}
+	if counts[0] < 1500 || counts[0] > 2500 {
+		t.Errorf("unfed against fed: %v, want about one in five", counts)
+	}
 }
 
 func TestExpandAndRoam(t *testing.T) {

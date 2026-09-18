@@ -14,10 +14,13 @@ type Pursuit struct {
 	Aptitude float64 // the cost multiplier of the aptitude; divides
 	Miracle  bool
 	Leap     float64 // the leap weight, for a miracle
+	Unfed    bool    // the node's upkeep is more than the spare covers: it would go dark the tick it was learned
 }
 
 // Choose weighs the open nodes and draws one; -1 when nothing is open,
-// and then nothing is drawn. The weights are returned for the trace.
+// and then nothing is drawn. A node the spare could not feed is pursued
+// less, not never: a people short of metal still reaches for the mines.
+// The weights are returned for the trace.
 func Choose(open []Pursuit, r *rand.Rand, t *Tuning) (int, []float64) {
 	weights := make([]float64, len(open))
 	total := 0.0
@@ -25,6 +28,9 @@ func Choose(open []Pursuit, r *rand.Rand, t *Tuning) (int, []float64) {
 		wt := n.Weight * n.Domain * n.Focus * (1 + t.Research.DepthBonus*float64(n.Depth)) / n.Aptitude
 		if n.Miracle {
 			wt = n.Weight * n.Leap
+		}
+		if n.Unfed {
+			wt *= t.Research.Unfed
 		}
 		weights[i] = wt
 		total += wt

@@ -148,6 +148,9 @@ func (w *World) choose(c *Civ) string {
 		}
 		_, mult := w.aptitude(c, n)
 		p := mind.Pursuit{Weight: n.Weight, Domain: c.Species.DomainMul(n.Domain), Focus: f, Depth: depth[n.Domain], Aptitude: mult, Miracle: n.Miracle}
+		if need := w.needOf(c, n); need != (flow.Income{}) && !w.afford(c, need) {
+			p.Unfed = true
+		}
 		if n.Miracle {
 			p.Leap = c.leapWeight(n.Key)
 		}
