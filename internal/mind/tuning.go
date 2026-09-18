@@ -41,6 +41,7 @@ type Tuning struct {
 	Roam      RoamTuning
 	Trade     TradeTuning
 	Want      WantTuning
+	Garrison  GarrisonTuning
 }
 
 // BeliefTuning: what a people thinks another's level is from its
@@ -54,13 +55,12 @@ type BeliefTuning struct {
 	MaxSpread          float64
 	UnknownShips       float64 // never seen: the ships guessed, plus this per era
 	UnknownShipsPerEra float64
+	UnknownGuns        float64 // over a world not looked at: the silos nearly every world has
+	UnknownGunsEra     int     // from this era on
 }
 
 // AppraiseTuning: the estimate of a fight.
 type AppraiseTuning struct {
-	Defence     float64 // the defender fights with the world's industry behind it
-	HomeDefence float64 // and the home with everything it has
-	Grid        float64 // a defence grid seen
 	Weakened    float64 // the enemy plagued or in a dark age
 	OtherWar    float64 // per other war either side is in
 	DarkAge     float64 // years after a dark age a people still counts as weakened
@@ -101,6 +101,7 @@ type CampaignTuning struct {
 	FearCap      float64 // how much of the ships fear keeps home, at full fear
 	MaxLag       float64 // years of crossing beyond which nobody sends a fleet
 	ConquerorLag float64 // but a conqueror will
+	MusterMax    float64 // years a muster waits for its ships before it stands down
 }
 
 // PactTuning: offers and answers.
@@ -224,12 +225,20 @@ type BuildTuning struct {
 	Cover       float64 // the spare must cover a structure's upkeep this many times over before it is built
 	LevelWeight float64 // a level lifted is worth this much yield per tick, when nothing is wanting
 	DockWeight  float64 // a dock is worth this much yield per tick per ship wanting
+	GunWeight   float64 // a gun standing over a world is worth this much yield per tick
 }
 
 // WantTuning: how many ships a people builds toward.
 type WantTuning struct {
 	Floor      int     // ships kept whatever else is wanted
 	FearWeight float64 // more by fear, rounded
+}
+
+// GarrisonTuning: where a people keeps its ships.
+type GarrisonTuning struct {
+	HomeBase    float64 // the home wants the strongest threat's ships times this plus fear
+	HomeMin     int     // and at least this many
+	ColonyShare float64 // a world in an enemy's reach wants this share of what the home would
 }
 
 // TradeTuning: what a people sends a partner.
@@ -272,12 +281,12 @@ type RoamTuning struct {
 // Default is today's numbers.
 func Default() *Tuning {
 	return &Tuning{
-		Belief:   BeliefTuning{UnknownBase: 1, UnknownPerEra: 1.2, UnknownSpread: 3, Spread: 0.3, SpreadPerKyr: 0.1, MaxSpread: 3, UnknownShips: 1, UnknownShipsPerEra: 1},
-		Appraise: AppraiseTuning{Defence: 1, HomeDefence: 2.5, Grid: 0.5, Weakened: 1, OtherWar: 0.3, AllyShare: 0.5, Scale: 2, DarkAge: 50_000, PrizeWeight: 0.02, PrizeMax: 0.15},
+		Belief:   BeliefTuning{UnknownBase: 1, UnknownPerEra: 1.2, UnknownSpread: 3, Spread: 0.3, SpreadPerKyr: 0.1, MaxSpread: 3, UnknownShips: 1, UnknownShipsPerEra: 1, UnknownGuns: 2, UnknownGunsEra: 2},
+		Appraise: AppraiseTuning{Weakened: 1, OtherWar: 0.3, AllyShare: 0.5, Scale: 2, DarkAge: 50_000, PrizeWeight: 0.02, PrizeMax: 0.15},
 		Bar:      BarTuning{Hate: 0.35, Opportunist: 0.75, Conqueror: 0.4, Vengeful: 0.3, GrudgeDiscount: 0.1},
 		Council:  CouncilTuning{Cadence: 0.3, Compulsion: 0.1, Compelled: 0.25},
 		Scout:    ScoutTuning{KeepHome: 1, FearBar: 0.8, FearShips: 3, SightNoise: 0.1},
-		Campaign: CampaignTuning{Floor: 0.1, MinFloor: 1, FearCap: 0.4, MaxLag: 20_000, ConquerorLag: 40_000},
+		Campaign: CampaignTuning{Floor: 0.1, MinFloor: 1, FearCap: 0.4, MaxLag: 20_000, ConquerorLag: 40_000, MusterMax: 30_000},
 		Pact: PactTuning{
 			Rate: 0.08, Confederate: 0.5, Defensive: 0.15, Aggressor: 0.2, AskAgain: 30_000,
 			ThreatSlack: 0.5, ThreatMargin: 10, Accept: 0.45,
@@ -293,12 +302,13 @@ func Default() *Tuning {
 		Find:      FindTuning{Master: 1, Wield: 1.5, Seal: 1, Curious: 3, Reaching: 1, Cautious: 3, Wary: 1.5, Practical: 2, ThreatSeal: 2, Plain: 2, Own: 3},
 		Research:  ResearchTuning{DepthBonus: 0.25, Unfed: 0.25},
 		Expand:    ExpandTuning{Rate: 0.04, MaxRate: 0.3, ParasiteReach: 0.3, Hop: 20, Blind: 0.2, NeedShipsBelow: 40, NeedShipsEra: 2, ShipFocus: 4},
-		Build:     BuildTuning{Rate: 0.004, Cover: 2, LevelWeight: 2, DockWeight: 1},
+		Build:     BuildTuning{Rate: 0.004, Cover: 2, LevelWeight: 2, DockWeight: 1, GunWeight: 1},
 		Direction: DirectionTuning{FearBar: 0.6, HungerBar: 0.6, GreedBar: 0.6},
 		Turn:      TurnTuning{Faithful: 0.0005, Practical: 0.01, Faithless: 0.05, Hostile: 2, Vengeful: 3, Opening: 1, GreedBase: 0.5},
 		Roam:      RoamTuning{HopMin: 3, HopMax: 20},
 		Trade:     TradeTuning{CapBase: 0.25, CapFast: 0.5, CapDoor: 1, CapNomad: 0.5, GrudgeBar: 0.3, DifferentShare: 0.5, FearBar: 0.6, SpawnOrganic: 2, GraspWant: 2},
 		Want:      WantTuning{Floor: 1, FearWeight: 1},
+		Garrison:  GarrisonTuning{HomeBase: 0.5, HomeMin: 1, ColonyShare: 0.3},
 	}
 }
 

@@ -164,6 +164,14 @@ type Civ struct {
 	PeakShips  int             // the most ships ever in being, for the batch
 	firstShip  bool            // the dock's first ship was written
 
+	// guns: see guns.go
+	Guns       map[int]int  // guns standing over each star, of the gun structures there
+	GridBroken map[int]bool // stars whose grid was shot to nothing, until it is whole again
+
+	// garrisons and the muster: see garrison.go
+	GarrisonWant int     // what the garrison policy asked for last tick, summed over the holdings
+	Muster       *Muster // the campaign gathering, if one is
+
 	// flows: see flow.go and sources.go
 	Income       flow.Income     // this tick's yield by kind
 	Upkeep       flow.Income     // the needs of every use, fed or not
@@ -245,6 +253,9 @@ type Tally struct {
 	Built, ShipsLost, Rotted    int
 	Building                    float64
 	StarTicks, AtWant, LaidTick int
+	// battles: fought as the attacker, won on the roll, worlds taken with nothing in the sky; garrison moves and musters ordered
+	Battles, Won, EmptySky int
+	Garrisons, Musters     int
 }
 
 // Living is true for active and remnant civilisations.
@@ -478,6 +489,7 @@ type World struct {
 	factsAt   map[int][]int // facts by star
 	// war and diplomacy
 	Wars        []*War
+	Battles     []*Battle // every battle at a world, for the batch; see battle.go
 	Expeditions []*Expedition
 	Pacts       []*Pact
 	Messages    []*Message
@@ -492,8 +504,10 @@ type scratch struct {
 	beacon      *Horror
 	incursionAt int
 	incursionBy *Horror
-	wreck       *Wreckage   // set while a filter's outcome runs
-	finding     bool        // set while the Find teaches a civilisation what it mastered
-	fleet       *Expedition // the fleet taking a world, while it does; what it carries off rides with it
-	loose       []int       // objects that got loose in a taking this tick, by source; see objects.go
+	wreck       *Wreckage    // set while a filter's outcome runs
+	finding     bool         // set while the Find teaches a civilisation what it mastered
+	fleet       *Expedition  // the fleet taking a world, while it does; what it carries off rides with it
+	emptySky    bool         // the world being taken had nothing in its sky
+	foughtAt    map[int]Year // the last tick a battle was fought at each star: one a tick
+	loose       []int        // objects that got loose in a taking this tick, by source; see objects.go
 }

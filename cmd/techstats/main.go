@@ -124,11 +124,12 @@ func main() {
 	}
 
 	type run struct {
-		seed  uint64
-		recs  []Rec
-		wars  []WarRec
-		stats string
-		ages  float64
+		seed    uint64
+		recs    []Rec
+		wars    []WarRec
+		battles []BattleRec
+		stats   string
+		ages    float64
 	}
 	runs := make([]run, *seeds)
 	var wg sync.WaitGroup
@@ -143,18 +144,20 @@ func main() {
 			w := history.Generate(seed, cfg)
 			var sb strings.Builder
 			legends.Stats(&sb, w)
-			runs[i] = run{seed: seed, recs: flatten(w), wars: flattenWars(w), stats: sb.String(), ages: float64(w.Present-w.Cfg.Dawn) / 1e6}
+			runs[i] = run{seed: seed, recs: flatten(w), wars: flattenWars(w), battles: flattenBattles(w), stats: sb.String(), ages: float64(w.Present-w.Cfg.Dawn) / 1e6}
 		}(i)
 	}
 	wg.Wait()
 
 	var recs []Rec
 	var wars []WarRec
+	var battles []BattleRec
 	var stats []string
 	ageSum := 0.0
 	for _, r := range runs {
 		recs = append(recs, r.recs...)
 		wars = append(wars, r.wars...)
+		battles = append(battles, r.battles...)
 		stats = append(stats, r.stats)
 		ageSum += r.ages
 	}
@@ -170,6 +173,7 @@ func main() {
 	loreReport(f, recs)
 	meansReport(f, recs)
 	shipsReport(f, recs)
+	battlesReport(f, recs, battles)
 	fmt.Printf("%d civilisations over %d worlds; wrote %s\n", len(recs), *seeds, *out)
 }
 

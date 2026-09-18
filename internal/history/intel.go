@@ -13,9 +13,9 @@ import (
 // Intel is one people's latest belief about another.
 type Intel struct {
 	Mil    float64 // the level seen, with the noise of the seeing
-	Ships  int     // the ships seen manned: the whole standing force, until garrisons put them at worlds
-	Guns   int     // the guns seen at Star; none until guns land
-	Grid   bool    // a defence grid was seen
+	Ships  int     // the guard seen in the sky at Star
+	Guns   int     // the guns seen over Star
+	Total  int     // the ships seen manned everywhere, as far as the look could tell
 	Relief float64 // ships of others seen standing with them at Star
 	Star   int     // where the look was taken
 	Year   Year
@@ -23,14 +23,18 @@ type Intel struct {
 
 // look takes an observation without storing it.
 func (w *World) look(c, e *Civ, star int, noise float64) *Intel {
-	return &Intel{
+	i := &Intel{
 		Mil:    e.Mil + w.R.NormFloat64()*noise,
-		Ships:  w.standing(e),
-		Grid:   e.Known["defence_grid"],
+		Guns:   w.gunsAt(e, star),
+		Total:  w.standing(e),
 		Relief: float64(w.reliefAt(e, star)),
 		Star:   star,
 		Year:   w.Now,
 	}
+	if g := w.guardAt(e, star); g != nil && !g.LaidUp {
+		i.Ships = g.Ships
+	}
+	return i
 }
 
 // observe stores a fresh observation of e by c.
@@ -64,9 +68,19 @@ func (w *World) believe(c, e *Civ) (mil, spread float64) {
 func (w *World) believeShips(c, e *Civ) float64 {
 	in := mind.BeliefInput{EnemyEra: e.Era}
 	if i := c.Intel[e.ID]; i != nil {
-		in.Seen, in.Ships = true, i.Ships
+		in.Seen, in.Ships = true, i.Total
 	}
 	return mind.BelieveShips(in, w.Cfg.Tuning)
+}
+
+// believeSky is what c thinks stands in e's sky at a star: what was seen
+// there, or elsewhere the whole believed force and the guns a world of
+// that era is expected to have.
+func (w *World) believeSky(c, e *Civ, star int) (ships, guns, relief float64) {
+	if i := c.Intel[e.ID]; i != nil && i.Star == star {
+		return float64(i.Ships), float64(i.Guns), i.Relief
+	}
+	return w.believeShips(c, e), mind.BelieveGuns(e.Era, w.Cfg.Tuning), 0
 }
 
 // intelStep is what a people learns each tick without trying: trade

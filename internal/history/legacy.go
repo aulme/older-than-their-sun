@@ -24,6 +24,7 @@ var remainDescs = map[string]string{
 	"arcology":   "a sealed city of the %s",
 	"shipyard":   "the yards of the %s",
 	"defences":   "the guns of the %s",
+	"silos":      "the silos of the %s",
 	"ansible":    "a relay of the %s",
 	"dyson":      "the swarm of the %s",
 	"mine":       "the mines of the %s",
@@ -123,10 +124,10 @@ func (w *World) leaveRuin(c *Civ, wk Work, kind string) {
 		l.Cond = max(l.Cond, wr.Leave)
 		return
 	}
-	if w.R.Float64() < wr.Destroy {
-		return
-	}
 	st := tech.Structures[wk.Key]
+	if st.Dug || w.R.Float64() < wr.Destroy {
+		return // what was dug is spent: holes in the ground are nobody's find
+	}
 	l := &Legacy{ID: len(w.Legacies), Age: -1, Maker: c.ID, Kind: Structure, Star: wk.Star, Node: wk.Node, Horror: -1, Finder: -1, Source: -1, Cond: wr.Leave, Hardy: st.Hardy}
 	l.Desc = sprintf(remainDescs[wk.Key], c.Name)
 	w.Legacies = append(w.Legacies, l)

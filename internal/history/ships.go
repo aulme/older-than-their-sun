@@ -1,8 +1,6 @@
 package history
 
 import (
-	"sort"
-
 	"worldgen/internal/battle"
 	"worldgen/internal/flow"
 	"worldgen/internal/mind"
@@ -86,10 +84,8 @@ func (w *World) ships(c *Civ) int {
 	return n
 }
 
-// standing is the ships a people fights with at home: manned, at a base,
-// as a guard or a horde's fleet. Until garrisons land every one of them
-// defends every world in reach and strikes across the front, as the whole
-// level did.
+// standing is the ships a people has manned at its bases, as guards or a
+// horde's fleets: what could sail, and what the appraisal counts.
 func (w *World) standing(c *Civ) int {
 	n := 0
 	for _, x := range w.fleetsOf(c) {
@@ -127,8 +123,8 @@ func (w *World) addGuard(c *Civ, star, n int) *Expedition {
 	if c.Aloft {
 		kind = Roam
 	}
-	g := &Expedition{ID: len(w.Expeditions), Owner: c.ID, Target: -1, Kind: kind, Star: star, From: star, Ships: n,
-		Launched: w.Now, Arrive: w.Now, Base: star, Fed: w.Now, Manned: w.Now, Seen: map[int]bool{}}
+	g := &Expedition{ID: len(w.Expeditions), Owner: c.ID, Target: -1, Kind: kind, Star: star, From: star, Ships: n, Back: -1,
+		Launched: w.Now, Out: w.Now, Arrive: w.Now, Base: star, Fed: w.Now, Manned: w.Now, Seen: map[int]bool{}}
 	w.Expeditions = append(w.Expeditions, g)
 	return g
 }
@@ -140,38 +136,6 @@ func (w *World) firstGuard(c *Civ) {
 		return
 	}
 	w.addGuard(c, c.Home, 1)
-}
-
-// takeShips takes n ships for a fleet setting out from a star: from the
-// guard there first, then from the people's other guards nearest to it.
-// Until the muster lands the ships gather at once. Returns how many were
-// taken; nothing is taken when the guards cannot give n.
-func (w *World) takeShips(c *Civ, from, n int) int {
-	var guards []*Expedition
-	have := 0
-	for _, x := range w.fleetsOf(c) {
-		if x.atBase() && !x.LaidUp && x.Ships > 0 {
-			guards = append(guards, x)
-			have += x.Ships
-		}
-	}
-	if have < n || n <= 0 {
-		return 0
-	}
-	sort.SliceStable(guards, func(i, j int) bool { return w.G.Dist(guards[i].Base, from) < w.G.Dist(guards[j].Base, from) })
-	left := n
-	for _, g := range guards {
-		k := min(g.Ships, left)
-		g.Ships -= k
-		left -= k
-		if g.Ships == 0 && g.Kind == Guard {
-			g.Over = true // an empty guard is nothing; a horde's fleet is its base and stays
-		}
-		if left == 0 {
-			break
-		}
-	}
-	return n
 }
 
 // mergeInto lands a fleet's ships into the guard at a star and ends it.
@@ -251,10 +215,10 @@ func (w *World) dockUses(c *Civ) []flow.Use {
 }
 
 // want is how many ships a people builds toward: the mind's sum of the
-// campaign it could not man, the explorers it keeps out, and a floor by
-// fear. Garrison wants land with garrisons.
+// garrisons' wants, the campaign it could not man, the explorers it keeps
+// out, and a floor by fear.
 func (w *World) want(c *Civ) mind.Want {
-	in := mind.WantInput{Fear: c.Dials.Fear, Explorers: c.SurveyWant}
+	in := mind.WantInput{Fear: c.Dials.Fear, Explorers: c.SurveyWant, Garrisons: c.GarrisonWant}
 	if len(c.Met) > 0 {
 		in.Explorers++ // a scout
 	}
@@ -371,66 +335,6 @@ func (w *World) keep(c *Civ) bool {
 		c.Tally.LaidTick++
 	}
 	return laid
-}
-
-// strikeForce is what a people strikes a world with across the front
-// until garrisons land: its standing ships at its quality.
-func (w *World) strikeForce(c *Civ) float64 {
-	return battle.Strength(w.standing(c), w.quality(c))
-}
-
-// reliefStrength is others' ships standing with a people at a world, each
-// at its owner's quality.
-func (w *World) reliefStrength(h *Civ, t int) float64 {
-	r := 0.0
-	for _, x := range w.Expeditions {
-		if x.Over || x.Kind != Relief || x.Base < 0 || x.Target != h.ID || x.Returning || x.LaidUp {
-			continue
-		}
-		if w.G.Dist(x.Base, t) <= 20 {
-			r += battle.Strength(x.Ships, w.quality(w.Civs[x.Owner]))
-		}
-	}
-	return r
-}
-
-// pay takes a battle's losses in ships: the attacker's from the fleet
-// that struck, or its guards nearest the world; the defender's from its
-// guards and relief nearest the world.
-func (w *World) pay(c *Civ, from *Expedition, t int, loss float64) int {
-	q := w.quality(c)
-	lost := 0
-	if from != nil {
-		k := battle.ToShips(w.R, loss, q, from.Ships)
-		from.Ships -= k
-		lost += k
-		loss -= float64(k) * q
-		if loss <= 0 || from.Ships > 0 {
-			c.Tally.ShipsLost += lost
-			return lost
-		}
-	}
-	var fl []*Expedition
-	for _, x := range w.fleetsOf(c) {
-		if x.atBase() && !x.LaidUp && x.Ships > 0 && x != from {
-			fl = append(fl, x)
-		}
-	}
-	sort.SliceStable(fl, func(i, j int) bool { return w.G.Dist(fl[i].Base, t) < w.G.Dist(fl[j].Base, t) })
-	for _, x := range fl {
-		k := battle.ToShips(w.R, loss, q, x.Ships)
-		x.Ships -= k
-		lost += k
-		loss -= float64(k) * q
-		if x.Ships == 0 && x.Kind == Guard {
-			x.Over = true
-		}
-		if loss <= 0 {
-			break
-		}
-	}
-	c.Tally.ShipsLost += lost
-	return lost
 }
 
 // shipsWord says a count of ships.

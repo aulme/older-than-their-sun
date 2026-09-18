@@ -137,21 +137,14 @@ func (w *World) cause(c, e *Civ) string {
 	return "a border"
 }
 
-// strikeFirst opens the war the council chose: at the front if there is
-// one, by fleet if the posture sends fleets and the sizing allows.
+// strikeFirst opens the war the council chose, with the fleet that opens
+// it: at the front if there is one, beyond it if the posture sends fleets
+// that far. No war is declared that no fleet follows.
 func (w *World) strikeFirst(c, e *Civ, ap Appraisal, far bool) bool {
-	cause := w.cause(c, e)
-	if len(ap.Front) > 0 {
-		w.declare(c, e, cause)
-		if far && !w.inReach(c, e.Home) {
-			w.maybeCampaign(c, e, cause)
-		}
-		return true
-	}
-	if !far {
+	if len(ap.Front) == 0 && !far {
 		return false
 	}
-	return w.maybeCampaign(c, e, cause)
+	return w.maybeCampaign(c, e, w.cause(c, e))
 }
 
 // maybeCampaign sizes and sends a fleet against e, declaring war first if
@@ -171,15 +164,12 @@ func (w *World) maybeCampaign(c, e *Civ, cause string) bool {
 	return false
 }
 
-// sizeCampaign sizes a fleet in ships and sends it. A need the ships
-// cannot meet is written down as a want, and the docks build toward it
-// for a while; the muster lands with garrisons.
+// sizeCampaign sizes a fleet in ships and sends it: from the guard that
+// has the ships, or by a muster at the holding nearest the target. A need
+// the ships cannot meet is written down as a want, and the docks build
+// toward it for a while.
 func (w *World) sizeCampaign(c, e *Civ, cause string, target int) bool {
-	ap := w.appraise(c, e, target)
-	k := mind.SizeCampaign(mind.CampaignInput{
-		Appraisal: ap.Appraisal, Strength: w.strength(c, e), Mil: c.Mil, Bonus: c.warBonus(), Ships: w.standing(c), Total: w.ships(c),
-		Risk: c.Dials.Risk, Fear: c.Dials.Fear, Conqueror: c.posture() == mind.Conqueror,
-	}, w.Cfg.Tuning)
+	k := w.sizeAt(c, e, target)
 	w.explain(c, "sizing a fleet against the "+e.Name+" at "+w.star(target), k)
 	if k.Short && k.LagOK {
 		c.WantShips, c.WantSince = k.Need, w.Now
@@ -187,11 +177,25 @@ func (w *World) sizeCampaign(c, e *Civ, cause string, target int) bool {
 	if !k.Send {
 		return false
 	}
+	if w.guardWith(c, target, k.Share) == nil {
+		w.muster(c, e, target, cause, k.Share)
+		return true
+	}
 	if w.warBetween(c.ID, e.ID) == nil {
 		w.declare(c, e, cause)
 	}
 	w.launch(c, Campaign, e, target, k.Share)
 	return true
+}
+
+// sizeAt is the mind's sizing of a fleet against a world, from what the
+// people has manned.
+func (w *World) sizeAt(c, e *Civ, target int) mind.Campaign {
+	ap := w.appraise(c, e, target)
+	return mind.SizeCampaign(mind.CampaignInput{
+		Appraisal: ap.Appraisal, Strength: w.strength(c, e), Mil: c.Mil, Bonus: c.warBonus(), Ships: w.standing(c), Total: w.ships(c),
+		Risk: c.Dials.Risk, Fear: c.Dials.Fear, Conqueror: c.posture() == mind.Conqueror,
+	}, w.Cfg.Tuning)
 }
 
 // nearestEnemy is e's world nearest to any of c's, and the distance.

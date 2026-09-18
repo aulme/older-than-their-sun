@@ -68,3 +68,35 @@ func ToShips(r *rand.Rand, loss, q float64, ships int) int {
 	}
 	return min(n, ships)
 }
+
+// Fight is one battle between an attacker and what holds a world: the
+// roll and the losses in one call, with the defender's losses falling on
+// its guns first and the rest on its ships. Guns and ships are the
+// defender's at one quality; a defence of several qualities is summed by
+// the caller and split by it. Returns whether the attacker won the roll
+// and what each side lost in strength.
+func Fight(r *rand.Rand, atk, def float64) (won bool, la, ld float64) {
+	won = Roll(r, atk, def)
+	la, ld = Losses(r, atk, def)
+	return
+}
+
+// Hold runs a siege to the end on the rule as the world runs it, one
+// battle a thousand years: an attacking fleet against guns alone, the
+// guns losing first and the attacker fighting until it is wiped or no gun
+// stands. With repair a gun is remade each thousand years the world is
+// still held. Returns whether the guns held. It is what the proposal's
+// table was drawn from.
+func Hold(r *rand.Rand, ships int, q float64, guns int, gq float64, repair bool) bool {
+	full := guns
+	for ships > 0 && guns > 0 {
+		atk, def := Strength(ships, q), Strength(guns, gq)
+		_, la, ld := Fight(r, atk, def)
+		ships -= ToShips(r, la, q, ships)
+		guns -= ToShips(r, ld, gq, guns)
+		if repair && guns > 0 && guns < full {
+			guns++
+		}
+	}
+	return guns > 0
+}

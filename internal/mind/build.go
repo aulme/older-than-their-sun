@@ -18,6 +18,7 @@ type Site struct {
 	Upkeep flow.Income // what it would cost
 	Levels float64     // the levels it lifts, all three summed
 	Dock   bool        // it is one more dock: worth what ships are wanting
+	Guns   int         // the guns it stands in the sky there
 }
 
 // BuildInput is what the choice is made from.
@@ -67,6 +68,7 @@ func Build(in BuildInput, t *Tuning) BuildChoice {
 		if s.Dock {
 			worth += p.DockWeight * float64(max(in.ShipsWanting, 0))
 		}
+		worth += p.GunWeight * float64(s.Guns)
 		switch {
 		case out.Pick < 0:
 		case fixes > out.Fixes:

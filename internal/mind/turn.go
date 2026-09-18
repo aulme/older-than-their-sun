@@ -12,11 +12,10 @@ type TurnInput struct {
 	Betrayed  bool    // the host broke faith with the fleet's people before
 	HostMil   float64 // the host's level with its miracles
 	HostShips float64 // the host's ships at the world
+	Guns      float64 // the host's guns over it
 	Relief    float64 // others' ships standing at the world
 	Mil       float64 // the fleet's people's level with its miracles
 	Ships     int     // the fleet's ships
-	AtHome    bool    // the world is the host's home
-	Grid      bool
 	Greed     float64
 }
 
@@ -61,14 +60,7 @@ func Turn(in TurnInput, t *Tuning) Turning {
 	if rate == 0 {
 		return Turning{}
 	}
-	a := &t.Appraise
-	hold := in.HostMil + ShipLevels(in.HostShips+in.Relief) + a.Defence
-	if in.AtHome {
-		hold += a.HomeDefence
-	}
-	if in.Grid {
-		hold += a.Grid
-	}
+	hold := in.HostMil + ShipLevels(in.HostShips+in.Guns+in.Relief)
 	if in.Mil+ShipLevels(float64(in.Ships)) <= hold+p.Opening {
 		return Turning{Hold: hold}
 	}

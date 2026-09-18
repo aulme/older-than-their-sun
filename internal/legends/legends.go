@@ -66,6 +66,9 @@ func levels(c *history.Civ) string {
 func arms(w *history.World, c *history.Civ) string {
 	ships, fleets, laid := history.ShipsOf(w, c)
 	if ships == 0 {
+		if g, worlds := history.GunsOf(w, c); g > 0 {
+			return fmt.Sprintf("no ships, %d guns over %d worlds", g, worlds)
+		}
 		return "no ships"
 	}
 	s := fmt.Sprintf("%d ships in %d fleets", ships, fleets)
@@ -77,6 +80,13 @@ func arms(w *history.World, c *history.Civ) string {
 	}
 	if laid > 0 {
 		s += fmt.Sprintf(", %d laid up", laid)
+	}
+	switch g, worlds := history.GunsOf(w, c); {
+	case g == 0:
+	case worlds == 1:
+		s += fmt.Sprintf(", %d guns over one world", g)
+	default:
+		s += fmt.Sprintf(", %d guns over %d worlds", g, worlds)
 	}
 	switch d := history.Docks(w, c); d {
 	case 0:

@@ -53,16 +53,11 @@ func (w *World) appraise(c, e *Civ, target int) Appraisal {
 	}
 	mil, spread := w.believe(c, e)
 	in := mind.AppraiseInput{
-		Strength: w.strength(c, e), Believed: mil, Spread: spread, EnemyBonus: e.warBonus(), Ships: w.believeShips(c, e),
-		AtHome: a.Target == e.Home, Risk: c.Dials.Risk, Speed: c.Speed,
+		Strength: w.strength(c, e), Believed: mil, Spread: spread, EnemyBonus: e.warBonus(),
+		Risk: c.Dials.Risk, Speed: c.Speed,
 		Weakened: e.Plagued || float64(w.Now-e.LastDark) < w.Cfg.Tuning.Appraise.DarkAge,
 	}
-	if i := c.Intel[e.ID]; i != nil {
-		in.Grid = i.Grid
-		if i.Star == a.Target {
-			in.Relief = i.Relief
-		}
-	}
+	in.Ships, in.Guns, in.Relief = w.believeSky(c, e, a.Target)
 	for eid := range e.Wars {
 		if eid != c.ID {
 			in.OtherWars++

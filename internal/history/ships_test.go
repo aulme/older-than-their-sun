@@ -85,11 +85,11 @@ func TestLaidUp(t *testing.T) {
 	g.Ships = 1000
 	c.Mil = 4
 	shipyardTick(w, c, flow.Income{flow.O: -1000, flow.E: -1000, flow.M: -1000}) // nothing to keep them
-	if !g.LaidUp || w.standing(c) != 0 || w.strikeForce(c) != 0 {
+	if !g.LaidUp || w.standing(c) != 0 {
 		t.Fatalf("a fleet with nothing to keep it is manned: laid up %v, standing %d", g.LaidUp, w.standing(c))
 	}
-	if d := w.defence(c, c.Home); d > 2*battle.Quality(c.Mil+3.5)+1e-9 {
-		t.Errorf("a home with its fleet laid up is defended with %.2f, want the world alone", d)
+	if d := w.defence(c, c.Home); d != 0 {
+		t.Errorf("a home with its fleet laid up and no guns is defended with %.2f, want nothing", d)
 	}
 	if g.Ships < 860 || g.Ships > 940 {
 		t.Errorf("a laid-up fleet of a thousand has %d after a thousand years, want about 900", g.Ships)
@@ -102,7 +102,7 @@ func TestLaidUp(t *testing.T) {
 	if g.LaidUp || w.standing(c) != g.Ships {
 		t.Errorf("a fleet fed again stays laid up: %v, standing %d of %d", g.LaidUp, w.standing(c), g.Ships)
 	}
-	if got, want := w.strikeForce(c), battle.Strength(g.Ships, w.quality(c)); got != want || w.quality(c) <= 1 {
+	if got, want := w.defence(c, c.Home), battle.Strength(g.Ships, w.quality(c)); got != want || w.quality(c) <= 1 {
 		t.Errorf("manned again it fights at %.1f, want %.1f at the level today (quality %.2f)", got, want, w.quality(c))
 	}
 }
@@ -171,13 +171,18 @@ func TestFleetsMerge(t *testing.T) {
 	if !x.Over || w.guardAt(c, c.Home).Ships != 5 || len(w.fleetsOf(c)) != 1 {
 		t.Errorf("the scout home: over %v, guard %d, fleets %d", x.Over, w.guardAt(c, c.Home).Ships, len(w.fleetsOf(c)))
 	}
-	// a war of fleets: the strike pays losses from the guards
+	// a campaign fights with its own ships against the guard at the world
 	c.Mil, e.Mil = 6, 2
 	w.addGuard(e, e.Home, 2)
 	before := w.ships(e)
-	wr := w.declare(c, e, "a test")
-	w.strike(wr, c, e, e.Home)
-	if w.ships(e) > before {
-		t.Errorf("the defender gained ships in a strike")
+	w.declare(c, e, "a test")
+	x = w.launch(c, Campaign, e, e.Home, 3)
+	if x == nil || w.guardAt(c, c.Home).Ships != 2 {
+		t.Fatalf("the campaign took %v; guard %d", x != nil, w.guardAt(c, c.Home).Ships)
+	}
+	x.Base = e.Home
+	w.fight(x, e.Home)
+	if w.ships(e) > before || len(w.Battles) != 1 || w.Battles[0].Held != 2 {
+		t.Errorf("after the battle the defender has %d ships of %d; battles %d", w.ships(e), before, len(w.Battles))
 	}
 }

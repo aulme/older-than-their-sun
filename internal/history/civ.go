@@ -120,17 +120,20 @@ var civSteps = []civStep{
 	{"arrivals", (*World).arrivals},
 	{"flows", (*World).flows},
 	{"shipwright", (*World).shipwright},
+	{"guns", (*World).guns},
 	{"objects", (*World).objects},
 	{"research", (*World).research},
 	{"wander", (*World).wander},
 	{"expand", (*World).expand},
 	{"build", (*World).build},
+	{"dig", (*World).dig},
 	{"dyingSun", (*World).dyingSun},
 	{"find", (*World).find},
 	{"explore", (*World).explore},
 	{"lore", (*World).loreStep},
 	{"intel", (*World).intelStep},
 	{"council", (*World).council},
+	{"garrison", (*World).garrison},
 	{"wartime", (*World).wartime},
 	{"revolt", (*World).revolt},
 	{"filters", (*World).ambientFilters},
@@ -393,16 +396,16 @@ func (w *World) build(c *Civ) {
 
 // sites lists where a people could build what: every structure whose node
 // it knows and works, at every world it holds where one more may stand.
-// A yielder is one per star or per belt; the rest are two per people and
-// one per star.
+// A yielder is one per star or per belt; guns are one per star; the rest
+// are two per people and one per star. What is dug is not picked.
 func (w *World) sites(c *Civ) []mind.Site {
 	var out []mind.Site
 	for _, key := range tech.StructureKeys {
 		st := tech.Structures[key]
-		if !c.Known[st.Node] || !c.working(st.Node) {
+		if !c.Known[st.Node] || !c.working(st.Node) || st.Dug {
 			continue
 		}
-		if !st.Yields() && c.Structures[key] >= 2 {
+		if !st.Yields() && st.Guns == 0 && c.Structures[key] >= 2 {
 			continue
 		}
 		for _, s := range c.Systems {
@@ -424,7 +427,11 @@ func (w *World) sites(c *Civ) []mind.Site {
 			if key == "dyson" {
 				y = y.Less(w.workYield(c, Work{Key: "collectors", Star: s})) // what it adds over collectors already there
 			}
-			out = append(out, mind.Site{Key: key, Star: s, Yield: y, Upkeep: w.bend(c, st.Upkeep), Levels: st.Mil + st.Sur + st.Soc, Dock: key == "shipyard"})
+			site := mind.Site{Key: key, Star: s, Yield: y, Upkeep: w.bend(c, st.Upkeep), Levels: st.Mil + st.Sur + st.Soc, Dock: key == "shipyard"}
+			if st.Guns > 0 {
+				site.Guns = w.gunsOf(c, st)
+			}
+			out = append(out, site)
 		}
 	}
 	return out
@@ -447,6 +454,9 @@ func (w *World) raise(c *Civ, key, node string, s int) {
 	}
 	c.Works = append(c.Works, Work{Key: key, Node: node, Star: s, Legacy: -1})
 	c.Structures[key]++
+	if st.Guns > 0 {
+		w.addGuns(c, s, w.gunsOf(c, st)) // built whole
+	}
 	if c.Built == nil {
 		c.Built = map[string]int{}
 	}
@@ -484,6 +494,11 @@ func (w *World) loseSystem(c *Civ, s int, kind string, cause string) {
 	c.Systems = remove(c.Systems, s)
 	w.Owner[s] = -1
 	w.trace(s, kind, c.ID)
+	delete(c.Guns, s)
+	delete(c.GridBroken, s)
+	if c.Muster != nil && c.Muster.Star == s {
+		c.Muster = nil // the ships gathering there scatter to the guards they land in
+	}
 	// the guard in its sky: a laid-up one is lost with it, a manned one
 	// withdraws to the nearest holding left
 	if !c.Aloft {

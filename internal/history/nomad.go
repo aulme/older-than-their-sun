@@ -15,8 +15,9 @@ import (
 // the keep lays ships up, which for a horde is thinning. They split and
 // merge, carry what they know between the settled, and when they win a
 // world they strip it: its ships and its people join the horde. They
-// cannot be enslaved, only broken fleet by fleet, and they never
-// capitulate; their peace is leaving. A few come to rest.
+// cannot be enslaved, only broken fleet by fleet by a campaign sent to a
+// base, on the battle rule, and they never capitulate; their peace is
+// leaving. A few come to rest.
 
 // nomad says whether a people has the way and has not settled for good.
 func (c *Civ) nomad() bool { return c.Has("nomadic") && !c.Rested }
@@ -212,8 +213,8 @@ func (w *World) roam(c *Civ) {
 		}
 		if x.Ships > 4 && len(fl) < 8 && w.chance(0.1) {
 			if t := w.nextStar(c, x, hop); t >= 0 {
-				nx := &Expedition{ID: len(w.Expeditions), Owner: c.ID, Target: -1, Kind: Roam, Star: t, From: x.Base, Ships: x.Ships / 2,
-					Launched: w.Now, Base: -1, Fed: w.Now, Manned: w.Now, Seen: map[int]bool{}}
+				nx := &Expedition{ID: len(w.Expeditions), Owner: c.ID, Target: -1, Kind: Roam, Star: t, From: x.Base, Ships: x.Ships / 2, Back: -1,
+					Launched: w.Now, Out: w.Now, Base: -1, Fed: w.Now, Manned: w.Now, Seen: map[int]bool{}}
 				x.Ships -= nx.Ships
 				nx.Arrive = w.Now + Year(w.G.Dist(x.Base, t)*c.Speed)
 				w.Expeditions = append(w.Expeditions, nx)
@@ -245,10 +246,7 @@ func (w *World) nextStar(c *Civ, x *Expedition, hop float64) int {
 }
 
 func (w *World) moveFleet(c *Civ, x *Expedition, t int) {
-	x.From, x.Star = x.Base, t
-	x.Base = -1
-	x.Arrive = w.Now + Year(w.G.Dist(x.From, t)*c.Speed)
-	x.Launched = w.Now
+	w.sail(x, t)
 	if w.R.Float64() < 0.02 {
 		w.log("The fleets of the %s move on, to %s.", c.Name, w.star(t))
 	}
@@ -331,30 +329,6 @@ func (w *World) strip(wr *War, c, e *Civ, t int) {
 	}
 	if !e.Active() {
 		w.endWar(wr, "destroyed")
-	}
-}
-
-// hitFleet is a won strike at a nomad fleet: the losses were paid in the
-// battle, and a fleet with nothing left is broken.
-func (w *World) hitFleet(wr *War, c, e *Civ, t int) {
-	i := wr.side(c.ID)
-	for _, x := range w.fleets(e) {
-		if x.Base != t {
-			continue
-		}
-		wr.Will[i] += 0.2
-		wr.Will[1-i] -= 0.2
-		if x.Ships <= 0 {
-			x.Over = true
-			wr.Glassed[i]++
-			w.log("The %s break a fleet of the %s at %s.", c.Name, e.Name, w.star(t))
-			w.fleetLost(x, t)
-		}
-		if len(w.fleets(e)) == 0 {
-			w.endCiv(e, Extinct, sprintf("were broken fleet by fleet by the %s", c.Name))
-			w.endWar(wr, "extinction")
-		}
-		return
 	}
 }
 

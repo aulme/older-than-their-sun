@@ -115,7 +115,7 @@ var Nodes = []*Node{
 	{Key: "networks", Name: "Global Networks", Domain: Computation, Era: 2, Prereqs: []string{"computers", "mass_politics"}, Soc: 0.5},
 	{Key: "genetics", Name: "Genetics", Domain: Biology, Era: 2, Prereqs: []string{"medicine", "chemistry"}, Sur: 0.5},
 	{Key: "ecology", Name: "Ecology", Domain: Biology, Era: 2, Prereqs: []string{"medicine", "mass_industry"}, Sur: 0.5, Focus: M{Society: 1.2}},
-	{Key: "orbital_weapons", Name: "Orbital Weapons", Domain: Weapons, Era: 2, Prereqs: []string{"rocketry", "atomic"}, Mil: 0.5},
+	{Key: "orbital_weapons", Name: "Orbital Weapons", Domain: Weapons, Era: 2, Prereqs: []string{"rocketry", "atomic"}, Mil: 0.5, Structure: "silos"},
 	{Key: "fusion", Name: "Fusion Power", Domain: Energy, Era: 2, Prereqs: []string{"atomic", "computers"}, Mil: 0.3, Sur: 0.3, Milestone: true,
 		Text: "The %s light a small star of their own and keep it burning."},
 	{Key: "neuroscience", Name: "Neuroscience", Domain: Biology, Era: 2, Prereqs: []string{"medicine", "computers"}, Focus: M{Computation: 1.2}},
@@ -299,6 +299,10 @@ type Structure struct {
 	Cat           flow.Category // what it is fed under
 	Per           string        // what it is one of: "star" (one per star), "belt" (one per belt), "" (two per people, one per star)
 	Hardy         float64       // multiplier on decay once abandoned; less is hardier
+	Guns          int           // guns it stands in the sky of its star: an immobile fleet at the builder's quality; one per star, no cap per people
+	Modern        bool          // one gun more per weapons era the builder knows beyond the node's
+	Repair        bool          // its guns are remade a thousand years each while the world is held, a siege or no; else only between sieges
+	Dug           bool          // raised by dig, at every world a people holds, never by the pick
 	Text          string        // %s civ, %s star
 }
 
@@ -306,7 +310,8 @@ type Structure struct {
 var Structures = map[string]*Structure{
 	"arcology":   {Key: "arcology", Name: "arcology", Node: "closed_ecologies", Sur: 1, Upkeep: flow.Income{flow.E: 1}, Cat: flow.Fields, Hardy: 1.2, Text: "The %s seal a city at %s against everything outside it."},
 	"shipyard":   {Key: "shipyard", Name: "shipyard", Node: "orbital_habitats", Upkeep: flow.Income{flow.E: 1, flow.M: 1}, Cat: flow.Arms, Hardy: 1.6, Text: "Yards turn above %s, building ships for the %s."},
-	"defences":   {Key: "defences", Name: "defence grid", Node: "defence_grid", Upkeep: flow.Income{flow.E: 1, flow.M: 1}, Cat: flow.Arms, Hardy: 0.7, Text: "The %s ring %s with guns that watch the sky."},
+	"defences":   {Key: "defences", Name: "defence grid", Node: "defence_grid", Upkeep: flow.Income{flow.E: 1, flow.M: 1}, Cat: flow.Arms, Hardy: 0.7, Guns: 3, Modern: true, Repair: true, Text: "The %s ring %s with guns that watch the sky."},
+	"silos":      {Key: "silos", Name: "silos", Node: "orbital_weapons", Upkeep: flow.Income{flow.M: 0.5}, Cat: flow.Arms, Hardy: 1.8, Guns: 2, Dug: true, Text: "The %s dig silos at %s: nukes on rockets, aimed at the sky."},
 	"ansible":    {Key: "ansible", Name: "ansible net", Node: "ansible", Soc: 1.5, Upkeep: flow.Income{flow.E: 2}, Cat: flow.Mind, Hardy: 0.9, Text: "The %s link %s to home without delay."},
 	"dyson":      {Key: "dyson", Name: "Dyson swarm", Node: "dyson", Sur: 0.5, Upkeep: flow.Income{flow.M: 2}, Cat: flow.Works, Per: "star", Hardy: 0.3, Text: "The %s enclose %s in a swarm of collectors. The star dims from outside."},
 	"mine":       {Key: "mine", Name: "mines", Node: "orbital_habitats", Upkeep: flow.Income{flow.E: 1}, Cat: flow.Works, Per: "belt", Hardy: 1.4, Text: "The %s put mines in the belt at %s."},

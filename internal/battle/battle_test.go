@@ -104,3 +104,39 @@ func TestLosses(t *testing.T) {
 		t.Errorf("a loss of three at three levels up is %d ships, want at most 2", k)
 	}
 }
+
+// TestSilosHold: two silos at equal arts hold against one ship about nine
+// times in ten and against three about one in eight; against one ship
+// four levels better about one in three. A grid of three repaired a gun
+// a thousand years holds against four ships at equal arts nearly always.
+func TestSilosHold(t *testing.T) {
+	r := rand.New(rand.NewPCG(9, 9))
+	const n = 10000
+	holds := func(ships int, gap float64, guns int, repair bool) float64 {
+		h := 0
+		for range n {
+			if Hold(r, ships, Quality(gap), guns, 1, repair) {
+				h++
+			}
+		}
+		return float64(h) / n
+	}
+	cases := []struct {
+		ships    int
+		gap      float64
+		guns     int
+		repair   bool
+		lo, hi   float64
+		describe string
+	}{
+		{1, 0, 2, false, 0.84, 0.92, "two silos against one ship"},
+		{3, 0, 2, false, 0.09, 0.18, "two silos against three"},
+		{1, 4, 2, false, 0.28, 0.42, "two silos against one ship four levels better"},
+		{4, 0, 3, true, 0.88, 0.97, "a grid of three, repaired, against four"},
+	}
+	for _, c := range cases {
+		if p := holds(c.ships, c.gap, c.guns, c.repair); p < c.lo || p > c.hi {
+			t.Errorf("%s: holds %.3f, want %.2f to %.2f", c.describe, p, c.lo, c.hi)
+		}
+	}
+}

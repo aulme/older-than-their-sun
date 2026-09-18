@@ -3,18 +3,18 @@ package history
 import (
 	"sort"
 
-	"worldgen/internal/battle"
-
 	"worldgen/internal/species"
 	"worldgen/internal/tech"
 )
 
 // A war is an object with a front, a duration and a will per side. The
-// front is the overlap: each side's worlds within the other's reach. Only
-// those change hands, by strikes that take as long to arrive as the
-// crossing does. Will drains with time and moves with each world taken;
-// when it runs out there is peace, or capitulation, and a record that
-// makes the next war between the two different from the first.
+// front is the overlap: each side's worlds within the other's reach, where
+// a campaign can be sent and what the appraisal looks at. Worlds change
+// hands only by a fleet at them (battle.go). Will drains with time, twice
+// as fast while nobody's fleet is against the other, and moves with each
+// world taken; when it runs out there is peace, or capitulation, and a
+// record that makes the next war between the two different from the
+// first.
 
 // War is one war between two peoples.
 type War struct {
@@ -171,10 +171,8 @@ func (w *World) declare(c, e *Civ, cause string) *War {
 		// the infection line is already written
 	case wr.Nth > 1:
 		w.log("The %s go to war with the %s again, the %s time, over %s.", c.Name, e.Name, ordinal(wr.Nth), cause)
-	case len(w.front(c, e)) == 0 && len(w.front(e, c)) == 0:
-		w.log("The %s declare war on the %s, over %s. Nothing of either lies within the other's reach; this will be a war of fleets.", c.Name, e.Name, cause)
 	default:
-		w.log("The %s declare war on the %s, over %s. The first strikes are launched within a century.", c.Name, e.Name, cause)
+		w.log("The %s declare war on the %s, over %s.", c.Name, e.Name, cause)
 	}
 	w.callAllies(e, c, wr)
 	w.joinAllies(c, e, wr)
@@ -195,7 +193,8 @@ func ordinal(n int) string {
 	return sprintf("%dth", n)
 }
 
-// tickWars runs every war: will drains, strikes fly, peace is judged.
+// tickWars runs every war: will drains and peace is judged. The fighting
+// is the fleets' own tick.
 func (w *World) tickWars() {
 	for _, wr := range w.Wars {
 		if wr.Over {
@@ -208,7 +207,6 @@ func (w *World) tickWars() {
 		}
 		for i := 0; i < 2 && !wr.Over; i++ {
 			w.drain(wr, i)
-			w.strikes(wr, i)
 		}
 		if wr.Over {
 			continue
@@ -247,93 +245,15 @@ func (w *World) drain(wr *War, i int) {
 		d = 0 // a fleet is on its way; nobody tires of a war that has not begun
 	case w.hasFleetAgainst(c, e) || w.hasFleetAgainst(e, c):
 		d *= 0.5
-	case len(w.front(c, e)) == 0:
-		d *= 2 // nothing to strike at
+	default:
+		d *= 2 // nobody's fleet is against the other: a war nobody sends ships to ends quickly
 	}
 	wr.Will[i] -= d
 }
 
-// strikes is one side's strikes for the tick at the nearest front world.
-func (w *World) strikes(wr *War, i int) {
-	c, e := w.Civs[wr.Sides[i]], w.Civs[wr.Sides[1-i]]
-	fr := w.front(c, e)
-	if len(fr) == 0 {
-		return
-	}
-	_, d := w.nearest(c, fr[0])
-	travel := d * c.Speed
-	rate := 0.25 * min(1, 1000/(travel+500)) // a strike is a campaign, not a raid
-	for n := w.count(rate); n > 0 && !wr.Over && c.Active() && e.Active(); n-- {
-		fr = w.front(c, e)
-		if len(fr) == 0 {
-			return
-		}
-		wr.Contested[fr[0]]++
-		w.strike(wr, c, e, fr[0])
-	}
-}
-
-// strike resolves one strike at a world: the striker's standing ships at
-// its quality against the world's defence, on the battle roll, with both
-// sides paying the losses in ships. Both sides learn from the exchange.
-// Until garrisons land the whole standing force strikes and the whole
-// standing force defends, as the whole level did.
-func (w *World) strike(wr *War, c, e *Civ, t int) bool {
-	i := wr.side(c.ID)
-	atk := w.strikeForce(c)
-	if atk <= 0 {
-		return false // nothing to strike with
-	}
-	def := w.defence(e, t)
-	w.observe(c, e, t, 0.3)
-	w.observe(e, c, c.Home, 0.3)
-	won := battle.Roll(w.R, atk, def)
-	la, ld := battle.Losses(w.R, atk, def)
-	w.pay(c, nil, t, la)
-	w.pay(e, nil, t, ld)
-	if !won {
-		wr.Will[i] -= 0.1
-		wr.Will[1-i] += 0.1
-		return false
-	}
-	switch {
-	case e.Aloft:
-		w.hitFleet(wr, c, e, t)
-	case c.Aloft:
-		w.strip(wr, c, e, t)
-	default:
-		w.takeWorld(wr, c, e, t)
-	}
-	return true
-}
-
-// defence is what a world is held with, as a strength: the defender's
-// standing ships at its quality and the relief standing there, and the
-// world itself as one ship when nothing is in its sky; the world's
-// industry, the home and a grid are levels on top, as the appraisal has
-// them. Guns land at the next step.
-func (w *World) defence(e *Civ, t int) float64 {
-	a := &w.Cfg.Tuning.Appraise
-	ships := float64(w.standing(e))
-	if e.Aloft {
-		ships = 0
-		if g := w.guardAt(e, t); g != nil && !g.LaidUp {
-			ships = float64(g.Ships)
-		}
-	}
-	d := max(ships, 1)*w.quality(e) + w.reliefStrength(e, t)
-	terrain := a.Defence
-	if t == e.Home {
-		terrain += a.HomeDefence
-	}
-	if e.Known["defence_grid"] {
-		terrain += a.Grid
-	}
-	return d * battle.Quality(terrain)
-}
-
-// takeWorld is a won strike or battle at a world: conquered, glassed or
-// converted, by the winner's nature; the home falling is its own matter.
+// takeWorld is a world with nothing left in its sky to hold it: conquered,
+// glassed or converted, by the winner's nature; the home falling is its
+// own matter.
 func (w *World) takeWorld(wr *War, c, e *Civ, t int) {
 	if t == e.Home {
 		w.homeFalls(wr, c, e)
@@ -394,7 +314,10 @@ func (w *World) takeWorld(wr *War, c, e *Civ, t int) {
 		c.Systems = append(c.Systems, t)
 		wr.Taken[i]++
 		w.fact(FTaken, c, e, t)
-		if first || w.R.Float64() < 0.3 {
+		switch {
+		case w.emptySky && (first || w.R.Float64() < 0.5):
+			w.log("The %s take %s from the %s. There was nothing in its sky.", c.Name, w.star(t), e.Name)
+		case first || w.R.Float64() < 0.3:
 			w.log("The %s take %s from the %s.", c.Name, w.star(t), e.Name)
 		}
 	}
@@ -703,9 +626,10 @@ func (w *World) endWar(wr *War, result string) {
 	w.warEnded(wr)
 }
 
-// hasFleetAgainst says whether c has a campaign fleet at or bound for e.
+// hasFleetAgainst says whether c has a campaign fleet at or bound for e,
+// or one gathering.
 func (w *World) hasFleetAgainst(c, e *Civ) bool {
-	return w.fleetInFlight(c, e) || w.fleetAtBase(c, e)
+	return w.fleetInFlight(c, e) || w.fleetAtBase(c, e) || (c.Muster != nil && c.Muster.Target == e.ID)
 }
 
 func (w *World) fleetInFlight(c, e *Civ) bool {

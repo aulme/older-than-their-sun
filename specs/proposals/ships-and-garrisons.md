@@ -1,6 +1,6 @@
 # Ships and garrisons
 
-**Status:** Stage 1 implemented (plan step 8, 2026-09-18: levels and ships, docks and building, the keep and laying up, one fleet object with guards, the front bridged on the whole standing force; see "Ships and docks" in `DESIGN_NOTES.md`); stages 2 to 4 (guns, the battle at a world, garrisons and muster, nomads) are plan step 9
+**Status:** Implemented (plan steps 8 and 9, 2026-09-18: levels and ships, docks and building, the keep and laying up, one fleet object with guards; guns and silos, the battle at a world, withdrawal, garrisons and the muster, hordes on the shared rule; see "Ships and docks" and "Battles, guns and garrisons" in `DESIGN_NOTES.md`). Superseded by the canonical spec where they differ.
 **Last updated:** 2026-09-17
 
 Assumes [one-tick](one-tick.md) (a tick is a thousand years for the whole age, and a battle is one per tick). Reads [fleet-interception](fleet-interception.md) (the losses rule, wrecks and interception all assume the fleet is the unit of war; this makes it the only one) and [resources-and-trade](resources-and-trade.md) (ships, docks and guns as reservations of flow; the count of ships is bounded by nothing else). It changes both where noted. It stands on its own to argue.

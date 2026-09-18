@@ -41,6 +41,17 @@ func BelieveShips(in BeliefInput, t *Tuning) float64 {
 	return float64(in.Ships)
 }
 
+// BelieveGuns is how many guns a people thinks stand over a world it has
+// not looked at: the silos nearly every world of an atomic people has,
+// and none over a younger one.
+func BelieveGuns(era int, t *Tuning) float64 {
+	b := &t.Belief
+	if era >= b.UnknownGunsEra {
+		return b.UnknownGuns
+	}
+	return 0
+}
+
 // StrengthInput is what a people brings against one enemy.
 type StrengthInput struct {
 	Mil       float64   // its level at home
@@ -72,8 +83,7 @@ type AppraiseInput struct {
 	Spread     float64 // and how sure
 	EnemyBonus float64 // the enemy's miracles
 	Ships      float64 // the enemy's ships believed at the target
-	AtHome     bool    // the target is the enemy's home
-	Grid       bool    // a defence grid was seen
+	Guns       float64 // the guns believed to stand over it
 	Relief     float64 // others' ships seen standing at the target
 	Weakened   bool    // the enemy is plagued or in a dark age
 	OtherWars  int     // the enemy's other wars
@@ -107,20 +117,16 @@ func (a Appraisal) Why() string {
 	return s
 }
 
-// Appraise estimates a fight: the believed enemy level with its ships and
-// the terrain on top against the attacker's strength, as odds with a
-// spread, and what the attacker acts on by its risk. The prize is what the
-// target is worth less what the war would lose in trade, and moves the bar
-// either way.
+// Appraise estimates a fight: the believed enemy level with what is
+// believed to stand in the target's sky, its ships, its guns and the
+// relief with it, against the attacker's strength, as odds with a spread,
+// and what the attacker acts on by its risk. A world is held by nothing
+// but what is in its sky: the home has no flat defence and a grid is its
+// guns. The prize is what the target is worth less what the war would
+// lose in trade, and moves the bar either way.
 func Appraise(in AppraiseInput, t *Tuning) Appraisal {
 	p := &t.Appraise
-	d := in.Believed + in.EnemyBonus + p.Defence + ShipLevels(in.Ships+in.Relief)
-	if in.AtHome {
-		d += p.HomeDefence
-	}
-	if in.Grid {
-		d += p.Grid
-	}
+	d := in.Believed + in.EnemyBonus + ShipLevels(in.Ships+in.Guns+in.Relief)
 	if in.Weakened {
 		d -= p.Weakened
 	}

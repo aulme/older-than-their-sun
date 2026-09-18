@@ -10,9 +10,9 @@ import (
 
 func near(a, b float64) bool { return math.Abs(a-b) < 1e-9 }
 
-// TestAppraise: the closed form. Strength against believed level plus the
-// world's defence, as odds through the normal; the home and a grid add;
-// risk moves what is acted on between the tails.
+// TestAppraise: the closed form. Strength against the believed level plus
+// what stands in the sky as levels, as odds through the normal; risk moves
+// what is acted on between the tails.
 func TestAppraise(t *testing.T) {
 	tn := Default()
 	cases := []struct {
@@ -20,10 +20,10 @@ func TestAppraise(t *testing.T) {
 		in     AppraiseInput
 		margin float64
 	}{
-		{"even worlds", AppraiseInput{Strength: 4, Believed: 3, Spread: 0.3, Risk: 0.5}, 0},
-		{"the home", AppraiseInput{Strength: 4, Believed: 3, Spread: 0.3, Risk: 0.5, AtHome: true}, -2.5},
-		{"a grid and relief", AppraiseInput{Strength: 6, Believed: 3, Spread: 1, Risk: 0.5, Grid: true, Relief: 1.25}, 0.5},
-		{"a weakened enemy in two other wars", AppraiseInput{Strength: 4, Believed: 4, Spread: 1, Risk: 0.5, Weakened: true, OtherWars: 2}, 0.6},
+		{"even worlds, an empty sky", AppraiseInput{Strength: 4, Believed: 3, Spread: 0.3, Risk: 0.5}, 1},
+		{"relief", AppraiseInput{Strength: 6, Believed: 3, Spread: 1, Risk: 0.5, Relief: 1.25}, 3 - ShipLevels(1.25)},
+		{"guns and a guard", AppraiseInput{Strength: 6, Believed: 3, Spread: 1, Risk: 0.5, Ships: 2, Guns: 2}, 3 - ShipLevels(4)},
+		{"a weakened enemy in two other wars", AppraiseInput{Strength: 4, Believed: 4, Spread: 1, Risk: 0.5, Weakened: true, OtherWars: 2}, 1.6},
 	}
 	for _, c := range cases {
 		a := Appraise(c.in, tn)
@@ -99,7 +99,7 @@ func TestBar(t *testing.T) {
 func TestCouncil(t *testing.T) {
 	tn := Default()
 	ap := func(margin, spread float64) Appraisal {
-		return Appraise(AppraiseInput{Strength: margin + 1, Believed: 0, Spread: spread, Risk: 0.5}, tn)
+		return Appraise(AppraiseInput{Strength: margin, Believed: 0, Spread: spread, Risk: 0.5}, tn)
 	}
 	cases := []struct {
 		name string
@@ -497,6 +497,11 @@ func TestBuild(t *testing.T) {
 	if b.Pick != -1 {
 		t.Errorf("no spare: picked %d, want nothing", b.Pick)
 	}
+	// a grid of five guns is worth 5, more than the mine's 4
+	sites[0].Levels, sites[0].Guns = 0, 5
+	if b = Build(BuildInput{Sites: sites, Spare: flow.Income{0, 4, 4}}, tn); b.Pick != 0 {
+		t.Errorf("five guns: picked %d, want the grid", b.Pick)
+	}
 }
 
 // TestPrize: a prize lowers the bar, to a cap, and never below zero.
@@ -552,4 +557,71 @@ func TestTrade(t *testing.T) {
 	if c := Trade(TradeInput{Drive: 2}, tn); c.Cap != 0 || c.Refuse {
 		t.Errorf("out of reach: %s", c.Why())
 	}
+}
+
+// TestGarrisonsAndMuster: the home wants the strongest threat at half plus
+// fear and at least one, a colony in reach a share, guns stand in for
+// ships; one move goes from the largest excess to the largest shortfall.
+// A muster launches with the ships, stands down when the odds go.
+func TestGarrisonsAndMuster(t *testing.T) {
+	tn := Default()
+	g := Garrisons(GarrisonInput{Fear: 0.5, Holdings: []Holding{
+		{Star: 0, Home: true, Threat: 4, Ships: 6},
+		{Star: 1, Threat: 4, Guns: 2},
+		{Star: 2, Threat: 4, Guns: 2, Coming: 1},
+		{Star: 3},
+	}}, tn)
+	if want := []int{4, 0, 0, 0}; !equalInts(g.Wants, want) || g.Total != 4 {
+		t.Errorf("wants %v (total %d), want %v", g.Wants, g.Total, want)
+	}
+	if g.From != -1 {
+		t.Errorf("nothing is short and yet %d move from %d to %d", g.Ships, g.From, g.To)
+	}
+	g = Garrisons(GarrisonInput{Fear: 0.5, Holdings: []Holding{
+		{Star: 0, Home: true, Threat: 4, Ships: 6},
+		{Star: 1, Threat: 10, Guns: 1},
+		{Star: 2, Threat: 10, Ships: 0, Coming: 2},
+	}}, tn)
+	if want := []int{4, 2, 3}; !equalInts(g.Wants, want) {
+		t.Errorf("wants %v, want %v", g.Wants, want)
+	}
+	if g.From != 0 || g.To != 1 || g.Ships != 2 {
+		t.Errorf("move %d from %d to %d, want 2 from 0 to 1 (2 are already coming to 2)", g.Ships, g.From, g.To)
+	}
+	if g := Garrisons(GarrisonInput{Holdings: []Holding{{Home: true, Guns: 5}}}, tn); g.Wants[0] != 1 {
+		t.Errorf("a home behind five guns wants %d, want the floor of one", g.Wants[0])
+	}
+	if m := Muster(MusterInput{Have: 3, Need: 3, Coming: 0, Holds: true}, tn); !m.Launch {
+		t.Errorf("gathered and does not sail: %s", m.Why())
+	}
+	if m := Muster(MusterInput{Have: 1, Need: 3, Coming: 2, Holds: true}, tn); m.Launch || m.StandDown {
+		t.Errorf("waiting on two and does not: %s", m.Why())
+	}
+	if m := Muster(MusterInput{Have: 1, Need: 3, Coming: 2, Holds: false}, tn); !m.StandDown {
+		t.Errorf("the odds went and it stays: %s", m.Why())
+	}
+	if m := Muster(MusterInput{Have: 1, Need: 3, Coming: 0, Holds: true}, tn); !m.StandDown {
+		t.Errorf("nothing coming and it waits: %s", m.Why())
+	}
+	if m := Muster(MusterInput{Have: 1, Need: 3, Coming: 2, Age: 40_000, Holds: true}, tn); !m.StandDown {
+		t.Errorf("forty thousand years and it waits: %s", m.Why())
+	}
+	if n := BelieveGuns(1, tn); n != 0 {
+		t.Errorf("a pre-atomic world is believed to have %.0f guns", n)
+	}
+	if n := BelieveGuns(3, tn); n != 2 {
+		t.Errorf("an unseen world of a starfaring people is believed to have %.0f guns, want the silos", n)
+	}
+}
+
+func equalInts(a, b []int) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }
