@@ -1,6 +1,6 @@
 # Resources and trade
 
-**Status:** In Progress (stage 1 landed at plan step 4; stages 2 to 5 are steps 5 and 6)
+**Status:** In Progress (stages 1 to 3 landed at plan steps 4 and 5; stages 4 and 5 are step 6)
 **Last updated:** 2026-09-17
 
 Assumes [one-tick](one-tick.md): every rate below is per thousand years, and "per tick" means a thousand-year tick, the same thing.

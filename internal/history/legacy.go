@@ -21,11 +21,15 @@ import (
 // age and becomes, by survivorship, an elder legacy of the next.
 
 var remainDescs = map[string]string{
-	"arcology": "a sealed city of the %s",
-	"shipyard": "the yards of the %s",
-	"defences": "the guns of the %s",
-	"ansible":  "a relay of the %s",
-	"dyson":    "the swarm of the %s",
+	"arcology":   "a sealed city of the %s",
+	"shipyard":   "the yards of the %s",
+	"defences":   "the guns of the %s",
+	"ansible":    "a relay of the %s",
+	"dyson":      "the swarm of the %s",
+	"mine":       "the mines of the %s",
+	"collectors": "the collectors of the %s",
+	"tap":        "the tap of the %s, still ringing the dead star",
+	"lifter":     "the lifter of the %s",
 }
 
 // relics: description and hardiness
@@ -123,7 +127,7 @@ func (w *World) leaveRuin(c *Civ, wk Work, kind string) {
 		return
 	}
 	st := tech.Structures[wk.Key]
-	l := &Legacy{ID: len(w.Legacies), Age: -1, Maker: c.ID, Kind: Structure, Star: wk.Star, Node: wk.Node, Horror: -1, Finder: -1, Cond: wr.Leave, Hardy: st.Hardy}
+	l := &Legacy{ID: len(w.Legacies), Age: -1, Maker: c.ID, Kind: Structure, Star: wk.Star, Node: wk.Node, Horror: -1, Finder: -1, Source: -1, Cond: wr.Leave, Hardy: st.Hardy}
 	l.Desc = sprintf(remainDescs[wk.Key], c.Name)
 	w.Legacies = append(w.Legacies, l)
 	w.testament(c, l)
@@ -141,7 +145,7 @@ func (w *World) leaveRelic(c *Civ, node string, star int) {
 		return
 	}
 	rk := relicKinds[w.R.IntN(len(relicKinds))]
-	l := &Legacy{ID: len(w.Legacies), Age: -1, Maker: c.ID, Kind: Artifact, Star: star, Node: node, Horror: -1, Finder: -1, Cond: wr.Leave, Hardy: rk.Hardy}
+	l := &Legacy{ID: len(w.Legacies), Age: -1, Maker: c.ID, Kind: Artifact, Star: star, Node: node, Horror: -1, Finder: -1, Source: -1, Cond: wr.Leave, Hardy: rk.Hardy}
 	l.Desc = sprintf(rk.Desc, c.Name)
 	if n.Miracle {
 		l.Desc = sprintf("what the %s left of %s", c.Name, n.Name)

@@ -172,6 +172,16 @@ type Civ struct {
 	HighUpkeep   flow.Income
 	HighWant     flow.Income
 	highUpkeep   float64
+	Loot         flow.Income // taken once, added to the next tick's income: what a horde strips from a world
+	Reserved     flow.Income // what launches and builds took of the spare this tick
+
+	// rarities: see rarity.go
+	Rare      map[string]bool // the rarities had this tick, by key
+	Grants    map[string]bool // the nodes those rarities grant at half cost
+	Had       map[string]bool // every rarity ever had, by key
+	Harnessed map[string]bool // every source kind ever harnessed, by key
+	Built     map[string]int  // structures raised, by key, for the batch
+	Granted   map[string]bool // nodes learned while their grant was had
 
 	// filters
 	Faced        map[string]bool
@@ -261,10 +271,11 @@ const (
 	Threat
 	Sleeper
 	Law
+	Bounty // a thing still doing what it was made to do: a yield for whoever puts it to use
 )
 
 func (k LegacyKind) String() string {
-	return [...]string{"artifact", "structure", "threat", "sleeper", "law"}[k]
+	return [...]string{"artifact", "structure", "threat", "sleeper", "law", "bounty"}[k]
 }
 
 // LegacyState is what has happened to a legacy.
@@ -322,6 +333,7 @@ type Legacy struct {
 	Level     string // for wielded artifacts: which level it lifts, or "miracle"
 	Cond      Condition
 	Hardy     float64       // multiplier on the rate of decay; 0 never decays
+	Source    int           // the source record it is, for a bounty or a wielded artifact; -1 if none
 	Testament []Inscription // what its makers told of their age, as they left it
 }
 
@@ -350,7 +362,11 @@ type Work struct {
 	Node   string
 	Star   int
 	Legacy int
+	Dark   bool // shed this tick: no levels, no yield
 }
+
+// key is the work as a use: what the shed set names it by.
+func (wk Work) key() string { return "work:" + wk.Key + ":" + itoa(wk.Star) }
 
 // Trace is something left behind for the player to find.
 type Trace struct {
@@ -448,6 +464,7 @@ type scratch struct {
 	beacon      *Horror
 	incursionAt int
 	incursionBy *Horror
-	wreck       *Wreckage // set while a filter's outcome runs
-	finding     bool      // set while the Find teaches a civilisation what it mastered
+	wreck       *Wreckage   // set while a filter's outcome runs
+	finding     bool        // set while the Find teaches a civilisation what it mastered
+	fleet       *Expedition // the fleet taking a world, while it does; what it carries off rides with it
 }

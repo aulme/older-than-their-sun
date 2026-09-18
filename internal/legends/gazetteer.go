@@ -42,6 +42,16 @@ func gazetteer(p func(string, ...any), w *history.World) {
 			get(i).notes = append(get(i).notes, "held by "+w.Horrors[hid].Name)
 		}
 	}
+	for _, s := range w.Sources {
+		if !s.Rarity || s.Star < 0 || s.Legacy >= 0 || s.Mobile {
+			continue // the natural rarities at a star; bounties and artifacts list as remains
+		}
+		note := history.RarityFrame(s.Key)
+		if s.Holder >= 0 && w.Owner[s.Star] == s.Holder {
+			note += ", held by the " + w.Civs[s.Holder].Name
+		}
+		get(s.Star).notes = append(get(s.Star).notes, note)
+	}
 	for _, l := range w.Legacies {
 		if l.Star < 0 || l.State == history.Lost {
 			continue

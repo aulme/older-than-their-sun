@@ -1,6 +1,7 @@
 package history
 
 import (
+	"worldgen/internal/flow"
 	"worldgen/internal/mind"
 	"worldgen/internal/names"
 	"worldgen/internal/species"
@@ -308,6 +309,15 @@ func (w *World) expand(c *Civ) {
 	if target < 0 {
 		return
 	}
+	// a ship is a reservation of the means: it goes only if the spare covers it
+	need := w.shipReservation(c)
+	if !w.afford(c, need) {
+		if w.Cfg.TraceAI {
+			w.log("[the %s cannot spare a ship for %s: %v short]", c.Name, w.star(target), need.Less(c.Surplus.Less(c.Reserved)))
+		}
+		return
+	}
+	w.reserve(c, need)
 	if blind {
 		c.Tally.Blind++
 	}
@@ -349,44 +359,104 @@ func (w *World) targeted(c *Civ, t int) bool {
 	return false
 }
 
-// build raises a structure within reach. Great works are few: a people
-// raises one every few hundred thousand years, and at most two of a kind.
+// build raises a structure at a star a people holds. Great works are few:
+// a people raises one every few hundred thousand years. It builds what
+// fixes its deepest want, else the largest source in reach that nothing
+// harnesses, else what lifts it most; and only when the spare covers the
+// upkeep twice over. The choice is mind.Build; this lists the sites.
 func (w *World) build(c *Civ) {
 	if c.Aloft || !w.chance(w.Cfg.Tuning.Build.Rate) {
 		return
 	}
-	var can []string
-	for _, k := range knownOf(c) {
-		if s := tech.Get(k).Structure; s != "" && c.Structures[s] < 2 {
-			can = append(can, s)
-		}
-	}
-	if len(can) == 0 {
+	sites := w.sites(c)
+	if len(sites) == 0 {
 		return
 	}
-	key := can[w.R.IntN(len(can))]
-	st := tech.Structures[key]
-	s := w.pick(c.Systems)
-	node := ""
-	for _, k := range knownOf(c) {
-		if tech.Get(k).Structure == key {
-			node = k
+	b := mind.Build(mind.BuildInput{Sites: sites, Want: c.Want, Spare: c.Surplus.Less(c.Reserved)}, w.Cfg.Tuning)
+	w.explain(c, "building", b)
+	if b.Pick < 0 {
+		return
+	}
+	site := sites[b.Pick]
+	st := tech.Structures[site.Key]
+	w.reserve(c, st.Upkeep)
+	w.raise(c, site.Key, st.Node, site.Star)
+}
+
+// sites lists where a people could build what: every structure whose node
+// it knows and works, at every world it holds where one more may stand.
+// A yielder is one per star or per belt; the rest are two per people and
+// one per star.
+func (w *World) sites(c *Civ) []mind.Site {
+	var out []mind.Site
+	for _, key := range tech.StructureKeys {
+		st := tech.Structures[key]
+		if !c.Known[st.Node] || !c.working(st.Node) {
+			continue
+		}
+		if !st.Yields() && c.Structures[key] >= 2 {
+			continue
+		}
+		for _, s := range c.Systems {
+			at := c.worksAt(key, s)
+			switch st.Per {
+			case "belt":
+				if at >= len(w.G.Sys[s].Belts) {
+					continue
+				}
+			default:
+				if at > 0 {
+					continue
+				}
+			}
+			y := w.workYield(c, Work{Key: key, Star: s})
+			if st.Yields() && y == (flow.Income{}) {
+				continue // nothing there to harness
+			}
+			if key == "dyson" {
+				y = y.Less(w.workYield(c, Work{Key: "collectors", Star: s})) // what it adds over collectors already there
+			}
+			out = append(out, mind.Site{Key: key, Star: s, Yield: y, Upkeep: w.bend(c, st.Upkeep), Levels: st.Mil + st.Sur + st.Soc})
 		}
 	}
+	return out
+}
+
+// raise puts a structure up and says so. A swarm takes the place of the
+// collectors at its star.
+func (w *World) raise(c *Civ, key, node string, s int) {
+	st := tech.Structures[key]
 	if key == "dyson" {
+		keep := c.Works[:0]
 		for _, wk := range c.Works {
-			if wk.Key == "dyson" && wk.Star == s {
-				return
+			if wk.Key == "collectors" && wk.Star == s {
+				c.Structures["collectors"]--
+				continue
 			}
+			keep = append(keep, wk)
 		}
+		c.Works = keep
 	}
 	c.Works = append(c.Works, Work{Key: key, Node: node, Star: s, Legacy: -1})
 	c.Structures[key]++
+	if c.Built == nil {
+		c.Built = map[string]int{}
+	}
+	c.Built[key]++
 	if c.Structures[key] == 1 || key == "dyson" {
 		if key == "shipyard" {
 			w.log(st.Text, w.star(s), c.Name)
 		} else {
 			w.log(st.Text, c.Name, w.star(s))
+		}
+	}
+	if st.Yields() {
+		if c.Harnessed == nil {
+			c.Harnessed = map[string]bool{}
+		}
+		if !c.Harnessed[key] {
+			c.Harnessed[key] = true
+			w.factOf(FHarness, c, nil, s, "the "+st.Name+" at "+w.star(s))
 		}
 	}
 }
@@ -421,10 +491,13 @@ func (w *World) loseSystem(c *Civ, s int, kind string, cause string) {
 			cause = "lost their last world"
 		}
 		if c.Active() && w.flee(c, s, cause) {
-			return
+			return // what is mobile rides with the fleet
 		}
-		w.endCiv(c, Extinct, cause)
+		w.endCiv(c, Extinct, cause) // what was wielded is dropped there
 		return
+	}
+	if c.Stage != Dead && !c.Aloft {
+		w.dropRarities(c, s) // a conqueror carried them off already; anything else leaves them
 	}
 	if s == c.Home && c.Stage != Dead && !c.Aloft {
 		w.reseat(c)

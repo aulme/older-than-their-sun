@@ -54,9 +54,19 @@ type Expedition struct {
 	Recalled  bool // for surveyors: called home by a war; they finish the leg and turn
 }
 
-// launch sends a fleet. The strength leaves the home level at once.
+// launch sends a fleet. The strength leaves the home level at once, and
+// the fleet reserves its share of the means: with no spare to cover it
+// this tick, it does not go, and nil is returned.
 func (w *World) launch(c *Civ, kind ExpKind, target *Civ, star int, mil float64) *Expedition {
 	from, d := w.nearest(c, star)
+	need := w.fleetReservation(c, mil, from)
+	if !w.afford(c, need) {
+		if w.Cfg.TraceAI {
+			w.log("[the %s cannot spare a %s for %s: %v short]", c.Name, kind, w.star(star), need.Less(c.Surplus.Less(c.Reserved)))
+		}
+		return nil
+	}
+	w.reserve(c, need)
 	x := &Expedition{ID: len(w.Expeditions), Owner: c.ID, Target: -1, Kind: kind, Star: star, From: from, Mil: mil,
 		Launched: w.Now, Arrive: w.Now + Year(d*c.Speed), Base: -1, Seen: map[int]bool{}}
 	if target != nil {
@@ -120,9 +130,13 @@ func (w *World) tickExpeditions() {
 			}
 			continue
 		}
+		if x.Base >= 0 && w.rarityAt(x.Base, "horizon") != nil {
+			x.Mil *= 1 - horizonLoss // a fleet based at a black hole is lost a little at a time
+		}
 		if x.Returning {
 			if w.Now >= x.Arrive {
 				c.Away = max(0, c.Away-x.Mil)
+				w.land(x, x.Star)
 				if x.Report != nil && x.Target >= 0 {
 					if c.receive(x.Target, x.Report) {
 						c.Scouted[x.Target] = w.Now
@@ -273,7 +287,9 @@ func (w *World) campaign(x *Expedition) {
 			continue
 		}
 		x.Wins++
+		w.fleet = x
 		w.takeWorld(wr, c, e, t)
+		w.fleet = nil
 		if w.Owner[t] == c.ID {
 			x.Held = append(x.Held, t)
 			x.Base = t
@@ -310,11 +326,15 @@ func (w *World) resolve(x *Expedition) {
 		c.Away = max(0, c.Away-x.Mil)
 		c.Morale -= 0.5
 		x.Over = true
+		w.fleetLost(x, max(x.Base, x.Star))
 		w.recompute(c)
 		return
 	}
 	w.goHome(x)
 }
+
+// horizonLoss is the share of a fleet lost per tick based at a black hole.
+const horizonLoss = 0.05
 
 // goHome turns a fleet for the nearest holding.
 func (w *World) goHome(x *Expedition) {
@@ -343,6 +363,7 @@ func (w *World) goNative(x *Expedition) {
 	if len(held) == 0 {
 		x.Over = true
 		c.Away = max(0, c.Away-x.Mil)
+		w.fleetLost(x, max(x.Base, x.Star))
 		return
 	}
 	home := held[len(held)-1]
@@ -361,6 +382,10 @@ func (w *World) goNative(x *Expedition) {
 		}
 	}
 	nc.Peak = len(nc.Systems)
+	for _, s := range w.carriedBy(x) {
+		w.transfer(s, c, nc)
+		s.Carried, s.Star = -1, home
+	}
 	for _, k := range knownOf(c) {
 		nc.Known[k] = true
 	}

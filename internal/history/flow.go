@@ -25,6 +25,8 @@ const envelopeGrace = 10
 
 // flows is the civ step: income, uses, order, direction.
 func (w *World) flows(c *Civ) {
+	c.Reserved = flow.Income{}
+	rareChanged := w.rare(c)
 	c.Income = w.income(c)
 	uses := w.uses(c)
 	d := w.order(c)
@@ -43,7 +45,7 @@ func (w *World) flows(c *Civ) {
 		c.HighIncome, c.HighUpkeep, c.HighWant = c.Income, c.Upkeep, c.Want
 	}
 	changed := w.setShed(c, uses, a)
-	if changed {
+	if changed || rareChanged {
 		w.recompute(c)
 	}
 	w.tallyFlows(c)
@@ -73,6 +75,9 @@ func (w *World) setShed(c *Civ, uses []flow.Use, a flow.Allocation) bool {
 		}
 	}
 	c.Shed = shed
+	for i := range c.Works {
+		c.Works[i].Dark = shed[c.Works[i].key()]
+	}
 	if len(a.Dormant) == 0 {
 		c.ShedSince, c.Wanted = 0, false
 		return changed
@@ -130,11 +135,33 @@ func (w *World) tallyFlows(c *Civ) {
 	}
 }
 
+// shedKey is what the batch counts a shed use under: a node by its key, a
+// structure by its kind whatever star it stands at, a fleet or a ship as
+// one kind each.
+func shedKey(k string) string {
+	switch {
+	case len(k) > 5 && k[:5] == "work:":
+		rest := k[5:]
+		for i := range rest {
+			if rest[i] == ':' {
+				return "work:" + rest[:i]
+			}
+		}
+		return k
+	case len(k) > 6 && k[:6] == "fleet:":
+		return "fleet"
+	case len(k) > 5 && k[:5] == "ship:":
+		return "ship"
+	}
+	return k
+}
+
 // uses lists what a people spends on: every known node with an upkeep,
-// in the order it was learned so the newest of an era goes dark first.
-// The profile bends the costs: a machine pays organic matter in energy, an
-// evolver's flesh is cheap and its metal dear; a people with no fields
-// feeds those nodes with the works.
+// in the order it was learned so the newest of an era goes dark first;
+// then its structures, its fleets and its ships. The profile bends the
+// costs: a machine pays organic matter in energy, an evolver's flesh is
+// cheap and its metal dear; a people with no fields feeds those nodes
+// with the works.
 func (w *World) uses(c *Civ) []flow.Use {
 	p := c.Species.Profile()
 	var out []flow.Use
@@ -164,6 +191,8 @@ func (w *World) uses(c *Civ) []flow.Use {
 		return c.Born
 	}
 	sort.SliceStable(out, func(i, j int) bool { return learned(out[i].Key) < learned(out[j].Key) })
+	out = append(out, w.works(c)...)
+	out = append(out, w.reservations(c)...)
 	return out
 }
 

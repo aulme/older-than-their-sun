@@ -51,8 +51,14 @@ const MiracleUpkeep = 3
 var Free = map[string]bool{
 	"agriculture": true, "metallurgy": true, "steam": true, "electricity": true,
 	"atomic": true, "fusion": true, "interplanetary": true, "orbital_habitats": true,
-	"terraforming": true, "synthetic_biology": true, "dyson": true, "vacuum_energy": true,
+	"terraforming": true, "synthetic_biology": true, "dyson": true,
 	"stellar_engineering": true, "star_lifting": true,
+}
+
+// Custom are the nodes whose upkeep is their own and not the table's: the
+// vacuum tap costs a little metal for the energy it gives at every held star.
+var Custom = map[string]flow.Income{
+	"vacuum_energy": {flow.M: 1},
 }
 
 // Grown are the nodes whose metal is flesh: a living ship or a seed-cloud
@@ -66,6 +72,9 @@ var Grown = map[string]bool{"living_ships": true, "seed_clouds": true}
 func (n *Node) Upkeep() flow.Income {
 	if Free[n.Key] || n.Era == 0 {
 		return flow.Income{}
+	}
+	if u, ok := Custom[n.Key]; ok {
+		return u
 	}
 	if n.Miracle {
 		var u flow.Income

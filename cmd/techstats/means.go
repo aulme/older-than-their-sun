@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"io"
 	"sort"
+	"strings"
 
 	"worldgen/internal/flow"
+	"worldgen/internal/history"
 	"worldgen/internal/tech"
 )
 
@@ -84,13 +86,108 @@ func meansReport(out io.Writer, recs []Rec) {
 	if len(keys) > 12 {
 		keys = keys[:12]
 	}
-	p("What went dark most, as a share of all node-ticks dormant:")
+	p("What went dark most, as a share of all use-ticks dormant:")
 	p("")
-	p("| Node | Era | Category | Upkeep O / E / M | Share |")
+	p("| Use | Era | Category | Upkeep O / E / M | Share |")
 	p("|---|---|---|---|---|")
 	for _, k := range keys {
-		n := tech.Get(k)
-		u := n.Upkeep()
-		p("| %s | %d | %s | %.0f / %.0f / %.0f | %s |", n.Name, n.Era, n.Cat(), u[flow.O], u[flow.E], u[flow.M], pct(shed[k], total))
+		switch {
+		case strings.HasPrefix(k, "work:"):
+			st := tech.Structures[strings.TrimPrefix(k, "work:")]
+			if st == nil {
+				continue
+			}
+			u := st.Upkeep
+			p("| the %s | %d | %s | %.0f / %.0f / %.0f | %s |", st.Name, tech.Get(st.Node).Era, st.Cat, u[flow.O], u[flow.E], u[flow.M], pct(shed[k], total))
+		case k == "fleet":
+			p("| a fleet | 3 | arms | per level | %s |", pct(shed[k], total))
+		case k == "ship":
+			p("| a colony ship | 3 | road | 0 / 2 / 2 | %s |", pct(shed[k], total))
+		default:
+			n := tech.Get(k)
+			if n == nil {
+				continue
+			}
+			u := n.Upkeep()
+			p("| %s | %d | %s | %.0f / %.0f / %.0f | %s |", n.Name, n.Era, n.Cat(), u[flow.O], u[flow.E], u[flow.M], pct(shed[k], total))
+		}
+	}
+	worksReport(out, recs)
+}
+
+// worksReport is the rest of the Means: structures raised by kind, sources
+// harnessed by kind, rarities had by kind, and the granted nodes reached
+// with and without the grant.
+func worksReport(out io.Writer, recs []Rec) {
+	p := func(format string, args ...any) { fmt.Fprintf(out, format+"\n", args...) }
+	n := len(recs)
+	if n == 0 {
+		return
+	}
+	built := map[string]int{}
+	builders := map[string]int{}
+	for _, r := range recs {
+		for k, c := range r.Built {
+			built[k] += c
+			builders[k]++
+		}
+	}
+	p("")
+	p("Structures raised, over every people:")
+	p("")
+	p("| Structure | Raised | Per people | Peoples that raised one |")
+	p("|---|---|---|---|")
+	for _, k := range tech.StructureKeys {
+		if built[k] == 0 {
+			continue
+		}
+		p("| %s | %d | %.2f | %s |", tech.Structures[k].Name, built[k], float64(built[k])/float64(n), pct(builders[k], n))
+	}
+	count := func(get func(Rec) []string) map[string]int {
+		m := map[string]int{}
+		for _, r := range recs {
+			for _, k := range get(r) {
+				m[k]++
+			}
+		}
+		return m
+	}
+	table := func(title, col string, m map[string]int) {
+		if len(m) == 0 {
+			return
+		}
+		p("")
+		p("%s", title)
+		p("")
+		p("| %s | Peoples | Share |", col)
+		p("|---|---|---|")
+		for _, k := range sortedKeys(m) {
+			p("| %s | %d | %s |", k, m[k], pct(m[k], n))
+		}
+	}
+	table("Sources harnessed, by kind, as the share of peoples that ever harnessed one:", "Source", count(func(r Rec) []string { return r.Harnessed }))
+	table("Rarities had, by kind, as the share of peoples that ever had one:", "Rarity", count(func(r Rec) []string { return r.Had }))
+	p("")
+	p("Granted nodes reached, with the grant had at the time and without:")
+	p("")
+	p("| Node | Reached | With the grant | Without |")
+	p("|---|---|---|---|")
+	for _, k := range history.GrantedNodes {
+		reached, with := 0, 0
+		for _, r := range recs {
+			if !r.ever[k] {
+				continue
+			}
+			reached++
+			for _, g := range r.Granted {
+				if g == k {
+					with++
+				}
+			}
+		}
+		if reached == 0 {
+			continue
+		}
+		p("| %s | %d | %d | %d |", tech.Get(k).Name, reached, with, reached-with)
 	}
 }

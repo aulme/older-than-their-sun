@@ -68,9 +68,40 @@ func (w *World) appraise(c, e *Civ, target int) Appraisal {
 		}
 	}
 	_, in.Dist = w.nearest(c, a.Target)
+	in.Prize = w.prize(c, a.Target)
 	a.Appraisal = mind.Appraise(in, w.Cfg.Tuning)
 	return a
 }
+
+// prize is what a star is worth to a people that would take it: the yield
+// there it could harness, as far as it wants that kind, and each rarity
+// there it lacks.
+func (w *World) prize(c *Civ, star int) float64 {
+	if star < 0 {
+		return 0
+	}
+	p := 0.0
+	for _, id := range w.sourcesAt[star] {
+		s := w.Sources[id]
+		if s.Rarity {
+			if !c.has(s.Key) {
+				p += rarityWorth
+			}
+			continue
+		}
+		if !c.harnessed(s) {
+			continue
+		}
+		for k := range s.Yield {
+			p += min(s.Yield[k], c.Want[k])
+		}
+	}
+	return p
+}
+
+// rarityWorth is what a rarity a people lacks counts for in the prize, in
+// units of yield per tick.
+const rarityWorth = 5
 
 // nearest is c's holding nearest a star, and the distance.
 func (w *World) nearest(c *Civ, star int) (int, float64) {

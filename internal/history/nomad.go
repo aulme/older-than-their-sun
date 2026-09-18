@@ -132,17 +132,25 @@ func (w *World) flee(c *Civ, lost int, cause string) bool {
 	return true
 }
 
-// seat keeps a nomad people's seat where its greatest fleet is.
-func (w *World) seat(c *Civ) {
+// greatestFleet is a nomad people's strongest fleet, or nil.
+func (w *World) greatestFleet(c *Civ) *Expedition {
 	var best *Expedition
 	for _, x := range w.fleets(c) {
 		if best == nil || x.Mil > best.Mil {
 			best = x
 		}
 	}
+	return best
+}
+
+// seat keeps a nomad people's seat where its greatest fleet is, and its
+// mobile rarities aboard it.
+func (w *World) seat(c *Civ) {
+	best := w.greatestFleet(c)
 	if best == nil {
 		return
 	}
+	w.stow(c, best)
 	s := best.Base
 	if s < 0 {
 		s = best.Star
@@ -191,6 +199,7 @@ func (w *World) roam(c *Civ) {
 		}
 		if x.Mil < 0.3 {
 			x.Over = true
+			w.fleetLost(x, x.Base)
 			continue
 		}
 		if x.Mil > 4 && len(fl) < 8 && w.chance(0.1) {
@@ -285,6 +294,7 @@ func (w *World) strip(wr *War, c, e *Civ, t int) {
 	i := wr.side(c.ID)
 	share := max(0.5, e.Mil/float64(max(1, len(e.Systems))))
 	home := t == e.Home
+	c.Loot.Add(w.yieldAt(e, t)) // the rest, once
 	w.loseSystem(e, t, "stripped by the horde", sprintf("were swallowed by the horde of the %s", c.Name))
 	x := &Expedition{ID: len(w.Expeditions), Owner: c.ID, Target: -1, Kind: Roam, Star: t, From: t, Mil: share,
 		Launched: w.Now, Arrive: w.Now, Base: t, Fed: w.Now, Seen: map[int]bool{}}
@@ -327,6 +337,7 @@ func (w *World) hitFleet(wr *War, c, e *Civ, t int) {
 			x.Over = true
 			wr.Glassed[i]++
 			w.log("The %s break a fleet of the %s at %s.", c.Name, e.Name, w.star(t))
+			w.fleetLost(x, t)
 		}
 		if len(w.fleets(e)) == 0 {
 			w.endCiv(e, Extinct, sprintf("were broken fleet by fleet by the %s", c.Name))
@@ -373,6 +384,7 @@ func (w *World) rest(c *Civ, why string) {
 		return
 	}
 	for _, x := range w.fleets(c) {
+		w.land(x, t)
 		x.Over = true
 	}
 	c.Aloft, c.Rested = false, true

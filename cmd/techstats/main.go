@@ -78,7 +78,11 @@ type Rec struct {
 	Income    flow.Income        `json:"income"` // at the people's height of means
 	Upkeep    flow.Income        `json:"upkeep"`
 	Want      flow.Income        `json:"want"`
-	Shed      map[string]int     `json:"shed"` // ticks each node spent dark
+	Shed      map[string]int     `json:"shed"`      // ticks each node spent dark
+	Had       []string           `json:"had"`       // rarities ever had, by key
+	Harnessed []string           `json:"harnessed"` // source kinds ever harnessed, by key
+	Built     map[string]int     `json:"built"`     // structures raised, by key
+	Granted   []string           `json:"granted"`   // nodes learned with their grant had
 	ever      map[string]bool
 	frontier  string
 	signature string
@@ -198,6 +202,11 @@ func flatten(w *history.World) []Rec {
 		r.Met = len(c.Met)
 		r.LoreDials = c.LoreDials
 		r.Income, r.Upkeep, r.Want = c.HighIncome, c.HighUpkeep, c.HighWant
+		r.Had, r.Harnessed, r.Granted = keys(c.Had), keys(c.Harnessed), keys(c.Granted)
+		r.Built = map[string]int{}
+		for k, n := range c.Built {
+			r.Built[k] = n
+		}
 		r.Shed = map[string]int{}
 		for k, n := range c.ShedTicks {
 			r.Shed[k] = n

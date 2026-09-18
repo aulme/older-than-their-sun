@@ -60,6 +60,7 @@ var templates = [...]string{
 	FCycle:        "{S} learned that the galaxy had done all this before, and would again.",
 	FSurveyLost:   "{P} surveyors did not come back from {T}. {H} is there.",
 	FWant:         "{S} went without, and called them the lean years.",
+	FHarness:      "{S} put {X} to use.",
 }
 
 // blamedTemplates are the woes that name their own cause, retold once

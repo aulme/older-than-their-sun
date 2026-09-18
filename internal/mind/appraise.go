@@ -66,6 +66,7 @@ type AppraiseInput struct {
 	Risk       float64 // the attacker's risk dial
 	Dist       float64 // to the target, in light years
 	Speed      float64 // years per light year
+	Prize      float64 // what the target is worth to the attacker: its yield the attacker wants, and rarities it lacks
 }
 
 // Appraisal is what a people thinks of a fight.
@@ -77,11 +78,16 @@ type Appraisal struct {
 	High   float64 // on the hopeful tail
 	Acted  float64 // what this people acts on, by its risk dial
 	Lag    float64 // years for a strike or a fleet to arrive
+	Prize  float64 // what the bar drops by for the target's worth
 }
 
 // Why says the appraisal in a line.
 func (a Appraisal) Why() string {
-	return fmt.Sprintf("odds %.2f (%.2f to %.2f), acting on %.2f, margin %.1f, %.0f years away", a.Odds, a.Low, a.High, a.Acted, a.Margin, a.Lag)
+	s := fmt.Sprintf("odds %.2f (%.2f to %.2f), acting on %.2f, margin %.1f, %.0f years away", a.Odds, a.Low, a.High, a.Acted, a.Margin, a.Lag)
+	if a.Prize > 0 {
+		s += fmt.Sprintf(", a prize worth %.2f off the bar", a.Prize)
+	}
+	return s
 }
 
 // Appraise estimates a fight: the believed enemy level with terrain on top
@@ -103,7 +109,7 @@ func Appraise(in AppraiseInput, t *Tuning) Appraisal {
 	for i := 0; i < in.OtherWars; i++ {
 		d -= p.OtherWar
 	}
-	a := Appraisal{Margin: in.Strength - d, Spread: in.Spread, Lag: in.Dist * in.Speed}
+	a := Appraisal{Margin: in.Strength - d, Spread: in.Spread, Lag: in.Dist * in.Speed, Prize: min(p.PrizeMax, p.PrizeWeight*in.Prize)}
 	a.Odds = phi(a.Margin / p.Scale)
 	a.Low = phi((a.Margin - in.Spread) / p.Scale)
 	a.High = phi((a.Margin + in.Spread) / p.Scale)

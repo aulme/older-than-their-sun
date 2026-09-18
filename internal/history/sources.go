@@ -31,22 +31,31 @@ func (k SourceKind) String() string {
 	return [...]string{"world", "belt", "giant", "star", "cosmic", "structure", "elder", "made"}[k]
 }
 
-// Source is one thing with a yield.
+// Source is one thing with a yield, a grant, or both. A source with a
+// grant or levels is a rarity: access to it is binary, one instance is
+// enough, and a second is worth nothing to the same people. See rarity.go.
 type Source struct {
 	ID      int
-	Key     string // what it is, for the reports: "habitable", "wood", "fuels", "atom", "fusion", "rocky", "terraformed", "heavy", "belt", "giant", "star", "comets", "nebula", "doomed_giant"
+	Key     string // what it is, for the reports: "habitable", "wood", "fuels", "atom", "fusion", "rocky", "terraformed", "heavy", "belt", "giant", "comets", "nebula", "doomed_giant"; a rarity's kind; "bounty:<kind>"; "artifact"
 	Name    string // for a line: "the belt at X"
 	Kind    SourceKind
 	Star    int             // the star it is at, or -1 for a ranged source
 	Feature *galaxy.Feature // for a ranged source: the thing whose reach it is
-	Radius  float64         // kpc, for a ranged source
+	Radius  float64         // the reach of a ranged source: kpc from a feature, light years from a star
 	Yield   flow.Income     // per tick
 	Needs   []string        // any one of these harnesses it; none means it needs nothing
 	With    []string        // and all of these
 	Cradle  bool            // the habitable world: the people that arose on it needs nothing to farm it, and its profile's cradle multiplier applies
-	Mobile  bool            // moves with its holder; see step 5
-	Holder  int             // the people that harnessed it, or -1
+	Rarity  bool            // had or not had; see rarity.go
+	Grants  []string        // nodes that cost half to whoever has it
+	Levels  [3]float64      // what it adds to the levels of whoever has it: mil, sur, soc
+	Reach   float64         // light years it adds to the reach of whoever has it
+	Mobile  bool            // moves with its holder: carried off with a taken star, lost with a fleet, riding with a nomad's greatest fleet
+	Holder  int             // the people that holds it, or -1; for an immobile source, the last to harness it
 	Carried int             // the expedition carrying it, or -1
+	Legacy  int             // the remain it is, for a bounty or a wielded artifact, or -1
+	Since   Year            // when it was first put to use, for what wears
+	Wear    Year            // years from Since until the yield is gone; 0 never wears
 }
 
 // worldYield is what a habitable world yields in organic matter by archetype.
@@ -56,7 +65,7 @@ var worldYield = map[string]float64{
 }
 
 // starYield is what a star's light gives in energy by class, once there
-// are habitats in orbit to catch it. Dead stars give nothing.
+// are collectors in orbit to catch it. Dead stars give nothing.
 var starYield = map[byte]float64{'M': 1, 'K': 2, 'G': 3, 'F': 4, 'A': 4, 'B': 4, 'O': 4}
 
 // The yields and needs of the natural sources. These, with the upkeep
@@ -80,6 +89,15 @@ const (
 	remnantMetalMul = 2.0  // rocky worlds inside a supernova remnant
 	globularMetal   = 0.5  // rocky worlds inside a globular cluster
 	globularStar    = 2.0  // and the star's light there
+	// structures: what they give at their star
+	collectorMul = 2.0  // collectors: times the star's light
+	dysonMul     = 6.0  // a Dyson swarm: times the star's light, in place of the collectors
+	tapYield     = 12.0 // an accretion tap on a black hole or neutron star
+	lifterYield  = 6.0  // a star lifter: metal from a live star or a neutron star
+	vacuumYield  = 4.0  // the vacuum tap: energy per held star
+	// a nomad fleet grazes a star it does not hold
+	grazeFree    = 0.5  // at an unowned star
+	grazePartner = 0.25 // at a trade partner's
 )
 
 // naturalSources places the natural sources of a galaxy. It reads only
@@ -90,19 +108,11 @@ func naturalSources(g *galaxy.Galaxy) ([]*Source, [][]int) {
 	at := make([][]int, len(g.Stars))
 	add := func(s *Source) *Source {
 		s.ID = len(out)
-		s.Holder, s.Carried = -1, -1
+		s.Holder, s.Carried, s.Legacy = -1, -1, -1
 		out = append(out, s)
 		return s
 	}
-	inside := func(star int, kind galaxy.FeatureKind) bool {
-		pos := g.Position(star)
-		for _, f := range galaxy.Features {
-			if f.Kind == kind && f.Pos.Dist(pos) <= f.Radius {
-				return true
-			}
-		}
-		return false
-	}
+	inside := func(star int, kind galaxy.FeatureKind) bool { return insideFeature(g, star, kind) }
 	metals := g.Law.IndustryMul()
 	for i := range g.Stars {
 		st := &g.Stars[i]
@@ -156,12 +166,6 @@ func naturalSources(g *galaxy.Galaxy) ([]*Source, [][]int) {
 		if giants > 0 {
 			here = append(here, &Source{Key: "giant", Name: "the giants of " + name, Kind: GiantSource, Star: i, Yield: flow.Income{flow.E: giantYield * float64(giants)}, Needs: []string{"fusion"}, With: []string{"orbital_habitats"}})
 		}
-		if y := starYield[st.Class]; y > 0 {
-			if inside(i, galaxy.Globular) {
-				y *= globularStar
-			}
-			here = append(here, &Source{Key: "star", Name: "the light of " + name, Kind: StarSource, Star: i, Yield: flow.Income{flow.E: y}, Needs: []string{"orbital_habitats"}})
-		}
 		if g.Law.Crowd >= crowded {
 			here = append(here, &Source{Key: "comets", Name: "the comets of " + name, Kind: CosmicSource, Star: i, Yield: flow.Income{flow.O: cometYield}, Needs: []string{"interplanetary"}})
 		}
@@ -180,12 +184,16 @@ func naturalSources(g *galaxy.Galaxy) ([]*Source, [][]int) {
 		default:
 			continue
 		}
-		var covers []int
-		for i := range g.Stars {
-			if f.Pos.Dist(g.Position(i)) <= f.Radius {
-				covers = append(covers, i)
+		if covers := covered(g, s); len(covers) > 0 {
+			add(s)
+			for _, i := range covers {
+				at[i] = append(at[i], s.ID)
 			}
 		}
+	}
+	// the rarities: what is rare enough to be worth a war
+	for _, s := range naturalRarities(g) {
+		covers := covered(g, s)
 		if len(covers) == 0 {
 			continue
 		}
@@ -197,10 +205,58 @@ func naturalSources(g *galaxy.Galaxy) ([]*Source, [][]int) {
 	return out, at
 }
 
-// harnessed says whether a people knows what a source needs.
+// insideFeature says whether a star lies within a feature of a kind.
+func insideFeature(g *galaxy.Galaxy, star int, kind galaxy.FeatureKind) bool {
+	pos := g.Position(star)
+	for _, f := range galaxy.Features {
+		if f.Kind == kind && f.Pos.Dist(pos) <= f.Radius {
+			return true
+		}
+	}
+	return false
+}
+
+// covered lists the stars a source reaches: its own star, the stars
+// within its radius of it, or the stars within its feature's radius.
+func covered(g *galaxy.Galaxy, s *Source) []int {
+	switch {
+	case s.Feature != nil:
+		var out []int
+		for i := range g.Stars {
+			if s.Feature.Pos.Dist(g.Position(i)) <= s.Radius {
+				out = append(out, i)
+			}
+		}
+		return out
+	case s.Radius > 0:
+		return append([]int{s.Star}, g.Near(s.Star, s.Radius)...)
+	}
+	return []int{s.Star}
+}
+
+// addSource registers a source made during the age: a bounty, a wielded
+// artifact. The caller sets Holder, Carried and Legacy, -1 for none. It
+// yields at the stars it covers; a mobile one at none, since it is had by
+// its holder wherever it is.
+func (w *World) addSource(s *Source) *Source {
+	s.ID = len(w.Sources)
+	w.Sources = append(w.Sources, s)
+	if !s.Mobile {
+		for _, i := range covered(w.G, s) {
+			w.sourcesAt[i] = append(w.sourcesAt[i], s.ID)
+		}
+	}
+	return s
+}
+
+// harnessed says whether a people knows what a source needs. A bounty is
+// harnessed once somebody has put it to use, whoever holds its star after.
 func (c *Civ) harnessed(s *Source) bool {
 	if s.Cradle && s.Star == c.Cradle {
 		return true
+	}
+	if s.Rarity && s.Yield == (flow.Income{}) {
+		return false // a grant or levels: had, not harnessed
 	}
 	if len(s.Needs) > 0 {
 		ok := false
@@ -224,11 +280,16 @@ func (c *Civ) harnessed(s *Source) bool {
 
 // yieldAt is what one star gives a people this tick: every source there
 // that it has harnessed, with the profile's cradle multiplier on the
-// world it arose on and the swarm's half on its nests.
+// world it arose on and the swarm's half on its nests, and its working
+// structures there. A nomad fleet at a star it does not hold grazes: half
+// at an unowned star, a quarter at a partner's, nothing at a stranger's.
 func (w *World) yieldAt(c *Civ, star int) flow.Income {
 	var in flow.Income
 	for _, id := range w.sourcesAt[star] {
 		s := w.Sources[id]
+		if s.Legacy >= 0 && w.Legacies[s.Legacy].State != Wielded {
+			continue // a bounty nobody has put to use
+		}
 		if !c.harnessed(s) {
 			continue
 		}
@@ -241,18 +302,99 @@ func (w *World) yieldAt(c *Civ, star int) flow.Income {
 				y = y.Scale(0.5) // a nest is a small thing
 			}
 		}
+		if s.Wear > 0 {
+			y = y.Scale(max(0, 1-float64(w.Now-s.Since)/float64(s.Wear)))
+		}
+		if s.Holder < 0 {
+			w.firstHarness(c, s)
+		}
+		s.Holder = c.ID
 		in.Add(y)
+	}
+	for _, wk := range c.Works {
+		if wk.Star == star && !wk.Dark {
+			in.Add(w.workYield(c, wk))
+		}
+	}
+	if c.Aloft {
+		switch o := w.Owner[star]; {
+		case o < 0:
+			in = in.Scale(grazeFree)
+		case c.Trade[o]:
+			in = in.Scale(grazePartner)
+		default:
+			in = flow.Income{}
+		}
 	}
 	return in
 }
 
+// workYield is what a structure gives at its star: the collectors and the
+// swarm take the star's light, the mines the belt, the tap what falls into
+// a dead star, the lifter the star itself. The rest give levels.
+func (w *World) workYield(c *Civ, wk Work) flow.Income {
+	st := &w.G.Stars[wk.Star]
+	light := starYield[st.Class]
+	if insideFeature(w.G, wk.Star, galaxy.Globular) {
+		light *= globularStar
+	}
+	switch wk.Key {
+	case "collectors":
+		if c.hasWork("dyson", wk.Star) {
+			return flow.Income{} // the swarm took its place
+		}
+		return flow.Income{flow.E: collectorMul * light}
+	case "dyson":
+		return flow.Income{flow.E: dysonMul * light}
+	case "mine":
+		return flow.Income{flow.M: beltYield}
+	case "tap":
+		if st.Class == 'N' {
+			return flow.Income{flow.E: tapYield}
+		}
+	case "lifter":
+		if !st.Dead() || st.Remnant == "neutron star" {
+			return flow.Income{flow.M: lifterYield}
+		}
+	}
+	return flow.Income{}
+}
+
+// hasWork says whether a structure of a kind stands at a star.
+func (c *Civ) hasWork(key string, star int) bool {
+	for _, wk := range c.Works {
+		if wk.Key == key && wk.Star == star {
+			return true
+		}
+	}
+	return false
+}
+
+// worksAt counts a people's structures of a kind at a star.
+func (c *Civ) worksAt(key string, star int) int {
+	n := 0
+	for _, wk := range c.Works {
+		if wk.Key == key && wk.Star == star {
+			n++
+		}
+	}
+	return n
+}
+
 // income is what a people takes in this tick: the sources at every
-// holding, and for a parasite riding hosts, the hosts' income too.
+// holding, the vacuum tap at each, what a horde stripped last tick, and
+// for a parasite riding hosts, the hosts' income too.
 func (w *World) income(c *Civ) flow.Income {
 	var in flow.Income
-	for _, s := range w.holdings(c) {
+	holdings := w.holdings(c)
+	for _, s := range holdings {
 		in.Add(w.yieldAt(c, s))
 	}
+	if c.Known["vacuum_energy"] && c.working("vacuum_energy") {
+		in[flow.E] += vacuumYield * float64(len(holdings))
+	}
+	in.Add(c.Loot)
+	c.Loot = flow.Income{}
 	if len(c.Ridden) > 0 {
 		for _, h := range sortedInts(c.Ridden) {
 			if o := w.Civs[h]; o.Living() && o.Master == c.ID {

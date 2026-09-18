@@ -323,6 +323,7 @@ func (w *World) takeWorld(wr *War, c, e *Civ, t int) {
 	colony := e.Species.Flavour().Colony
 	first := wr.Taken[i]+wr.Glassed[i] == 0
 	converted := false
+	w.carryOff(c, e, t, w.fleet) // what is mobile leaves with the taker before the world is lost
 	switch {
 	case c.miracle("unmaking"):
 		w.Bio[t] = BioNone
@@ -378,6 +379,9 @@ func (w *World) takeWorld(wr *War, c, e *Civ, t int) {
 		}
 	}
 	_ = converted
+	if w.Owner[t] == c.ID {
+		w.takeOver(c, t) // the works there come back to use if the taker knows the art
+	}
 	c.Peak = max(c.Peak, len(c.Systems))
 	wr.Lost[1-i]++
 	c.Tally.Taken++

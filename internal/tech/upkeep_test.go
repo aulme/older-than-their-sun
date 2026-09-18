@@ -59,3 +59,48 @@ func TestCat(t *testing.T) {
 		}
 	}
 }
+
+// TestStructureTable: every structure has a node that unlocks it, an
+// upkeep, a category, and the yielders are one per what they harness.
+func TestStructureTable(t *testing.T) {
+	for _, k := range StructureKeys {
+		st := Structures[k]
+		if st.Key != k {
+			t.Errorf("structure %s has key %s", k, st.Key)
+		}
+		if Get(st.Node) == nil {
+			t.Errorf("structure %s: unknown node %s", k, st.Node)
+		}
+		if st.Upkeep == (flow.Income{}) {
+			t.Errorf("structure %s costs nothing", k)
+		}
+		if st.Yields() && st.Per != "star" && st.Per != "belt" {
+			t.Errorf("structure %s is per %q", k, st.Per)
+		}
+	}
+	if u := Get("vacuum_energy").Upkeep(); u != (flow.Income{flow.M: 1}) {
+		t.Errorf("the vacuum tap costs %v, want 1 M", u)
+	}
+	if u := Get("dyson").Upkeep(); u != (flow.Income{}) {
+		t.Errorf("Dyson swarms cost %v, want nothing: the swarm pays", u)
+	}
+}
+
+// TestNoCatch22: harnessing anything needs a structure behind a node, and
+// nothing in that node's closure may be impossible without a rarity, or a
+// people could never reach the rarity that would let it reach the rarity.
+// No node is hard-gated; this keeps it so.
+func TestNoCatch22(t *testing.T) {
+	for _, k := range StructureKeys {
+		for _, n := range Closure(Structures[k].Node) {
+			if g := Get(n).Gated; g != "" {
+				t.Errorf("structure %s needs %s, which is gated by %s", k, n, g)
+			}
+		}
+	}
+	for _, n := range Nodes {
+		if n.Gated != "" {
+			t.Errorf("%s is gated by %s: a grant halves the price, it never bars the door", n.Key, n.Gated)
+		}
+	}
+}

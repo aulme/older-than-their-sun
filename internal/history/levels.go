@@ -40,8 +40,14 @@ func (w *World) recompute(c *Civ) {
 		}
 		env += n.Env
 	}
+	working := map[string]int{}
+	for _, wk := range c.Works {
+		if !wk.Dark {
+			working[wk.Key]++
+		}
+	}
 	for _, key := range structureKeys {
-		cnt := c.Structures[key]
+		cnt := working[key]
 		if cnt == 0 {
 			continue
 		}
@@ -49,20 +55,10 @@ func (w *World) recompute(c *Civ) {
 		m := 1 + 0.25*float64(min(cnt-1, 2))
 		mil, sur, soc = mil+s.Mil*m, sur+s.Sur*m, soc+s.Soc*m
 	}
-	for _, l := range c.Wielded {
-		switch l.Level {
-		case "mil":
-			mil += 2
-		case "sur":
-			sur += 1.5
-		case "soc":
-			soc += 1.5
-		case "reach":
-			reach += 15
-		case "all":
-			mil, sur, soc = mil+1, sur+1, soc+1
-		}
-	}
+	// rarities: what is had gives its levels, and a beacon its reach; a
+	// wielded artifact is one of them
+	rm, rs, rc, rr := w.levelsFromRarities(c)
+	mil, sur, soc, reach = mil+rm, sur+rs, soc+rc, reach+rr
 	// miracles: the dominant fact about whoever holds one
 	if ansible {
 		soc += 3

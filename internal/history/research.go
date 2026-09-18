@@ -72,10 +72,7 @@ func (c *Civ) rateMul(w *World) float64 {
 	if c.Scars[ScarChurch] {
 		m *= 0.9
 	}
-	if c.Structures["dyson"] > 0 {
-		m *= tech.Structures["dyson"].Rate
-	}
-	m *= min(1.5, 1+0.1*c.Surplus[flow.E]) // the mind runs on spare energy
+	m *= min(1.5, 1+0.1*c.Surplus[flow.E]) // the mind runs on spare energy; a swarm's light counts here, not as a flat bonus
 	if len(c.held()) > 0 {
 		m *= 1.5 // the miracle pulls everything else along
 		if c.surging(w.Now) {
@@ -169,6 +166,12 @@ func (w *World) learn(c *Civ, n *tech.Node, fire bool) {
 	c.Known[n.Key] = true
 	if _, ok := c.Learned[n.Key]; !ok {
 		c.Learned[n.Key] = w.Now
+	}
+	if c.Grants[n.Key] {
+		if c.Granted == nil {
+			c.Granted = map[string]bool{}
+		}
+		c.Granted[n.Key] = true
 	}
 	if c.Pursuit == n.Key {
 		c.Pursuit = ""

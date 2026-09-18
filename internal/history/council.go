@@ -179,11 +179,22 @@ func (w *World) sizeCampaign(c, e *Civ, cause string, target int) bool {
 	if !k.Send {
 		return false
 	}
+	if from, _ := w.nearest(c, target); !w.afford(c, w.fleetReservation(c, k.Share, from)) {
+		w.explain(c, "a fleet against the "+e.Name, noMeans{})
+		return false // no war is declared for a fleet that cannot sail
+	}
 	if w.warBetween(c.ID, e.ID) == nil {
 		w.declare(c, e, cause)
 	}
 	w.launch(c, Campaign, e, target, k.Share)
 	return true
+}
+
+// noMeans is the reason a fleet stays home for want of the means.
+type noMeans struct{}
+
+func (noMeans) Why() string {
+	return "the spare does not cover the fleet's reservation, and it stays home"
 }
 
 // nearestEnemy is e's world nearest to any of c's, and the distance.

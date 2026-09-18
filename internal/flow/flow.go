@@ -47,6 +47,24 @@ func (a Income) Scale(m float64) Income {
 // Total is the sum over kinds.
 func (a Income) Total() float64 { return a[O] + a[E] + a[M] }
 
+// Covers says whether this income meets a need in every kind.
+func (a Income) Covers(need Income) bool {
+	for k := range a {
+		if need[k] > a[k]+1e-9 {
+			return false
+		}
+	}
+	return true
+}
+
+// Less subtracts a need, kind by kind.
+func (a Income) Less(b Income) Income {
+	for k := range a {
+		a[k] -= b[k]
+	}
+	return a
+}
+
 // Category is what a use is for. The order of categories is the direction:
 // what a people feeds first when the income runs short.
 type Category int

@@ -4,6 +4,8 @@ import (
 	"math"
 	"math/rand/v2"
 	"testing"
+
+	"worldgen/internal/flow"
 )
 
 func near(a, b float64) bool { return math.Abs(a-b) < 1e-9 }
@@ -415,5 +417,63 @@ func TestTuning(t *testing.T) {
 	}
 	if _, err := Configure("/nonexistent/tuning.json", nil); err == nil {
 		t.Error("a missing file errors")
+	}
+}
+
+// TestBuild: the structure that meets most of the want; with nothing
+// wanting, the one worth most; nothing the spare cannot cover twice over.
+func TestBuild(t *testing.T) {
+	tn := Default()
+	sites := []Site{
+		{Key: "defences", Star: 0, Upkeep: flow.Income{0, 1, 1}, Levels: 1.5},
+		{Key: "mine", Star: 0, Yield: flow.Income{0, 0, 4}, Upkeep: flow.Income{0, 1, 0}},
+		{Key: "collectors", Star: 1, Yield: flow.Income{0, 3, 0}, Upkeep: flow.Income{0, 0, 1}},
+	}
+	// short of metal: the mine
+	b := Build(BuildInput{Sites: sites, Want: flow.Income{0, 0, 3}, Spare: flow.Income{0, 4, 4}}, tn)
+	if b.Pick != 1 || !b.Wanted {
+		t.Errorf("short of metal: picked %d (%v), want the mine", b.Pick, b)
+	}
+	// short of energy: the collectors
+	b = Build(BuildInput{Sites: sites, Want: flow.Income{0, 2, 0}, Spare: flow.Income{0, 4, 4}}, tn)
+	if b.Pick != 2 {
+		t.Errorf("short of energy: picked %d, want the collectors", b.Pick)
+	}
+	// nothing wanting: the mine is worth most (4 against 3 and 1.5 levels at 2 each)
+	b = Build(BuildInput{Sites: sites, Spare: flow.Income{0, 4, 4}}, tn)
+	if b.Pick != 1 || b.Wanted {
+		t.Errorf("nothing wanting: picked %d (%v), want the mine", b.Pick, b)
+	}
+	// the spare must cover twice the upkeep: with 1 E only the collectors go
+	b = Build(BuildInput{Sites: sites, Want: flow.Income{0, 0, 3}, Spare: flow.Income{0, 1, 4}}, tn)
+	if b.Pick != 2 {
+		t.Errorf("1 E spare: picked %d, want the collectors, the only thing covered twice", b.Pick)
+	}
+	b = Build(BuildInput{Sites: sites, Spare: flow.Income{0, 1, 1}}, tn)
+	if b.Pick != -1 {
+		t.Errorf("no spare: picked %d, want nothing", b.Pick)
+	}
+}
+
+// TestPrize: a prize lowers the bar, to a cap, and never below zero.
+func TestPrize(t *testing.T) {
+	tn := Default()
+	in := AppraiseInput{Strength: 4, Believed: 3, Spread: 0.3, Risk: 0.5}
+	plain := Appraise(in, tn)
+	in.Prize = 5
+	rich := Appraise(in, tn)
+	if plain.Prize != 0 || !near(rich.Prize, 0.1) {
+		t.Errorf("prize off the bar: plain %.3f rich %.3f, want 0 and 0.1", plain.Prize, rich.Prize)
+	}
+	in.Prize = 100
+	if capped := Appraise(in, tn); !near(capped.Prize, tn.Appraise.PrizeMax) {
+		t.Errorf("a prize of 100 takes %.3f off, want the cap %.3f", capped.Prize, tn.Appraise.PrizeMax)
+	}
+	v := Judge(JudgeInput{Appraisal: rich, Bar: 0.5, Front: 1}, tn)
+	if !near(v.Bar, 0.4) {
+		t.Errorf("bar with the prize %.3f, want 0.4", v.Bar)
+	}
+	if v = Judge(JudgeInput{Appraisal: rich, Bar: 0.05, Front: 1}, tn); v.Bar != 0 {
+		t.Errorf("bar below zero: %.3f", v.Bar)
 	}
 }

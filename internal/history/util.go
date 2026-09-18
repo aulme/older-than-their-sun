@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"sort"
+	"strconv"
 
 	"worldgen/internal/tech"
 )
@@ -122,3 +123,6 @@ func percent(x float64) string {
 	}
 	return sprintf("%.0f%%", x*100)
 }
+
+// itoa is strconv.Itoa, for keys.
+func itoa(n int) string { return strconv.Itoa(n) }

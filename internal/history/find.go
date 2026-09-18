@@ -15,6 +15,7 @@ var finderNames = map[LegacyKind][]string{
 	Threat:    {"the Ones Who Made the Hunger", "the Ones Who Lost Control", "the Warmakers"},
 	Sleeper:   {"the Ones Who Dream", "the Sleepers", "the Ones Who Would Not Die"},
 	Law:       {"the Lawgivers", "the Ones Who Changed the Rules"},
+	Bounty:    {"the Providers", "the Ones Who Left the Table Laid", "the Gardeners"},
 }
 
 // find is the lottery: what turns up with nobody looking. Surveyors,
@@ -119,7 +120,11 @@ func (w *World) discover(c *Civ, l *Legacy, how string) {
 		return
 	}
 
-	// what to attempt
+	// what to attempt; a bounty was made to be used, and that is all it is for
+	if l.Kind == Bounty {
+		w.attemptWield(c, l)
+		return
+	}
 	n := l.node()
 	a := mind.Find(mind.FindInput{
 		Curious: c.Has("curious"), Expansionist: c.Has("expansionist"), Symbiotic: c.Has("symbiosis"), Cautious: c.Has("cautious"),
@@ -204,6 +209,16 @@ func (w *World) attemptWield(c *Civ, l *Legacy) {
 		w.log("The %s try to make it work. Nothing in it will ever work again.", c.Name)
 		return
 	}
+	if l.Kind == Bounty {
+		if c.Sur+w.R.NormFloat64()*1.5 >= 2.5+c.traitDiff("find") {
+			w.useBounty(c, l)
+			c.Record = append(c.Record, "put a bounty of "+w.makerName(l)+" to use")
+			w.log("The %s put it to use. It was made to be used, and it goes on doing what it did, for them now.", c.Name)
+			return
+		}
+		w.log("The %s cannot make it do anything for them. It goes on doing what it did, for no one.", c.Name)
+		return
+	}
 	diff := 4.5 + c.traitDiff("find")
 	if l.Maker >= 0 {
 		diff -= 1 + 1.5*float64(w.kinship(c, l))
@@ -257,6 +272,7 @@ func (w *World) attemptWield(c *Civ, l *Legacy) {
 			l.Level = "reach"
 		}
 		w.log("The %s learn to use it without understanding it. If it breaks, it will stay broken.", c.Name)
+		w.wieldRarity(c, l)
 		w.recompute(c)
 		if n := l.node(); n != nil && n.Filter != "" && l.Kind == Artifact {
 			w.face(c, n.Filter, 0)
@@ -355,6 +371,13 @@ func (w *World) dropWielded(c *Civ, p float64) {
 		} else {
 			l.State = Lost
 			w.log("What the %s wielded of %s is broken, and nobody knows how to mend it.", c.Name, w.makerName(l))
+		}
+		if l.Source >= 0 {
+			s := w.Sources[l.Source]
+			s.Holder, s.Carried, s.Star = -1, -1, l.Star
+			if l.State == Lost {
+				s.Star = -1
+			}
 		}
 	}
 	c.Wielded = keep

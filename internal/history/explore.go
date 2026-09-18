@@ -223,8 +223,11 @@ func (w *World) survey(c *Civ) {
 		return
 	}
 	w.explain(c, "surveying", want)
-	c.Tally.Surveys++
 	x := w.launch(c, Survey, nil, t, 1)
+	if x == nil {
+		return
+	}
+	c.Tally.Surveys++
 	if c.Tally.Surveys == 1 {
 		w.log("The %s send their first surveyors out: a ship of a few, bound for %s, to see what the stars hold.", c.Name, w.star(t))
 	} else if w.Cfg.TraceAI {

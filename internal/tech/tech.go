@@ -7,7 +7,11 @@
 // species kind; the tree does not.
 package tech
 
-import "sort"
+import (
+	"sort"
+
+	"worldgen/internal/flow"
+)
 
 // Domains of research.
 const (
@@ -45,6 +49,7 @@ type Node struct {
 	Focus             M       // research tilt after discovery
 	Filter            string  // filter key procced on discovery
 	Structure         string  // structure key unlocked
+	Gated             string  // a rarity without which the node cannot be learned at all; none is, and TestNoCatch22 keeps it so
 	Milestone         bool    // worth a line in the legends
 	Text              string  // legend text; %s is the civilisation name
 	Desc              string  // what it is, in one line; see desc.go
@@ -158,14 +163,14 @@ var Nodes = []*Node{
 		Text: "The %s learn to live without a host. It is a poorer life, and it can be lived anywhere."},
 	// era 4: the deep tree. Each domain has a spine that costs a great deal
 	// to climb, and no one climbs all of them.
-	{Key: "stellar_engineering", Name: "Stellar Engineering", Domain: Exotic, Era: 4, Prereqs: []string{"dyson", "physics"}, Sur: 1, Mil: 1, Filter: "stellar", Milestone: true,
+	{Key: "stellar_engineering", Name: "Stellar Engineering", Domain: Exotic, Era: 4, Prereqs: []string{"dyson", "physics"}, Sur: 1, Mil: 1, Filter: "stellar", Structure: "tap", Milestone: true,
 		Text: "The %s reach into their star."},
 	{Key: "wormhole_physics", Name: "Wormhole Physics", Domain: Exotic, Era: 4, Prereqs: []string{"antimatter", "physics", "quantum_computing"}, Milestone: true,
 		Text: "The %s prove that space can be folded. It is only a proof, for now."},
 	{Key: "exotic_matter", Name: "Exotic Matter", Domain: Exotic, Era: 4, Cost: 500, Prereqs: []string{"wormhole_physics", "antimatter"}, Mil: 0.5, Sur: 0.5},
 	{Key: "causal_physics", Name: "Causal Physics", Domain: Exotic, Era: 4, Cost: 600, Prereqs: []string{"wormhole_physics", "quantum_computing"}, Soc: 0.5, Focus: M{Exotic: 1.3}},
 	{Key: "transcendence", Name: "Transcendence", Domain: Exotic, Era: 4, Cost: 500, Prereqs: []string{"uploading", "wormhole_physics", "memetics"}, Filter: "transcend"},
-	{Key: "star_lifting", Name: "Star Lifting", Domain: Exotic, Era: 4, Cost: 500, Prereqs: []string{"stellar_engineering"}, Sur: 1, Milestone: true,
+	{Key: "star_lifting", Name: "Star Lifting", Domain: Exotic, Era: 4, Cost: 500, Prereqs: []string{"stellar_engineering"}, Sur: 1, Structure: "lifter", Milestone: true,
 		Text: "The %s learn to feed and drain their star. They will never need to fear it again."},
 	{Key: "deep_time", Name: "Deep Time", Domain: Exotic, Era: 4, Cost: 600, Prereqs: []string{"star_lifting", "causal_physics"}, Patience: 4000, Chance: 0.3, Soc: 0.5, Milestone: true,
 		Text: "The %s read the ages in the ash of dead stars and learn that the galaxy has done this before."},
@@ -241,6 +246,14 @@ func init() {
 				panic("tech: unknown prerequisite " + p + " of " + n.Key)
 			}
 		}
+		if n.Structure != "" && Structures[n.Structure] == nil {
+			panic("tech: unknown structure " + n.Structure + " of " + n.Key)
+		}
+	}
+	for _, st := range Structures {
+		if byKey[st.Node] == nil {
+			panic("tech: unknown node " + st.Node + " of structure " + st.Key)
+		}
 	}
 }
 
@@ -267,20 +280,45 @@ func Closure(key string) []string {
 	return out
 }
 
-// Structure is something built within reach that gives levels.
+// Structure is something built at a star a people holds. It gives levels,
+// or a yield from what is there, or both; it has an upkeep like any use
+// and goes dark when it is shed. The yields themselves are calibration
+// and live with the natural sources in history.
 type Structure struct {
 	Key, Name     string
+	Node          string // the node that unlocks it
 	Mil, Sur, Soc float64
-	Rate          float64 // research multiplier while held
-	Hardy         float64 // multiplier on decay once abandoned; less is hardier
-	Text          string  // %s civ, %s star
+	Upkeep        flow.Income   // per tick, while it works
+	Cat           flow.Category // what it is fed under
+	Per           string        // what it is one of: "star" (one per star), "belt" (one per belt), "" (two per people, one per star)
+	Hardy         float64       // multiplier on decay once abandoned; less is hardier
+	Text          string        // %s civ, %s star
 }
 
 // Structures by key.
 var Structures = map[string]*Structure{
-	"arcology": {Key: "arcology", Name: "arcology", Sur: 1, Hardy: 1.2, Text: "The %s seal a city at %s against everything outside it."},
-	"shipyard": {Key: "shipyard", Name: "shipyard", Mil: 0.5, Hardy: 1.6, Text: "Yards turn above %s, building ships for the %s."},
-	"defences": {Key: "defences", Name: "defence grid", Mil: 1.5, Hardy: 0.7, Text: "The %s ring %s with guns that watch the sky."},
-	"ansible":  {Key: "ansible", Name: "ansible net", Soc: 1.5, Hardy: 0.9, Text: "The %s link %s to home without delay."},
-	"dyson":    {Key: "dyson", Name: "Dyson swarm", Sur: 0.5, Rate: 1.5, Hardy: 0.3, Text: "The %s enclose %s in a swarm of collectors. The star dims from outside."},
+	"arcology":   {Key: "arcology", Name: "arcology", Node: "closed_ecologies", Sur: 1, Upkeep: flow.Income{flow.E: 1}, Cat: flow.Fields, Hardy: 1.2, Text: "The %s seal a city at %s against everything outside it."},
+	"shipyard":   {Key: "shipyard", Name: "shipyard", Node: "orbital_habitats", Mil: 0.5, Upkeep: flow.Income{flow.E: 1, flow.M: 1}, Cat: flow.Arms, Hardy: 1.6, Text: "Yards turn above %s, building ships for the %s."},
+	"defences":   {Key: "defences", Name: "defence grid", Node: "defence_grid", Mil: 1.5, Upkeep: flow.Income{flow.E: 1, flow.M: 1}, Cat: flow.Arms, Hardy: 0.7, Text: "The %s ring %s with guns that watch the sky."},
+	"ansible":    {Key: "ansible", Name: "ansible net", Node: "ansible", Soc: 1.5, Upkeep: flow.Income{flow.E: 2}, Cat: flow.Mind, Hardy: 0.9, Text: "The %s link %s to home without delay."},
+	"dyson":      {Key: "dyson", Name: "Dyson swarm", Node: "dyson", Sur: 0.5, Upkeep: flow.Income{flow.M: 2}, Cat: flow.Works, Per: "star", Hardy: 0.3, Text: "The %s enclose %s in a swarm of collectors. The star dims from outside."},
+	"mine":       {Key: "mine", Name: "mines", Node: "orbital_habitats", Upkeep: flow.Income{flow.E: 1}, Cat: flow.Works, Per: "belt", Hardy: 1.4, Text: "The %s put mines in the belt at %s."},
+	"collectors": {Key: "collectors", Name: "collectors", Node: "orbital_habitats", Upkeep: flow.Income{flow.M: 1}, Cat: flow.Works, Per: "star", Hardy: 0.5, Text: "The %s ring %s with collectors, and live on its light."},
+	"tap":        {Key: "tap", Name: "accretion tap", Node: "stellar_engineering", Upkeep: flow.Income{flow.E: 1, flow.M: 2}, Cat: flow.Works, Per: "star", Hardy: 0.4, Text: "The %s ring the dead star at %s with a tap and draw on what falls in."},
+	"lifter":     {Key: "lifter", Name: "star lifter", Node: "star_lifting", Upkeep: flow.Income{flow.M: 3}, Cat: flow.Works, Per: "star", Hardy: 0.4, Text: "The %s set a lifter on %s and take the star itself for metal."},
 }
+
+// StructureKeys is every structure in a fixed order, for loops that must
+// not range over the map.
+var StructureKeys = func() []string {
+	var out []string
+	for k := range Structures {
+		out = append(out, k)
+	}
+	sort.Strings(out)
+	return out
+}()
+
+// Yields says whether a structure harnesses a source rather than giving
+// levels: the mines, the collectors, the swarm, the tap and the lifter.
+func (s *Structure) Yields() bool { return s.Per != "" }

@@ -62,6 +62,8 @@ type AppraiseTuning struct {
 	DarkAge     float64 // years after a dark age a people still counts as weakened
 	AllyShare   float64 // of an ally's level that would come
 	Scale       float64 // levels of margin per unit of the normal
+	PrizeWeight float64 // the bar drops this much per unit of prize: the target's yield the attacker wants, and its rarities
+	PrizeMax    float64 // and never by more than this
 }
 
 // BarTuning: the odds a posture needs before it strikes.
@@ -214,7 +216,9 @@ type ExpandTuning struct {
 
 // BuildTuning: structures.
 type BuildTuning struct {
-	Rate float64 // per thousand years
+	Rate        float64 // per thousand years
+	Cover       float64 // the spare must cover a structure's upkeep this many times over before it is built
+	LevelWeight float64 // a level lifted is worth this much yield per tick, when nothing is wanting
 }
 
 // DirectionTuning: what bends the order the means are fed in.
@@ -245,7 +249,7 @@ type RoamTuning struct {
 func Default() *Tuning {
 	return &Tuning{
 		Belief:   BeliefTuning{UnknownBase: 1, UnknownPerEra: 1.2, UnknownSpread: 3, Spread: 0.3, SpreadPerKyr: 0.1, MaxSpread: 3},
-		Appraise: AppraiseTuning{Defence: 1, HomeDefence: 2.5, Grid: 0.5, Weakened: 1, OtherWar: 0.3, AllyShare: 0.5, Scale: 2, DarkAge: 50_000},
+		Appraise: AppraiseTuning{Defence: 1, HomeDefence: 2.5, Grid: 0.5, Weakened: 1, OtherWar: 0.3, AllyShare: 0.5, Scale: 2, DarkAge: 50_000, PrizeWeight: 0.02, PrizeMax: 0.15},
 		Bar:      BarTuning{Hate: 0.35, Opportunist: 0.75, Conqueror: 0.4, Vengeful: 0.3, GrudgeDiscount: 0.1},
 		Council:  CouncilTuning{Cadence: 0.3, Compulsion: 0.1, Compelled: 0.25},
 		Scout:    ScoutTuning{KeepHome: 1, FearBar: 0.8, FearMil: 4, SightNoise: 0.1},
@@ -265,7 +269,7 @@ func Default() *Tuning {
 		Find:      FindTuning{Master: 1, Wield: 1.5, Seal: 1, Curious: 3, Reaching: 1, Cautious: 3, Wary: 1.5, Practical: 2, ThreatSeal: 2, Plain: 2, Own: 3},
 		Research:  ResearchTuning{DepthBonus: 0.25},
 		Expand:    ExpandTuning{Rate: 0.04, MaxRate: 0.3, ParasiteReach: 0.3, Hop: 20, Blind: 0.2, NeedShipsBelow: 40, NeedShipsEra: 2, ShipFocus: 4},
-		Build:     BuildTuning{Rate: 0.004},
+		Build:     BuildTuning{Rate: 0.004, Cover: 2, LevelWeight: 2},
 		Direction: DirectionTuning{FearBar: 0.6, HungerBar: 0.6, GreedBar: 0.6},
 		Turn:      TurnTuning{Faithful: 0.0005, Practical: 0.01, Faithless: 0.05, Hostile: 2, Vengeful: 3, Opening: 1, GreedBase: 0.5},
 		Roam:      RoamTuning{HopMin: 3, HopMax: 20},

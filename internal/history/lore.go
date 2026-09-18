@@ -64,7 +64,8 @@ const (
 	FStripped
 	FCycle
 	FSurveyLost
-	FWant // the lean years: a stretch of shedding past a hundred thousand years
+	FWant    // the lean years: a stretch of shedding past a hundred thousand years
+	FHarness // a first source of a kind put to use: mines in a belt, a tap on a dead star
 )
 
 // Sort is the moral shape of a fact from the subject's side.
@@ -94,7 +95,7 @@ var factShape = [...]struct {
 	FOvercome: {Deed, 2}, FScarred: {Woe, 2}, FDeclined: {Woe, 3},
 	FMiracle: {Deed, 3}, FUplift: {Deed, 3}, FBred: {Crime, 4},
 	FCosmic: {Woe, 3}, FDoom: {Woe, 3}, FExodus: {Woe, 3}, FRest: {Deed, 2}, FStripped: {Crime, 3}, FCycle: {Deed, 3}, FSurveyLost: {Woe, 2},
-	FWant: {Woe, 1},
+	FWant: {Woe, 1}, FHarness: {Deed, 1},
 }
 
 // Fact is one thing that happened, as it happened.

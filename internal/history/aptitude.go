@@ -296,6 +296,9 @@ func (w *World) met(c *Civ, key string) bool {
 // price is what a node costs this people.
 func (w *World) price(c *Civ, n *tech.Node) float64 {
 	_, mult := w.aptitude(c, n)
+	if c.Grants[n.Key] {
+		mult *= 0.5 // a rarity had: the horizon for the deep physics, the ash for exotic matter
+	}
 	return n.Price() * mult
 }
 
