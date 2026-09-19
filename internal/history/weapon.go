@@ -327,7 +327,7 @@ func (w *World) poisoned(c, e *Civ, p *Plague, took bool) {
 		w.breakPacts(c, e)
 	}
 	w.betray(c, e, "poisoned the "+e.Name, 1)
-	e.Grudge[c.ID] = max(e.Grudge[c.ID], 3)
+	e.resent(c.ID, max(0, 3-e.Grudge[c.ID]))
 	if e.Free() && !e.Wars[c.ID] && !e.Has("pacifist") {
 		w.declare(e, c, "the poisoning")
 	}

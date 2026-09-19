@@ -121,6 +121,7 @@ var aptitudes = []apt{
 	dear("networks", "swarming", 0.5), dear("uploading", "swarming", 2), dear("orbital_habitats", "swarming", 0.7), dear("closed_ecologies", "swarming", 0.8),
 	// substrates and modifiers
 	moot("seafaring", "mod:planetary"), moot("states", "mod:planetary"), moot("mass_politics", "mod:planetary"), moot("burial", "mod:planetary"), moot("religion", "mod:planetary"),
+	dear("domain:society", "mod:planetary", 1.5), // no society: what it has of one is dear
 	dear("terraforming", "mod:planetary", 0.5), dear("panspermia", "mod:planetary", 0.5), dear("life_extension", "mod:planetary", 0.5), dear("uploading", "mod:planetary", 2), dear("rocketry", "mod:planetary", 2), dear("networks", "mod:planetary", 0.3), dear("memetics", "mod:planetary", 2),
 	moot("agriculture", "sub:parasite"), moot("states", "sub:parasite"), never("genetics", "sub:parasite", ""),
 	dear("medicine", "sub:parasite", 0.6), dear("neuroscience", "sub:parasite", 0.6), dear("memetics", "sub:parasite", 0.6),
@@ -305,6 +306,9 @@ func (w *World) price(c *Civ, n *tech.Node) float64 {
 // birthright gives a people its innate nodes and says at birth what its
 // body and world do to the tree.
 func (w *World) birthright(c *Civ) {
+	if !c.Species.Profile().Can(species.Researches) {
+		return // no tree to take to
+	}
 	var blocks, cheap, costly []string
 	type ranked struct {
 		name string

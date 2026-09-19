@@ -107,6 +107,9 @@ func (w *World) fight(x *Expedition, t int) {
 		return // one battle a tick at a world
 	}
 	w.foughtAt[t] = w.Now
+	if e.Asleep {
+		w.rouse(e, c) // a fleet in its sky is a disturbance
+	}
 	i := wr.side(c.ID)
 	wr.Contested[t]++
 	s := w.skyAt(e, t)

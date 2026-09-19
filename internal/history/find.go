@@ -2,6 +2,7 @@ package history
 
 import (
 	"worldgen/internal/mind"
+	"worldgen/internal/species"
 	"worldgen/internal/tech"
 )
 
@@ -145,6 +146,9 @@ func (w *World) discover(c *Civ, l *Legacy, how string) {
 		OldThings: c.fixed(OldThings), Field: l.Kind == Field, Known: l.Node == "" || c.Known[l.Node],
 		Above: n != nil && (l.Kind == Artifact || l.Kind == Structure) && n.Era-c.Era >= t.Wisdom.AboveEras, Wis: c.Wis,
 	}, t)
+	if !c.Species.Profile().Can(species.Researches) {
+		a.Master = 0 // no tree to master it into: it wields what it finds, or seals it
+	}
 	w.explain(c, "weighing what to do with "+l.Describe(), a)
 	pick := a.Pick(w.R.Float64())
 	// whichever way the die falls, a wise people asks whether it can

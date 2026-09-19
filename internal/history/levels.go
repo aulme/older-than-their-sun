@@ -132,11 +132,12 @@ func (w *World) recompute(c *Civ) {
 	}
 	p := c.Species.Profile()
 	env += p.Env
+	era = max(era, p.Era) // a people with no tree is never young
 	if c.Own >= 0 {
 		soc += min(2, 0.5*float64(c.Hosts+slaves)) // a parasite is as rich as its hosts
 	}
-	if c.Species.Is(species.Planetary) && c.Known["grafting"] {
-		reach /= p.Reach // a world's reach is a third until it learns to graft
+	if !p.Can(species.Wavers) {
+		c.Morale = 0 // nothing in it rises or falls
 	}
 	soc += c.Morale
 	ssur, ssoc := w.sickLevels(c)
@@ -145,6 +146,10 @@ func (w *World) recompute(c *Civ) {
 	w.setWisdom(c, wis)
 	w.setDials(c)
 	reach *= c.Species.ReachMul()
+	reach += p.Range // what it feels, for a people whose reach is not a ship's
+	if p.Neighbourhood > 0 {
+		reach = p.Neighbourhood // a people that cannot move: its reach is fixed and small
+	}
 	if !c.Free() {
 		if c.Vassal {
 			reach *= 0.5

@@ -53,7 +53,7 @@ func TestMachineSuccessorIsNewBlood(t *testing.T) {
 }
 
 // TestDifferenceOrder: the order term is what it was when the hive was an
-// organisation trait.
+// organisation trait, and nobody home adds two.
 func TestDifferenceOrder(t *testing.T) {
 	hive := species.Fixed("defensive")
 	hive.Mods = species.Hive
@@ -68,8 +68,8 @@ func TestDifferenceOrder(t *testing.T) {
 	}
 	un := species.Fixed("defensive")
 	un.Mods = species.Unconscious
-	if d := difference(hive, un); d != 1 {
-		t.Fatalf("hive against unconscious: %g, want 1", d)
+	if d := difference(hive, un); d != 3 {
+		t.Fatalf("hive against unconscious: %g, want the order's 1 and no one home's 2", d)
 	}
 	swarm := species.Fixed("individualist", "defensive", "swarming")
 	if d := difference(swarm, ind); d != 2.5 {

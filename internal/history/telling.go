@@ -88,6 +88,13 @@ var templates = [...]string{
 	FSundered:     "{S} tore themselves apart, and {O} declared themselves {X}.",
 	FReclaimed:    "{S} took {T} back from {O}, and called it restored to the realm.",
 	FShattered:    "{S} forgot how to reach the stars, and on {T} {O} woke up alone.",
+	FSevered:      "{T} was too far from the seat of {S} for one mind to hold, and what was there was {O} after.",
+	FDeepened:     "{S} changed: {X} was in them after.",
+	FAppeared:     "Another of {s} was at {T}, and nothing was seen to cross.",
+	FTithed:       "{S} took a share of every harvest of {O}, and nobody agreed to it.",
+	FDemand:       "{S} told {O} to leave {T}, and they {X}.",
+	FWaking:       "{S} woke, and the worlds of {O} near {T} were unmade.",
+	FUnmade:       "{S} unmade {T}, a world of {O}, without touching it.",
 }
 
 // blamedTemplates are the woes that name their own cause, retold once
@@ -421,6 +428,12 @@ func (w *World) mythOf(c *Civ, f *Fact) string {
 		return "the sundering"
 	case FShattered:
 		return "the shattering"
+	case FSevered:
+		return "the cutting off of " + w.star(f.Star)
+	case FWaking:
+		return "the waking of " + name(f.Subject)
+	case FUnmade:
+		return "the unmaking of " + w.star(f.Star)
 	case FExodus:
 		return "the leaving of " + w.star(f.Star)
 	case FBred:
@@ -457,6 +470,8 @@ func (w *World) blameOf(c *Civ, f *Fact) string {
 		return "tore " + us + " apart"
 	case FShattered:
 		return "took the stars from " + us
+	case FSevered:
+		return "cut " + w.star(f.Star) + " from " + us
 	case FHorrorStrike, FSurveyLost:
 		return "woke " + w.horrorName(f)
 	case FDefeat:
@@ -495,6 +510,12 @@ func (w *World) deedOf(f *Fact) string {
 		return "remade the " + w.Civs[f.Object].Name
 	case FManna:
 		return "ate what thought"
+	case FTithed:
+		return "took a share of every harvest of the " + w.Civs[f.Object].Name
+	case FWaking:
+		return "woke on the worlds of the " + w.Civs[f.Object].Name
+	case FUnmade:
+		return "unmade " + w.star(f.Star)
 	}
 	return "did it"
 }

@@ -1,7 +1,11 @@
 package species
 
-// unconscious: intelligence with no one home. The organisation group is
-// not rolled; the rest of its rules land with the modifier rules.
+// unconscious: intelligence with no one home. It holds no grudge and
+// takes none to heart, has no morale, never civil-wars, never ossifies,
+// never faces the filters of belief and boredom; amoral always; as other
+// as eldritch to anything conscious. It imitates the forms: it trades,
+// swears and breaks pacts on appraisal alone, which is what makes it
+// creepy.
 var unconscious = &ModDef{Mod: Unconscious, Entry: Entry{
 	Key:      "unconscious",
 	Portrait: "There is no one inside; they only act as if.",
@@ -13,6 +17,10 @@ var unconscious = &ModDef{Mod: Unconscious, Entry: Entry{
 		Dom:        M{"exotic": 0.6, "society": 0.4, "biology": 1.3},
 		Memory:     1.5,
 		FilterDiff: map[string]float64{"beacon": -3, "transcend": 2, "machines": -1, "silence": -2},
-		Cannot:     Believes | Stiffens, // no idea can take a mind that is not there, and nothing in it sets
+		Cannot:     Believes | Stiffens | CivilWars | HoldsGrudges | Wavers, // no idea can take a mind that is not there; nothing in it sets, splits, resents or despairs
+		NeverFaces: []string{"faith", "silence", "ossification"},
+		NoOne:      true,
+		Amoral:     true,
+		Morals:     [4]float64{2, 0.04, 3, 1},
 	},
 }}

@@ -38,19 +38,31 @@ var groupRolls = []struct {
 	{"rider", 1, true}, {"way", 0.08, false}, {"seat", 1, true},
 }
 
-// Options steer a roll. The zero value is a cradle roll with the legacy
-// numbers.
+// Options steer a roll. The zero value is a cradle roll with the
+// proposal's numbers.
 type Options struct {
-	Arch    string                // home world archetype key, "" to roll one
-	Fix     bool                  // Sub is fixed rather than rolled
-	Sub     Substrate             // the fixed substrate
-	Mods    Mod                   // modifiers fixed on; the rest are rolled
-	Weights map[Substrate]float64 // substrate weights in place of the setting's cradle table, for the deep pass
-	Setting Setting
+	Arch   string    // home world archetype key, "" to roll one
+	Fix    bool      // Sub is fixed rather than rolled
+	Sub    Substrate // the fixed substrate
+	Mods   Mod       // modifiers fixed on; the rest are rolled
+	Deep   bool      // the deep pass's substrate weights: the old galaxy is where the wonders and the leftovers come from
+	Legacy bool      // the numbers that reproduce the old kind table, for a test
 }
+
+// Powers an eldritch people draws at birth: one to three.
+const (
+	bornPowersMin = 1
+	bornPowersMax = 3
+)
 
 // Generate rolls a species. mult is the home star's multiplicity.
 func Generate(r *rand.Rand, mult int) *Species { return Roll(r, mult, Options{}) }
+
+// GenerateDeep rolls a species with the deep pass's substrate weights,
+// for the peoples of past ages.
+func GenerateDeep(r *rand.Rand, mult int, arch string) *Species {
+	return Roll(r, mult, Options{Arch: arch, Deep: true})
+}
 
 // GenerateOn generates a species for a home world of a given archetype
 // key, or a random one if the key is empty.
@@ -71,10 +83,10 @@ func Roll(r *rand.Rand, mult int, o Options) *Species {
 		s.Sub = o.Sub
 	} else {
 		d := pickWeighted(r, Substrates, func(d *SubstrateDef) float64 {
-			if o.Weights != nil {
-				return o.Weights[d.Sub]
+			if o.Deep {
+				return d.Deep
 			}
-			return d.draw(o.Setting).Base
+			return d.draw(o.Legacy).Base
 		})
 		s.Sub = d.Sub
 	}
@@ -82,13 +94,13 @@ func Roll(r *rand.Rand, mult int, o Options) *Species {
 	tilt := func(key string) float64 {
 		t := 1.0
 		for _, e := range carried {
-			if v, ok := e.draw(o.Setting).Tilts[key]; ok {
+			if v, ok := e.draw(o.Legacy).Tilts[key]; ok {
 				t *= v
 			}
 		}
 		return t
 	}
-	roll := func(e *Entry) bool { return tilted(r, e.draw(o.Setting).Base, tilt(e.Key)) }
+	roll := func(e *Entry) bool { return tilted(r, e.draw(o.Legacy).Base, tilt(e.Key)) }
 	for _, e := range TraitRolls {
 		if roll(e) {
 			s.Add(e.Key)
@@ -120,7 +132,7 @@ func Roll(r *rand.Rand, mult int, o Options) *Species {
 	}
 	skips := func(group string) bool {
 		for _, e := range carried {
-			for _, g := range e.draw(o.Setting).Skip {
+			for _, g := range e.draw(o.Legacy).Skip {
 				if g == group {
 					return true
 				}
@@ -147,7 +159,7 @@ func Roll(r *rand.Rand, mult int, o Options) *Species {
 		}
 		chance := g.chance
 		for _, e := range carried {
-			if v, ok := e.draw(o.Setting).Groups[g.group]; ok {
+			if v, ok := e.draw(o.Legacy).Groups[g.group]; ok {
 				chance *= v
 			}
 		}
@@ -168,6 +180,15 @@ func Roll(r *rand.Rand, mult int, o Options) *Species {
 			continue
 		}
 		s.Add(pick(g.group).Key)
+	}
+	if !s.Profile().Can(Researches) {
+		// no tree: the pool instead, a few at birth
+		n := bornPowersMin + r.IntN(bornPowersMax-bornPowersMin+1)
+		for i := 0; i < n; i++ {
+			if p := s.DrawPower(r); p != nil {
+				s.AddPower(p.Key)
+			}
+		}
 	}
 	return s
 }

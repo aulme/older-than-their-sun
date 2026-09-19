@@ -67,7 +67,7 @@ func (w *World) heir(old *Civ, home int, origin string) *Civ {
 		nc.Truce[k] = v
 	}
 	for k, v := range old.Grudge {
-		nc.Grudge[k] = v * w.Cfg.Tuning.Ossify.HeirGrudge
+		nc.resent(k, v*w.Cfg.Tuning.Ossify.HeirGrudge)
 	}
 	for k, v := range old.Fought {
 		nc.Fought[k] = v
@@ -110,32 +110,7 @@ func (d *dealing) of(star int) *Civ {
 // a trace and passes what the galaxy held against it to each heir.
 func (w *World) deal(old *Civ, d *dealing, fate Fate, cause string) {
 	for _, s := range old.Systems {
-		h := d.of(s)
-		w.Owner[s] = h.ID
-		h.Systems = append(h.Systems, s)
-		if g, ok := old.Guns[s]; ok {
-			if h.Guns == nil {
-				h.Guns = map[int]int{}
-			}
-			h.Guns[s] = g
-		}
-		if old.GridBroken[s] {
-			if h.GridBroken == nil {
-				h.GridBroken = map[int]bool{}
-			}
-			h.GridBroken[s] = true
-		}
-		if r, ok := old.DockRate[s]; ok {
-			if h.DockRate == nil {
-				h.DockRate = map[int]float64{}
-			}
-			h.DockRate[s] = r
-		}
-	}
-	for _, wk := range old.Works {
-		h := d.of(wk.Star)
-		h.Works = append(h.Works, wk)
-		h.Structures[wk.Key]++
+		w.handWorld(old, d.of(s), s)
 	}
 	for _, x := range w.fleetsOf(old) {
 		var h *Civ
@@ -220,39 +195,87 @@ func (w *World) deal(old *Civ, d *dealing, fate Fate, cause string) {
 	w.sunder(old, d.heirs, fate, cause)
 }
 
+// handWorld gives one world of the old people to an heir: the owner, the
+// guns, the grid and the dock's rate there, and the works on it. The
+// old people's list of worlds is the caller's to keep or clear.
+func (w *World) handWorld(old, h *Civ, s int) {
+	w.Owner[s] = h.ID
+	h.Systems = append(h.Systems, s)
+	if g, ok := old.Guns[s]; ok {
+		if h.Guns == nil {
+			h.Guns = map[int]int{}
+		}
+		h.Guns[s] = g
+	}
+	if old.GridBroken[s] {
+		if h.GridBroken == nil {
+			h.GridBroken = map[int]bool{}
+		}
+		h.GridBroken[s] = true
+	}
+	if r, ok := old.DockRate[s]; ok {
+		if h.DockRate == nil {
+			h.DockRate = map[int]float64{}
+		}
+		h.DockRate[s] = r
+	}
+	keep := old.Works[:0]
+	for _, wk := range old.Works {
+		if wk.Star == s {
+			old.Structures[wk.Key]--
+			h.Works = append(h.Works, wk)
+			h.Structures[wk.Key]++
+		} else {
+			keep = append(keep, wk)
+		}
+	}
+	old.Works = keep
+}
+
+// passOn gives an heir what every other people held against the old one:
+// grudges at half, truces whole, intelligence, watchfulness, the memory
+// of it as a monster, and the trade it had.
+func (w *World) passOn(old, h *Civ) {
+	t := &w.Cfg.Tuning.Ossify
+	for _, o := range w.Civs {
+		if o == old || o == h || !o.Living() {
+			continue
+		}
+		if g, ok := o.Grudge[old.ID]; ok {
+			o.resent(h.ID, g*t.HeldGrudge)
+		}
+		if y, ok := o.Truce[old.ID]; ok {
+			o.Truce[h.ID] = y
+		}
+		if i := o.Intel[old.ID]; i != nil {
+			c := *i
+			o.Intel[h.ID] = &c
+		}
+		for _, m := range []map[int]bool{o.Watched, o.Met, o.Reached, o.Fathomed, o.Trade, o.Dependent, o.Suspect, o.Closed, o.Barred, o.Ridden, o.monsters} {
+			if m != nil && m[old.ID] {
+				m[h.ID] = true
+			}
+		}
+		if y, ok := o.FathomTried[old.ID]; ok {
+			o.FathomTried[h.ID] = y
+		}
+		if n, ok := o.Fought[old.ID]; ok {
+			o.Fought[h.ID] = n
+		}
+	}
+}
+
 // sunder ends the old people without a trace: its holdings are already
 // dealt, its wars end (the heirs' are already opened or not, by the
 // caller), its pacts dissolve, and what every other people held against
-// it passes to each heir: grudges at half, truces whole, intelligence,
-// watchfulness, the memory of it as a monster, and the trade it had.
+// it passes to each heir.
 func (w *World) sunder(old *Civ, heirs []*Civ, fate Fate, cause string) {
-	t := &w.Cfg.Tuning.Ossify
+	for _, h := range heirs {
+		w.passOn(old, h)
+	}
 	for _, o := range w.Civs {
 		if o == old || !o.Living() {
 			continue
-		}
-		for _, h := range heirs {
-			if g, ok := o.Grudge[old.ID]; ok {
-				o.Grudge[h.ID] = g * t.HeldGrudge
-			}
-			if y, ok := o.Truce[old.ID]; ok {
-				o.Truce[h.ID] = y
-			}
-			if i := o.Intel[old.ID]; i != nil {
-				c := *i
-				o.Intel[h.ID] = &c
-			}
-			for _, m := range []map[int]bool{o.Watched, o.Met, o.Reached, o.Fathomed, o.Trade, o.Dependent, o.Suspect, o.Closed, o.Barred, o.Ridden, o.monsters} {
-				if m != nil && m[old.ID] {
-					m[h.ID] = true
-				}
-			}
-			if y, ok := o.FathomTried[old.ID]; ok {
-				o.FathomTried[h.ID] = y
-			}
-			if n, ok := o.Fought[old.ID]; ok {
-				o.Fought[h.ID] = n
-			}
 		}
 		for _, m := range []map[int]bool{o.Trade, o.Dependent, o.Watched} {
 			delete(m, old.ID)
@@ -405,7 +428,8 @@ func (w *World) civilWar(c *Civ) bool {
 			a.Met[b.ID], b.Met[a.ID], a.Reached[b.ID], b.Reached[a.ID] = true, true, true, true
 			a.Fathomed[b.ID], b.Fathomed[a.ID] = true, true
 			w.declare(a, b, "the sundering")
-			a.Grudge[b.ID], b.Grudge[a.ID] = t.SunderGrudge, t.SunderGrudge
+			a.resent(b.ID, t.SunderGrudge)
+			b.resent(a.ID, t.SunderGrudge)
 		}
 	}
 	return true
@@ -429,11 +453,18 @@ func (w *World) tearApart(old *Civ, heirs []*Civ, seat *Civ) {
 }
 
 // shatter is the dark age that took the stars: every world its own people,
-// the seat included, with the reduced tree, the telling a step more worn,
-// the works and the garrison there, and kin to the rest. Past the cap the
-// other worlds are abandoned.
-func (w *World) shatter(c *Civ, why string) {
+// the seat included, with the reduced tree (or the whole one, for a
+// people whose minds are backed up on every world: forgotten is what the
+// dark age took), the telling a step more worn, the works and the
+// garrison there, and kin to the rest. Past the cap the other worlds are
+// abandoned.
+func (w *World) shatter(c *Civ, why string, forgotten []string) {
 	t := &w.Cfg.Tuning.Ossify
+	if c.Species.Profile().Backups {
+		for _, k := range forgotten {
+			c.Known[k] = true // the backups are on every world; each shard wakes with the whole tree
+		}
+	}
 	worlds := []int{c.Home}
 	for _, s := range w.R.Perm(len(c.Systems)) {
 		if c.Systems[s] != c.Home {
@@ -461,6 +492,35 @@ func (w *World) shatter(c *Civ, why string) {
 		f.What = why
 	}
 	w.log("The %s forget how to reach the stars. On %s worlds %s peoples wake up alone: %s.", c.Name, numberWord(len(worlds)), numberWord(len(worlds)), w.shardList(d.heirs))
+}
+
+// cutOff is a world cut from signal reach of its seat for long enough: a
+// new people of the same blood on the far world, kin to the old, holding
+// that world with the works, the guns and the guard there. It is the
+// Distance's decline for a people with no factions to split into (a
+// hive, the unconscious): the old people goes on, one world poorer.
+func (w *World) cutOff(c *Civ, star int) *Civ {
+	if !c.Active() || !contains(c.Systems, star) || star == c.Home {
+		return nil
+	}
+	h := w.heir(c, star, "cut from the "+c.Name)
+	c.Systems = remove(c.Systems, star)
+	w.handWorld(c, h, star)
+	for _, x := range w.fleetsOf(c) {
+		if x.Base == star {
+			w.reown(x, h)
+		}
+	}
+	w.passOn(c, h)
+	h.Peak = 1
+	h.Stage = Interstellar
+	w.recompute(c)
+	w.recompute(h)
+	w.renew(c, 0.05)
+	f := w.fact(FSevered, c, h, star)
+	f.What = w.star(star)
+	w.log("%s is too far from %s for one mind to hold. What is there is the %s now: of one blood with the %s, and no longer one of them.", w.star(star), c.HomeName, h.Name, c.Name)
+	return h
 }
 
 func (w *World) shardList(hs []*Civ) string {

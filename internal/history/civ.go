@@ -78,6 +78,7 @@ func (w *World) spawn(home int, sp *species.Species, maker int, name string, hos
 	}
 	w.bornMorality(c)
 	w.birthright(c)
+	w.bornPowers(c)
 	if sp.Has("kinfed") {
 		w.fact(FManna, c, nil, home) // a fact every other people judges by its own lights, once known
 	}
@@ -156,6 +157,7 @@ var civSteps = []civStep{
 	{"guns", (*World).guns},
 	{"objects", (*World).objects},
 	{"research", (*World).research},
+	{"eldritch", (*World).eldritchStep},
 	{"wander", (*World).wander},
 	{"expand", (*World).expand},
 	{"build", (*World).build},
@@ -179,7 +181,7 @@ var civSteps = []civStep{
 // holds no council, launches nothing, settles nothing, builds nothing,
 // offers nothing and banks no research. See ossify.go.
 var offSteps = map[string]bool{
-	"shipwright": true, "research": true, "expand": true, "build": true, "explore": true,
+	"shipwright": true, "research": true, "eldritch": true, "expand": true, "build": true, "explore": true,
 	"council": true, "contracting": true, "uplift": true,
 }
 
@@ -217,6 +219,10 @@ func (w *World) tickCivs() {
 		w.recompute(c)
 		if c.Ascended == 0 && c.Reach >= 1 && len(c.held()) > 0 {
 			c.Ascended = w.Now // the born reach the stars, and the miracle begins to matter
+		}
+		if c.Asleep {
+			w.guns(c) // the long sleep: nothing but the body, until disturbed
+			continue
 		}
 		off := w.offTick(c)
 		for _, step := range civSteps {
@@ -279,14 +285,7 @@ func (w *World) arrivals(c *Civ) {
 }
 
 func (w *World) settle(c *Civ, t int) {
-	w.Owner[t] = c.ID
-	c.Systems = append(c.Systems, t)
-	c.colonies++
-	w.stir(c)
-	w.takeOver(c, t)
-	if len(c.Systems) > c.Peak {
-		c.Peak = len(c.Systems)
-	}
+	w.holdWorld(c, t)
 	switch n := len(c.Systems); {
 	case c.colonies == 1:
 		w.log("The %s settle %s, their first %s beyond %s.", c.Name, w.star(t), c.Species.Flavour().Colony, c.HomeName)
@@ -295,6 +294,25 @@ func (w *World) settle(c *Civ, t int) {
 		w.log("The %s now hold %d systems.", c.Name, n)
 		w.fact(FSettle, c, nil, t)
 	}
+	w.afterHold(c, t)
+}
+
+// holdWorld is a new world held: the state of a settlement, whether a
+// ship brought it or another of an eldritch people is simply there.
+func (w *World) holdWorld(c *Civ, t int) {
+	w.Owner[t] = c.ID
+	c.Systems = append(c.Systems, t)
+	c.colonies++
+	w.stir(c)
+	w.takeOver(c, t)
+	if len(c.Systems) > c.Peak {
+		c.Peak = len(c.Systems)
+	}
+}
+
+// afterHold is what follows a new world, after the lines: the zenith,
+// the chart, what wakes there and who notices.
+func (w *World) afterHold(c *Civ, t int) {
 	if len(c.Systems) >= 6 && c.Era >= 3 && c.Stage == Interstellar {
 		c.Stage = Zenith
 		w.log("The %s enter their zenith: %d systems, and no rival in sight.", c.Name, len(c.Systems))
@@ -303,6 +321,7 @@ func (w *World) settle(c *Civ, t int) {
 	w.chart(c, t, "settle")
 	w.wakeReservoir(c, t)
 	w.settledNear(c, t)
+	w.disturbed(c, t)
 }
 
 // canLive says whether a star is inside the civilisation's habitable envelope.
@@ -336,6 +355,10 @@ func (w *World) expand(c *Civ) {
 	}
 	if !c.Free() && !c.Vassal {
 		return
+	}
+	p := c.Species.Profile()
+	if !p.Can(species.SettlesByShip) || (p.Worlds > 0 && len(c.Systems)+len(c.Voyages) >= p.Worlds) {
+		return // nothing crosses by ship, or it holds what it can
 	}
 	t := w.Cfg.Tuning
 	plan := mind.Expand(mind.ExpandInput{
@@ -436,6 +459,9 @@ func (w *World) build(c *Civ) {
 	rate := w.Cfg.Tuning.Build.Rate
 	if c.Ossified {
 		rate *= 0.5 // everything takes twice as long
+	}
+	if !c.Species.Profile().Can(species.Works) {
+		return // it makes nothing
 	}
 	if c.Aloft || !w.chance(rate) {
 		return
@@ -597,9 +623,33 @@ func (w *World) loseSystem(c *Civ, s int, kind string, cause string) {
 		w.dropRarities(c, s) // a conqueror carried them off already; anything else leaves them
 	}
 	if s == c.Home && c.Stage != Dead && !c.Aloft {
-		w.reseat(c)
+		w.seatLost(c, cause)
 	}
 	w.renew(c, 0.05) // a loss is something new
+}
+
+// seatLost is what a lost home does to a people that still holds worlds:
+// the seat moves to the nearest, unless the people cannot move (a world
+// that is the mind, dead with it), or is a hive of one queen (dead with
+// her), or a hive of no queen (every world its own people).
+func (w *World) seatLost(c *Civ, cause string) {
+	if cause == "" {
+		cause = "lost " + c.HomeName
+	}
+	switch {
+	case !c.Species.Profile().Can(species.Reseats):
+		w.log("The %s were %s, and %s is gone. What they held elsewhere dies with it.", c.Name, c.HomeName, c.HomeName)
+		w.endCiv(c, Extinct, cause)
+	case c.Has("onequeen"):
+		w.log("The queen of the %s dies with %s. A hive without its queen is only bodies, and the bodies stop.", c.Name, c.HomeName)
+		w.endCiv(c, Extinct, cause+", and their queen with it")
+	case c.Has("noqueen") && len(c.Systems) > 1:
+		w.log("The %s have no queen to gather to when %s is lost, and no seat. Every world of theirs is on its own.", c.Name, c.HomeName)
+		c.Home, c.HomeName = c.Systems[0], w.star(c.Systems[0])
+		w.shatter(c, cause, nil)
+	default:
+		w.reseat(c)
+	}
 }
 
 // reseat moves the home to the nearest remaining world after the old one is lost.
@@ -712,7 +762,7 @@ func (w *World) darkAge(c *Civ, why string) {
 		w.wreck = &defaultWreckage
 		defer func() { w.wreck = nil }()
 	}
-	forgotten := w.forget(c, depth)
+	forgotten := w.forget(c, depth*c.Species.Profile().Forgets) // a mind that is backed up forgets less
 	// what is forgotten is not always destroyed: a relic of the lost art may
 	// wait at home, written on the eve, with the telling as it stood then
 	if len(forgotten) > 0 && w.R.Float64() < 0.6 {
@@ -748,7 +798,7 @@ func (w *World) darkAge(c *Civ, why string) {
 		w.log("The %s %s. A dark age follows, and %s of what they knew is forgotten.", c.Name, why, depthWord(depth))
 	}
 	if c.Active() && c.Reach < 10 && len(c.Systems) > 1 {
-		w.shatter(c, why)
+		w.shatter(c, why, forgotten)
 	}
 }
 
@@ -779,6 +829,9 @@ func depthWord(d float64) string {
 // fed is not missed. It returns what was forgotten.
 func (w *World) forget(c *Civ, frac float64) []string {
 	var forgotten []string
+	if !c.Species.Profile().Can(species.Researches) {
+		return nil // no tree: a dark age does not touch the pool
+	}
 	n := int(float64(len(c.Known))*frac + 0.5)
 	for i := 0; i < n; i++ {
 		var leaves, dark []string
@@ -854,6 +907,7 @@ func (c *Civ) expandMul(w *World) float64 {
 	if c.Dying {
 		m *= 3
 	}
+	m *= c.Species.Profile().Expand // a living world a tenth; an eldritch thing a tenth, unless it hungers
 	return m * c.stiffMul()
 }
 

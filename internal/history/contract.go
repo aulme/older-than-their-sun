@@ -3,6 +3,7 @@ package history
 import (
 	"math"
 	"sort"
+	"worldgen/internal/species"
 
 	"worldgen/internal/flow"
 	"worldgen/internal/mind"
@@ -293,8 +294,8 @@ func strikeStart(w *World, k *Contract, giver, receiver *Civ, t Term) {
 			wr.Hire = k.ID
 		}
 	}
-	e.Grudge[receiver.ID]++
-	e.Grudge[giver.ID] += 0.5
+	e.resent(receiver.ID, 1)
+	e.resent(giver.ID, 0.5)
 	if x := w.launch(giver, Campaign, e, t.Star, int(t.Amount)); x != nil {
 		x.Contract = k.ID
 	}
@@ -463,8 +464,8 @@ func (w *World) contractFleet(k *Contract) *Expedition {
 // contracting is the civ step: sightings for sale, the sellsword's offer,
 // and the buyer's ask.
 func (w *World) contracting(c *Civ) {
-	if !c.Active() || !c.Free() {
-		return
+	if !c.Active() || !c.Free() || !c.Species.Profile().Can(species.Trades) {
+		return // nothing the sim counts to bargain with
 	}
 	w.sellSightings(c)
 	if standing := w.standing(c); standing > 0 && c.Upkeep.Total() > 0 {
@@ -976,7 +977,7 @@ func (w *World) answerOffer(to, from *Civ, m *Message) {
 	if k.State != Offered {
 		return
 	}
-	if !to.Active() || !from.Active() || !w.mutual(to, from) || to.Wars[from.ID] {
+	if !to.Active() || !from.Active() || !w.mutual(to, from) || to.Wars[from.ID] || !to.Species.Profile().Can(species.Trades) {
 		k.State, k.Why = Lapsed, "the offer found nobody to answer it"
 		return
 	}
@@ -1447,6 +1448,9 @@ func (w *World) tribute(wr *War, l, v *Civ) bool {
 	t := w.Cfg.Tuning.Contract
 	if t.TributeLength <= 0 || !mind.TakesTribute(mind.TributeInput{Posture: v.posture(), Fixation: v.Morality.Object}) {
 		return false
+	}
+	if !l.Species.Profile().Can(species.Trades) || !v.Species.Profile().Can(species.Trades) {
+		return false // nothing the sim counts to pay with, or to take
 	}
 	spare := w.spare(l)
 	best, bestSpare := flow.O, 0.0

@@ -199,6 +199,12 @@ func Write(out io.Writer, w *history.World, full bool) {
 			if len(c.Claim) > 0 {
 				ways += ", claiming the old realm"
 			}
+			if c.Asleep {
+				ways += ", asleep"
+			}
+			if ps := c.Species.PowerNames(); len(ps) > 0 {
+				ways += "; it has " + strings.Join(ps, ", ")
+			}
 			if c.Active() && c.Aloft {
 				p("  The %s%s, aloft, seated for now at %s, %s, in %d fleets. %s. Now: %s; %s%s%s.", c.Name, line, c.HomeName, tech.EraNames[c.Era], fleetsOf(w, c), c.Species.Describe(), levels(c), arms(w, c), ways, sick)
 			} else if c.Active() {

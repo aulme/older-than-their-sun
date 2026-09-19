@@ -393,7 +393,7 @@ func (w *World) betray(by, against *Civ, shape string, weight float64) {
 	w.Betrayals = append(w.Betrayals, Betrayal{By: by.ID, Against: against.ID, Year: w.Now, Shape: shape, Weight: weight})
 	w.factOf(FBetrayal, by, against, -1, shape)
 	by.Tally.Betrayals++
-	against.Grudge[by.ID] += 2 * weight
+	against.resent(by.ID, 2*weight)
 }
 
 // faith records a promise kept at a cost.

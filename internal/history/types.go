@@ -211,6 +211,13 @@ type Civ struct {
 	Line     []int        // the peoples this one came out of by a sundering or a shattering, oldest first
 	Claim    map[int]bool // the worlds of the old realm an heir holds itself owed
 
+	// kinds: see eldritch.go and waking.go
+	Asleep     bool         // the long sleep: it sits every tick out but its guns until disturbed
+	Slept      Year         // when it last went to sleep
+	LastUnmade Year         // when the unmaking was last turned on a world
+	demanded   map[int]Year // when a living world last told each people to leave its neighbourhood
+	tithedBy   map[int]bool // the peoples whose tithe this one has paid, for the first line
+
 	// sightings and salvage: see sighting.go, field.go
 	Sightings    map[int]*Sighting // what this people has seen of fleets in flight, by fleet
 	Salvage      int               // ships of others' make in the guards, crewed from a field
@@ -319,6 +326,8 @@ type Tally struct {
 	// ossification: facings of the filter, renaissances, times set, breaks, and the stiffness summed at each facing; see ossify.go
 	OssFaced, OssRenewed, OssSet, OssBroke int
 	OssStiff                               float64
+	// kinds: see eldritch.go and waking.go
+	Appeared, Deepened, Tithed, Sleeps, Wakings, Demands, Unmade int
 }
 
 // Living is true for active and remnant civilisations.

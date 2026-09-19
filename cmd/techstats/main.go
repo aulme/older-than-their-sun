@@ -148,6 +148,7 @@ func main() {
 		bloc    BlocRec
 		plagues []PlagueRec
 		oss     OssRec
+		kinds   KindRec
 		stats   string
 		ages    float64
 	}
@@ -166,7 +167,7 @@ func main() {
 			legends.Stats(&sb, w)
 			sights, meets, fleets, fields := flattenSightings(w)
 			ks, sells := flattenContracts(w)
-			runs[i] = run{ks: ks, sells: sells, bloc: flattenBlocs(w), plagues: flattenPlagues(w), oss: flattenOss(w), seed: seed, recs: flatten(w), wars: flattenWars(w), battles: flattenBattles(w), sights: sights, meets: meets, fleets: fleets, fields: fields, pairs: flattenPairs(w), stats: sb.String(), ages: float64(w.Present-w.Cfg.Dawn) / 1e6}
+			runs[i] = run{ks: ks, sells: sells, bloc: flattenBlocs(w), plagues: flattenPlagues(w), oss: flattenOss(w), kinds: flattenKinds(w), seed: seed, recs: flatten(w), wars: flattenWars(w), battles: flattenBattles(w), sights: sights, meets: meets, fleets: fleets, fields: fields, pairs: flattenPairs(w), stats: sb.String(), ages: float64(w.Present-w.Cfg.Dawn) / 1e6}
 		}(i)
 	}
 	wg.Wait()
@@ -184,6 +185,7 @@ func main() {
 	var blocs []BlocRec
 	var plagues []PlagueRec
 	var oss []OssRec
+	var kinds []KindRec
 	var stats []string
 	ageSum := 0.0
 	for _, r := range runs {
@@ -200,6 +202,7 @@ func main() {
 		blocs = append(blocs, r.bloc)
 		plagues = append(plagues, r.plagues...)
 		oss = append(oss, r.oss)
+		kinds = append(kinds, r.kinds)
 		stats = append(stats, r.stats)
 		ageSum += r.ages
 	}
@@ -223,6 +226,7 @@ func main() {
 	blocReport(f, blocs, recs)
 	sickReport(f, plagues, recs, *seeds)
 	ossReport(f, oss, recs, *seeds)
+	kindsReport(f, kinds, recs, *seeds)
 	fmt.Printf("%d civilisations over %d worlds; wrote %s\n", len(recs), *seeds, *out)
 }
 

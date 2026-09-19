@@ -112,14 +112,20 @@ var Traits = []*Trait{
 	{Key: "memory", Name: "of unbroken memory across generations", Group: "bio", Weight: 8, Soc: 1, Domains: M{"society": 1.2}},
 	{Key: "kinfed", Name: "who eat their own; a caste is bred for the table", Group: "bio", Weight: 4, Soc: -0.5,
 		Fit: func(s *Species) bool { return s.Sub == Biological && (s.Has("caste") || s.Is(Hive)) }},
-	// senses: what they have beyond, or instead of, the usual five
-	{Key: "eyeless", Name: "eyeless, who see by sound", Group: "sense", Weight: 6, Domains: M{"exotic": 0.8}},
-	{Key: "deaf", Name: "without hearing", Group: "sense", Weight: 4},
-	{Key: "thermal", Name: "who see heat", Group: "sense", Weight: 12},
-	{Key: "magnetic", Name: "who feel the pull of the world", Group: "sense", Weight: 12, Domains: M{"propulsion": 1.1}},
-	{Key: "electric", Name: "who sense the living current", Group: "sense", Weight: 10, Domains: M{"energy": 1.1}},
-	{Key: "radiation", Name: "who feel radiation as warmth", Group: "sense", Weight: 6, Domains: M{"energy": 1.1, "exotic": 1.1}},
-	{Key: "chemical", Name: "who taste the world in the air", Group: "sense", Weight: 12, Domains: M{"biology": 1.1}},
+	// senses: what they have beyond, or instead of, the usual five; the
+	// eldritch draw from a table of senses nobody else has
+	{Key: "eyeless", Name: "eyeless, who see by sound", Group: "sense", Weight: 6, Domains: M{"exotic": 0.8}, Fit: bodily},
+	{Key: "deaf", Name: "without hearing", Group: "sense", Weight: 4, Fit: bodily},
+	{Key: "thermal", Name: "who see heat", Group: "sense", Weight: 12, Fit: bodily},
+	{Key: "magnetic", Name: "who feel the pull of the world", Group: "sense", Weight: 12, Domains: M{"propulsion": 1.1}, Fit: bodily},
+	{Key: "electric", Name: "who sense the living current", Group: "sense", Weight: 10, Domains: M{"energy": 1.1}, Fit: bodily},
+	{Key: "radiation", Name: "who feel radiation as warmth", Group: "sense", Weight: 6, Domains: M{"energy": 1.1, "exotic": 1.1}, Fit: bodily},
+	{Key: "chemical", Name: "who taste the world in the air", Group: "sense", Weight: 12, Domains: M{"biology": 1.1}, Fit: bodily},
+	{Key: "timesight", Name: "who see time", Group: "sense", Weight: 10, Fit: eldritchOnly},
+	{Key: "masssense", Name: "who feel mass", Group: "sense", Weight: 10, Fit: eldritchOnly},
+	{Key: "lighthearing", Name: "who hear light", Group: "sense", Weight: 8, Fit: eldritchOnly},
+	{Key: "fartaste", Name: "who taste distance", Group: "sense", Weight: 8, Fit: eldritchOnly},
+	{Key: "deathsense", Name: "who feel every death within reach", Group: "sense", Weight: 6, Fit: eldritchOnly},
 	// what a parasite rides: only parasites get one
 	{Key: "bodyrider", Name: "who live in the flesh of others", Group: "rider", Weight: 60},
 	{Key: "mindrider", Name: "who live as an idea in the minds of others", Group: "rider", Weight: 40, Domains: M{"society": 1.2, "computation": 1.1}},
@@ -150,6 +156,12 @@ var Traits = []*Trait{
 	{Key: "table", Name: "grown for the table", Group: "made", Soc: -0.5, Sur: 0.5},
 }
 
+// bodily fits a species with a body the usual senses could be in; the
+// eldritch have their own table.
+func bodily(s *Species) bool { return s.Sub != Eldritch }
+
+func eldritchOnly(s *Species) bool { return s.Sub == Eldritch }
+
 var byKey = map[string]*Trait{}
 
 func init() {
@@ -171,7 +183,7 @@ type Species struct {
 	Name   string
 	Sub    Substrate
 	Mods   Mod
-	Powers []string // eldritch powers, empty until the pool lands
+	Powers []string // the eldritch pool's powers held, by key, in the order gained; see pool.go
 	World  *Archetype
 	Traits []*Trait
 	Made   string   // who made them, "" if they arose naturally
@@ -179,7 +191,7 @@ type Species struct {
 
 	profSub  Substrate
 	profMods Mod
-	prof     *Profile
+	prof     *Profile // cleared by AddPower and StripPower
 }
 
 // Is says whether the species carries every modifier in m.
@@ -195,12 +207,18 @@ func (s *Species) entries() []*Entry {
 	return out
 }
 
-// Profile is the composed profile of the carried entries, cached.
+// Profile is the composed profile of the carried entries and the powers
+// held, cached.
 func (s *Species) Profile() Profile {
 	if s.prof == nil || s.profSub != s.Sub || s.profMods != s.Mods {
 		var ps []Profile
 		for _, e := range s.entries() {
 			ps = append(ps, e.Profile)
+		}
+		for _, k := range s.Powers {
+			if p := powerByKey[k]; p != nil {
+				ps = append(ps, p.Grants)
+			}
 		}
 		p := Compose(ps...)
 		s.prof, s.profSub, s.profMods = &p, s.Sub, s.Mods
@@ -235,13 +253,17 @@ func (s *Species) Flavour() Flavour {
 }
 
 // Portrait is the sentences the portrait opens with: the substrate's, then
-// one per modifier; none for a plain biological people.
+// one per modifier, then the powers if any; none for a plain biological
+// people.
 func (s *Species) Portrait() []string {
 	var out []string
 	for _, e := range s.entries() {
 		if e.Portrait != "" {
 			out = append(out, e.Portrait)
 		}
+	}
+	if p := s.PowerPortrait(); p != "" {
+		out = append(out, p)
 	}
 	return out
 }
@@ -275,6 +297,7 @@ func (s *Species) Branch() *Species {
 	b := *s
 	b.ID, b.Parent, b.prof = 0, s, nil
 	b.Traits = append([]*Trait(nil), s.Traits...)
+	b.Powers = append([]string(nil), s.Powers...)
 	return &b
 }
 

@@ -443,6 +443,7 @@ func (w *World) income(c *Civ) flow.Income {
 			}
 		}
 	}
+	in = w.tithed(c, in)
 	c.Gross = in
 	return w.riderTithe(c, in)
 }

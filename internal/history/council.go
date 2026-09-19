@@ -25,6 +25,11 @@ func (w *World) council(c *Civ) {
 		return
 	}
 	c.Summoned = false
+	if !c.launches() {
+		w.presenceCouncil(c) // a world, or a thing with no ships: the waking and the unmaking; see waking.go
+		w.proposePact(c)
+		return
+	}
 	type cand struct {
 		e   *Civ
 		ap  Appraisal
@@ -153,6 +158,9 @@ func (w *World) cause(c, e *Civ) string {
 // it: at the front if there is one, beyond it if the posture sends fleets
 // that far. No war is declared that no fleet follows.
 func (w *World) strikeFirst(c, e *Civ, ap Appraisal, far bool) bool {
+	if !c.launches() {
+		return w.presenceStrike(c, e, w.inside(c, e))
+	}
 	if len(ap.Front) == 0 && !far {
 		return false
 	}

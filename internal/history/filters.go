@@ -132,6 +132,9 @@ func (w *World) face(c *Civ, key string, diffAdj float64) Outcome {
 	if c.Faced[key] && !f.Repeat {
 		return Overcome
 	}
+	if c.neverFaces(key) {
+		return Overcome // nothing in it for the filter to test: no belief, no boredom, no institutions
+	}
 	again := c.Faced[key]
 	c.Faced[key] = true
 	master := c.Master
@@ -227,7 +230,7 @@ func (w *World) ambientFilters(c *Civ) {
 	if len(c.Systems) >= c.NextDrift && w.chance(0.05) {
 		adj := 0.3 * float64(len(c.Systems)-6)
 		c.NextDrift *= 2
-		if !c.miracle("ansible") && !c.Has("swarming") && !c.Species.Is(species.Planetary) { // nothing drifts when every world is in the room, or there is no centre, or it is all one mind
+		if !c.miracle("ansible") && !c.Has("swarming") { // nothing drifts when every world is in the room, or there is no centre
 			w.face(c, "distance", adj)
 		}
 	}
@@ -315,6 +318,18 @@ func init() {
 			w.log("The colonies of the %s begin to drift. %s answers with iron. The drift stops. So does much else.", c.Name, c.HomeName)
 		},
 		Decline: func(w *World, c *Civ) {
+			if !c.Species.Profile().Can(species.CivilWars) && len(c.Systems) > 1 {
+				// a people with no factions does not split: the far world is simply cut from the seat, and is its own people after
+				far, fd := -1, 0.0
+				for _, s := range c.Systems {
+					if d := w.G.Dist(c.Home, s); s != c.Home && d > fd {
+						far, fd = s, d
+					}
+				}
+				if w.cutOff(c, far) != nil {
+					return
+				}
+			}
 			if w.R.Float64() < 0.6 && w.civilWar(c) { // the same story from the colonies' side: strangers, then enemies
 				return
 			}
@@ -460,6 +475,17 @@ func init() {
 			}
 		},
 	})
+}
+
+// neverFaces says whether a filter is one the people's nature puts it
+// past: the unconscious never face belief, boredom or ossification.
+func (c *Civ) neverFaces(key string) bool {
+	for _, k := range c.Species.Profile().NeverFaces {
+		if k == key {
+			return true
+		}
+	}
+	return false
 }
 
 // natureDiff is what the substrate and the modifiers do to each filter,

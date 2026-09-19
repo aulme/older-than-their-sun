@@ -93,6 +93,13 @@ const (
 	FSundered     // a people tore itself into heirs: the subject is the old people, the object one heir; see sunder.go
 	FReclaimed    // an heir took a world of the old realm from whoever held it
 	FShattered    // a people forgot the stars and became one people per world: the subject the old people, the object one shard
+	FSevered      // a world of a people with no factions was cut from its seat as a people of its own: the subject the old, the object the new; see sunder.go
+	FDeepened     // an eldritch people drew another power; What is the power's name; see eldritch.go
+	FAppeared     // another of an eldritch people is simply there, at the star
+	FTithed       // an eldritch people takes a share of another's harvest: the subject the taker, the object the tithed
+	FDemand       // a living world told a people to leave a world of its neighbourhood: the subject the world, the object the told; What "left" or "refused"; see waking.go
+	FWaking       // a living world woke on a people's worlds: the subject the world, the object the people
+	FUnmade       // a people ended a world by the unmaking: the subject the unmaker, the object the holder
 )
 
 // Sort is the moral shape of a fact from the subject's side.
@@ -132,6 +139,7 @@ var factShape = [...]struct {
 	FPlague: {Woe, 4}, FPlagueGiven: {Crime, 2}, FPlagueWorld: {Woe, 3}, FCured: {Deed, 2}, FRefused: {Crime, 1}, FBelieved: {Woe, 3}, FWildfire: {Woe, 3},
 	FPoisoned: {Crime, 4}, FWoke: {Deed, 3},
 	FRenaissance: {Deed, 3}, FSundered: {Woe, 4}, FReclaimed: {Deed, 2}, FShattered: {Woe, 4},
+	FSevered: {Woe, 2}, FDeepened: {Deed, 2}, FAppeared: {Deed, 1}, FTithed: {Crime, 2}, FDemand: {Crime, 1}, FWaking: {Crime, 4}, FUnmade: {Crime, 5},
 }
 
 // Fact is one thing that happened, as it happened.
@@ -323,7 +331,7 @@ func (w *World) takeToHeart(c *Civ, f *Fact, t *Tale) {
 		return
 	}
 	if f.Object >= 0 && f.Object != c.ID && w.regard(c, f.Object) > 0 {
-		c.Grudge[f.Subject] += 0.1 * wt / 3
+		c.resent(f.Subject, 0.1*wt/3)
 	}
 }
 

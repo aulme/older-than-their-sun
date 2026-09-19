@@ -186,7 +186,7 @@ func (w *World) wakeElder(h *Horror) {
 		if c.Reach >= 12 {
 			adj = 0
 		}
-		w.face(c, "elder", adj)
+		w.face(c, "waking", adj)
 	}
 	w.log("%s goes still again.", h.Name)
 }
@@ -232,7 +232,7 @@ func init() {
 		},
 	})
 	def(&Filter{
-		Key: "elder", Name: "the waking", Levels: []string{"sur"}, Diff: 5, Repeat: true, Domain: "propulsion",
+		Key: "waking", Name: "the waking", Levels: []string{"sur"}, Diff: 5, Repeat: true, Domain: "propulsion",
 		Overcome: func(w *World, c *Civ) {
 			w.log("The %s hide in the deep places while %s passes over them. It does not notice.", c.Name, w.blastWhat)
 		},

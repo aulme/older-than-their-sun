@@ -3,6 +3,7 @@ package history
 import (
 	"worldgen/internal/flow"
 	"worldgen/internal/mind"
+	"worldgen/internal/species"
 	"worldgen/internal/tech"
 )
 
@@ -13,6 +14,9 @@ import (
 // whole tree. Deep nodes cost far more than shallow ones, and miracles cost
 // more still and are a conscious choice: the leap.
 func (w *World) research(c *Civ) {
+	if !c.Species.Profile().Can(species.Researches) {
+		return // no tree: the pool instead; see eldritch.go
+	}
 	c.Progress += w.researchRate(c) * w.dt
 	for c.Active() {
 		if c.Pursuit != "" && !w.canPursue(c, tech.Get(c.Pursuit)) {

@@ -50,6 +50,7 @@ type Tuning struct {
 	Slight    SlightTuning
 	Refuse    RefuseTuning
 	Ossify    OssifyTuning
+	Kinds     KindsTuning
 	Plague    plague.Tuning // the plagues' own numbers, kept here so one table tunes everything
 }
 
@@ -422,6 +423,71 @@ type OssifyTuning struct {
 	KinLine      float64 // the grudge above which kinship's warmth is suspended
 }
 
+// KindsTuning: the shapes a people can have that are rates and bars
+// rather than dials: the eldritch appearing and deepening, the tithe, the
+// wound, the mirror, the living world's demand and its waking. See
+// history's eldritch.go and waking.go.
+type KindsTuning struct {
+	Appear      float64 // chance per thousand years that another of an eldritch people with a second presence is there, before its expansion multiplier
+	Deepen      float64 // chance per thousand years an eldritch people draws another power, times one plus a quarter per power held
+	Tithe       float64 // the share of a neighbour's yield the tithe takes
+	TitheGrudge float64 // grudge per thousand years in a tithed people
+	TitheHazard float64 // what each live tithe adds to the hazard
+	WoundWear   float64 // the wall's wear per thousand years at a wound
+	Mirror      float64 // the chance a people first speaking to a mirror is scarred by the signal
+	MirrorWis   float64 // what the mirror takes off the difference toward its holder
+	WakingBase  float64 // the waking's adjustment: this less the waker's Military times WakingMil
+	WakingMil   float64
+	WakingYoung float64 // added when the faced people cannot flee: reach under twelve
+	Demand      float64 // ticks a demand stands before the waking, at the least
+	UnmakeRest  float64 // ticks between one world unmade and the next, for a people whose strike is the unmaking
+	HeedGap     float64 // the demanded people's chance to heed, per level the world stands over it
+	HeedMeek    float64 // added for the submissive and the pacifist
+	HeedProud   float64 // taken off for the unyielding and the conqueror
+	HeedGrudge  float64 // taken off for a grudge against the demander
+}
+
+// HeedInput is a people told to leave a world by a living world that
+// could unmake it.
+type HeedInput struct {
+	Posture string
+	Fear    float64
+	Risk    float64
+	Gap     float64 // the demander's Military with its defence, less this people's
+	Grudge  bool
+}
+
+// Heeding is the chance and its reason.
+type Heeding struct {
+	Chance float64
+	reason string
+}
+
+func (h Heeding) Why() string { return fmt.Sprintf("heeding at %.2f: %s", h.Chance, h.reason) }
+
+// Heed is the chance a people told to leave does: its fear, the gap in
+// strength, its posture, less any grudge; risk stands against it.
+func Heed(in HeedInput, t *Tuning) Heeding {
+	k := &t.Kinds
+	h := Heeding{Chance: in.Fear - 0.5*in.Risk, reason: "fear against risk"}
+	h.Chance += k.HeedGap * in.Gap
+	h.reason += fmt.Sprintf(", the gap of %.1f", in.Gap)
+	switch in.Posture {
+	case Submissive, Pacifist:
+		h.Chance += k.HeedMeek
+		h.reason += ", meekness"
+	case Unyielding, Conqueror:
+		h.Chance -= k.HeedProud
+		h.reason += ", pride"
+	}
+	if in.Grudge {
+		h.Chance -= k.HeedGrudge
+		h.reason += ", a grudge"
+	}
+	h.Chance = min(1, max(0, h.Chance))
+	return h
+}
+
 // Default is today's numbers.
 func Default() *Tuning {
 	return &Tuning{
@@ -470,6 +536,10 @@ func Default() *Tuning {
 			CivilWar: 1.0 / 6, CivilWarCap: 0.8,
 			DepthBase: 0.1, DepthStiff: 0.3, DepthPrior: 0.1, DepthNoise: 0.1, DepthMin: 0.1, DepthMax: 0.8, Shards: 8,
 			GrudgeDecay: 0.995, GrudgeFloor: 0.05, HeirGrudge: 0.25, HeldGrudge: 0.5, SunderGrudge: 3, KinLoyalty: 2, KinLine: 0.5,
+		},
+		Kinds: KindsTuning{
+			Appear: 0.0005, Deepen: 0.0005, Tithe: 0.1, TitheGrudge: 0.01, TitheHazard: 0.01, WoundWear: 0.001, Mirror: 0.5, MirrorWis: 2,
+			WakingBase: -1, WakingMil: 0.5, WakingYoung: 1, Demand: 3, UnmakeRest: 3000, HeedGap: 0.1, HeedMeek: 0.5, HeedProud: 0.5, HeedGrudge: 0.2,
 		},
 		Plague: plague.Default(),
 		Wisdom: WisdomTuning{Tail: 0.08, GrudgeFade: 10, VengefulBelow: 7, Compulsion: 0.08, Folly: 0.04, ThreatSeal: 0.3, AboveEras: 2, AboveWield: 0.07, AboveSeal: 0.2, LeapMargin: -1.5, LeapBar: 6, LeapNoise: 1.5, TeachWeaker: 0, BrokerRate: 0.02},

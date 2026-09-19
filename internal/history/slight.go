@@ -44,7 +44,7 @@ func (w *World) takeSlight(wr *War, p, a, b *Civ, s float64) {
 		return
 	}
 	wr.Slighted[p.ID] += s
-	p.Grudge[a.ID] += s
+	p.resent(a.ID, s)
 	p.Tally.Slights += s
 	if !wr.SlightTold[p.ID] && wr.Slighted[p.ID] >= t.Fact {
 		wr.SlightTold[p.ID] = true

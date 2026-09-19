@@ -18,7 +18,7 @@ type Appraisal struct {
 // miracles, its manned ships, its allies who would actually join, less
 // what its other wars take.
 func (w *World) strength(c, e *Civ) float64 {
-	in := mind.StrengthInput{Mil: c.Mil, Bonus: c.warBonus(), Ships: w.standing(c)}
+	in := mind.StrengthInput{Mil: c.Mil, Bonus: c.warBonus(), Ships: w.standing(c) + w.bodyGuns(c)} // the body is what a world fights with
 	for _, pid := range c.Pacts {
 		p := w.Pacts[pid]
 		if p.Over || p.Kind == Defensive && !c.Wars[e.ID] {
@@ -122,7 +122,7 @@ func (w *World) nearest(c *Civ, star int) (int, float64) {
 // front to do it.
 func (w *World) bar(c, e *Civ) (bar float64, wants, far bool) {
 	return mind.Bar(mind.BarInput{
-		Posture: c.posture(), Hates: c.hates(e), Grudge: c.Grudge[e.ID] > 0 || e.Embargo[c.ID], Aloft: c.Aloft, NoShips: w.standing(c) == 0, Wis: c.Wis,
+		Posture: c.posture(), Hates: c.hates(e), Grudge: c.Grudge[e.ID] > 0 || e.Embargo[c.ID], Aloft: c.Aloft, NoShips: w.standing(c) == 0 && w.bodyGuns(c) == 0, Wis: c.Wis,
 		Claim: w.claims(c, e), Kin: w.kin(c, e) && !w.feud(c, e),
 		Stiff: c.Stiff, Fought: c.Fought[e.ID] > 0, Sailed: c.Tally.Fleets > 0,
 	}, w.Cfg.Tuning)

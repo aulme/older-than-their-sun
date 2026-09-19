@@ -88,10 +88,11 @@ func (w *World) believeShips(c, e *Civ) float64 {
 // there, or elsewhere the whole believed force and the guns a world of
 // that era is expected to have.
 func (w *World) believeSky(c, e *Civ, star int) (ships, guns, relief float64) {
+	body := float64(w.bodyGuns(e)) // a world that is the people is plain to see
 	if i := c.Intel[e.ID]; i != nil && i.Star == star {
-		return float64(i.Ships), float64(i.Guns), i.Relief
+		return float64(i.Ships), max(float64(i.Guns), body), i.Relief
 	}
-	return w.believeShips(c, e), mind.BelieveGuns(e.Era, w.Cfg.Tuning), 0
+	return w.believeShips(c, e), mind.BelieveGuns(e.Era, w.Cfg.Tuning) + body, 0
 }
 
 // intelStep is what a people learns each tick without trying: trade

@@ -11,13 +11,13 @@ import (
 
 func (w *World) contacts() {
 	for i, a := range w.Civs {
-		if !a.Active() {
+		if !a.Active() || a.Asleep {
 			continue
 		}
 		for j := i + 1; j < len(w.Civs); j++ {
 			b := w.Civs[j]
-			if !b.Active() || (a.Reached[b.ID] && b.Reached[a.ID]) {
-				continue
+			if !b.Active() || b.Asleep || (a.Reached[b.ID] && b.Reached[a.ID]) {
+				continue // a sleeper is all but impossible to contact
 			}
 			if !w.touch(a, b) {
 				if !(a.Met[b.ID] && b.Met[a.ID]) && w.hear(a, b) {
@@ -146,6 +146,7 @@ func (w *World) hearing(a, b *Civ) {
 	w.fact(FMet, a, b, -1)
 	w.renew(a, 0.1) // a stranger is something new
 	w.renew(b, 0.1)
+	w.mirrored(a, b)
 	w.fathomPair(a, b)
 	if w.warm(a, b) {
 		w.kinMeet(a, b)
@@ -241,6 +242,9 @@ func (w *World) encounter(a, b *Civ, watched, heard bool, at int) {
 	w.fact(FMet, finder, found, at)
 	w.renew(a, 0.1) // a stranger is something new
 	w.renew(b, 0.1)
+	if !heard {
+		w.mirrored(a, b)
+	}
 	if a.Wars[b.ID] {
 		return // already at war by fleet; now there is a front
 	}

@@ -1,6 +1,9 @@
 package history
 
-import "worldgen/internal/mind"
+import (
+	"worldgen/internal/mind"
+	"worldgen/internal/species"
+)
 
 // Wisdom is a people's capacity to see the counterintuitive: a fourth
 // level, derived like the other three, that decides whether a people
@@ -333,6 +336,9 @@ func (w *World) openPair(a, b *Civ) {
 	w.exchange(a, b)
 	if a.Wars[b.ID] || w.monster(a, b) || w.monster(b, a) || a.Trade[b.ID] {
 		return
+	}
+	if !a.Species.Profile().Can(species.Trades) || !b.Species.Profile().Can(species.Trades) {
+		return // nothing the sim counts to give
 	}
 	a.Trade[b.ID], b.Trade[a.ID] = true, true
 	w.fact(FTrade, a, b, -1)

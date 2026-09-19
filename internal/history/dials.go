@@ -104,12 +104,19 @@ func (c *Civ) hostile() bool {
 }
 
 // difference is how alien two species are to each other: another
-// substrate or another shape counts most, then the order of their
-// societies, then senses and body, then the world they came from.
+// substrate or another shape counts most, then what nothing can model
+// (the eldritch, on either side) and whether anyone is home (exactly one
+// side unconscious), then the order of their societies, then senses and
+// body, then the world they came from.
 func difference(a, b *species.Species) float64 {
 	d := 0.0
 	if a.Sub != b.Sub || !sameShape(a, b) {
 		d += 2.5
+	}
+	pa, pb := a.Profile(), b.Profile()
+	d += max(pa.Alien, pb.Alien)
+	if pa.NoOne != pb.NoOne {
+		d += 2
 	}
 	oa, ob := orderOf(a), orderOf(b)
 	if oa != ob {

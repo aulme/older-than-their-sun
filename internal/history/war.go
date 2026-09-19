@@ -410,11 +410,16 @@ func (w *World) homeFalls(wr *War, c, e *Civ) {
 		w.fact(FScoured, c, e, e.Home)
 		w.endCiv(e, Extinct, sprintf("were burned out nest by nest by the %s", c.Name))
 		w.endWar(wr, "extinction")
-	case e.Species.Is(species.Planetary):
+	case !e.Species.Profile().Can(species.Reseats):
 		w.Bio[e.Home] = BioSimple
 		w.log("The %s take %s, and there is nothing to rule. The %s were the world, and the world is dead.", c.Name, e.HomeName, e.Name)
 		w.fact(FHomeBroken, c, e, e.Home)
 		w.endCiv(e, Extinct, sprintf("died when %s was taken by the %s", e.HomeName, c.Name))
+		w.endWar(wr, "extinction")
+	case e.Has("onequeen"):
+		w.log("The %s take %s, and the queen of the %s with it. A hive without its queen is only bodies, and the bodies stop.", c.Name, e.HomeName, e.Name)
+		w.fact(FHomeBroken, c, e, e.Home)
+		w.endCiv(e, Extinct, sprintf("died with their queen when %s was taken by the %s", e.HomeName, c.Name))
 		w.endWar(wr, "extinction")
 	case c.Has("pacifist"):
 		w.log("The %s defeat the %s and, having no use for a conquest, leave them be.", c.Name, e.Name)
@@ -609,7 +614,7 @@ func (w *World) capitulate(wr *War, l, v *Civ) {
 		w.log("The %s yield to the %s, after %s.", l.Name, v.Name, w.warSpan(wr))
 		w.ride(v, l)
 		w.endWar(wr, "enslaved")
-	case l.Has("submissive") || v.Dials.Greed < 0.3 || l.Has("swarming") || l.Species.Is(species.Planetary):
+	case l.Has("submissive") || v.Dials.Greed < 0.3 || l.Has("swarming") || !l.Species.Profile().Can(species.Reseats):
 		w.log("The %s yield to the %s and bend the knee, after %s. They are vassals now.", l.Name, v.Name, w.warSpan(wr))
 		w.vassal(v, l)
 		w.endWar(wr, "vassal")
@@ -688,11 +693,12 @@ func (w *World) endWar(wr *War, result string) {
 	truce := Year(5000 + w.R.IntN(10000))
 	a.Truce[b.ID] = w.Now + truce
 	b.Truce[a.ID] = w.Now + truce
-	a.Grudge[b.ID] += 0.3 + 0.3*float64(wr.Lost[0])
-	b.Grudge[a.ID] += 0.3 + 0.3*float64(wr.Lost[1])
-	b.Grudge[a.ID] += 0.5 // being struck first is the deeper wrong
-	w.renew(a, 0.1)       // a war fought to its end is something new
+	a.resent(b.ID, 0.3+0.3*float64(wr.Lost[0]))
+	b.resent(a.ID, 0.3+0.3*float64(wr.Lost[1]))
+	b.resent(a.ID, 0.5) // being struck first is the deeper wrong
+	w.renew(a, 0.1)     // a war fought to its end is something new
 	w.renew(b, 0.1)
+	w.spent(wr) // the long sleep, for a side with nothing left it wants
 	w.warEnded(wr)
 }
 

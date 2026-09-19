@@ -1,6 +1,7 @@
 package history
 
 import (
+	"worldgen/internal/species"
 	"worldgen/internal/tech"
 )
 
@@ -40,11 +41,23 @@ func (w *World) gunsOf(c *Civ, st *tech.Structure) int {
 	return n + len(eras)
 }
 
+// bodyGuns is the body as guns: for a people that is its world (or wears
+// a shell), so many guns over every world it holds per level of Military,
+// regrown a gun a thousand years like a grid, through a siege.
+func (w *World) bodyGuns(c *Civ) int {
+	d := c.Species.Profile().HomeDefence
+	if d == 0 {
+		return 0
+	}
+	return int(d*(1+c.Mil) + 0.5)
+}
+
 // gunCap is the guns that could stand over a star: the fed gun structures
-// there. With repairing set, only those that may be remade now: the grid
-// always, silos only while no enemy fleet is in the sky.
+// there, and the body for a people that is its world. With repairing
+// set, only those that may be remade now: the grid and the body always,
+// silos only while no enemy fleet is in the sky.
 func (w *World) gunCap(c *Civ, star int, repairing bool) int {
-	n := 0
+	n := w.bodyGuns(c)
 	for _, wk := range c.Works {
 		if wk.Star != star || wk.Dark {
 			continue
@@ -100,7 +113,7 @@ func (w *World) sieged(c *Civ, star int) bool {
 // thousand years, never by the pick.
 func (w *World) dig(c *Civ) {
 	st := tech.Structures["silos"]
-	if c.Aloft || !c.Known[st.Node] || !c.working(st.Node) {
+	if c.Aloft || !c.Known[st.Node] || !c.working(st.Node) || !c.Species.Profile().Can(species.Works) {
 		return
 	}
 	for _, s := range c.Systems {

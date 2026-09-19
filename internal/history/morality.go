@@ -122,15 +122,10 @@ type moralTilt struct {
 var moralBase = [4]float64{Amoral: 15, Individual: 30, Herd: 30, Fixation: 25}
 
 var moralTilts = []moralTilt{
-	{func(sp *species.Species, h moralHints) bool {
-		return sp.Is(species.Hive) || sp.Is(species.Unconscious) || sp.Has("herd") || sp.Has("swarming")
-	}, [4]float64{2, 0.04, 3, 1}, nil},
+	{func(sp *species.Species, h moralHints) bool { return sp.Has("herd") || sp.Has("swarming") }, [4]float64{2, 0.04, 3, 1}, nil}, // the hive and the unconscious carry the same row in their profiles
 	{func(sp *species.Species, h moralHints) bool { return sp.Has("individualist") || sp.Has("solitary") }, [4]float64{1, 3, 0.2, 1}, nil},
 	{func(sp *species.Species, h moralHints) bool { return sp.Has("caste") || sp.Has("collective") }, [4]float64{1, 1, 2, 1}, nil},
 	{func(sp *species.Species, h moralHints) bool { return sp.Has("eusocial") }, [4]float64{1, 1, 2, 1}, nil},
-	{func(sp *species.Species, h moralHints) bool { return sp.Sub == species.Machine }, [4]float64{2, 1, 1, 2}, nil},
-	{func(sp *species.Species, h moralHints) bool { return sp.Sub == species.Parasite }, [4]float64{2, 1, 1, 1.5}, nil},
-	{func(sp *species.Species, h moralHints) bool { return sp.Is(species.Planetary) }, [4]float64{3, 0, 0, 2}, nil},
 	{func(sp *species.Species, h moralHints) bool { return sp.Has("conqueror") }, [4]float64{1, 1, 1, 3}, map[string]float64{Conquest: 3}},
 	{func(sp *species.Species, h moralHints) bool { return sp.Has("expansionist") || sp.Has("swarming") }, [4]float64{1, 1, 1, 3}, map[string]float64{Spawning: 3}},
 	{func(sp *species.Species, h moralHints) bool { return sp.Has("curious") || sp.Has("contemplative") }, [4]float64{1, 1, 1, 2}, map[string]float64{Knowing: 2}},
@@ -140,8 +135,18 @@ var moralTilts = []moralTilt{
 }
 
 // rollMorality is the core: a morality from the species and the hints.
+// The substrate and the shape tilt through the profile (a machine or a
+// parasite toward the amoral and the fixed, a living world away from
+// the individual and the herd); the unconscious are amoral, always.
 func rollMorality(r *rand.Rand, sp *species.Species, h moralHints) Morality {
+	p := sp.Profile()
+	if p.Amoral {
+		return Morality{Kind: Amoral}
+	}
 	kinds := moralBase
+	for k := range kinds {
+		kinds[k] *= p.Morals[k]
+	}
 	objs := map[string]float64{}
 	for _, o := range objects {
 		objs[o] = 1
@@ -307,7 +312,11 @@ func moralityDiff(a, b Morality) float64 {
 
 // differs is how alien two peoples are: the blood, then the morality.
 func (c *Civ) differs(e *Civ) float64 {
-	return difference(c.Species, e.Species) + moralityDiff(c.Morality, e.Morality)
+	d := difference(c.Species, e.Species) + moralityDiff(c.Morality, e.Morality)
+	if e.Species.HasPower("mirror") {
+		d = max(0, d-mirrorWis) // it answers in one's own voice; see eldritch.go
+	}
+	return d
 }
 
 // fixation is the category a fixation feeds first, if any: conquest arms,

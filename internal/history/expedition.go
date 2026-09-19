@@ -3,6 +3,7 @@ package history
 import (
 	"worldgen/internal/mind"
 	"worldgen/internal/names"
+	"worldgen/internal/species"
 )
 
 // Every ship is in a fleet, and this is the fleet: one object for the
@@ -81,6 +82,9 @@ type Expedition struct {
 // council instead. The ships were kept already; a fleet in flight keeps
 // them still.
 func (w *World) launch(c *Civ, kind ExpKind, target *Civ, star int, n int) *Expedition {
+	if !c.Species.Profile().Can(species.Launches) {
+		return nil // a world does not sail
+	}
 	total := w.ships(c)
 	g := w.guardWith(c, star, n)
 	if g == nil || n <= 0 {
@@ -493,7 +497,7 @@ func (w *World) turn(x *Expedition) {
 	w.log("The fleet of the %s, sent to keep %s for the %s, takes it for themselves.", c.Name, w.star(x.Base), h.Name)
 	w.betray(c, h, "turned on the world they were sent to keep", 1)
 	w.breakPacts(c, h)
-	h.Grudge[c.ID] += 3
+	h.resent(c.ID, 3)
 	x.Kind, x.Turned = Campaign, true
 	wr := w.declare(c, h, "betrayal")
 	if wr == nil {

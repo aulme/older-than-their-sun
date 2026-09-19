@@ -139,7 +139,7 @@ func TestShatter(t *testing.T) {
 	w, c := realm(t, 42, 12)
 	x := spawnAt(w, 30, species.Fixed("cooperative", "defensive"))
 	x.Grudge[c.ID] = 2
-	w.shatter(c, "forgot")
+	w.shatter(c, "forgot", nil)
 	shards := w.Civs[2:]
 	if len(shards) != 8 || c.Fate != Shattered {
 		t.Fatalf("%d shards, fate %s", len(shards), c.Fate)
@@ -236,7 +236,7 @@ func TestClaimsFade(t *testing.T) {
 // meet and skip the council; a feud keeps the council.
 func TestKinMeet(t *testing.T) {
 	w, c := realm(t, 47, 12)
-	w.shatter(c, "forgot")
+	w.shatter(c, "forgot", nil)
 	a, b := w.Civs[1], w.Civs[2]
 	for _, x := range []*Civ{a, b} {
 		x.Reach, x.Speed = 60, 20

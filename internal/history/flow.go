@@ -210,6 +210,9 @@ func shedKey(k string) string {
 // with the works.
 func (w *World) uses(c *Civ) []flow.Use {
 	p := c.Species.Profile()
+	if !p.Can(species.Pays) {
+		return nil // sustained by whatever it is
+	}
 	var out []flow.Use
 	for _, k := range knownOf(c) {
 		n := tech.Get(k)

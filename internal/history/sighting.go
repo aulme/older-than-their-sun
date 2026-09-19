@@ -429,7 +429,7 @@ func (w *World) scoutSeen(x *Expedition) {
 	}
 	o.Summoned = true
 	if !o.Trade[c.ID] && !w.allied(o, c) {
-		o.Grudge[c.ID] += 0.5
+		o.resent(c.ID, 0.5)
 		if w.R.Float64() < 0.1 {
 			w.log("The %s see a ship of the %s in their sky at %s, looking, and do not forget it.", o.Name, c.Name, w.star(x.Star))
 		}

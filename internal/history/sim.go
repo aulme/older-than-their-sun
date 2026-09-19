@@ -138,7 +138,7 @@ func (w *World) runAge() {
 		if (y-cfg.Dawn)%1_000_000 == 0 {
 			if w.Cfg.Debug {
 				all := w.activeCount()
-				w.log("[debug: %d active, %d of them rising, %d remnants, fertility %.2f, hazard %.2f]", all, active, len(w.Civs)-all-w.deadCount(), f, w.Hazard)
+				w.log("[debug: %d active, %d of them rising, %d remnants, fertility %.2f, hazard %.2f, wall %.2f]", all, active, len(w.Civs)-all-w.deadCount(), f, w.Hazard, w.Thin)
 			}
 			if w.Cfg.Profile {
 				w.profileLine()
@@ -239,5 +239,5 @@ func (w *World) updateHazard() {
 			}
 		}
 	}
-	w.Hazard = min(2.5, w.Law.Hazard()+0.005*float64(held)+0.06*float64(beacons)+min(0.5, 0.1*w.Thin))
+	w.Hazard = min(2.5, w.Law.Hazard()+0.005*float64(held)+0.06*float64(beacons)+w.Cfg.Tuning.Kinds.TitheHazard*float64(w.tithes())+min(0.5, 0.1*w.Thin))
 }

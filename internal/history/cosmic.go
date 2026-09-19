@@ -2,6 +2,7 @@ package history
 
 import (
 	"sort"
+	"worldgen/internal/species"
 )
 
 // Cosmic filters: supernovae, gamma-ray bursts, passing dark masses, and the
@@ -108,6 +109,11 @@ func (w *World) blast(origin int, radius float64, what, text string, adj float64
 // leaveHome moves a civilisation's home to another of its worlds, or ends it.
 func (w *World) leaveHome(c *Civ, why string) {
 	old := c.Home
+	if !c.Species.Profile().Can(species.Reseats) {
+		w.log("The %s cannot leave %s; they are it.", c.Name, c.HomeName)
+		w.endCiv(c, Extinct, sprintf("died with their star, %s", c.HomeName))
+		return
+	}
 	best, bd := -1, 1e9
 	for _, s := range c.Systems {
 		if s != old && w.G.Dist(old, s) < bd {

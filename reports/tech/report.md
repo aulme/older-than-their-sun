@@ -1,19 +1,19 @@
 # The tech tree in use
 
-10 worlds (seeds 1 to 10) at sol, 4640 civilisations, mean age length 51 Myr. A node counts as reached if a people ever held it, by pursuit, by a find, or by inheritance from a parent people. Lifetimes are from birth to the end of activity, or to the present for those still standing.
+10 worlds (seeds 1 to 10) at sol, 3833 civilisations, mean age length 51 Myr. A node counts as reached if a people ever held it, by pursuit, by a find, or by inheritance from a parent people. Lifetimes are from birth to the end of activity, or to the present for those still standing.
 
 ## How deep peoples get
 
 | Deepest era reached | Peoples | Share | Median life (Myr) |
 |---|---|---|---|
-| 0 pre-industrial | 125 | 2.7% | 0.03 |
-| 1 industrial | 141 | 3.0% | 0.08 |
-| 2 atomic | 393 | 8.5% | 0.17 |
-| 3 interstellar | 1362 | 29.4% | 0.47 |
-| 4 exotic | 2619 | 56.4% | 2.79 |
+| 0 pre-industrial | 171 | 4.5% | 0.04 |
+| 1 industrial | 162 | 4.2% | 0.08 |
+| 2 atomic | 400 | 10.4% | 0.17 |
+| 3 interstellar | 1153 | 30.1% | 0.54 |
+| 4 exotic | 1947 | 50.8% | 3.48 |
 
-Nodes ever held per people: median 52, lower quartile 38, upper quartile 68, most 92 of 111.
-Reached the stars (any node with reach 10 ly or more, or the Flesh or the Door): 2882 (62.1%), median life 1.60 Myr against 0.30 for those who did not.
+Nodes ever held per people: median 46, lower quartile 31, upper quartile 62, most 92 of 111.
+Reached the stars (any node with reach 10 ly or more, or the Flesh or the Door): 1979 (51.6%), median life 2.52 Myr against 0.34 for those who did not.
 
 ## The tree
 
@@ -23,25 +23,25 @@ Reached is the share of all peoples that ever held the node. Of eligible is the 
 
 | Node | Domain | Needs | Price | Reached | Of eligible | Learned at | Life | Effects |
 |---|---|---|---|---|---|---|---|---|
-| Tools | industry |  | 0.6 | 4556 (98.2%) | 98.2% | 0.02 Myr | 0.71 | Mil +0.2 |
-| Fire | energy |  | 0.6 | 4426 (95.4%) | 95.4% | 0.01 Myr | 0.71 | Sur +0.3 |
-| Agriculture | biology |  | 0.6 | 4484 (96.6%) | 96.6% | 0.01 Myr | 0.71 | Sur +0.5; Soc +0.1 |
-| Writing | society |  | 0.6 | 4391 (94.6%) | 94.6% | 0.01 Myr | 0.67 | Soc +0.2 |
-| Metallurgy | industry | Fire, Tools | 0.6 | 4471 (96.4%) | 99.6% | 0.04 Myr | 0.77 | Mil +0.5 |
-| Mathematics | computation | Writing | 0.6 | 4534 (97.7%) | 103.3% | 0.03 Myr | 0.74 |  |
-| Star Gazing | exotic |  | 0.6 | 4405 (94.9%) | 94.9% | 0.01 Myr | 0.71 | tilt propulsion ×1.2 |
-| States | society | Agriculture, Writing | 0.6 | 3377 (72.8%) | 78.9% | 0.03 Myr | 0.81 | Mil +0.5; Soc +0.3 |
-| Seafaring | propulsion | Tools | 0.6 | 4020 (86.6%) | 88.2% | 0.03 Myr | 0.79 | tilt society ×1.1 |
-| Burial | society |  | 0.6 | 3303 (71.2%) | 71.2% | 0.01 Myr | 0.70 | Soc +0.1 |
-| Song | society |  | 0.6 | 4335 (93.4%) | 93.4% | 0.01 Myr | 0.66 | Soc +0.1 |
-| Religion | society | Burial | 0.6 | 4136 (89.1%) | 125.2% | 0.03 Myr | 0.74 | Soc +0.2 |
-| Philosophy | computation | Writing | 0.6 | 4524 (97.5%) | 103.0% | 0.03 Myr | 0.74 | tilt computation ×1.2, society ×1.2 |
-| Law | society | States, Writing | 0.6 | 4447 (95.8%) | 109.5% | 0.03 Myr | 0.79 | Soc +0.2 |
-| Organised Religion | society | Religion, States | 0.6 | 4074 (87.8%) | 104.7% | 0.04 Myr | 0.70 | Mil +0.2; Soc +0.2 |
-| the Gathering | society |  | 0.6 | 704 (15.2%) | 98.9% | 0.02 Myr | 0.46 | Mil +0.5; Soc +0.5 |
-| Host-craft | biology |  | 0.6 | 26 (0.6%) | 96.3% | 0.01 Myr | 1.49 | Sur +0.5; Soc +0.5 |
-| Maintenance | industry |  | 0.6 | 29 (0.6%) | 70.7% | 0.06 Myr | 0.77 | Sur +0.5 |
-| Husbandry of the Self | biology |  | 0.6 | 225 (4.8%) | 98.7% | 0.01 Myr | 1.75 | Sur +0.5; tilt biology ×1.2 |
+| Tools | industry |  | 0.6 | 3551 (92.6%) | 92.6% | 0.02 Myr | 0.81 | Mil +0.2 |
+| Fire | energy |  | 0.6 | 3417 (89.1%) | 89.1% | 0.01 Myr | 0.78 | Sur +0.3 |
+| Agriculture | biology |  | 0.6 | 3448 (90.0%) | 90.0% | 0.01 Myr | 0.79 | Sur +0.5; Soc +0.1 |
+| Writing | society |  | 0.6 | 3341 (87.2%) | 87.2% | 0.01 Myr | 0.75 | Soc +0.2 |
+| Metallurgy | industry | Fire, Tools | 0.6 | 3475 (90.7%) | 100.3% | 0.04 Myr | 0.87 | Mil +0.5 |
+| Mathematics | computation | Writing | 0.6 | 3526 (92.0%) | 105.5% | 0.03 Myr | 0.83 |  |
+| Star Gazing | exotic |  | 0.6 | 3404 (88.8%) | 88.8% | 0.01 Myr | 0.85 | tilt propulsion ×1.2 |
+| States | society | Agriculture, Writing | 0.6 | 3045 (79.4%) | 94.9% | 0.03 Myr | 0.83 | Mil +0.5; Soc +0.3 |
+| Seafaring | propulsion | Tools | 0.6 | 3136 (81.8%) | 88.3% | 0.03 Myr | 0.86 | tilt society ×1.1 |
+| Burial | society |  | 0.6 | 3058 (79.8%) | 79.8% | 0.01 Myr | 0.75 | Soc +0.1 |
+| Song | society |  | 0.6 | 3376 (88.1%) | 88.1% | 0.02 Myr | 0.76 | Soc +0.1 |
+| Religion | society | Burial | 0.6 | 3350 (87.4%) | 109.5% | 0.03 Myr | 0.80 | Soc +0.2 |
+| Philosophy | computation | Writing | 0.6 | 3537 (92.3%) | 105.9% | 0.03 Myr | 0.82 | tilt computation ×1.2, society ×1.2 |
+| Law | society | States, Writing | 0.6 | 3444 (89.9%) | 109.4% | 0.04 Myr | 0.90 | Soc +0.2 |
+| Organised Religion | society | Religion, States | 0.6 | 3125 (81.5%) | 101.3% | 0.04 Myr | 0.82 | Mil +0.2; Soc +0.2 |
+| the Gathering | society |  | 0.6 | 133 (3.5%) | 95.0% | 0.01 Myr | 0.64 | Mil +0.5; Soc +0.5 |
+| Host-craft | biology |  | 0.6 | 46 (1.2%) | 83.6% | 0.01 Myr | 2.12 | Sur +0.5; Soc +0.5 |
+| Maintenance | industry |  | 0.6 | 59 (1.5%) | 68.6% | 0.10 Myr | 0.89 | Sur +0.5 |
+| Husbandry of the Self | biology |  | 0.6 | 226 (5.9%) | 97.8% | 0.01 Myr | 0.88 | Sur +0.5; tilt biology ×1.2 |
 
 - **Tools**: Shaped stone, bone and shell. The first lever over the world.
 - **Fire**: Kept flame: warmth, cooked food, the dark held back. Survival begins here.
@@ -67,21 +67,21 @@ Reached is the share of all peoples that ever held the node. Of eligible is the 
 
 | Node | Domain | Needs | Price | Reached | Of eligible | Learned at | Life | Effects |
 |---|---|---|---|---|---|---|---|---|
-| Cold Chemistry | exotic |  | 2 | 130 (2.8%) | 71.8% | 0.05 Myr | 1.99 |  |
-| Printing | society | Writing, Metallurgy | 2 | 4257 (91.7%) | 99.3% | 0.05 Myr | 0.74 | Soc +0.3; tilt computation ×1.2, biology ×1.1 |
-| the Scientific Method | computation | Mathematics, Philosophy, Printing | 2 | 4368 (94.1%) | 103.0% | 0.06 Myr | 0.82 | tilt energy ×1.3, industry ×1.3, biology ×1.3, exotic ×1.3 |
-| Astronomy | exotic | the Scientific Method, Star Gazing | 2 | 4092 (88.2%) | 97.3% | 0.11 Myr | 0.95 | tilt propulsion ×1.2, exotic ×1.1 |
-| Doubt | society | Philosophy, Printing, Organised Religion | 2 | 3267 (70.4%) | 81.8% | 0.08 Myr | 1.19 | Soc +0.1; filter: the Wars of Faith (diff 2.5 on soc) |
-| Steam Power | energy | Metallurgy, the Scientific Method | 2 | 4273 (92.1%) | 98.3% | 0.10 Myr | 0.90 |  |
-| the Breach | industry | Steam Power | 2 | 76 (1.6%) | 76.8% | 0.15 Myr | 3.47 |  |
-| High Air | propulsion | the Scientific Method | 2 | 153 (3.3%) | 88.4% | 0.09 Myr | 1.32 |  |
-| the Industrial Revolution | industry | Steam Power | 2 | 4242 (91.4%) | 99.3% | 0.14 Myr | 0.93 | Mil +0.5; Sur +0.5 |
-| Chemistry | industry | the Scientific Method | 2 | 4255 (91.7%) | 97.4% | 0.10 Myr | 0.89 |  |
-| Medicine | biology | the Scientific Method | 2 | 4192 (90.3%) | 96.0% | 0.09 Myr | 0.91 | Sur +0.5 |
-| Sanitation | biology | Medicine, the Industrial Revolution | 2 | 2789 (60.1%) | 68.0% | 0.21 Myr | 2.36 | Sur +0.5 |
-| Firearms | weapons | Metallurgy, Chemistry | 2 | 3976 (85.7%) | 93.8% | 0.17 Myr | 0.99 | Mil +0.5 |
-| Mass Politics | society | Printing, the Industrial Revolution, Doubt | 2 | 2358 (50.8%) | 75.1% | 0.20 Myr | 1.43 | Soc +0.5 |
-| Electricity | energy | the Scientific Method, the Industrial Revolution | 2 | 4122 (88.8%) | 97.7% | 0.19 Myr | 1.03 | tilt computation ×1.3 |
+| Cold Chemistry | exotic |  | 2 | 98 (2.6%) | 83.1% | 0.05 Myr | 2.02 |  |
+| Printing | society | Writing, Metallurgy | 2 | 3212 (83.8%) | 98.8% | 0.05 Myr | 0.84 | Soc +0.3; tilt computation ×1.2, biology ×1.1 |
+| the Scientific Method | computation | Mathematics, Philosophy, Printing | 2 | 3348 (87.3%) | 105.2% | 0.06 Myr | 0.95 | tilt energy ×1.3, industry ×1.3, biology ×1.3, exotic ×1.3 |
+| Astronomy | exotic | the Scientific Method, Star Gazing | 2 | 3058 (79.8%) | 95.4% | 0.10 Myr | 1.15 | tilt propulsion ×1.2, exotic ×1.1 |
+| Doubt | society | Philosophy, Printing, Organised Religion | 2 | 2756 (71.9%) | 90.3% | 0.08 Myr | 1.09 | Soc +0.1; filter: the Wars of Faith (diff 2.5 on soc) |
+| Steam Power | energy | Metallurgy, the Scientific Method | 2 | 3241 (84.6%) | 97.2% | 0.10 Myr | 1.07 |  |
+| the Breach | industry | Steam Power | 2 | 59 (1.5%) | 93.7% | 0.19 Myr | 3.14 |  |
+| High Air | propulsion | the Scientific Method | 2 | 242 (6.3%) | 85.8% | 0.05 Myr | 0.64 |  |
+| the Industrial Revolution | industry | Steam Power | 2 | 3193 (83.3%) | 98.5% | 0.14 Myr | 1.12 | Mil +0.5; Sur +0.5 |
+| Chemistry | industry | the Scientific Method | 2 | 3228 (84.2%) | 96.4% | 0.10 Myr | 1.06 |  |
+| Medicine | biology | the Scientific Method | 2 | 3156 (82.3%) | 94.3% | 0.09 Myr | 1.10 | Sur +0.5 |
+| Sanitation | biology | Medicine, the Industrial Revolution | 2 | 2009 (52.4%) | 65.8% | 0.21 Myr | 2.56 | Sur +0.5 |
+| Firearms | weapons | Metallurgy, Chemistry | 2 | 2916 (76.1%) | 90.6% | 0.17 Myr | 1.28 | Mil +0.5 |
+| Mass Politics | society | Printing, the Industrial Revolution, Doubt | 2 | 2270 (59.2%) | 86.5% | 0.19 Myr | 1.42 | Soc +0.5 |
+| Electricity | energy | the Scientific Method, the Industrial Revolution | 2 | 3051 (79.6%) | 96.1% | 0.20 Myr | 1.27 | tilt computation ×1.3 |
 
 - **Cold Chemistry**: Making without burning: catalysis, pressure and patience. The fireless road to industry, for peoples who cannot burn.
 - **Printing**: Cheap copies of anything written. Ideas spread faster than they can be stopped.
@@ -103,24 +103,24 @@ Reached is the share of all peoples that ever held the node. Of eligible is the 
 
 | Node | Domain | Needs | Price | Reached | Of eligible | Learned at | Life | Effects |
 |---|---|---|---|---|---|---|---|---|
-| Mass Industry | energy | the Industrial Revolution, Chemistry | 6 | 3983 (85.8%) | 95.7% | 0.23 Myr | 1.06 | Mil +0.3; Sur +0.3; filter: Overshoot (diff 4 on sur/soc) |
-| Mechanised War | weapons | Firearms, the Industrial Revolution | 6 | 3603 (77.7%) | 91.7% | 0.36 Myr | 1.09 | Mil +0.5 |
-| Modern Physics | exotic | Electricity, Mathematics, Astronomy | 6 | 3694 (79.6%) | 93.8% | 0.40 Myr | 1.14 | tilt energy ×1.3 |
-| Atomic Power | energy | Modern Physics | 6 | 3553 (76.6%) | 96.2% | 0.62 Myr | 1.23 | Mil +1.0; filter: the Atomic Age (diff 3.5 on soc) |
-| Rocketry | propulsion | Chemistry, Mechanised War | 6 | 3559 (76.7%) | 99.4% | 0.35 Myr | 1.09 | reach 0.1 ly |
-| Computers | computation | Electricity, Mathematics | 6 | 3937 (84.8%) | 95.7% | 0.29 Myr | 1.13 | tilt energy ×1.1, industry ×1.1, biology ×1.1 |
-| Global Networks | computation | Computers, Mass Politics | 6 | 2794 (60.2%) | 125.6% | 0.42 Myr | 1.91 | Soc +0.5 |
-| Genetics | biology | Medicine, Chemistry | 6 | 3919 (84.5%) | 95.1% | 0.16 Myr | 1.05 | Sur +0.5 |
-| Immunology | biology | Medicine, Chemistry | 6 | 3433 (74.0%) | 83.3% | 0.17 Myr | 1.38 | Sur +0.5 |
-| Censorship | society | Mass Politics, Law | 6 | 3030 (65.3%) | 128.8% | 0.21 Myr | 1.86 | Soc +0.5 |
-| Plague-craft | biology | Immunology, Mechanised War | 6 | 2367 (51.0%) | 79.7% | 0.65 Myr | 2.42 | Mil +0.5; filter: the Vial (diff 4 on sur) |
-| Agitation | society | Mass Politics, Censorship | 6 | 2660 (57.3%) | 134.6% | 0.30 Myr | 2.39 | Mil +0.5; filter: the Vial (diff 4 on sur) |
-| Ecology | biology | Medicine, Mass Industry | 6 | 3725 (80.3%) | 95.4% | 0.32 Myr | 1.20 | Sur +0.5; tilt society ×1.2 |
-| Orbital Weapons | weapons | Rocketry, Atomic Power | 6 | 1947 (42.0%) | 60.4% | 1.54 Myr | 2.63 | Mil +0.5; unlocks silos |
-| Fusion Power | energy | Atomic Power, Computers | 6 | 3371 (72.7%) | 96.5% | 0.91 Myr | 1.30 | Mil +0.3; Sur +0.3 |
-| Neuroscience | biology | Medicine, Computers | 6 | 3492 (75.3%) | 90.9% | 0.44 Myr | 1.31 | tilt computation ×1.2 |
-| Broodline | biology | Host-craft, Chemistry | 6 | 20 (0.4%) | 90.9% | 0.18 Myr | 1.94 | Sur +0.5; tilt biology ×1.2 |
-| Forking | computation | Maintenance, Electricity | 6 | 18 (0.4%) | 66.7% | 0.69 Myr | 2.49 | Sur +0.5; Soc +0.5 |
+| Mass Industry | energy | the Industrial Revolution, Chemistry | 6 | 2933 (76.5%) | 93.9% | 0.23 Myr | 1.30 | Mil +0.3; Sur +0.3; filter: Overshoot (diff 4 on sur/soc) |
+| Mechanised War | weapons | Firearms, the Industrial Revolution | 6 | 2564 (66.9%) | 89.4% | 0.42 Myr | 1.45 | Mil +0.5 |
+| Modern Physics | exotic | Electricity, Mathematics, Astronomy | 6 | 2601 (67.9%) | 90.5% | 0.45 Myr | 1.47 | tilt energy ×1.3 |
+| Atomic Power | energy | Modern Physics | 6 | 2474 (64.5%) | 95.1% | 0.70 Myr | 1.64 | Mil +1.0; filter: the Atomic Age (diff 3.5 on soc) |
+| Rocketry | propulsion | Chemistry, Mechanised War | 6 | 2507 (65.4%) | 98.5% | 0.40 Myr | 1.46 | reach 0.1 ly |
+| Computers | computation | Electricity, Mathematics | 6 | 2933 (76.5%) | 96.5% | 0.30 Myr | 1.35 | tilt energy ×1.1, industry ×1.1, biology ×1.1 |
+| Global Networks | computation | Computers, Mass Politics | 6 | 2161 (56.4%) | 101.6% | 0.43 Myr | 2.08 | Soc +0.5 |
+| Genetics | biology | Medicine, Chemistry | 6 | 2838 (74.0%) | 92.0% | 0.17 Myr | 1.28 | Sur +0.5 |
+| Immunology | biology | Medicine, Chemistry | 6 | 2365 (61.7%) | 76.7% | 0.17 Myr | 1.85 | Sur +0.5 |
+| Censorship | society | Mass Politics, Law | 6 | 2216 (57.8%) | 97.8% | 0.22 Myr | 2.23 | Soc +0.5 |
+| Plague-craft | biology | Immunology, Mechanised War | 6 | 1506 (39.3%) | 77.8% | 0.72 Myr | 3.11 | Mil +0.5; filter: the Vial (diff 4 on sur) |
+| Agitation | society | Mass Politics, Censorship | 6 | 1901 (49.6%) | 106.3% | 0.34 Myr | 2.85 | Mil +0.5; filter: the Vial (diff 4 on sur) |
+| Ecology | biology | Medicine, Mass Industry | 6 | 2685 (70.0%) | 94.3% | 0.31 Myr | 1.46 | Sur +0.5; tilt society ×1.2 |
+| Orbital Weapons | weapons | Rocketry, Atomic Power | 6 | 1275 (33.3%) | 58.7% | 1.53 Myr | 2.92 | Mil +0.5; unlocks silos |
+| Fusion Power | energy | Atomic Power, Computers | 6 | 2283 (59.6%) | 94.5% | 1.01 Myr | 1.86 | Mil +0.3; Sur +0.3 |
+| Neuroscience | biology | Medicine, Computers | 6 | 2488 (64.9%) | 89.0% | 0.48 Myr | 1.73 | tilt computation ×1.2 |
+| Broodline | biology | Host-craft, Chemistry | 6 | 29 (0.8%) | 80.6% | 0.15 Myr | 4.19 | Sur +0.5; tilt biology ×1.2 |
+| Forking | computation | Maintenance, Electricity | 6 | 17 (0.4%) | 60.7% | 3.36 Myr | 5.96 | Sur +0.5; Soc +0.5 |
 
 - **Mass Industry**: Production at planetary scale. It strips a world if not watched, and no one watches at first.
 - **Mechanised War**: Engines, armour and aircraft. Wars that consume nations rather than armies.
@@ -145,36 +145,36 @@ Reached is the share of all peoples that ever held the node. Of eligible is the 
 
 | Node | Domain | Needs | Price | Reached | Of eligible | Learned at | Life | Effects |
 |---|---|---|---|---|---|---|---|---|
-| Machine Minds | computation | Computers, Neuroscience | 30 | 2892 (62.3%) | 83.1% | 0.82 Myr | 1.77 | Soc +0.5; tilt energy ×1.2, industry ×1.2, biology ×1.2, propulsion ×1.2, weapons ×1.2, exotic ×1.2; filter: Thinking Machines (diff 4.5 on soc) |
-| Closed Ecologies | biology | Ecology, Genetics | 30 | 3490 (75.2%) | 95.7% | 0.44 Myr | 1.27 | Sur +0.5; envelope +1; unlocks arcology |
-| Orbital Habitats | industry | Rocketry, Closed Ecologies | 30 | 2747 (59.2%) | 85.9% | 1.14 Myr | 1.59 | Sur +0.5; unlocks shipyard; unlocks observatory |
-| Interplanetary Flight | propulsion | Rocketry, Fusion Power, Astronomy | 30 | 3000 (64.7%) | 96.8% | 1.24 Myr | 1.32 | reach 1 ly |
-| Slow Interstellar Travel | propulsion | Interplanetary Flight, Closed Ecologies | 30 | 2734 (58.9%) | 96.9% | 1.51 Myr | 1.48 | reach 12 ly; speed 100 y/ly |
-| Self-Replicating Industry | industry | Machine Minds, Orbital Habitats | 30 | 1987 (42.8%) | 83.7% | 3.90 Myr | 1.67 | Mil +0.5; Sur +0.3; filter: Self-Replication (diff 5.5 on mil) |
-| Life Extension | biology | Genetics, Neuroscience | 30 | 2632 (56.7%) | 77.3% | 0.80 Myr | 2.31 | Sur +0.5; filter: the Long Silence (diff 4.5 on soc) |
-| Terraforming | biology | Closed Ecologies, Fusion Power | 30 | 2478 (53.4%) | 80.7% | 1.50 Myr | 2.40 | Sur +0.5; envelope +1 |
-| Antimatter | energy | Fusion Power, Modern Physics | 30 | 2970 (64.0%) | 88.8% | 1.48 Myr | 1.61 | Mil +0.5 |
-| Planetary Defence | weapons | Orbital Weapons, Computers | 30 | 1340 (28.9%) | 69.7% | 1.74 Myr | 3.95 | Mil +0.5; unlocks defence grid |
-| Memetic Engineering | society | Global Networks, Neuroscience | 30 | 2158 (46.5%) | 82.8% | 1.13 Myr | 2.37 | Soc +1.0 |
-| Cognitive Immunity | computation | Memetic Engineering, Neuroscience | 30 | 1683 (36.3%) | 78.6% | 1.83 Myr | 3.69 | Soc +0.5 |
-| Relativistic Travel | propulsion | Antimatter, Slow Interstellar Travel | 30 | 2346 (50.6%) | 92.8% | 1.72 Myr | 2.03 | reach 25 ly; speed 4 y/ly |
-| Relativistic Weapons | weapons | Relativistic Travel | 30 | 1466 (31.6%) | 62.5% | 3.74 Myr | 2.77 | Mil +1.5 |
-| Mind Uploading | computation | Machine Minds, Neuroscience | 30 | 1938 (41.8%) | 68.2% | 1.48 Myr | 2.81 | Sur +0.5; Soc +0.5 |
-| Dyson Swarms | industry | Self-Replicating Industry, Antimatter | 30 | 1610 (34.7%) | 86.0% | 4.84 Myr | 1.82 | Sur +0.5; unlocks Dyson swarm |
-| Germline Engineering | biology | Terraforming, Life Extension | 30 | 1768 (38.1%) | 84.1% | 2.73 Myr | 3.20 | Sur +1.0; envelope +1 |
-| Quantum Computing | computation | Computers, Modern Physics | 30 | 2697 (58.1%) | 74.9% | 0.87 Myr | 1.93 | tilt computation ×1.2, exotic ×1.3 |
-| Synthetic Biology | biology | Genetics, Closed Ecologies | 30 | 2844 (61.3%) | 81.9% | 0.61 Myr | 2.07 | Sur +0.5; tilt biology ×1.3 |
-| Designed Immunity | biology | Immunology, Synthetic Biology | 30 | 2123 (45.8%) | 79.9% | 0.88 Myr | 3.12 | Sur +0.5 |
-| Tailored Plagues | biology | Plague-craft, Synthetic Biology | 30 | 1672 (36.0%) | 79.3% | 1.32 Myr | 3.72 | Mil +0.5; filter: the Vial (diff 4 on sur) |
-| Memetic Weapons | society | Agitation, Memetic Engineering | 30 | 1592 (34.3%) | 87.7% | 1.93 Myr | 4.87 | Mil +0.5; filter: the Vial (diff 4 on sur) |
-| Deep Governance | society | Memetic Engineering, Global Networks, Law | 30 | 1855 (40.0%) | 86.5% | 1.93 Myr | 3.55 | Soc +1.0 |
-| Beamed Sails | propulsion | Slow Interstellar Travel, Orbital Habitats | 30 | 1932 (41.6%) | 80.6% | 0.88 Myr | 3.08 | reach 18 ly; speed 30 y/ly |
-| Hibernation | biology | Medicine, Slow Interstellar Travel | 30 | 1601 (34.5%) | 58.8% | 1.69 Myr | 3.83 | Sur +0.5; reach 5 ly |
-| Seed-clouds | propulsion | Interplanetary Flight, the Gathering | 30 | 384 (8.3%) | 65.4% | 0.14 Myr | 2.34 | reach 12 ly; speed 300 y/ly |
-| Living Ships | propulsion | Interplanetary Flight, Synthetic Biology | 30 | 94 (2.0%) | 87.0% | 1.94 Myr | 15.71 | reach 12 ly; speed 100 y/ly |
-| Grafting | biology | Slow Interstellar Travel, Synthetic Biology | 30 | 66 (1.4%) | 57.9% | 2.40 Myr | 6.58 | Sur +0.5 |
-| Deep Root | biology | Closed Ecologies | 30 | 88 (1.9%) | 50.0% | 0.47 Myr | 4.73 | Sur +1.0 |
-| Free-living | biology | Broodline, Closed Ecologies | 60 | 11 (0.2%) | 73.3% | 0.85 Myr | 3.43 | Sur +0.5 |
+| Machine Minds | computation | Computers, Neuroscience | 30 | 2080 (54.3%) | 83.7% | 0.93 Myr | 2.09 | Soc +0.5; tilt energy ×1.2, industry ×1.2, biology ×1.2, propulsion ×1.2, weapons ×1.2, exotic ×1.2; filter: Thinking Machines (diff 4.5 on soc) |
+| Closed Ecologies | biology | Ecology, Genetics | 30 | 2433 (63.5%) | 93.1% | 0.44 Myr | 1.68 | Sur +0.5; envelope +1; unlocks arcology |
+| Orbital Habitats | industry | Rocketry, Closed Ecologies | 30 | 1793 (46.8%) | 82.5% | 1.25 Myr | 2.23 | Sur +0.5; unlocks shipyard; unlocks observatory |
+| Interplanetary Flight | propulsion | Rocketry, Fusion Power, Astronomy | 30 | 1933 (50.4%) | 94.2% | 1.44 Myr | 2.04 | reach 1 ly |
+| Slow Interstellar Travel | propulsion | Interplanetary Flight, Closed Ecologies | 30 | 1724 (45.0%) | 97.7% | 1.75 Myr | 2.28 | reach 12 ly; speed 100 y/ly |
+| Self-Replicating Industry | industry | Machine Minds, Orbital Habitats | 30 | 1181 (30.8%) | 76.9% | 3.66 Myr | 2.31 | Mil +0.5; Sur +0.3; filter: Self-Replication (diff 5.5 on mil) |
+| Life Extension | biology | Genetics, Neuroscience | 30 | 1780 (46.4%) | 74.9% | 0.89 Myr | 2.93 | Sur +0.5; filter: the Long Silence (diff 4.5 on soc) |
+| Terraforming | biology | Closed Ecologies, Fusion Power | 30 | 1563 (40.8%) | 78.4% | 1.57 Myr | 3.36 | Sur +0.5; envelope +1 |
+| Antimatter | energy | Fusion Power, Modern Physics | 30 | 1948 (50.8%) | 86.1% | 1.52 Myr | 2.29 | Mil +0.5 |
+| Planetary Defence | weapons | Orbital Weapons, Computers | 30 | 849 (22.1%) | 68.0% | 1.89 Myr | 3.90 | Mil +0.5; unlocks defence grid |
+| Memetic Engineering | society | Global Networks, Neuroscience | 30 | 1577 (41.1%) | 81.0% | 1.24 Myr | 2.72 | Soc +1.0 |
+| Cognitive Immunity | computation | Memetic Engineering, Neuroscience | 30 | 1146 (29.9%) | 73.6% | 1.73 Myr | 4.65 | Soc +0.5 |
+| Relativistic Travel | propulsion | Antimatter, Slow Interstellar Travel | 30 | 1473 (38.4%) | 93.2% | 1.99 Myr | 2.71 | reach 25 ly; speed 4 y/ly |
+| Relativistic Weapons | weapons | Relativistic Travel | 30 | 801 (20.9%) | 54.4% | 3.54 Myr | 3.41 | Mil +1.5 |
+| Mind Uploading | computation | Machine Minds, Neuroscience | 30 | 1423 (37.1%) | 71.3% | 1.70 Myr | 3.14 | Sur +0.5; Soc +0.5 |
+| Dyson Swarms | industry | Self-Replicating Industry, Antimatter | 30 | 932 (24.3%) | 85.1% | 4.66 Myr | 2.32 | Sur +0.5; unlocks Dyson swarm |
+| Germline Engineering | biology | Terraforming, Life Extension | 30 | 1042 (27.2%) | 79.2% | 3.11 Myr | 5.07 | Sur +1.0; envelope +1 |
+| Quantum Computing | computation | Computers, Modern Physics | 30 | 1890 (49.3%) | 75.0% | 0.99 Myr | 2.31 | tilt computation ×1.2, exotic ×1.3 |
+| Synthetic Biology | biology | Genetics, Closed Ecologies | 30 | 1928 (50.3%) | 80.0% | 0.61 Myr | 2.67 | Sur +0.5; tilt biology ×1.3 |
+| Designed Immunity | biology | Immunology, Synthetic Biology | 30 | 1359 (35.5%) | 79.9% | 0.92 Myr | 4.37 | Sur +0.5 |
+| Tailored Plagues | biology | Plague-craft, Synthetic Biology | 30 | 1020 (26.6%) | 78.8% | 1.37 Myr | 5.12 | Mil +0.5; filter: the Vial (diff 4 on sur) |
+| Memetic Weapons | society | Agitation, Memetic Engineering | 30 | 1028 (26.8%) | 83.2% | 1.91 Myr | 6.37 | Mil +0.5; filter: the Vial (diff 4 on sur) |
+| Deep Governance | society | Memetic Engineering, Global Networks, Law | 30 | 1315 (34.3%) | 84.3% | 1.79 Myr | 3.79 | Soc +1.0 |
+| Beamed Sails | propulsion | Slow Interstellar Travel, Orbital Habitats | 30 | 1283 (33.5%) | 86.1% | 1.08 Myr | 3.37 | reach 18 ly; speed 30 y/ly |
+| Hibernation | biology | Medicine, Slow Interstellar Travel | 30 | 1020 (26.6%) | 60.1% | 1.89 Myr | 4.47 | Sur +0.5; reach 5 ly |
+| Seed-clouds | propulsion | Interplanetary Flight, the Gathering | 30 | 40 (1.0%) | 90.9% | 1.35 Myr | 12.61 | reach 12 ly; speed 300 y/ly |
+| Living Ships | propulsion | Interplanetary Flight, Synthetic Biology | 30 | 84 (2.2%) | 87.5% | 1.53 Myr | 5.11 | reach 12 ly; speed 100 y/ly |
+| Grafting | biology | Slow Interstellar Travel, Synthetic Biology | 30 | 18 (0.5%) | 85.7% | 3.58 Myr | 18.24 | Sur +0.5 |
+| Deep Root | biology | Closed Ecologies | 30 | 45 (1.2%) | 91.8% | 0.52 Myr | 4.47 | Sur +1.0 |
+| Free-living | biology | Broodline, Closed Ecologies | 60 | 21 (0.5%) | 84.0% | 1.09 Myr | 8.15 | Sur +0.5 |
 
 - **Machine Minds**: A mind that is not one of theirs. It speeds everything, or replaces its makers.
 - **Closed Ecologies**: Sealed, self-sustaining habitats. Living where nothing lives; arcologies at home.
@@ -211,27 +211,27 @@ Reached is the share of all peoples that ever held the node. Of eligible is the 
 
 | Node | Domain | Needs | Price | Reached | Of eligible | Learned at | Life | Effects |
 |---|---|---|---|---|---|---|---|---|
-| Stellar Engineering | exotic | Dyson Swarms, Modern Physics | 250 | 1227 (26.4%) | 77.3% | 6.33 Myr | 2.18 | Mil +1.0; Sur +1.0; unlocks accretion tap; filter: Stellar Engineering (diff 7 on sur) |
-| Wormhole Physics | exotic | Antimatter, Modern Physics, Quantum Computing | 250 | 1507 (32.5%) | 62.1% | 3.87 Myr | 3.05 |  |
-| Exotic Matter | exotic | Wormhole Physics, Antimatter | 500 | 756 (16.3%) | 50.7% | 6.03 Myr | 3.96 | Mil +0.5; Sur +0.5 |
-| Causal Physics | exotic | Wormhole Physics, Quantum Computing | 600 | 695 (15.0%) | 46.5% | 7.00 Myr | 4.62 | Soc +0.5; tilt exotic ×1.3 |
-| Transcendence | exotic | Mind Uploading, Wormhole Physics, Memetic Engineering | 500 | 530 (11.4%) | 47.6% | 7.40 Myr | 5.10 | filter: Transcendence (diff 7 on soc) |
-| Star Lifting | exotic | Stellar Engineering | 500 | 821 (17.7%) | 66.9% | 4.24 Myr | 2.82 | Sur +1.0; unlocks star lifter |
-| Deep Time | exotic | Star Lifting, Causal Physics | 600 | 114 (2.5%) | 26.8% | 17.03 Myr | 31.84 | Soc +0.5; after 4 Myr of life; 30% chance per attempt |
-| Vacuum Energy | energy | Antimatter, Quantum Computing | 250 | 1824 (39.3%) | 74.6% | 3.83 Myr | 2.76 | Mil +0.5; Sur +1.0; tilt exotic ×1.2 |
-| Matter Compilers | industry | Self-Replicating Industry, Vacuum Energy | 250 | 872 (18.8%) | 61.5% | 7.10 Myr | 2.42 | Mil +1.0; Sur +1.0 |
-| World Engines | industry | Matter Compilers, Terraforming | 500 | 543 (11.7%) | 65.3% | 6.31 Myr | 3.15 | Sur +1.0; envelope +1 |
-| Substrate Minds | computation | Mind Uploading, Quantum Computing | 250 | 1187 (25.6%) | 67.2% | 3.92 Myr | 4.72 | Sur +0.5; Soc +1.0; tilt society ×1.2 |
-| Panspermia | biology | Synthetic Biology, Germline Engineering | 250 | 1061 (22.9%) | 63.2% | 3.85 Myr | 7.23 | Sur +1.0; envelope +1 |
-| Bodily Sovereignty | biology | Designed Immunity, Germline Engineering | 250 | 1004 (21.6%) | 68.2% | 4.40 Myr | 6.97 | Sur +1.0 |
-| Sealed Minds | society | Cognitive Immunity, Deep Governance | 250 | 1030 (22.2%) | 69.2% | 4.66 Myr | 8.41 | Soc +1.0 |
-| Black Biology | biology | Tailored Plagues, Designed Immunity | 250 | 1046 (22.5%) | 69.6% | 2.61 Myr | 6.96 | Mil +1.0; filter: the Vial (diff 4 on sur) |
-| the Basilisk | computation | Memetic Weapons, Cognitive Immunity | 250 | 849 (18.3%) | 64.0% | 4.75 Myr | 9.35 | Mil +1.0; filter: the Vial (diff 4 on sur) |
-| Posthuman Law | society | Deep Governance, Mind Uploading | 250 | 1154 (24.9%) | 75.4% | 4.95 Myr | 5.42 | Soc +1.5 |
-| the Long Thought | society | Posthuman Law, Substrate Minds | 500 | 565 (12.2%) | 63.5% | 8.05 Myr | 7.93 | Soc +1.0 |
-| Near-light Travel | propulsion | Relativistic Travel, Vacuum Energy | 250 | 1253 (27.0%) | 76.8% | 3.24 Myr | 3.73 | reach 35 ly; speed 1.5 y/ly |
-| Nova Bombs | weapons | Relativistic Weapons, Antimatter | 250 | 928 (20.0%) | 64.5% | 5.37 Myr | 2.94 | Mil +1.5 |
-| Stellar Weapons | weapons | Nova Bombs, Stellar Engineering | 500 | 427 (9.2%) | 59.0% | 7.07 Myr | 3.42 | Mil +2.0 |
+| Stellar Engineering | exotic | Dyson Swarms, Modern Physics | 250 | 677 (17.7%) | 73.5% | 5.73 Myr | 2.75 | Mil +1.0; Sur +1.0; unlocks accretion tap; filter: Stellar Engineering (diff 7 on sur) |
+| Wormhole Physics | exotic | Antimatter, Modern Physics, Quantum Computing | 250 | 946 (24.7%) | 57.4% | 4.21 Myr | 3.91 |  |
+| Exotic Matter | exotic | Wormhole Physics, Antimatter | 500 | 376 (9.8%) | 40.4% | 7.12 Myr | 10.71 | Mil +0.5; Sur +0.5 |
+| Causal Physics | exotic | Wormhole Physics, Quantum Computing | 600 | 357 (9.3%) | 38.3% | 7.63 Myr | 11.13 | Soc +0.5; tilt exotic ×1.3 |
+| Transcendence | exotic | Mind Uploading, Wormhole Physics, Memetic Engineering | 500 | 296 (7.7%) | 43.4% | 8.88 Myr | 12.07 | filter: Transcendence (diff 7 on soc) |
+| Star Lifting | exotic | Stellar Engineering | 500 | 432 (11.3%) | 63.8% | 2.72 Myr | 2.97 | Sur +1.0; unlocks star lifter |
+| Deep Time | exotic | Star Lifting, Causal Physics | 600 | 60 (1.6%) | 37.5% | 17.78 Myr | 27.15 | Soc +0.5; after 4 Myr of life; 30% chance per attempt |
+| Vacuum Energy | energy | Antimatter, Quantum Computing | 250 | 1154 (30.1%) | 69.2% | 3.84 Myr | 3.56 | Mil +0.5; Sur +1.0; tilt exotic ×1.2 |
+| Matter Compilers | industry | Self-Replicating Industry, Vacuum Energy | 250 | 438 (11.4%) | 54.3% | 7.85 Myr | 3.25 | Mil +1.0; Sur +1.0 |
+| World Engines | industry | Matter Compilers, Terraforming | 500 | 228 (5.9%) | 56.3% | 10.18 Myr | 7.85 | Sur +1.0; envelope +1 |
+| Substrate Minds | computation | Mind Uploading, Quantum Computing | 250 | 729 (19.0%) | 58.7% | 4.39 Myr | 5.80 | Sur +0.5; Soc +1.0; tilt society ×1.2 |
+| Panspermia | biology | Synthetic Biology, Germline Engineering | 250 | 666 (17.4%) | 66.4% | 5.05 Myr | 9.79 | Sur +1.0; envelope +1 |
+| Bodily Sovereignty | biology | Designed Immunity, Germline Engineering | 250 | 570 (14.9%) | 68.0% | 5.28 Myr | 11.50 | Sur +1.0 |
+| Sealed Minds | society | Cognitive Immunity, Deep Governance | 250 | 678 (17.7%) | 67.5% | 4.46 Myr | 9.75 | Soc +1.0 |
+| Black Biology | biology | Tailored Plagues, Designed Immunity | 250 | 605 (15.8%) | 66.1% | 2.74 Myr | 9.31 | Mil +1.0; filter: the Vial (diff 4 on sur) |
+| the Basilisk | computation | Memetic Weapons, Cognitive Immunity | 250 | 547 (14.3%) | 65.0% | 4.84 Myr | 12.71 | Mil +1.0; filter: the Vial (diff 4 on sur) |
+| Posthuman Law | society | Deep Governance, Mind Uploading | 250 | 747 (19.5%) | 70.5% | 5.08 Myr | 6.63 | Soc +1.5 |
+| the Long Thought | society | Posthuman Law, Substrate Minds | 500 | 315 (8.2%) | 60.3% | 9.62 Myr | 14.29 | Soc +1.0 |
+| Near-light Travel | propulsion | Relativistic Travel, Vacuum Energy | 250 | 769 (20.1%) | 79.4% | 3.23 Myr | 4.01 | reach 35 ly; speed 1.5 y/ly |
+| Nova Bombs | weapons | Relativistic Weapons, Antimatter | 250 | 461 (12.0%) | 58.4% | 4.78 Myr | 3.96 | Mil +1.5 |
+| Stellar Weapons | weapons | Nova Bombs, Stellar Engineering | 500 | 167 (4.4%) | 50.5% | 10.78 Myr | 14.14 | Mil +2.0 |
 
 - **Stellar Engineering**: Reaching into the star: shaping its output and, a little, moving it. It can flare.
 - **Wormhole Physics**: The proof that space can be folded. A proof, for now.
@@ -259,14 +259,14 @@ Reached is the share of all peoples that ever held the node. Of eligible is the 
 
 | Node | Domain | Needs | Price | Reached | Of eligible | Learned at | Life | Effects |
 |---|---|---|---|---|---|---|---|---|
-| the Voice | exotic | Causal Physics, Substrate Minds | 600 | 39 (0.8%) | 7.4% | 11.86 Myr | 18.74 | unlocks ansible net; filter: the Open Line (diff 6 on soc) |
-| the Flesh | biology | Panspermia, Life Extension | 600 | 71 (1.5%) | 6.9% | 9.99 Myr | 26.58 | filter: the Brood (diff 6 on soc) |
-| the Door | propulsion | Exotic Matter, Near-light Travel | 600 | 60 (1.3%) | 10.4% | 8.93 Myr | 6.62 | reach 45 ly; speed 0.3 y/ly; filter: the Door (diff 4.5 on soc) |
-| the Unmaking | weapons | Exotic Matter, Stellar Weapons | 600 | 13 (0.3%) | 4.7% | 16.83 Myr | 36.17 | filter: the Unmaking (diff 6.5 on soc) |
-| the Chorus | society | the Long Thought, Memetic Engineering | 600 | 21 (0.5%) | 4.2% | 9.08 Myr | 21.14 | filter: the Chorus (diff 6 on soc) |
-| the Sight | exotic | Causal Physics, the Long Thought | 600 | 17 (0.4%) | 5.0% | 13.23 Myr | 14.11 | filter: the Sight (diff 6 on soc) |
-| the Ember | energy | Antimatter, Exotic Matter | 600 | 3 (0.1%) | 0.4% | 2.66 Myr | 5.06 |  |
-| the Manna | biology | Synthetic Biology, Germline Engineering | 600 | 154 (3.3%) | 9.2% | 0.24 Myr | 1.91 |  |
+| the Voice | exotic | Causal Physics, Substrate Minds | 600 | 130 (3.4%) | 53.7% | 15.89 Myr | 25.34 | unlocks ansible net; filter: the Open Line (diff 6 on soc) |
+| the Flesh | biology | Panspermia, Life Extension | 600 | 57 (1.5%) | 8.7% | 11.10 Myr | 18.48 | filter: the Brood (diff 6 on soc) |
+| the Door | propulsion | Exotic Matter, Near-light Travel | 600 | 141 (3.7%) | 56.0% | 16.99 Myr | 25.06 | reach 45 ly; speed 0.3 y/ly; filter: the Door (diff 4.5 on soc) |
+| the Unmaking | weapons | Exotic Matter, Stellar Weapons | 600 | 123 (3.2%) | 111.8% | 10.59 Myr | 24.13 | filter: the Unmaking (diff 6.5 on soc) |
+| the Chorus | society | the Long Thought, Memetic Engineering | 600 | 23 (0.6%) | 8.0% | 10.89 Myr | 17.46 | filter: the Chorus (diff 6 on soc) |
+| the Sight | exotic | Causal Physics, the Long Thought | 600 | 130 (3.4%) | 82.8% | 13.46 Myr | 22.76 | filter: the Sight (diff 6 on soc) |
+| the Ember | energy | Antimatter, Exotic Matter | 600 | 0 (0.0%) | 0.0% | - | 0.00 |  |
+| the Manna | biology | Synthetic Biology, Germline Engineering | 600 | 33 (0.9%) | 3.3% | 0.89 Myr | 2.17 |  |
 
 - **the Voice**: Speech across any distance with no delay. Every world in one room; every mind on one line.
 - **the Flesh**: The species remade in a generation, a body for every world. No ships, no plague, no fear of the sky.
@@ -281,14 +281,14 @@ How miracles were held, by route (a people may hold one by more than one route):
 
 | Miracle | Born | Leap | Found | Wielded | Holders | Median life (Myr) |
 |---|---|---|---|---|---|---|
-| the Voice | 1 | 74 | 6 | 10 | 91 | 3.93 |
-| the Flesh | 8 | 113 | 8 | 6 | 135 | 10.52 |
-| the Door | 1 | 60 | 3 | 49 | 113 | 4.67 |
-| the Unmaking | 0 | 27 | 1 | 9 | 37 | 3.37 |
-| the Chorus | 6 | 38 | 6 | 17 | 67 | 6.46 |
-| the Sight | 3 | 14 | 17 | 21 | 55 | 5.25 |
-| the Ember | 0 | 2 | 3 | 1 | 6 | 5.54 |
-| the Manna | 1 | 1 | 115 | 76 | 193 | 2.38 |
+| the Voice | 24 | 79 | 2 | 8 | 198 | 6.02 |
+| the Flesh | 5 | 75 | 91 | 68 | 239 | 2.14 |
+| the Door | 14 | 96 | 3 | 45 | 252 | 4.34 |
+| the Unmaking | 18 | 5 | 1 | 14 | 129 | 21.69 |
+| the Chorus | 2 | 17 | 2 | 11 | 32 | 15.27 |
+| the Sight | 22 | 10 | 3 | 42 | 172 | 10.90 |
+| the Ember | 0 | 0 | 0 | 0 | 0 | 0.00 |
+| the Manna | 0 | 0 | 27 | 25 | 52 | 2.56 |
 
 ## What happens at the nodes that test a people
 
@@ -296,91 +296,103 @@ Outcomes recorded when a node's filter was faced. Foresaw means the Sight steppe
 
 | Node | Filter | Faced | Overcame | Scarred | Fell | Foresaw |
 |---|---|---|---|---|---|---|
-| Doubt | the Wars of Faith | 1528 | 72.0% | 23.2% | 4.8% | 0.0% |
-| Mass Industry | Overshoot | 1401 | 70.1% | 24.6% | 5.1% | 0.2% |
-| Atomic Power | the Atomic Age | 1045 | 77.8% | 16.6% | 5.6% | 0.1% |
-| Plague-craft | the Vial | 8898 | 70.4% | 22.8% | 6.6% | 0.2% |
-| Agitation | the Vial | 8898 | 70.4% | 22.8% | 6.6% | 0.2% |
-| Machine Minds | Thinking Machines | 901 | 71.8% | 20.9% | 7.2% | 0.1% |
-| Self-Replicating Industry | Self-Replication | 521 | 61.2% | 28.8% | 9.2% | 0.8% |
-| Life Extension | the Long Silence | 1085 | 68.0% | 22.1% | 9.7% | 0.2% |
-| Tailored Plagues | the Vial | 8898 | 70.4% | 22.8% | 6.6% | 0.2% |
-| Memetic Weapons | the Vial | 8898 | 70.4% | 22.8% | 6.6% | 0.2% |
-| Stellar Engineering | Stellar Engineering | 328 | 82.6% | 15.2% | 0.0% | 2.1% |
-| Transcendence | Transcendence | 208 | 68.3% | 23.6% | 6.7% | 1.4% |
-| Black Biology | the Vial | 8898 | 70.4% | 22.8% | 6.6% | 0.2% |
-| the Basilisk | the Vial | 8898 | 70.4% | 22.8% | 6.6% | 0.2% |
-| the Voice | the Open Line | 50 | 80.0% | 16.0% | 4.0% | 0.0% |
-| the Flesh | the Brood | 68 | 89.7% | 8.8% | 1.5% | 0.0% |
-| the Door | the Door | 81 | 84.0% | 12.3% | 2.5% | 1.2% |
-| the Unmaking | the Unmaking | 22 | 54.5% | 40.9% | 4.5% | 0.0% |
-| the Chorus | the Chorus | 27 | 81.5% | 11.1% | 0.0% | 7.4% |
-| the Sight | the Sight | 30 | 76.7% | 16.7% | 6.7% | 0.0% |
+| Doubt | the Wars of Faith | 1267 | 67.2% | 24.9% | 7.7% | 0.2% |
+| Mass Industry | Overshoot | 1322 | 66.6% | 25.6% | 6.0% | 1.8% |
+| Atomic Power | the Atomic Age | 875 | 73.6% | 19.0% | 7.4% | 0.0% |
+| Plague-craft | the Vial | 6385 | 61.6% | 28.1% | 9.7% | 0.5% |
+| Agitation | the Vial | 6385 | 61.6% | 28.1% | 9.7% | 0.5% |
+| Machine Minds | Thinking Machines | 748 | 71.0% | 19.9% | 8.8% | 0.3% |
+| Self-Replicating Industry | Self-Replication | 361 | 52.4% | 31.6% | 14.4% | 1.7% |
+| Life Extension | the Long Silence | 819 | 63.4% | 24.9% | 11.6% | 0.1% |
+| Tailored Plagues | the Vial | 6385 | 61.6% | 28.1% | 9.7% | 0.5% |
+| Memetic Weapons | the Vial | 6385 | 61.6% | 28.1% | 9.7% | 0.5% |
+| Stellar Engineering | Stellar Engineering | 210 | 72.4% | 23.8% | 1.9% | 1.9% |
+| Transcendence | Transcendence | 165 | 63.6% | 27.9% | 7.3% | 1.2% |
+| Black Biology | the Vial | 6385 | 61.6% | 28.1% | 9.7% | 0.5% |
+| the Basilisk | the Vial | 6385 | 61.6% | 28.1% | 9.7% | 0.5% |
+| the Voice | the Open Line | 114 | 59.6% | 18.4% | 0.9% | 21.1% |
+| the Flesh | the Brood | 54 | 81.5% | 14.8% | 3.7% | 0.0% |
+| the Door | the Door | 142 | 66.9% | 13.4% | 2.1% | 17.6% |
+| the Unmaking | the Unmaking | 93 | 34.4% | 23.7% | 9.7% | 32.3% |
+| the Chorus | the Chorus | 21 | 85.7% | 4.8% | 4.8% | 4.8% |
+| the Sight | the Sight | 114 | 52.6% | 37.7% | 9.6% | 0.0% |
 
 ## Common builds
 
-Among the 3981 peoples (85.8%) that reached era 3, the interstellar tree. A build is read two ways: the two domains a people went deepest in (by count of era 2+ nodes, deepest first), and the frontier, the nodes at their deepest era that nothing else they knew depends on.
+Among the 3100 peoples (80.9%) that reached era 3, the interstellar tree. A build is read two ways: the two domains a people went deepest in (by count of era 2+ nodes, deepest first), and the frontier, the nodes at their deepest era that nothing else they knew depends on.
 
 ### By domain pair
 
 | Domains | Peoples | Share | Median life (Myr) | Hold a miracle |
 |---|---|---|---|---|
-| biology + computation | 1556 | 39.1% | 2.80 | 23.5% |
-| biology + energy | 922 | 23.2% | 0.37 | 6.6% |
-| biology + propulsion | 504 | 12.7% | 1.58 | 11.3% |
-| biology + society | 359 | 9.0% | 3.00 | 14.5% |
-| energy + biology | 167 | 4.2% | 0.05 | 2.4% |
-| computation + biology | 119 | 3.0% | 0.53 | 5.9% |
-| energy + computation | 108 | 2.7% | 0.44 | 14.8% |
-| biology + exotic | 47 | 1.2% | 17.81 | 63.8% |
-| computation + society | 44 | 1.1% | 1.01 | 2.3% |
-| computation + energy | 35 | 0.9% | 0.17 | 2.9% |
-| propulsion + energy | 22 | 0.6% | 0.23 | 4.5% |
-| energy + propulsion | 21 | 0.5% | 0.24 | 0.0% |
-| biology + weapons | 18 | 0.5% | 5.04 | 27.8% |
-| society + computation | 9 | 0.2% | 1.81 | 11.1% |
-| biology + industry | 7 | 0.2% | 0.44 | 14.3% |
-| computation + propulsion | 6 | 0.2% | 0.11 | 0.0% |
-| propulsion + biology | 6 | 0.2% | 0.10 | 0.0% |
-| propulsion + computation | 6 | 0.2% | 0.10 | 0.0% |
-| energy + weapons | 5 | 0.1% | 0.69 | 0.0% |
-| society + energy | 5 | 0.1% | 0.46 | 20.0% |
-| society + biology | 4 | 0.1% | 0.58 | 0.0% |
-| energy + society | 3 | 0.1% | 4.35 | 0.0% |
-| computation + weapons | 2 | 0.1% | 0.61 | 0.0% |
-| computation + industry | 1 | 0.0% | 0.71 | 0.0% |
-| energy + industry | 1 | 0.0% | 0.59 | 100.0% |
-| industry + energy | 1 | 0.0% | 0.06 | 0.0% |
-| society + industry | 1 | 0.0% | 2.06 | 0.0% |
-| weapons + biology | 1 | 0.0% | 0.02 | 0.0% |
-| weapons + energy | 1 | 0.0% | 0.64 | 0.0% |
+| biology + computation | 1111 | 35.8% | 3.26 | 23.0% |
+| biology + energy | 614 | 19.8% | 0.54 | 8.6% |
+| biology + society | 292 | 9.4% | 2.67 | 13.7% |
+| biology + propulsion | 289 | 9.3% | 2.53 | 17.3% |
+| computation + biology | 172 | 5.5% | 0.61 | 15.7% |
+| energy + biology | 128 | 4.1% | 0.06 | 12.5% |
+| energy + computation | 114 | 3.7% | 0.19 | 7.9% |
+| exotic + propulsion | 94 | 3.0% | 28.65 | 100.0% |
+| computation + energy | 49 | 1.6% | 0.34 | 16.3% |
+| computation + society | 46 | 1.5% | 2.00 | 2.2% |
+| propulsion + energy | 24 | 0.8% | 0.53 | 20.8% |
+| energy + propulsion | 23 | 0.7% | 0.57 | 26.1% |
+| biology + exotic | 21 | 0.7% | 18.32 | 76.2% |
+| society + computation | 15 | 0.5% | 1.53 | 13.3% |
+| biology + weapons | 13 | 0.4% | 2.08 | 15.4% |
+| computation + propulsion | 12 | 0.4% | 0.87 | 25.0% |
+| exotic | 12 | 0.4% | 0.90 | 100.0% |
+| propulsion + weapons | 8 | 0.3% | 1.99 | 37.5% |
+| weapons + exotic | 7 | 0.2% | 2.08 | 85.7% |
+| propulsion + exotic | 6 | 0.2% | 1.49 | 83.3% |
+| biology + industry | 5 | 0.2% | 2.13 | 0.0% |
+| weapons | 5 | 0.2% | 0.66 | 80.0% |
+| computation + exotic | 4 | 0.1% | 0.16 | 0.0% |
+| energy + society | 4 | 0.1% | 1.23 | 50.0% |
+| society + energy | 4 | 0.1% | 1.07 | 0.0% |
+| computation + industry | 3 | 0.1% | 0.34 | 0.0% |
+| computation + weapons | 3 | 0.1% | 2.92 | 33.3% |
+| propulsion | 3 | 0.1% | 3.37 | 100.0% |
+| society + propulsion | 3 | 0.1% | 0.11 | 33.3% |
+| energy + weapons | 2 | 0.1% | 0.98 | 0.0% |
+| exotic + computation | 2 | 0.1% | 11.58 | 50.0% |
+| exotic + energy | 2 | 0.1% | 5.32 | 0.0% |
+| propulsion + computation | 2 | 0.1% | 2.05 | 100.0% |
+| energy + industry | 1 | 0.0% | 0.01 | 0.0% |
+| exotic + biology | 1 | 0.0% | 2.84 | 100.0% |
+| industry + biology | 1 | 0.0% | 9.82 | 0.0% |
+| propulsion + biology | 1 | 0.0% | 1.98 | 100.0% |
+| society | 1 | 0.0% | 0.27 | 0.0% |
+| society + biology | 1 | 0.0% | 4.23 | 0.0% |
+| weapons + biology | 1 | 0.0% | 4.22 | 0.0% |
+| weapons + computation | 1 | 0.0% | 0.03 | 100.0% |
 
 ### By frontier
 
-The 20 most common frontiers of 2385 distinct:
+The 20 most common frontiers of 1679 distinct:
 
 | Frontier | Peoples | Median life (Myr) |
 |---|---|---|
-| Black Biology | 100 | 2.96 |
-| Vacuum Energy | 90 | 0.09 |
-| Closed Ecologies | 82 | 0.37 |
-| Wormhole Physics | 63 | 1.31 |
-| Life Extension | 46 | 0.45 |
-| Near-light Travel | 45 | 0.29 |
-| Nova Bombs | 33 | 2.05 |
-| Quantum Computing | 33 | 0.49 |
-| Stellar Engineering | 31 | 0.24 |
-| Vacuum Energy + Wormhole Physics | 30 | 3.18 |
-| Machine Minds | 28 | 0.45 |
-| Synthetic Biology | 27 | 0.65 |
-| Black Biology + Bodily Sovereignty + Causal Physics + Exotic Matter + Near-light Travel + Panspermia + Sealed Minds + Star Lifting + Stellar Weapons + Transcendence + World Engines + the Basilisk + the Long Thought + the Manna | 21 | 2.30 |
-| Star Lifting | 21 | 0.18 |
-| Black Biology + Bodily Sovereignty + Causal Physics + Exotic Matter + Near-light Travel + Panspermia + Sealed Minds + Star Lifting + Stellar Weapons + Transcendence + World Engines + the Basilisk + the Long Thought | 20 | 3.89 |
-| Bodily Sovereignty | 17 | 0.87 |
-| Panspermia | 17 | 2.15 |
-| Substrate Minds | 17 | 0.19 |
-| Orbital Habitats | 16 | 0.46 |
-| Posthuman Law | 16 | 0.49 |
+| Closed Ecologies | 137 | 0.42 |
+| the Door + the Sight + the Unmaking + the Voice | 95 | 29.20 |
+| Black Biology | 71 | 3.00 |
+| Vacuum Energy | 64 | 0.59 |
+| Wormhole Physics | 43 | 1.15 |
+| Machine Minds | 36 | 0.43 |
+| Life Extension | 35 | 0.56 |
+| Near-light Travel | 33 | 2.75 |
+| Vacuum Energy + Wormhole Physics | 32 | 3.25 |
+| Synthetic Biology | 27 | 0.64 |
+| Quantum Computing | 25 | 0.35 |
+| Panspermia | 20 | 3.75 |
+| Substrate Minds | 20 | 1.57 |
+| Interplanetary Flight | 18 | 0.09 |
+| Near-light Travel + Wormhole Physics | 18 | 3.87 |
+| Antimatter + Interplanetary Flight + Quantum Computing | 16 | 0.79 |
+| Black Biology + Posthuman Law + Sealed Minds + the Basilisk | 16 | 6.53 |
+| Stellar Engineering | 16 | 0.18 |
+| Hibernation + Machine Minds | 15 | 0.01 |
+| Posthuman Law | 14 | 0.87 |
 
 ### Era 4 pairs
 
@@ -388,21 +400,21 @@ Which deep nodes are held together, among peoples holding at least two era 4 nod
 
 | Pair | Peoples |
 |---|---|
-| Vacuum Energy + Wormhole Physics | 1291 |
-| Near-light Travel + Vacuum Energy | 1218 |
-| Substrate Minds + Vacuum Energy | 1044 |
-| Stellar Engineering + Vacuum Energy | 1026 |
-| Posthuman Law + Vacuum Energy | 1010 |
-| Near-light Travel + Wormhole Physics | 950 |
-| Stellar Engineering + Wormhole Physics | 928 |
-| Substrate Minds + Wormhole Physics | 909 |
-| Posthuman Law + Substrate Minds | 890 |
-| Sealed Minds + Vacuum Energy | 877 |
-| Posthuman Law + Wormhole Physics | 874 |
-| Panspermia + Vacuum Energy | 870 |
-| Matter Compilers + Vacuum Energy | 859 |
-| Bodily Sovereignty + Vacuum Energy | 833 |
-| Near-light Travel + Stellar Engineering | 831 |
+| Vacuum Energy + Wormhole Physics | 748 |
+| Near-light Travel + Vacuum Energy | 720 |
+| Substrate Minds + Vacuum Energy | 594 |
+| Posthuman Law + Vacuum Energy | 576 |
+| Stellar Engineering + Vacuum Energy | 543 |
+| Panspermia + Vacuum Energy | 533 |
+| Posthuman Law + Substrate Minds | 522 |
+| Sealed Minds + Vacuum Energy | 521 |
+| Near-light Travel + Wormhole Physics | 518 |
+| Substrate Minds + Wormhole Physics | 488 |
+| Posthuman Law + Sealed Minds | 483 |
+| Posthuman Law + Wormhole Physics | 474 |
+| Panspermia + Wormhole Physics | 464 |
+| Bodily Sovereignty + Panspermia | 461 |
+| Near-light Travel + Substrate Minds | 459 |
 
 ### The way to the stars
 
@@ -410,42 +422,41 @@ The first node that gave a people reach of 10 ly or more:
 
 | Node | Peoples | Median life (Myr) |
 |---|---|---|
-| Slow Interstellar Travel | 978 | 7.67 |
-| Slow Interstellar Travel (inherited) | 908 | 0.05 |
-| Beamed Sails | 478 | 2.36 |
-| Relativistic Travel | 195 | 1.31 |
-| Near-light Travel | 159 | 2.47 |
-| Seed-clouds | 94 | 3.21 |
-| a miracle held from birth or by a find | 43 | 0.03 |
-| Living Ships | 14 | 18.10 |
-| the Door | 5 | 5.77 |
-| Beamed Sails (inherited) | 4 | 0.94 |
-| Relativistic Travel (inherited) | 4 | 0.23 |
+| Slow Interstellar Travel | 715 | 8.75 |
+| Slow Interstellar Travel (inherited) | 485 | 0.08 |
+| Beamed Sails | 323 | 2.13 |
+| Relativistic Travel | 152 | 2.40 |
+| the Door (inherited) | 112 | 25.01 |
+| Near-light Travel | 100 | 2.79 |
+| a miracle held from birth or by a find | 63 | 0.09 |
+| Seed-clouds | 17 | 3.03 |
+| Living Ships | 11 | 3.07 |
+| Beamed Sails (inherited) | 1 | 3.65 |
 
 ## Successful builds
 
-Success here is a long life, not survival to the present. The tenth-longest-lived of every hundred peoples lasted 14.2 Myr or more. The cut used below is 10 Myr: 629 peoples (13.6%). Their median birth was 11 Myr into the age against 24 for everyone, so part of a long life is simply being born early.
+Success here is a long life, not survival to the present. The tenth-longest-lived of every hundred peoples lasted 16.6 Myr or more. The cut used below is 10 Myr: 554 peoples (14.5%). Their median birth was 7 Myr into the age against 18 for everyone, so part of a long life is simply being born early.
 
 ### Life by what was held
 
 | Held | Peoples | Median life (Myr) | Lived 10+ Myr |
 |---|---|---|---|
-| everyone | 4640 | 0.67 | 13.6% |
-| no miracle | 4022 | 0.52 | 10.6% |
-| any miracle | 618 | 3.41 | 32.8% |
-| the Voice | 91 | 3.93 | 39.6% |
-| the Flesh | 135 | 10.52 | 51.1% |
-| the Door | 113 | 4.67 | 35.4% |
-| the Unmaking | 37 | 3.37 | 24.3% |
-| the Chorus | 67 | 6.46 | 35.8% |
-| the Sight | 55 | 5.25 | 36.4% |
-| the Ember | 6 | 5.54 | 0.0% |
-| the Manna | 193 | 2.38 | 18.1% |
-| a miracle by born | 20 | 4.38 | 45.0% |
-| a miracle by leap | 329 | 7.05 | 45.0% |
-| a miracle by found | 158 | 2.58 | 19.0% |
-| a miracle by wielded | 176 | 2.63 | 22.7% |
-| knows the cycle | 340 | 2.42 | 27.1% |
+| everyone | 3833 | 0.82 | 14.5% |
+| no miracle | 3195 | 0.58 | 11.0% |
+| any miracle | 638 | 3.00 | 31.5% |
+| the Voice | 198 | 6.02 | 44.4% |
+| the Flesh | 239 | 2.14 | 20.5% |
+| the Door | 252 | 4.34 | 42.5% |
+| the Unmaking | 129 | 21.69 | 60.5% |
+| the Chorus | 32 | 15.27 | 56.2% |
+| the Sight | 172 | 10.90 | 51.2% |
+| the Ember | 0 | 0.00 | - |
+| the Manna | 52 | 2.56 | 23.1% |
+| a miracle by born | 82 | 8.03 | 47.6% |
+| a miracle by leap | 278 | 2.96 | 34.5% |
+| a miracle by found | 126 | 1.44 | 7.1% |
+| a miracle by wielded | 188 | 2.12 | 16.0% |
+| knows the cycle | 417 | 1.59 | 13.7% |
 
 ### Nodes that mark the long-lived
 
@@ -453,111 +464,113 @@ For every era 2+ node, its share among the long-lived against its share among al
 
 | Node | Among long-lived | Among era 2+ | Lift |
 |---|---|---|---|
-| Deep Time | 14% | 3% | 5.31 |
-| Living Ships | 9% | 2% | 3.99 |
-| the Basilisk | 64% | 19% | 3.30 |
-| the Long Thought | 41% | 13% | 3.21 |
-| Sealed Minds | 75% | 24% | 3.17 |
-| Bodily Sovereignty | 69% | 23% | 3.01 |
-| Panspermia | 72% | 24% | 2.99 |
-| Black Biology | 71% | 24% | 2.98 |
-| Grafting | 4% | 2% | 2.84 |
-| Causal Physics | 44% | 16% | 2.78 |
-| Transcendence | 33% | 12% | 2.76 |
-| Posthuman Law | 72% | 26% | 2.72 |
-| Substrate Minds | 72% | 27% | 2.64 |
-| Exotic Matter | 44% | 17% | 2.54 |
-| Memetic Weapons | 91% | 36% | 2.49 |
+| Deep Time | 9% | 2% | 5.37 |
+| Grafting | 2% | 1% | 4.21 |
+| Stellar Weapons | 17% | 5% | 3.52 |
+| the Long Thought | 31% | 9% | 3.47 |
+| the Basilisk | 54% | 16% | 3.43 |
+| Transcendence | 29% | 8% | 3.39 |
+| Seed-clouds | 4% | 1% | 3.32 |
+| Bodily Sovereignty | 54% | 16% | 3.30 |
+| Exotic Matter | 35% | 11% | 3.28 |
+| Causal Physics | 33% | 10% | 3.26 |
+| Panspermia | 59% | 19% | 3.12 |
+| Sealed Minds | 60% | 19% | 3.11 |
+| Black Biology | 52% | 17% | 3.02 |
+| World Engines | 19% | 7% | 2.94 |
+| Posthuman Law | 58% | 21% | 2.73 |
 | … | | | |
-| Modern Physics | 96% | 84% | 1.14 |
-| Rocketry | 89% | 81% | 1.10 |
-| Computers | 99% | 90% | 1.10 |
-| Genetics | 98% | 90% | 1.09 |
-| Mechanised War | 90% | 82% | 1.09 |
-| Mass Industry | 98% | 91% | 1.08 |
-| Broodline | 0% | 0% | 1.04 |
-| Seed-clouds | 6% | 9% | 0.69 |
+| Neuroscience | 82% | 71% | 1.16 |
+| Modern Physics | 83% | 74% | 1.11 |
+| Ecology | 83% | 77% | 1.08 |
+| Mechanised War | 78% | 73% | 1.06 |
+| Rocketry | 76% | 72% | 1.06 |
+| Mass Industry | 84% | 84% | 1.00 |
+| Genetics | 81% | 81% | 1.00 |
+| Computers | 83% | 84% | 1.00 |
 
 ### Domain pairs of the long-lived
 
 | Domains | Peoples | Share of long-lived | Share of era 3+ |
 |---|---|---|---|
-| biology + computation | 465 | 73.9% | 39.1% |
-| biology + society | 69 | 11.0% | 9.0% |
-| biology + propulsion | 30 | 4.8% | 12.7% |
-| biology + exotic | 29 | 4.6% | 1.2% |
-| biology + energy | 14 | 2.2% | 23.2% |
-| computation + biology | 9 | 1.4% | 3.0% |
-| biology + weapons | 6 | 1.0% | 0.5% |
-| computation + society | 5 | 0.8% | 1.1% |
-| energy + biology | 1 | 0.2% | 4.2% |
-| society + computation | 1 | 0.2% | 0.2% |
+| biology + computation | 338 | 61.0% | 35.8% |
+| exotic + propulsion | 72 | 13.0% | 3.0% |
+| biology + society | 58 | 10.5% | 9.4% |
+| biology + propulsion | 32 | 5.8% | 9.3% |
+| biology + energy | 16 | 2.9% | 19.8% |
+| biology + exotic | 15 | 2.7% | 0.7% |
+| (none) | 8 | 1.4% | 0.0% |
+| computation + society | 8 | 1.4% | 1.5% |
+| computation + biology | 4 | 0.7% | 5.5% |
+| exotic + computation | 1 | 0.2% | 0.1% |
+| exotic + energy | 1 | 0.2% | 0.1% |
+| society + energy | 1 | 0.2% | 0.1% |
 
 ### Frontiers of the long-lived
 
 | Frontier | Peoples | Median life (Myr) |
 |---|---|---|
-| Black Biology + Bodily Sovereignty + Deep Time + Exotic Matter + Near-light Travel + Panspermia + Sealed Minds + Stellar Weapons + Transcendence + World Engines + the Basilisk + the Long Thought + the Voice | 13 | 43.81 |
-| Black Biology + Bodily Sovereignty + Deep Time + Exotic Matter + Near-light Travel + Sealed Minds + Stellar Weapons + Transcendence + World Engines + the Basilisk + the Flesh + the Long Thought | 10 | 36.36 |
-| Black Biology + Bodily Sovereignty + Deep Time + Exotic Matter + Near-light Travel + Panspermia + Sealed Minds + Stellar Weapons + Transcendence + World Engines + the Basilisk + the Long Thought | 9 | 31.96 |
-| Black Biology + Bodily Sovereignty + Deep Time + Near-light Travel + Panspermia + Sealed Minds + Transcendence + World Engines + the Basilisk + the Long Thought + the Unmaking | 8 | 43.05 |
-| Black Biology + Bodily Sovereignty + Causal Physics + Exotic Matter + Near-light Travel + Panspermia + Sealed Minds + Star Lifting + Stellar Weapons + Transcendence + World Engines + the Basilisk + the Long Thought | 7 | 18.52 |
-| Black Biology + Bodily Sovereignty + Deep Time + Panspermia + Sealed Minds + Stellar Weapons + Transcendence + World Engines + the Basilisk + the Door + the Long Thought | 5 | 34.63 |
-| Black Biology + Bodily Sovereignty + Star Lifting + Stellar Weapons + the Flesh | 5 | 29.14 |
-| Black Biology + Posthuman Law + Sealed Minds + the Basilisk | 5 | 17.11 |
-| Black Biology + Bodily Sovereignty + Deep Time + Exotic Matter + Near-light Travel + Panspermia + Sealed Minds + Stellar Weapons + Transcendence + World Engines + the Basilisk + the Sight | 4 | 23.68 |
-| Black Biology + Bodily Sovereignty + Near-light Travel + Nova Bombs + Panspermia + Posthuman Law + Sealed Minds + Substrate Minds + the Basilisk | 4 | 15.49 |
-| Black Biology + Bodily Sovereignty + Deep Time + Exotic Matter + Near-light Travel + Panspermia + Sealed Minds + Stellar Weapons + Transcendence + World Engines + the Basilisk + the Chorus | 3 | 46.21 |
-| Black Biology + Bodily Sovereignty + Near-light Travel + Panspermia + Sealed Minds + Star Lifting + Stellar Weapons + World Engines + the Basilisk + the Long Thought | 3 | 21.91 |
-| Black Biology + Bodily Sovereignty + Stellar Weapons + the Flesh | 3 | 35.81 |
-| Bodily Sovereignty + Panspermia + Posthuman Law + Sealed Minds + Substrate Minds + Vacuum Energy + Wormhole Physics + the Basilisk | 3 | 11.94 |
-| Black Biology | 2 | 11.72 |
+| the Door + the Sight + the Unmaking + the Voice | 73 | 31.95 |
+| (never past era 2) | 8 | 18.80 |
+| Black Biology + Bodily Sovereignty + Deep Time + Exotic Matter + Near-light Travel + Panspermia + Sealed Minds + Stellar Weapons + Transcendence + World Engines + the Basilisk + the Long Thought + the Voice | 7 | 31.04 |
+| Black Biology + Bodily Sovereignty + Deep Time + Exotic Matter + Near-light Travel + Sealed Minds + Stellar Weapons + Transcendence + World Engines + the Basilisk + the Flesh + the Long Thought | 7 | 42.64 |
+| Black Biology + Bodily Sovereignty + Deep Time + Panspermia + Sealed Minds + Stellar Weapons + Transcendence + World Engines + the Basilisk + the Door + the Long Thought | 7 | 30.38 |
+| Black Biology + Bodily Sovereignty + Deep Time + Exotic Matter + Near-light Travel + Panspermia + Sealed Minds + Stellar Weapons + Transcendence + World Engines + the Basilisk + the Long Thought | 6 | 22.42 |
+| Black Biology + Bodily Sovereignty + Deep Time + Exotic Matter + Near-light Travel + Panspermia + Sealed Minds + Stellar Weapons + Transcendence + World Engines + the Basilisk + the Sight | 4 | 26.56 |
+| Black Biology + Bodily Sovereignty + Deep Time + Near-light Travel + Panspermia + Sealed Minds + Transcendence + World Engines + the Basilisk + the Long Thought + the Unmaking | 4 | 28.68 |
+| Black Biology + Bodily Sovereignty + Deep Time + Exotic Matter + Near-light Travel + Panspermia + Sealed Minds + Stellar Weapons + Transcendence + World Engines + the Basilisk + the Chorus | 3 | 43.23 |
+| Black Biology + Bodily Sovereignty + Panspermia + Posthuman Law + Sealed Minds + Substrate Minds + Vacuum Energy + Wormhole Physics + the Basilisk | 3 | 23.48 |
+| Black Biology + Bodily Sovereignty + Panspermia + Stellar Engineering | 3 | 11.68 |
+| Black Biology + Posthuman Law + Sealed Minds + the Basilisk | 3 | 13.72 |
+| Bodily Sovereignty + Causal Physics + Exotic Matter + Panspermia + Posthuman Law + Sealed Minds + Substrate Minds + Transcendence + Vacuum Energy + the Basilisk | 3 | 30.43 |
+| Near-light Travel + Wormhole Physics | 3 | 10.77 |
+| Panspermia | 3 | 10.15 |
 
 ### How the long-lived ended
 
 | End | Peoples |
 |---|---|
-| still standing | 190 |
-| transformed | 175 |
-| extinct | 151 |
-| sundered | 75 |
-| shattered | 29 |
+| still standing | 200 |
+| extinct | 161 |
+| transformed | 117 |
+| sundered | 52 |
+| shattered | 15 |
 | contracted | 9 |
 
 ### The thirty longest lives
 
 | Seed | People | Nature | Born (Myr) | Lived (Myr) | Era | Nodes | Peak | Miracles | Frontier | End |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 2 | Khiandkheyei | biological | 0 | 79.8 | 4 | 64 | 1 |  | Bodily Sovereignty + Causal Physics + Exotic Matter + Panspermia + Sealed Minds + Vacuum Energy + the Basilisk + the Long Thought | standing |
-| 2 | Yetsax | biological, hive | 1 | 79.0 | 4 | 82 | 1 | the Unmaking (wielded) | Black Biology + Bodily Sovereignty + Deep Time + Exotic Matter + Near-light Travel + Panspermia + Sealed Minds + Stellar Weapons + Transcendence + World Engines + the Basilisk + the Long Thought | standing |
-| 2 | Noga | biological | 3 | 74.3 | 4 | 71 | 1 |  | Black Biology + Bodily Sovereignty + Panspermia + Posthuman Law + Sealed Minds + Substrate Minds + Vacuum Energy + the Basilisk | extinct: were absorbed into the Hungry Host |
-| 2 | Nokkaoyaor | biological | 15 | 65.4 | 4 | 64 | 1 |  | Bodily Sovereignty + Exotic Matter + Panspermia + Sealed Minds + Vacuum Energy + the Basilisk + the Long Thought | standing |
-| 2 | Teidavrarr | biological, unconscious | 16 | 64.2 | 4 | 83 | 3 | the Unmaking (leap) | Black Biology + Bodily Sovereignty + Deep Time + Near-light Travel + Panspermia + Sealed Minds + Transcendence + World Engines + the Basilisk + the Long Thought + the Unmaking | standing |
-| 2 | Vianaozund | biological, hive, evolver | 15 | 62.2 | 4 | 85 | 1 | the Voice (leap) | Black Biology + Bodily Sovereignty + Deep Time + Exotic Matter + Near-light Travel + Panspermia + Sealed Minds + Stellar Weapons + Transcendence + World Engines + the Basilisk + the Long Thought + the Voice | extinct: listened to the Cold Sleeper |
-| 3 | Modom | biological, hive | 1 | 59.4 | 4 | 81 | 2 | the Sight (found) | Black Biology + Bodily Sovereignty + Deep Time + Exotic Matter + Near-light Travel + Panspermia + Sealed Minds + Stellar Weapons + Transcendence + World Engines + the Basilisk + the Sight | standing |
-| 2 | Retsai | biological, planetary, hive | 21 | 58.9 | 4 | 82 | 1 | the Door (leap) | Black Biology + Bodily Sovereignty + Deep Time + Nova Bombs + Panspermia + Sealed Minds + Transcendence + World Engines + the Basilisk + the Door + the Long Thought | standing |
-| 10 | Tiasadith | biological, hive | 1 | 58.1 | 4 | 83 | 1 | the Chorus (leap) | Black Biology + Bodily Sovereignty + Deep Time + Exotic Matter + Near-light Travel + Panspermia + Sealed Minds + Stellar Weapons + Transcendence + World Engines + the Basilisk + the Chorus | standing |
-| 3 | Tsiqeil | biological | 2 | 57.9 | 4 | 78 | 1 |  | Black Biology + Bodily Sovereignty + Causal Physics + Exotic Matter + Near-light Travel + Panspermia + Sealed Minds + the Long Thought | standing |
-| 8 | Yiasvra | biological, hive | 0 | 57.6 | 4 | 77 | 1 | the Flesh (leap) | Black Biology + Bodily Sovereignty + Near-light Travel + Sealed Minds + Stellar Weapons + World Engines + the Basilisk + the Flesh + the Long Thought | standing |
-| 8 | Inaoyom | biological, hive | 1 | 57.5 | 4 | 83 | 1 | the Unmaking (leap) | Black Biology + Bodily Sovereignty + Deep Time + Near-light Travel + Panspermia + Sealed Minds + Transcendence + World Engines + the Basilisk + the Long Thought + the Unmaking | standing |
-| 3 | Draokuund | machine | 3 | 56.9 | 4 | 63 | 1 |  | Black Biology + Substrate Minds + Vacuum Energy | standing |
-| 9 | Zapheil | biological, hive, evolver | 2 | 56.6 | 4 | 78 | 10 |  | Black Biology + Bodily Sovereignty + Causal Physics + Exotic Matter + Near-light Travel + Nova Bombs + Panspermia + Sealed Minds + Transcendence + the Basilisk + the Long Thought | standing |
-| 10 | Thianagos | biological, hive, evolver | 3 | 56.3 | 4 | 66 | 1 | the Flesh (leap) | Black Biology + Bodily Sovereignty + Star Lifting + Stellar Weapons + the Flesh | standing |
-| 3 | Vremnaol | biological | 4 | 55.9 | 4 | 88 | 1 | the Flesh (leap) | Black Biology + Bodily Sovereignty + Deep Time + Exotic Matter + Near-light Travel + Sealed Minds + Stellar Weapons + Transcendence + World Engines + the Basilisk + the Flesh + the Long Thought | standing |
-| 8 | Raithand | biological, hive | 3 | 55.2 | 4 | 81 | 1 | the Door (leap) | Black Biology + Bodily Sovereignty + Deep Time + Panspermia + Sealed Minds + Transcendence + World Engines + the Basilisk + the Door + the Long Thought | standing |
-| 8 | Iatserrqau | biological, planetary, hive | 3 | 54.8 | 4 | 83 | 1 | the Chorus (leap), the Manna (found) | Black Biology + Bodily Sovereignty + Deep Time + Exotic Matter + Near-light Travel + Nova Bombs + Panspermia + Sealed Minds + Transcendence + World Engines + the Basilisk + the Chorus + the Manna | standing |
-| 8 | Sauqe | biological, unconscious | 3 | 54.6 | 4 | 82 | 1 | the Sight (leap) | Black Biology + Bodily Sovereignty + Deep Time + Exotic Matter + Near-light Travel + Nova Bombs + Panspermia + Sealed Minds + Transcendence + World Engines + the Basilisk + the Sight | standing |
-| 8 | Qathateil | biological, hive | 3 | 54.6 | 4 | 82 | 1 | the Flesh (leap) | Black Biology + Bodily Sovereignty + Deep Time + Exotic Matter + Near-light Travel + Nova Bombs + Sealed Minds + Transcendence + World Engines + the Basilisk + the Flesh + the Long Thought | standing |
-| 9 | Taithuutsath | biological, unconscious | 5 | 54.1 | 4 | 81 | 1 | the Chorus (leap) | Black Biology + Bodily Sovereignty + Causal Physics + Exotic Matter + Near-light Travel + Panspermia + Sealed Minds + Star Lifting + Stellar Weapons + World Engines + the Basilisk + the Chorus | standing |
-| 2 | Oyaiktro | biological | 26 | 53.8 | 4 | 78 | 2 |  | Black Biology + Bodily Sovereignty + Near-light Travel + Nova Bombs + Panspermia + Posthuman Law + Sealed Minds + Stellar Engineering + Substrate Minds + World Engines + Wormhole Physics + the Basilisk | standing |
-| 10 | Qimi | biological, evolver | 5 | 53.5 | 4 | 92 | 1 | the Manna (wielded), the Sight (wielded), the Voice (wielded) | Black Biology + Bodily Sovereignty + Deep Time + Exotic Matter + Near-light Travel + Panspermia + Sealed Minds + Stellar Weapons + Transcendence + World Engines + the Basilisk + the Long Thought + the Manna | transformed: listened to the Word of Ransuu and were changed by it |
-| 2 | Nuuquhu | biological, unconscious, evolver | 27 | 53.1 | 4 | 79 | 1 | the Flesh (leap) | Black Biology + Bodily Sovereignty + Causal Physics + Exotic Matter + Matter Compilers + Near-light Travel + Sealed Minds + Star Lifting + Substrate Minds + Transcendence + the Basilisk + the Flesh | standing |
-| 9 | Vahe | biological, hive | 6 | 53.1 | 4 | 83 | 1 | the Voice (leap) | Black Biology + Bodily Sovereignty + Deep Time + Exotic Matter + Near-light Travel + Panspermia + Sealed Minds + Stellar Weapons + Transcendence + World Engines + the Basilisk + the Long Thought + the Voice | standing |
-| 8 | Yaoktrizam | biological, hive | 5 | 52.7 | 4 | 83 | 1 | the Voice (leap) | Black Biology + Bodily Sovereignty + Deep Time + Exotic Matter + Near-light Travel + Panspermia + Sealed Minds + Stellar Weapons + Transcendence + World Engines + the Basilisk + the Long Thought + the Voice | standing |
-| 9 | Kheinairr | biological | 6 | 52.6 | 4 | 78 | 2 |  | Near-light Travel + Sealed Minds + Stellar Engineering + Transcendence + the Basilisk + the Long Thought | transformed: listened to the Prayer of Kheinairr and were changed by it |
-| 3 | Iyuux | biological | 7 | 52.4 | 4 | 80 | 1 |  | Black Biology + Bodily Sovereignty + Near-light Travel + Posthuman Law + Sealed Minds + Stellar Weapons + Substrate Minds + Transcendence + the Basilisk | standing |
-| 8 | Otukuuk | biological, unconscious | 6 | 52.0 | 4 | 82 | 6 | the Door (wielded) | Black Biology + Bodily Sovereignty + Deep Time + Exotic Matter + Near-light Travel + Panspermia + Sealed Minds + Stellar Weapons + Transcendence + World Engines + the Basilisk + the Long Thought | standing |
-| 8 | Vuuki | biological, hive | 7 | 51.4 | 4 | 83 | 1 | the Voice (leap) | Black Biology + Bodily Sovereignty + Deep Time + Exotic Matter + Near-light Travel + Panspermia + Sealed Minds + Stellar Weapons + Transcendence + World Engines + the Basilisk + the Long Thought + the Voice | standing |
+| 2 | Tromadrith | biological, hive | 1 | 79.4 | 4 | 82 | 1 | the Door (wielded) | Black Biology + Bodily Sovereignty + Deep Time + Exotic Matter + Near-light Travel + Panspermia + Sealed Minds + Stellar Weapons + Transcendence + World Engines + the Basilisk + the Long Thought | standing |
+| 2 | Khiayith | biological, hive | 1 | 78.7 | 4 | 82 | 1 | the Voice (leap) | Black Biology + Bodily Sovereignty + Deep Time + Exotic Matter + Near-light Travel + Panspermia + Sealed Minds + Stellar Weapons + Transcendence + World Engines + the Basilisk + the Long Thought + the Voice | standing |
+| 2 | Drirrdem | eldritch, planetary | 3 | 77.3 | 4 | 4 | 2 | the Door (deepening), the Sight (deepening), the Unmaking (deepening), the Voice (deepening) | the Door + the Sight + the Unmaking + the Voice | standing |
+| 2 | Saiqaukhe | biological, unconscious | 4 | 76.0 | 4 | 75 | 1 | the Flesh (leap) | Black Biology + Bodily Sovereignty + Causal Physics + Exotic Matter + Near-light Travel + Sealed Minds + Stellar Weapons + World Engines + the Flesh | standing |
+| 2 | Vrauxthaos | eldritch, planetary, hive, unconscious | 5 | 75.5 | 4 | 4 | 1 | the Door (deepening), the Sight (deepening), the Unmaking (born), the Voice (deepening) | the Door + the Sight + the Unmaking + the Voice | standing |
+| 2 | Suthhek | biological, hive | 2 | 72.4 | 4 | 83 | 9 | the Sight (leap) | Black Biology + Bodily Sovereignty + Deep Time + Exotic Matter + Near-light Travel + Panspermia + Sealed Minds + Stellar Weapons + Transcendence + World Engines + the Basilisk + the Sight | extinct: were unmade by the Khokail |
+| 2 | Qunuu | eldritch, planetary, unconscious | 11 | 68.6 | 4 | 4 | 2 | the Door (born), the Sight (deepening), the Unmaking (deepening), the Voice (deepening) | the Door + the Sight + the Unmaking + the Voice | standing |
+| 2 | Daomuthu | eldritch, planetary, unconscious | 12 | 67.6 | 4 | 4 | 1 | the Door (deepening), the Sight (deepening), the Unmaking (deepening), the Voice (deepening) | the Door + the Sight + the Unmaking + the Voice | standing |
+| 2 | Kosiashaun | eldritch, planetary | 0 | 61.5 | 4 | 4 | 2 | the Door (deepening), the Sight (deepening), the Unmaking (deepening), the Voice (deepening) | the Door + the Sight + the Unmaking + the Voice | sundered: tore themselves apart |
+| 3 | Dailqauphen | eldritch, planetary, hive | 0 | 60.6 | 4 | 4 | 2 | the Door (deepening), the Sight (deepening), the Unmaking (deepening), the Voice (deepening) | the Door + the Sight + the Unmaking + the Voice | standing |
+| 8 | Edrenarr | eldritch, planetary, hive | 0 | 58.5 | 4 | 4 | 1 | the Door (deepening), the Sight (deepening), the Unmaking (deepening), the Voice (deepening) | the Door + the Sight + the Unmaking + the Voice | standing |
+| 3 | Tsovrail | eldritch, hive, antimemetic | 3 | 58.2 | 4 | 28 | 17 | the Door (deepening), the Sight (deepening), the Unmaking (deepening), the Voice (deepening) | the Door + the Sight + the Unmaking + the Voice | standing |
+| 8 | Khevaumvrek | eldritch | 2 | 56.7 | 4 | 4 | 1 | the Door (deepening), the Sight (deepening), the Unmaking (deepening), the Voice (deepening) | the Door + the Sight + the Unmaking + the Voice | standing |
+| 3 | Khukheth | biological, hive | 4 | 56.6 | 4 | 85 | 1 | the Unmaking (leap) | Black Biology + Bodily Sovereignty + Deep Time + Near-light Travel + Panspermia + Sealed Minds + Transcendence + World Engines + the Basilisk + the Long Thought + the Unmaking | standing |
+| 9 | Teyaus | biological, hive | 1 | 56.2 | 4 | 83 | 1 | the Door (leap) | Black Biology + Bodily Sovereignty + Deep Time + Panspermia + Sealed Minds + Stellar Weapons + Transcendence + World Engines + the Basilisk + the Door + the Long Thought | standing |
+| 9 | Phatsia | biological | 1 | 55.9 | 4 | 60 | 1 |  | Bodily Sovereignty + Exotic Matter + Sealed Minds + Vacuum Energy + the Basilisk | transformed: listened to the Grey Song and were changed by it |
+| 9 | Tomeirrkaol | biological, hive | 2 | 55.7 | 4 | 77 | 1 | the Flesh (leap), the Sight (found) | Black Biology + Bodily Sovereignty + Near-light Travel + Stellar Weapons + World Engines + the Flesh + the Sight | standing |
+| 9 | Tsakuuth | eldritch, planetary, unconscious | 2 | 55.3 | 4 | 4 | 1 | the Door (deepening), the Sight (deepening), the Unmaking (born), the Voice (deepening) | the Door + the Sight + the Unmaking + the Voice | standing |
+| 8 | Vaihexdaosh | eldritch, unconscious | 4 | 55.0 | 4 | 4 | 49 | the Door (deepening), the Manna (wielded), the Sight (deepening), the Unmaking (born), the Voice (deepening) | the Door + the Sight + the Unmaking + the Voice | standing |
+| 3 | Evethduu | biological | 6 | 54.9 | 4 | 57 | 1 |  | Causal Physics + Exotic Matter + Near-light Travel | standing |
+| 9 | Shuutrarr | eldritch, unconscious | 2 | 54.9 | 4 | 4 | 2 | the Door (deepening), the Sight (deepening), the Unmaking (born), the Voice (deepening) | the Door + the Sight + the Unmaking + the Voice | standing |
+| 2 | Vraunlia | biological, unconscious | 22 | 54.9 | 4 | 83 | 1 | the Flesh (leap) | Black Biology + Bodily Sovereignty + Deep Time + Exotic Matter + Near-light Travel + Sealed Minds + Stellar Weapons + Transcendence + World Engines + the Basilisk + the Flesh + the Long Thought | extinct: lost the last of their fleets |
+| 3 | Keheirrkhaoth | biological | 1 | 54.7 | 4 | 85 | 1 |  | Black Biology + Bodily Sovereignty + Causal Physics + Exotic Matter + Matter Compilers + Near-light Travel + Panspermia + Posthuman Law + Sealed Minds + Star Lifting + Stellar Weapons + Substrate Minds + the Basilisk | extinct: sickened and died of the Slow Blight |
+| 3 | Driathluuth | biological, planetary, hive | 6 | 54.7 | 4 | 83 | 2 | the Flesh (leap) | Black Biology + Bodily Sovereignty + Deep Time + Exotic Matter + Near-light Travel + Sealed Minds + Stellar Weapons + Transcendence + World Engines + the Basilisk + the Flesh + the Long Thought | standing |
+| 10 | Qauthtreiriak | biological | 5 | 54.0 | 4 | 59 | 1 |  | Posthuman Law + Substrate Minds | standing |
+| 10 | Vuxveth | eldritch, planetary, hive, unconscious, antimemetic | 5 | 54.0 | 4 | 4 | 1 | the Door (deepening), the Sight (deepening), the Unmaking (deepening), the Voice (deepening) | the Door + the Sight + the Unmaking + the Voice | standing |
+| 10 | Vuushsend | biological, hive, evolver | 5 | 54.0 | 4 | 80 | 10 | the Door (wielded), the Flesh (leap) | Black Biology + Bodily Sovereignty + Near-light Travel + Sealed Minds + Stellar Weapons + World Engines + Wormhole Physics + the Basilisk + the Flesh + the Long Thought | standing |
+| 8 | Ziathegom | eldritch | 5 | 53.1 | 4 | 4 | 1 | the Door (deepening), the Sight (deepening), the Unmaking (deepening), the Voice (deepening) | the Door + the Sight + the Unmaking + the Voice | standing |
+| 8 | Ayolo | biological, evolver | 6 | 52.8 | 4 | 73 | 1 |  | Black Biology + Bodily Sovereignty + Causal Physics + Near-light Travel + Panspermia + Sealed Minds + Transcendence + the Basilisk | standing |
+| 10 | Naizax | biological | 7 | 52.6 | 3 | 43 | 1 |  | Designed Immunity | standing |
 
 ## Natures
 
@@ -565,334 +578,341 @@ Substrate and modifiers; a swarm is a biological people with the swarming trait,
 
 | Nature | Peoples | Median life (Myr) | Reached era 3 | Lived 10+ Myr |
 |---|---|---|---|---|
-| biological | 3119 | 0.62 | 84.5% | 12.5% |
-| biological (swarm) | 699 | 0.41 | 90.8% | 5.7% |
-| biological, evolver | 200 | 1.43 | 84.5% | 21.5% |
-| biological, planetary | 198 | 0.17 | 85.4% | 11.6% |
-| biological, hive | 163 | 2.62 | 78.5% | 36.8% |
-| biological, unconscious | 133 | 2.59 | 95.5% | 27.8% |
-| machine | 36 | 0.65 | 100.0% | 8.3% |
-| parasite | 23 | 1.34 | 87.0% | 13.0% |
-| biological, hive, evolver | 16 | 19.61 | 81.2% | 56.2% |
-| biological, planetary, hive | 12 | 0.65 | 83.3% | 33.3% |
-| biological, unconscious, evolver | 12 | 16.74 | 100.0% | 75.0% |
-| biological, planetary, unconscious | 7 | 5.91 | 100.0% | 42.9% |
-| biological, unconscious (swarm) | 7 | 0.31 | 57.1% | 14.3% |
-| biological, hive (swarm) | 6 | 2.31 | 100.0% | 33.3% |
-| machine, hive | 3 | 0.20 | 100.0% | 0.0% |
-| machine, unconscious | 2 | 5.99 | 100.0% | 50.0% |
-| parasite, hive | 2 | 2.69 | 100.0% | 0.0% |
-| parasite, unconscious | 2 | 2.04 | 100.0% | 0.0% |
+| biological | 2810 | 0.72 | 83.2% | 11.1% |
+| biological, evolver | 187 | 0.78 | 77.5% | 11.8% |
+| biological, hive | 169 | 1.25 | 76.9% | 28.4% |
+| eldritch | 103 | 2.92 | 54.4% | 28.2% |
+| biological (swarm) | 92 | 0.53 | 59.8% | 10.9% |
+| biological, planetary | 61 | 0.20 | 41.0% | 8.2% |
+| biological, unconscious | 58 | 6.80 | 81.0% | 44.8% |
+| machine | 57 | 0.49 | 100.0% | 1.8% |
+| parasite | 45 | 0.65 | 82.2% | 8.9% |
+| eldritch, unconscious | 18 | 19.11 | 88.9% | 55.6% |
+| biological, planetary, hive | 17 | 2.09 | 82.4% | 35.3% |
+| eldritch, planetary | 16 | 13.90 | 87.5% | 50.0% |
+| biological, hive (swarm) | 14 | 0.35 | 57.1% | 14.3% |
+| biological, replicator | 14 | 0.48 | 64.3% | 21.4% |
+| eldritch, planetary, unconscious | 14 | 33.81 | 100.0% | 78.6% |
+| machine, hive | 13 | 1.38 | 100.0% | 23.1% |
+| biological, evolver (swarm) | 9 | 0.26 | 66.7% | 33.3% |
+| biological, hive, evolver | 9 | 3.43 | 88.9% | 33.3% |
+| biological, hive, unconscious | 9 | 16.33 | 88.9% | 66.7% |
+| eldritch, planetary, hive, unconscious | 8 | 22.81 | 100.0% | 75.0% |
+| eldritch, planetary, hive | 7 | 38.48 | 100.0% | 71.4% |
+| biological, antimemetic | 6 | 0.39 | 16.7% | 0.0% |
+| biological, planetary, evolver | 6 | 0.79 | 83.3% | 0.0% |
+| biological, planetary, hive, unconscious | 6 | 4.00 | 100.0% | 16.7% |
+| biological, replicator, evolver | 6 | 1.34 | 83.3% | 16.7% |
+| machine, replicator | 6 | 0.68 | 100.0% | 0.0% |
+| biological, hive, unconscious (swarm) | 5 | 3.28 | 100.0% | 40.0% |
+| biological, unconscious (swarm) | 4 | 15.43 | 75.0% | 50.0% |
+| eldritch, hive, unconscious | 4 | 33.18 | 75.0% | 75.0% |
+| biological, hive, replicator | 3 | 5.13 | 66.7% | 33.3% |
+| biological, planetary (swarm) | 3 | 0.11 | 33.3% | 33.3% |
+| biological, unconscious, evolver | 3 | 0.40 | 66.7% | 0.0% |
+| biological, unconscious, replicator | 3 | 4.84 | 100.0% | 33.3% |
+| eldritch, replicator | 3 | 29.20 | 66.7% | 100.0% |
+| parasite (swarm) | 3 | 29.62 | 100.0% | 66.7% |
+| parasite, unconscious | 3 | 5.52 | 100.0% | 33.3% |
+| biological, hive, evolver (swarm) | 2 | 2.90 | 100.0% | 0.0% |
+| biological, hive, replicator, evolver | 2 | 37.91 | 100.0% | 100.0% |
+| biological, planetary, hive (swarm) | 2 | 0.55 | 100.0% | 0.0% |
+| biological, planetary, unconscious | 2 | 13.38 | 50.0% | 50.0% |
+| eldritch, hive, unconscious, antimemetic | 2 | 35.99 | 100.0% | 100.0% |
+| eldritch, planetary, hive, unconscious, antimemetic | 2 | 27.05 | 50.0% | 50.0% |
+| eldritch, unconscious, antimemetic | 2 | 5.60 | 100.0% | 0.0% |
+| machine (swarm) | 2 | 17.14 | 100.0% | 50.0% |
+| machine, evolver | 2 | 0.45 | 100.0% | 0.0% |
+| machine, hive, replicator | 2 | 0.87 | 100.0% | 0.0% |
+| machine, unconscious | 2 | 10.63 | 100.0% | 50.0% |
+| biological, hive, replicator (swarm) | 1 | 0.01 | 0.0% | 0.0% |
+| biological, hive, unconscious, evolver (swarm) | 1 | 3.46 | 100.0% | 0.0% |
+| biological, planetary, antimemetic | 1 | 0.07 | 0.0% | 0.0% |
+| biological, planetary, hive, evolver | 1 | 39.35 | 100.0% | 100.0% |
+| biological, planetary, hive, unconscious, evolver | 1 | 1.68 | 100.0% | 0.0% |
+| biological, unconscious, replicator, evolver | 1 | 0.38 | 100.0% | 0.0% |
+| eldritch, antimemetic | 1 | 3.08 | 100.0% | 0.0% |
+| eldritch, hive | 1 | 30.61 | 100.0% | 100.0% |
+| eldritch, hive (swarm) | 1 | 0.17 | 0.0% | 0.0% |
+| eldritch, hive, antimemetic | 1 | 58.16 | 100.0% | 100.0% |
+| eldritch, planetary, unconscious, antimemetic | 1 | 51.07 | 100.0% | 100.0% |
+| machine, hive, unconscious | 1 | 0.29 | 100.0% | 0.0% |
+| machine, unconscious, replicator | 1 | 0.48 | 100.0% | 0.0% |
+| parasite, evolver | 1 | 0.38 | 100.0% | 0.0% |
+| parasite, hive (swarm) | 1 | 2.67 | 100.0% | 0.0% |
+| parasite, planetary | 1 | 1.32 | 100.0% | 0.0% |
+| parasite, replicator | 1 | 2.11 | 100.0% | 0.0% |
 
 ## War and peace
 
-10198 wars over 10 worlds, 1019.8 per world; 9143 began in the waning.
+4370 wars over 10 worlds, 437.0 per world; 3311 began in the waning.
 
 ### How wars end
 
 | Result | Wars | Share |
 |---|---|---|
-| capitulation | 387 | 3.8% |
-| enslaved | 1790 | 17.6% |
-| exhaustion | 28 | 0.3% |
-| extinction | 10 | 0.1% |
-| peace | 5253 | 51.5% |
-| peace by the pact | 300 | 2.9% |
-| the fall of a side | 1036 | 10.2% |
-| the hire ended | 3 | 0.0% |
-| tore themselves apart | 90 | 0.9% |
-| tribute | 792 | 7.8% |
-| truce | 79 | 0.8% |
-| vassal | 430 | 4.2% |
+| capitulation | 138 | 3.2% |
+| enslaved | 628 | 14.4% |
+| exhaustion | 67 | 1.5% |
+| extinction | 13 | 0.3% |
+| forgot how to reach the stars | 1 | 0.0% |
+| peace | 1912 | 43.8% |
+| peace by the pact | 152 | 3.5% |
+| the fall of a side | 297 | 6.8% |
+| tore themselves apart | 27 | 0.6% |
+| tribute | 598 | 13.7% |
+| truce | 139 | 3.2% |
+| unfinished | 1 | 0.0% |
+| vassal | 397 | 9.1% |
 
-Wars last 2 kyr at the median (quartiles 2 to 11, longest 2652).
-Worlds changing hands or burned per war: median 0, mean 0.5. Wars that were the second or later between the same two: 64.1%.
+Wars last 6 kyr at the median (quartiles 2 to 18, longest 2352).
+Worlds changing hands or burned per war: median 0, mean 0.5. Wars that were the second or later between the same two: 61.3%.
 
 | Cause | Wars |
 |---|---|
-| the old quarrel | 6033 |
-| opportunity | 892 |
-| the sundering | 757 |
-| revenge | 711 |
-| the embargo | 359 |
-| extermination | 282 |
-| conquest | 240 |
-| the poisoning | 199 |
-| a border | 189 |
-| their pact with the Gesheish | 59 |
-| their pact with the Phukoruu | 46 |
-| their pact with the Traintuth | 35 |
-| their pact with the Eihe | 23 |
-| their pact with the Hainaix | 16 |
-| their pact with the Khaqiage | 15 |
-| betrayal | 14 |
-| their pact with the Theikovaurr | 11 |
-| their pact with the Tsovaoshix | 8 |
-| their pact with the Vrovos | 8 |
-| their pact with the Damarvaind | 7 |
-| their pact with the Domaohath | 6 |
-| their pact with the Saiso | 6 |
-| their pact with the Uugigaoth | 6 |
-| their pact with the Edaom | 5 |
-| their pact with the Khikaotser | 5 |
-| their pact with the Luusash | 5 |
-| their pact with the Qiayausund | 5 |
-| their pact with the Ruuro | 5 |
-| their pact with the Vrorrtul | 5 |
-| their pact with the Aishund | 4 |
-| their pact with the Geixshash | 4 |
-| their pact with the Messhais | 4 |
-| their pact with the Seqes | 4 |
-| their pact with the Shanhas | 4 |
-| their pact with the Shezau | 4 |
-| their pact with the Thexqox | 4 |
-| their pact with the Vrevunuun | 4 |
-| their pact with the Athsheilteil | 3 |
-| their pact with the Hendkovriam | 3 |
-| their pact with the Henuphia | 3 |
-| their pact with the Kethauvux | 3 |
-| their pact with the Mailova | 3 |
-| their pact with the Mesiavuuk | 3 |
-| their pact with the Phaildruu | 3 |
-| their pact with the Qalnuuk | 3 |
-| their pact with the Qampheirer | 3 |
-| their pact with the Qaulaoth | 3 |
-| their pact with the Tigia | 3 |
-| their pact with the Trileth | 3 |
-| their pact with the Tsidrein | 3 |
-| their pact with the Ukhan | 3 |
-| their pact with the Yadrethix | 3 |
-| their pact with the Dakuu | 2 |
-| their pact with the Elyaon | 2 |
-| their pact with the Etraitres | 2 |
-| their pact with the Gezal | 2 |
-| their pact with the Haxtraphom | 2 |
-| their pact with the Keteis | 2 |
-| their pact with the Khaolaosaorr | 2 |
-| their pact with the Khatamai | 2 |
-| their pact with the Meikdaomos | 2 |
-| their pact with the Mophaikhu | 2 |
-| their pact with the Niatavish | 2 |
-| their pact with the Nuhos | 2 |
-| their pact with the Ondlo | 2 |
-| their pact with the Orrshaoth | 2 |
-| their pact with the Qedotuur | 2 |
-| their pact with the Ragiath | 2 |
-| their pact with the Rake | 2 |
-| their pact with the Renal | 2 |
-| their pact with the Saudaoxnuum | 2 |
-| their pact with the Shaixsor | 2 |
-| their pact with the Shautethind | 2 |
-| their pact with the Sheilyikor | 2 |
-| their pact with the Sheishaix | 2 |
-| their pact with the Soherqeth | 2 |
-| their pact with the Sokzuushe | 2 |
-| their pact with the Thokhar | 2 |
-| their pact with the Thuuthku | 2 |
-| their pact with the Tsoxtsuskoth | 2 |
-| their pact with the Tsoyuvraith | 2 |
-| their pact with the Yauthiharr | 2 |
-| the Arrgeizeth's coin | 1 |
-| the Kethauvux's coin | 1 |
-| the Vizeya's coin | 1 |
-| the Vudar's coin | 1 |
-| the Ziadeithne's coin | 1 |
-| their pact with the Aidruthye | 1 |
-| their pact with the Aiphauthex | 1 |
-| their pact with the Aivrugau | 1 |
-| their pact with the Aorvuus | 1 |
-| their pact with the Aotreka | 1 |
-| their pact with the Aulze | 1 |
-| their pact with the Authshathdre | 1 |
-| their pact with the Daqel | 1 |
-| their pact with the Dekheil | 1 |
-| their pact with the Dithkoshhuu | 1 |
-| their pact with the Drathraosuurr | 1 |
-| their pact with the Draunaunaum | 1 |
-| their pact with the Drethqaond | 1 |
-| their pact with the Driashnokme | 1 |
-| their pact with the Drilsiaheind | 1 |
-| their pact with the Druuhosh | 1 |
-| their pact with the Edreth | 1 |
-| their pact with the Ethaitseis | 1 |
-| their pact with the Gaotau | 1 |
-| their pact with the Gautriash | 1 |
-| their pact with the Kaoqokheil | 1 |
-| their pact with the Kauhokeim | 1 |
-| their pact with the Kekheqon | 1 |
-| their pact with the Keleso | 1 |
-| their pact with the Khadu | 1 |
-| their pact with the Khaitavril | 1 |
-| their pact with the Kheliaserr | 1 |
-| their pact with the Khigeth | 1 |
-| their pact with the Khise | 1 |
-| their pact with the Kitramauth | 1 |
-| their pact with the Kophede | 1 |
-| their pact with the Laothkhuk | 1 |
-| their pact with the Laovrephil | 1 |
-| their pact with the Leikau | 1 |
-| their pact with the Lesedai | 1 |
-| their pact with the Lethnusphaik | 1 |
-| their pact with the Makhe | 1 |
-| their pact with the Maliash | 1 |
-| their pact with the Maudaoshuuth | 1 |
-| their pact with the Maugotsuul | 1 |
-| their pact with the Mautras | 1 |
-| their pact with the Mautsaun | 1 |
-| their pact with the Metekaim | 1 |
-| their pact with the Musvo | 1 |
-| their pact with the Neirrvuukhu | 1 |
-| their pact with the Oderrnush | 1 |
-| their pact with the Okaux | 1 |
-| their pact with the Oketh | 1 |
-| their pact with the Opheth | 1 |
-| their pact with the Othaiku | 1 |
-| their pact with the Othond | 1 |
-| their pact with the Oththivrorr | 1 |
-| their pact with the Otsegaox | 1 |
-| their pact with the Ovraqan | 1 |
-| their pact with the Pharaimai | 1 |
-| their pact with the Phimeish | 1 |
-| their pact with the Phothaushmai | 1 |
-| their pact with the Phuknas | 1 |
-| their pact with the Qetuund | 1 |
-| their pact with the Qothiquum | 1 |
-| their pact with the Reitothgaurr | 1 |
-| their pact with the Retaum | 1 |
-| their pact with the Retsai | 1 |
-| their pact with the Rodreth | 1 |
-| their pact with the Rothizind | 1 |
-| their pact with the Ruuzauraux | 1 |
-| their pact with the Saithath | 1 |
-| their pact with the Sautrekhair | 1 |
-| their pact with the Shairo | 1 |
-| their pact with the Shaokhetrul | 1 |
-| their pact with the Shedrukhe | 1 |
-| their pact with the Shetre | 1 |
-| their pact with the Shiaphaund | 1 |
-| their pact with the Shiashholkhith | 1 |
-| their pact with the Shilesyurr | 1 |
-| their pact with the Shuutuushvriar | 1 |
-| their pact with the Sihiakhex | 1 |
-| their pact with the Taoqeththuurr | 1 |
-| their pact with the Teidavrarr | 1 |
-| their pact with the Teye | 1 |
-| their pact with the Thaimuuphus | 1 |
-| their pact with the Thaneis | 1 |
-| their pact with the Thenith | 1 |
-| their pact with the Thoxdetho | 1 |
-| their pact with the Thuunel | 1 |
-| their pact with the Tissiasho | 1 |
-| their pact with the Tokhonol | 1 |
-| their pact with the Toshaom | 1 |
-| their pact with the Traiteisai | 1 |
-| their pact with the Trauyei | 1 |
-| their pact with the Trivruum | 1 |
-| their pact with the Tsaraondlaish | 1 |
-| their pact with the Ukuth | 1 |
-| their pact with the Unei | 1 |
-| their pact with the Uugexlak | 1 |
-| their pact with the Uukhataush | 1 |
-| their pact with the Uutiatsus | 1 |
-| their pact with the Vausath | 1 |
-| their pact with the Vikhuuth | 1 |
-| their pact with the Vriadregaurr | 1 |
-| their pact with the Vuxluul | 1 |
-| their pact with the Yavrauthor | 1 |
-| their pact with the Yiatsukak | 1 |
-| their pact with the Zauthash | 1 |
+| the old quarrel | 1751 |
+| extermination | 613 |
+| the sundering | 536 |
+| a border | 275 |
+| the embargo | 169 |
+| the disturbing of its sleep | 162 |
+| revenge | 161 |
+| the poisoning | 119 |
+| conquest | 97 |
+| opportunity | 63 |
+| their pact with the Thaozaith | 55 |
+| the unmaking | 53 |
+| their pact with the Drirtsuu | 42 |
+| the waking | 17 |
+| their pact with the Thaohausau | 17 |
+| their pact with the Drokyiath | 12 |
+| betrayal | 9 |
+| their pact with the Memadru | 8 |
+| their pact with the Phamaxvruuk | 8 |
+| their pact with the Vadrutruth | 8 |
+| their pact with the Govrutsor | 7 |
+| their pact with the Dreikuuk | 6 |
+| their pact with the Amphol | 5 |
+| their pact with the Ruqethaorr | 5 |
+| their pact with the Vraudriash | 5 |
+| their pact with the Yaovraonaith | 5 |
+| their pact with the Zaulelguu | 5 |
+| their pact with the Dramvrianel | 4 |
+| their pact with the Hiahauqi | 4 |
+| their pact with the Kartsaish | 4 |
+| their pact with the Maotse | 4 |
+| their pact with the Rasushe | 4 |
+| their pact with the Sheigaoth | 4 |
+| their pact with the Tandraisar | 4 |
+| their pact with the Truunir | 4 |
+| their pact with the Vraushes | 4 |
+| their pact with the Aunthil | 3 |
+| their pact with the Dredand | 3 |
+| their pact with the Eitsorr | 3 |
+| their pact with the Githudiax | 3 |
+| their pact with the Huutriatrok | 3 |
+| their pact with the Lequ | 3 |
+| their pact with the Qeiquutrao | 3 |
+| their pact with the Takmarr | 3 |
+| their pact with the Trithgozol | 3 |
+| their pact with the Vaimuutaun | 3 |
+| their pact with the Vritaorr | 3 |
+| their pact with the Yesuurirr | 3 |
+| their pact with the Zidukmairr | 3 |
+| their pact with the Ahair | 2 |
+| their pact with the Aondrand | 2 |
+| their pact with the Gathairaom | 2 |
+| their pact with the Iaguhurr | 2 |
+| their pact with the Laudraoraoth | 2 |
+| their pact with the Maotetre | 2 |
+| their pact with the Qiayeisron | 2 |
+| their pact with the Sero | 2 |
+| their pact with the Texyuund | 2 |
+| their pact with the Thathvaush | 2 |
+| their pact with the Tredraorr | 2 |
+| their pact with the Trererkaith | 2 |
+| their pact with the Tsadai | 2 |
+| their pact with the Uudrianmail | 2 |
+| their pact with the Uutithiath | 2 |
+| their pact with the Amtheis | 1 |
+| their pact with the Aupheind | 1 |
+| their pact with the Axgedau | 1 |
+| their pact with the Aziavind | 1 |
+| their pact with the Daonhu | 1 |
+| their pact with the Dehesaim | 1 |
+| their pact with the Dozaivix | 1 |
+| their pact with the Drainem | 1 |
+| their pact with the Elaul | 1 |
+| their pact with the Elhashi | 1 |
+| their pact with the Evauth | 1 |
+| their pact with the Gaophuund | 1 |
+| their pact with the Hemak | 1 |
+| their pact with the Hiakox | 1 |
+| their pact with the Iantsadin | 1 |
+| their pact with the Ixyais | 1 |
+| their pact with the Khaovum | 1 |
+| their pact with the Khauveith | 1 |
+| their pact with the Khikhiam | 1 |
+| their pact with the Kodrao | 1 |
+| their pact with the Mekith | 1 |
+| their pact with the Mesekeith | 1 |
+| their pact with the Miadraith | 1 |
+| their pact with the Nausiash | 1 |
+| their pact with the Noraola | 1 |
+| their pact with the Oruush | 1 |
+| their pact with the Oshaivrund | 1 |
+| their pact with the Phuthokin | 1 |
+| their pact with the Phuvoth | 1 |
+| their pact with the Qauvrar | 1 |
+| their pact with the Qayodaok | 1 |
+| their pact with the Ratsokshaos | 1 |
+| their pact with the Rinesei | 1 |
+| their pact with the Rirrduuna | 1 |
+| their pact with the Sairtaim | 1 |
+| their pact with the Sehaothen | 1 |
+| their pact with the Shetsa | 1 |
+| their pact with the Suthhek | 1 |
+| their pact with the Tadraozei | 1 |
+| their pact with the Thaotsovia | 1 |
+| their pact with the Traineil | 1 |
+| their pact with the Traokkiyiak | 1 |
+| their pact with the Trushruund | 1 |
+| their pact with the Usu | 1 |
+| their pact with the Uumeth | 1 |
+| their pact with the Vaomauth | 1 |
+| their pact with the Vavial | 1 |
+| their pact with the Vreshoskhe | 1 |
+| their pact with the Yuyin | 1 |
+| their pact with the Zadro | 1 |
+| their pact with the Zaukyordrux | 1 |
+| their pact with the Zegeil | 1 |
 
 ### By posture
 
 | Posture | Peoples | Met | Declared | Fought | Taken | Lost | Fleets | Went native | Scouts | Pacts | Betrayals | Ruled | Capitulated | Median life (Myr) |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| confederate | 273 | 7.96 | 0.57 | 1.28 | 0.21 | 0.40 | 0.35 | 3 | 4.12 | 0.77 | 135 | 0.11 | 2.2% | 1.27 |
-| conqueror | 453 | 9.87 | 1.96 | 2.99 | 0.57 | 0.32 | 1.59 | 1 | 6.73 | 0.19 | 105 | 0.97 | 10.8% | 0.69 |
-| defensive | 941 | 8.56 | 0.48 | 1.41 | 0.16 | 0.33 | 0.23 | 15 | 9.55 | 0.49 | 489 | 0.13 | 3.0% | 1.05 |
-| opportunist | 828 | 45.43 | 2.11 | 4.11 | 1.48 | 1.37 | 1.71 | 124 | 18.38 | 0.27 | 380 | 1.27 | 1.8% | 0.28 |
-| pacifist | 398 | 17.88 | 11.24 | 23.67 | 1.47 | 1.77 | 10.10 | 36 | 5.33 | 0.83 | 339 | 0.09 | 26.9% | 1.09 |
-| submissive | 382 | 11.96 | 0.54 | 1.32 | 0.23 | 0.38 | 0.23 | 12 | 7.21 | 0.47 | 142 | 0.32 | 10.5% | 1.12 |
-| unyielding | 191 | 2.90 | 0.19 | 0.42 | 0.03 | 0.17 | 0.04 | 0 | 2.32 | 0.16 | 60 | 0.06 | 0.0% | 0.88 |
-| vengeful | 1174 | 87.04 | 1.72 | 3.37 | 0.84 | 0.66 | 1.20 | 128 | 3.52 | 0.74 | 562 | 1.15 | 25.0% | 0.35 |
+| confederate | 364 | 29.76 | 1.36 | 3.90 | 0.74 | 0.77 | 0.76 | 29 | 32.14 | 1.62 | 236 | 0.86 | 3.6% | 0.96 |
+| conqueror | 447 | 18.00 | 1.39 | 1.92 | 0.35 | 0.14 | 0.99 | 0 | 8.73 | 0.10 | 72 | 1.23 | 7.4% | 0.76 |
+| defensive | 821 | 15.33 | 0.58 | 1.34 | 0.25 | 0.36 | 0.21 | 22 | 14.25 | 0.80 | 295 | 0.29 | 4.8% | 0.76 |
+| opportunist | 323 | 15.81 | 1.10 | 1.49 | 0.50 | 0.17 | 0.95 | 24 | 9.58 | 0.38 | 61 | 0.94 | 2.8% | 1.12 |
+| pacifist | 395 | 10.30 | 2.27 | 5.35 | 0.41 | 0.46 | 1.88 | 14 | 8.03 | 0.59 | 162 | 0.29 | 11.1% | 1.38 |
+| submissive | 908 | 177.60 | 1.00 | 1.75 | 0.25 | 0.37 | 0.62 | 29 | 53.61 | 0.56 | 162 | 1.41 | 21.0% | 0.78 |
+| unyielding | 125 | 3.42 | 0.08 | 2.34 | 0.02 | 0.08 | 0.01 | 0 | 0.15 | 0.19 | 19 | 0.12 | 0.0% | 0.54 |
+| vengeful | 450 | 25.44 | 1.19 | 1.96 | 0.63 | 0.30 | 0.91 | 41 | 16.86 | 0.50 | 112 | 1.17 | 9.3% | 0.56 |
 
 ### By honour
 
 | Honour | Peoples | Pacts | Relief sent | Called | Betrayals | Refused pacts | Median life (Myr) |
 |---|---|---|---|---|---|---|---|
-| faithful | 1349 | 0.67 | 750 | 370 | 423 | 11253 | 0.76 |
-| faithless | 1040 | 0.59 | 194 | 2471 | 708 | 7046 | 0.51 |
-| practical | 2251 | 0.39 | 362 | 521 | 1081 | 20076 | 0.74 |
+| faithful | 1569 | 0.63 | 300 | 601 | 269 | 14595 | 0.75 |
+| faithless | 539 | 0.31 | 70 | 65 | 168 | 7764 | 0.94 |
+| practical | 1725 | 0.72 | 379 | 2683 | 682 | 23057 | 0.83 |
 
 ### Contact
 
-A people meets 35.9 others on average; 19.3% never meet anyone. 923 peoples were ruled by another at some point (as masters).
+A people meets 55.8 others on average; 16.8% never meet anyone. 719 peoples were ruled by another at some point (as masters).
 
 ### Nomads
 
-153 peoples born with the way (3.3%); 88 took to the sky (57.5% of them), 5 came to rest again. Those who flew lived 1.65 Myr at the median; nomads who never reached the sky 0.46.
+162 peoples born with the way (4.2%); 126 took to the sky (77.8% of them), 32 came to rest again. Those who flew lived 3.89 Myr at the median; nomads who never reached the sky 0.40.
 
 ## Exploration
 
-1475 peoples of 3240 that reached the stars ever sent surveyors (45.5%); 31848 surveys in all, 21.6 per surveying people, 3.0 readings per survey. Readings of stars by any means: 94523, 20.4 per people.
-Colony ships sent on a guess to unread stars: 427, of which 6 found nothing to live on.
+842 peoples of 2494 that reached the stars ever sent surveyors (33.8%); 19931 surveys in all, 23.7 per surveying people, 2.5 readings per survey. Readings of stars by any means: 203117, 53.0 per people.
+Colony ships sent on a guess to unread stars: 224, of which 3 found nothing to live on.
 
 ### Finds, by how
 
 | How | Finds | Share |
 |---|---|---|
-| surveyors visiting | 2679 | 40.6% |
-| a ship or fleet arriving, or settling the star | 819 | 12.4% |
-| a people's own lost works | 2689 | 40.8% |
-| bumped into by chance | 406 | 6.2% |
+| surveyors visiting | 1405 | 38.8% |
+| a ship or fleet arriving, or settling the star | 564 | 15.6% |
+| a people's own lost works | 1317 | 36.4% |
+| bumped into by chance | 334 | 9.2% |
 
 ### Meetings, by how
 
-Counted once per side. Heard across the dark: 16838. Met in the flesh at a border, knowing the other was there: 17482. Surveyors coming upon a people: 563. A colony ship arriving to find a people: 112.
+Counted once per side. Heard across the dark: 15872. Met in the flesh at a border, knowing the other was there: 28606. Surveyors coming upon a people: 328. A colony ship arriving to find a people: 89.
 
 ### The Sight
 
-Peoples holding the Sight spent 2.5% of their time with it turned outward, reading stars instead of watching borders (8115 of 328298 kyr).
+Peoples holding the Sight spent 3.4% of their time with it turned outward, reading stars instead of watching borders (77826 of 2261332 kyr).
 
 ### Surveys by posture
 
 | Posture | Peoples that reached the stars | Ever surveyed | Surveys per people | Finds by survey |
 |---|---|---|---|---|
-| confederate | 172 | 48.8% | 7.6 | 88 |
-| conqueror | 283 | 43.5% | 7.5 | 187 |
-| defensive | 549 | 46.8% | 9.1 | 353 |
-| opportunist | 652 | 38.0% | 8.9 | 447 |
-| pacifist | 239 | 58.2% | 9.8 | 246 |
-| submissive | 255 | 40.0% | 11.3 | 205 |
-| unyielding | 95 | 36.8% | 15.1 | 41 |
-| vengeful | 995 | 48.9% | 11.0 | 1112 |
+| confederate | 261 | 45.6% | 14.3 | 211 |
+| conqueror | 251 | 23.9% | 7.9 | 38 |
+| defensive | 469 | 31.6% | 6.7 | 175 |
+| opportunist | 198 | 24.2% | 3.6 | 91 |
+| pacifist | 205 | 36.6% | 8.4 | 98 |
+| submissive | 731 | 34.2% | 7.5 | 604 |
+| unyielding | 52 | 40.4% | 7.1 | 9 |
+| vengeful | 327 | 37.0% | 8.7 | 179 |
 
 ## Tellings
 
-2345932 tales learned in all, 505.6 per people. By source: witnessed 15.6%, told 39.2%, read in ruins and relics 8.3%, handed down 36.6%.
-Retold because a regard changed: 303917. Blame moved to the enemy of the day: 190405. Tellings left in remains: 10978; tales restored from a people's own relic: 15429.
+2084196 tales learned in all, 543.8 per people. By source: witnessed 16.6%, told 48.0%, read in ruins and relics 5.1%, handed down 30.3%.
+Retold because a regard changed: 230268. Blame moved to the enemy of the day: 131645. Tellings left in remains: 6840; tales restored from a people's own relic: 5362.
 
 ### Memory by kind, peoples that lived a million years or more
 
 | kind | peoples | held at the end | of them myth | forgotten over the life | monsters remembered |
 |---|---|---|---|---|---|
-| biological | 1356 | 179.1 | 30.3% | 317.8 | 5.05 |
-| biological (swarm) | 291 | 439.3 | 32.7% | 1361.5 | 17.48 |
-| biological, evolver | 112 | 101.8 | 28.5% | 195.9 | 2.06 |
-| biological, hive | 97 | 122.8 | 26.5% | 226.9 | 2.10 |
-| biological, hive (swarm) | 3 | 239.3 | 24.1% | 278.7 | 3.00 |
-| biological, hive, evolver | 12 | 108.3 | 35.8% | 421.3 | 1.75 |
-| biological, planetary | 66 | 249.8 | 29.3% | 61.7 | 4.52 |
-| biological, planetary, hive | 5 | 250.0 | 14.7% | 550.6 | 3.80 |
-| biological, planetary, unconscious | 4 | 89.0 | 26.1% | 46.0 | 0.25 |
-| biological, unconscious | 98 | 326.9 | 30.7% | 934.8 | 9.11 |
-| biological, unconscious (swarm) | 3 | 134.7 | 48.8% | 194.7 | 1.00 |
-| biological, unconscious, evolver | 11 | 89.4 | 34.1% | 124.1 | 3.00 |
-| machine | 12 | 97.8 | 15.4% | 7.1 | 0.67 |
-| machine, hive | 1 | 502.0 | 11.6% | 101.0 | 2.00 |
-| machine, unconscious | 1 | 288.0 | 15.6% | 12.0 | 4.00 |
-| parasite | 14 | 9.5 | 20.3% | 16.1 | 0.00 |
-| parasite, hive | 2 | 4.5 | 11.1% | 3.0 | 0.00 |
-| parasite, unconscious | 1 | 8.0 | 25.0% | 1.0 | 0.00 |
+| biological | 1270 | 241.2 | 29.3% | 703.2 | 6.85 |
+| biological (swarm) | 30 | 108.0 | 25.3% | 84.3 | 2.23 |
+| biological, evolver | 89 | 147.1 | 28.7% | 237.5 | 3.56 |
+| biological, evolver (swarm) | 4 | 178.8 | 21.3% | 126.2 | 3.50 |
+| biological, hive | 88 | 118.6 | 32.4% | 229.7 | 2.51 |
+| biological, hive (swarm) | 3 | 169.3 | 32.3% | 159.0 | 4.00 |
+| biological, hive, evolver | 6 | 77.3 | 33.6% | 202.0 | 0.83 |
+| biological, hive, evolver (swarm) | 1 | 7.0 | 28.6% | 30.0 | 0.00 |
+| biological, hive, replicator | 2 | 78.0 | 39.1% | 51.5 | 2.00 |
+| biological, hive, replicator, evolver | 2 | 125.5 | 47.0% | 246.0 | 2.00 |
+| biological, hive, unconscious | 8 | 94.2 | 27.6% | 543.4 | 1.88 |
+| biological, hive, unconscious (swarm) | 3 | 36.7 | 20.9% | 46.0 | 0.33 |
+| biological, hive, unconscious, evolver (swarm) | 1 | 6.0 | 50.0% | 3.0 | 0.00 |
+| biological, planetary | 20 | 170.8 | 29.4% | 174.4 | 1.50 |
+| biological, planetary (swarm) | 1 | 49.0 | 22.4% | 8.0 | 0.00 |
+| biological, planetary, evolver | 3 | 85.7 | 5.1% | 0.0 | 2.00 |
+| biological, planetary, hive | 10 | 144.7 | 18.7% | 46.1 | 2.00 |
+| biological, planetary, hive, evolver | 1 | 140.0 | 35.7% | 54.0 | 2.00 |
+| biological, planetary, hive, unconscious | 5 | 81.2 | 9.9% | 4.6 | 0.00 |
+| biological, planetary, hive, unconscious, evolver | 1 | 7.0 | 0.0% | 0.0 | 0.00 |
+| biological, planetary, unconscious | 1 | 435.0 | 12.6% | 36.0 | 4.00 |
+| biological, replicator | 5 | 47.4 | 30.4% | 49.2 | 1.60 |
+| biological, replicator, evolver | 3 | 79.0 | 41.8% | 199.0 | 2.00 |
+| biological, unconscious | 42 | 78.4 | 31.5% | 244.2 | 1.10 |
+| biological, unconscious (swarm) | 3 | 45.3 | 46.3% | 164.3 | 1.00 |
+| biological, unconscious, replicator | 3 | 10.0 | 16.7% | 6.0 | 0.00 |
+| eldritch | 68 | 174.5 | 25.9% | 740.2 | 3.65 |
+| eldritch, antimemetic | 1 | 10.0 | 30.0% | 1.0 | 0.00 |
+| eldritch, hive | 1 | 28.0 | 35.7% | 276.0 | 0.00 |
+| eldritch, hive, antimemetic | 1 | 36.0 | 25.0% | 1467.0 | 0.00 |
+| eldritch, hive, unconscious | 3 | 69.7 | 23.4% | 347.0 | 0.67 |
+| eldritch, hive, unconscious, antimemetic | 2 | 212.0 | 4.5% | 968.0 | 5.00 |
+| eldritch, planetary | 11 | 62.3 | 37.1% | 138.5 | 2.55 |
+| eldritch, planetary, hive | 6 | 84.5 | 47.7% | 438.7 | 1.17 |
+| eldritch, planetary, hive, unconscious | 8 | 34.4 | 26.9% | 100.2 | 0.25 |
+| eldritch, planetary, hive, unconscious, antimemetic | 1 | 13.0 | 53.8% | 912.0 | 0.00 |
+| eldritch, planetary, unconscious | 13 | 13.3 | 46.2% | 251.2 | 0.15 |
+| eldritch, planetary, unconscious, antimemetic | 1 | 0.0 | - | 22.0 | 0.00 |
+| eldritch, replicator | 3 | 277.0 | 7.2% | 930.7 | 0.67 |
+| eldritch, unconscious | 16 | 48.5 | 17.7% | 586.8 | 0.69 |
+| eldritch, unconscious, antimemetic | 2 | 7.5 | 66.7% | 167.0 | 0.50 |
+| machine | 16 | 62.2 | 12.1% | 8.8 | 0.69 |
+| machine (swarm) | 2 | 71.0 | 8.5% | 0.5 | 0.50 |
+| machine, hive | 7 | 209.6 | 11.1% | 47.4 | 5.43 |
+| machine, hive, replicator | 1 | 5.0 | 0.0% | 0.0 | 0.00 |
+| machine, replicator | 1 | 59.0 | 16.9% | 1.0 | 0.00 |
+| machine, unconscious | 2 | 292.0 | 0.9% | 51.0 | 1.00 |
+| parasite | 21 | 11.9 | 31.6% | 9.5 | 0.10 |
+| parasite (swarm) | 3 | 13.0 | 48.7% | 216.3 | 0.00 |
+| parasite, hive (swarm) | 1 | 7.0 | 14.3% | 1.0 | 0.00 |
+| parasite, planetary | 1 | 10.0 | 0.0% | 0.0 | 0.00 |
+| parasite, replicator | 1 | 9.0 | 33.3% | 0.0 | 0.00 |
+| parasite, unconscious | 3 | 155.3 | 30.9% | 457.7 | 2.33 |
 
 ### What the telling did to temperament
 
@@ -900,16 +920,16 @@ Mean shift of each dial from the tales held at the end, over all peoples; the ca
 
 | dial | mean shift | mean size of shift |
 |---|---|---|
-| aggression | +0.008 | 0.008 |
-| risk | -0.171 | 0.171 |
-| greed | +0.006 | 0.006 |
-| fear | +0.216 | 0.216 |
-| loyalty | +0.140 | 0.159 |
-| hunger | +0.055 | 0.055 |
-| patience | +0.102 | 0.102 |
-| hate | +0.118 | 0.118 |
+| aggression | +0.005 | 0.005 |
+| risk | -0.169 | 0.169 |
+| greed | +0.004 | 0.004 |
+| fear | +0.217 | 0.217 |
+| loyalty | +0.128 | 0.138 |
+| hunger | +0.034 | 0.034 |
+| patience | +0.110 | 0.110 |
+| hate | +0.132 | 0.132 |
 
-Peoples that held somebody to be a monster at the end: 2990 of 4640 (64.4%).
+Peoples that held somebody to be a monster at the end: 2250 of 3833 (58.7%).
 
 ### Morality
 
@@ -917,16 +937,16 @@ What each people counts as wrong, rolled at birth from its nature. Monsters are 
 
 | Morality | Peoples | Share | Lived 1 Myr+ | Monsters per people | Held a monster | Excused per people | Condemned per people |
 |---|---|---|---|---|---|---|---|
-| amoral | 469 | 10.1% | 207 | 4.14 | 52.7% | 17.9 | 0.0 |
-| fixed on conquest | 248 | 5.3% | 124 | 3.40 | 52.4% | 32.0 | 0.0 |
-| fixed on holding | 500 | 10.8% | 213 | 7.16 | 70.0% | 1.4 | 0.0 |
-| fixed on knowing | 540 | 11.6% | 264 | 2.36 | 57.2% | 8.7 | 1.0 |
-| fixed on old things | 223 | 4.8% | 98 | 5.34 | 68.4% | 11.8 | 2.5 |
-| fixed on spawning | 363 | 7.8% | 147 | 12.95 | 82.3% | 0.0 | 0.0 |
-| herd | 1549 | 33.4% | 728 | 8.73 | 74.6% | 0.0 | 0.0 |
-| individual | 748 | 16.1% | 308 | 4.70 | 69.5% | 0.0 | 0.0 |
+| amoral | 544 | 14.2% | 291 | 3.12 | 54.0% | 10.6 | 0.0 |
+| fixed on conquest | 150 | 3.9% | 66 | 2.88 | 51.5% | 12.3 | 0.0 |
+| fixed on holding | 390 | 10.2% | 201 | 5.67 | 65.7% | 0.5 | 0.0 |
+| fixed on knowing | 441 | 11.5% | 220 | 2.14 | 52.3% | 6.0 | 0.5 |
+| fixed on old things | 166 | 4.3% | 78 | 4.36 | 62.8% | 6.9 | 1.3 |
+| fixed on spawning | 306 | 8.0% | 139 | 5.36 | 71.9% | 0.0 | 0.0 |
+| herd | 1053 | 27.5% | 491 | 7.18 | 77.6% | 0.0 | 0.0 |
+| individual | 783 | 20.4% | 315 | 8.07 | 75.9% | 0.0 | 0.0 |
 
-Crimes known to two peoples or more: 28847; of them a crime to one and a deed to another: 2342 (8.1%).
+Crimes known to two peoples or more: 21814; of them a crime to one and a deed to another: 614 (2.8%).
 
 ## Means
 
@@ -934,129 +954,124 @@ Income and upkeep are per tick, by kind (O organic matter, E energy, M metal), a
 
 | Deepest era | Peoples | Income O / E / M | Upkeep O / E / M | Want O / E / M | Ticks shedding |
 |---|---|---|---|---|---|
-| 0 pre-industrial | 125 | 0.2 / 0.1 / 0.2 | 0.1 / 0.1 / 0.1 | 0.0 / 0.0 / 0.0 | 0.7% |
-| 1 industrial | 141 | 6.0 / 6.5 / 12.2 | 0.4 / 2.7 / 0.8 | 0.0 / 0.2 / 0.0 | 3.9% |
-| 2 atomic | 393 | 6.0 / 10.1 / 10.7 | 2.7 / 6.1 / 3.4 | 0.6 / 1.0 / 0.4 | 28.4% |
-| 3 interstellar | 1362 | 11.3 / 39.6 / 31.3 | 11.9 / 23.7 / 14.1 | 3.4 / 4.3 / 1.6 | 54.4% |
-| 4 exotic | 2619 | 33.6 / 161.1 / 97.6 | 34.8 / 98.6 / 53.8 | 8.6 / 15.9 / 5.8 | 79.7% |
+| 0 pre-industrial | 171 | 0.3 / 0.1 / 0.5 | 0.1 / 0.1 / 0.1 | 0.0 / 0.0 / 0.0 | 0.0% |
+| 1 industrial | 162 | 6.1 / 6.3 / 12.9 | 0.5 / 2.5 / 0.9 | 0.0 / 0.1 / 0.0 | 6.9% |
+| 2 atomic | 400 | 5.9 / 9.6 / 10.7 | 2.5 / 5.9 / 3.2 | 0.5 / 0.9 / 0.3 | 32.5% |
+| 3 interstellar | 1153 | 8.3 / 26.4 / 21.1 | 9.1 / 19.5 / 10.5 | 3.2 / 4.8 / 1.6 | 65.0% |
+| 4 exotic | 1947 | 25.9 / 119.8 / 72.1 | 32.6 / 78.8 / 48.5 | 8.8 / 12.9 / 5.5 | 70.2% |
 
 Share of ticks shedding by the era the people was in at the time, over every people:
 
 | Era at the time | Ticks | Shedding | Ticks alone | Shedding alone | Ticks with colonies | Shedding with colonies |
 |---|---|---|---|---|---|---|
-| 0 pre-industrial | 75253 | 0.6% | 75253 | 0.6% | 0 | - |
-| 1 industrial | 185826 | 38.9% | 184200 | 39.2% | 1626 | 0.0% |
-| 2 atomic | 538896 | 24.9% | 538107 | 24.9% | 789 | 3.5% |
-| 3 interstellar | 4148453 | 66.3% | 3879990 | 69.0% | 268463 | 26.5% |
-| 4 exotic | 15855389 | 83.6% | 12129536 | 91.4% | 3725853 | 58.3% |
+| 0 pre-industrial | 77487 | 2.3% | 77487 | 2.3% | 0 | - |
+| 1 industrial | 360696 | 53.3% | 360696 | 53.3% | 0 | - |
+| 2 atomic | 585760 | 33.7% | 585644 | 33.7% | 116 | 0.0% |
+| 3 interstellar | 3759747 | 71.0% | 3611149 | 72.2% | 148598 | 42.9% |
+| 4 exotic | 13549157 | 71.2% | 10374685 | 76.7% | 3174472 | 53.4% |
 
 What went dark most, as a share of all use-ticks dormant:
 
 | Use | Era | Category | Upkeep O / E / M | Share |
 |---|---|---|---|---|
-| Designed Immunity | 3 | works | 1 / 1 / 0 | 4.5% |
-| Mechanised War | 2 | arms | 0 / 1 / 1 | 3.9% |
-| Tailored Plagues | 3 | works | 1 / 1 / 0 | 3.8% |
-| Germline Engineering | 3 | works | 1 / 1 / 0 | 3.7% |
-| Hibernation | 3 | works | 1 / 1 / 0 | 3.7% |
-| Black Biology | 4 | works | 2 / 1 / 0 | 3.4% |
-| Neuroscience | 2 | works | 1 / 0 / 0 | 3.4% |
-| Panspermia | 4 | works | 2 / 1 / 0 | 3.3% |
-| Bodily Sovereignty | 4 | works | 2 / 1 / 0 | 3.1% |
-| Orbital Weapons | 2 | arms | 0 / 1 / 1 | 2.6% |
-| Plague-craft | 2 | works | 1 / 0 / 0 | 2.6% |
-| Relativistic Travel | 3 | road | 0 / 1 / 2 | 2.5% |
+| Designed Immunity | 3 | works | 1 / 1 / 0 | 4.4% |
+| Neuroscience | 2 | works | 1 / 0 / 0 | 4.0% |
+| Tailored Plagues | 3 | works | 1 / 1 / 0 | 3.5% |
+| Germline Engineering | 3 | works | 1 / 1 / 0 | 3.4% |
+| Hibernation | 3 | works | 1 / 1 / 0 | 3.2% |
+| Mechanised War | 2 | arms | 0 / 1 / 1 | 3.1% |
+| Immunology | 2 | works | 1 / 0 / 0 | 3.0% |
+| Panspermia | 4 | works | 2 / 1 / 0 | 2.9% |
+| Plague-craft | 2 | works | 1 / 0 / 0 | 2.9% |
+| Genetics | 2 | works | 1 / 0 / 0 | 2.9% |
+| Black Biology | 4 | works | 2 / 1 / 0 | 2.8% |
+| Bodily Sovereignty | 4 | works | 2 / 1 / 0 | 2.6% |
 
 Structures raised, over every people:
 
 | Structure | Raised | Per people | Peoples that raised one |
 |---|---|---|---|
-| ansible net | 11 | 0.00 | 0.2% |
-| arcology | 1403 | 0.30 | 25.5% |
-| collectors | 1427 | 0.31 | 19.1% |
-| defence grid | 1182 | 0.25 | 9.2% |
-| Dyson swarm | 2402 | 0.52 | 15.5% |
-| star lifter | 1280 | 0.28 | 6.8% |
-| mines | 2181 | 0.47 | 20.0% |
-| observatory | 1032 | 0.22 | 17.1% |
-| shipyard | 811 | 0.17 | 14.1% |
-| silos | 10373 | 2.24 | 33.4% |
-| accretion tap | 6 | 0.00 | 0.1% |
+| ansible net | 97 | 0.03 | 1.6% |
+| arcology | 984 | 0.26 | 22.2% |
+| collectors | 1060 | 0.28 | 17.0% |
+| defence grid | 626 | 0.16 | 6.8% |
+| Dyson swarm | 1538 | 0.40 | 11.5% |
+| star lifter | 739 | 0.19 | 5.3% |
+| mines | 1639 | 0.43 | 17.6% |
+| observatory | 704 | 0.18 | 14.2% |
+| shipyard | 640 | 0.17 | 13.0% |
+| silos | 5988 | 1.56 | 26.9% |
 
 Sources harnessed, by kind, as the share of peoples that ever harnessed one:
 
 | Source | Peoples | Share |
 |---|---|---|
-| atom | 1478 | 31.9% |
-| belt | 1373 | 29.6% |
-| brown_companion | 438 | 9.4% |
-| collectors | 1808 | 39.0% |
-| dyson | 1441 | 31.1% |
-| fuels | 1548 | 33.4% |
-| fusion | 1456 | 31.4% |
-| giant | 1059 | 22.8% |
-| habitable | 1572 | 33.9% |
-| heavy | 312 | 6.7% |
-| lifter | 779 | 16.8% |
-| mine | 1827 | 39.4% |
-| rocky | 1670 | 36.0% |
-| tap | 34 | 0.7% |
-| terraformed | 1254 | 27.0% |
-| wood | 1563 | 33.7% |
+| atom | 1390 | 36.3% |
+| belt | 1268 | 33.1% |
+| brown_companion | 564 | 14.7% |
+| collectors | 1053 | 27.5% |
+| dyson | 962 | 25.1% |
+| fuels | 1480 | 38.6% |
+| fusion | 1365 | 35.6% |
+| giant | 975 | 25.4% |
+| habitable | 1562 | 40.8% |
+| heavy | 543 | 14.2% |
+| lifter | 608 | 15.9% |
+| mine | 1305 | 34.0% |
+| rocky | 1560 | 40.7% |
+| terraformed | 1160 | 30.3% |
+| wood | 1493 | 39.0% |
 
 Rarities had, by kind, as the share of peoples that ever had one:
 
 | Rarity | Peoples | Share |
 |---|---|---|
-| artifact | 1158 | 25.0% |
-| bounty:battery | 433 | 9.3% |
-| bounty:garden | 27 | 0.6% |
-| bounty:lattice | 385 | 8.3% |
-| bounty:mirror | 22 | 0.5% |
-| bounty:ring | 69 | 1.5% |
-| bounty:sea | 182 | 3.9% |
-| bounty:seam | 50 | 1.1% |
-| diamond | 637 | 13.7% |
-| dust | 1550 | 33.4% |
-| dwarf_companion | 799 | 17.2% |
-| ember | 45 | 1.0% |
-| manna | 610 | 13.1% |
-| moon | 1031 | 22.2% |
+| artifact | 807 | 21.1% |
+| bounty:battery | 433 | 11.3% |
+| bounty:garden | 419 | 10.9% |
+| bounty:lattice | 88 | 2.3% |
+| bounty:mirror | 76 | 2.0% |
+| bounty:ring | 28 | 0.7% |
+| bounty:sea | 33 | 0.9% |
+| bounty:seam | 2 | 0.1% |
+| diamond | 637 | 16.6% |
+| dust | 1204 | 31.4% |
+| dwarf_companion | 672 | 17.5% |
+| manna | 206 | 5.4% |
+| moon | 772 | 20.1% |
 
 Granted nodes reached, with the grant had at the time and without:
 
 | Node | Reached | With the grant | Without |
 |---|---|---|---|
-| Causal Physics | 695 | 0 | 695 |
-| Deep Time | 114 | 0 | 114 |
-| the Unmaking | 13 | 0 | 13 |
-| Stellar Weapons | 427 | 0 | 427 |
-| Exotic Matter | 756 | 0 | 756 |
-| Transcendence | 530 | 0 | 530 |
+| Causal Physics | 357 | 0 | 357 |
+| Deep Time | 60 | 0 | 60 |
+| the Unmaking | 123 | 0 | 123 |
+| Stellar Weapons | 167 | 0 | 167 |
+| Exotic Matter | 376 | 0 | 376 |
+| Transcendence | 296 | 0 | 296 |
 
 Trade, by the deepest era a people reached: what it sent and what it got over its life, per people; partners it ever had, and partners it ever sent anything to.
 
 | Deepest era | Peoples | Sent O / E / M | Got O / E / M | Partners | Sent to | Share |
 |---|---|---|---|---|---|---|
-| 0 pre-industrial | 125 | 0 / 0 / 0 | 0 / 0 / 0 | 2 | 0 | 0.0% |
-| 1 industrial | 141 | 0 / 0 / 0 | 0 / 0 / 0 | 12 | 0 | 0.0% |
-| 2 atomic | 393 | 0 / 1 / 0 | 3 / 23 / 5 | 238 | 1 | 0.4% |
-| 3 interstellar | 1362 | 31 / 213 / 78 | 70 / 189 / 61 | 6436 | 447 | 6.9% |
-| 4 exotic | 2619 | 902 / 4011 / 1310 | 789 / 2431 / 1054 | 25090 | 3523 | 14.0% |
+| 0 pre-industrial | 171 | 42 / 100 / 42 | 0 / 0 / 0 | 247 | 20 | 8.1% |
+| 1 industrial | 162 | 0 / 0 / 0 | 0 / 0 / 0 | 5 | 0 | 0.0% |
+| 2 atomic | 400 | 0 / 0 / 0 | 0 / 14 / 1 | 338 | 0 | 0.0% |
+| 3 interstellar | 1153 | 13 / 98 / 40 | 89 / 553 / 154 | 6851 | 180 | 2.6% |
+| 4 exotic | 1947 | 4137 / 11071 / 5552 | 4064 / 10203 / 5302 | 27365 | 2917 | 10.7% |
 
-Peoples dependent on a partner's sending at the moment they fell: 188 of 4321 falls (4.4%).
+Peoples dependent on a partner's sending at the moment they fell: 185 of 3548 falls (5.2%).
 
-The Ember and the Manna: 1393 objects made over every people. By form, with how many thought, how many gave cuttings, and what came of them.
+The Ember and the Manna: 563 objects made over every people. By form, with how many thought, how many gave cuttings, and what came of them.
 
 | Object | Form | Made | Thought | Gave cuttings | Fates |
 |---|---|---|---|---|---|
-| ember | hot_tap | 1 | 0 | 0 | through 1 |
-| ember | pocket_star | 1 | 0 | 0 | - |
-| manna | brood | 226 | 46 | 90 | rose 4, loose 148 |
-| manna | fungus | 369 | 4 | 140 | loose 212 |
-| manna | kelp | 206 | 19 | 73 | rose 1, loose 117 |
-| manna | mat | 555 | 15 | 235 | rose 4, loose 422 |
-| manna | mould | 35 | 2 | 12 | rose 1, loose 17 |
+| manna | brood | 1 | 0 | 0 | loose 1 |
+| manna | fungus | 373 | 0 | 163 | loose 264 |
+| manna | kelp | 1 | 0 | 0 | loose 1 |
+| manna | mat | 37 | 1 | 16 | loose 22 |
+| manna | mould | 151 | 0 | 65 | loose 122 |
 
 ## Ships
 
@@ -1064,28 +1079,28 @@ A ship costs four thousand years of its keep to build at a dock; a ship in being
 
 | Deepest era | Peoples starfaring | Ships at the height: median, quartiles, most | Built | Lost in battle | Rotted | Ship-kyr building per ship built | Ticks at the want | Ticks with ships laid up |
 |---|---|---|---|---|---|---|---|---|
-| 2 atomic | 36 | 4, 1 to 4, 54 | 44 | 4 | 87 | 3.5 | 12.9% | 4.4% |
-| 3 interstellar | 768 | 2, 1 to 6, 274 | 3988 | 869 | 2089 | 4.0 | 22.6% | 1.4% |
-| 4 exotic | 2428 | 5, 2 to 18, 533 | 52813 | 7957 | 28578 | 4.0 | 29.0% | 0.6% |
+| 2 atomic | 51 | 3, 0 to 4, 49 | 111 | 1 | 95 | 4.2 | 13.9% | 2.7% |
+| 3 interstellar | 601 | 2, 1 to 5, 124 | 5067 | 175 | 4835 | 4.1 | 16.9% | 4.0% |
+| 4 exotic | 1764 | 6, 3 to 21, 1349 | 136680 | 5784 | 118397 | 4.0 | 29.6% | 4.1% |
 
-Of 267 starfaring peoples standing at the present, 200 hold a ship (74.9%) and 2 have ships laid up (0.7%).
+Of 249 starfaring peoples standing at the present, 166 hold a ship (66.7%) and 1 have ships laid up (0.4%).
 
 ## Battles
 
 A battle is a campaign fleet at a world against its sky: guns, guard and relief, each at its owner's quality; one a tick at a world. The loser of the roll withdraws if it lost ships; a world with a gun standing is never taken; a world with nothing in its sky is taken without a battle.
 
-7001 battles: 1698 taken with nothing in the sky, 1658 taken after a fight, 4 where the ships withdrew and the guns stood, 1933 where a gun stood and the fleets stayed behind it, 1370 held by the defender, 337 where the attacker was broken.
+2912 battles: 529 taken with nothing in the sky, 829 taken after a fight, 2 where the ships withdrew and the guns stood, 891 where a gun stood and the fleets stayed behind it, 529 held by the defender, 132 where the attacker was broken.
 
 | Gap in levels (attacker less defender) | Battles fought | Won by the side with fewer ships |
 |---|---|---|
-| within half a level | 1935 | 8.7% |
-| half to two levels | 1338 | 9.9% |
-| two to four | 882 | 23.5% |
-| four or more | 257 | 44.4% |
+| within half a level | 719 | 8.5% |
+| half to two levels | 653 | 8.0% |
+| two to four | 421 | 23.5% |
+| four or more | 233 | 46.8% |
 
-Sieges (a second battle at a world by the same fleet within three thousand years) 1225, of four battles or more 285.
+Sieges (a second battle at a world by the same fleet within three thousand years) 548, of four battles or more 126.
 
-Garrison moves 7514, musters 838; worlds struck with an empty sky 1698 of 7001 battles; the attacker won the roll in 75.6%.
+Garrison moves 7704, musters 242; worlds struck with an empty sky 529 of 2912 battles; the attacker won the roll in 77.5%.
 
 ## Sightings
 
@@ -1093,15 +1108,15 @@ A fleet in flight is seen by eyes: worlds by the tree, works by their own range,
 
 | Drive | Fleets | Seen before arrival | Warning, median years |
 |---|---|---|---|
-| torch (4 years a light year or less) | 6519 | 100.0% | 46 |
-| sails (to 30) | 442 | 99.8% | 288 |
-| slow (over 30) | 2317 | 99.9% | 17 |
+| torch (4 years a light year or less) | 2559 | 100.0% | 51 |
+| sails (to 30) | 158 | 99.4% | 511 |
+| slow (over 30) | 952 | 99.7% | 1928 |
 
-144942 sightings, 315 by fleets, 66 by pickets, 644 by the Sight, 117138 by works, 26779 by worlds.
+51986 sightings, 92 by fleets, 92 by pickets, 56 by the Sight, 41897 by works, 9849 by worlds.
 
-Sightings with a meeting point against an enemy 641, interceptors sent 40, meetings fought 40; the interceptor won 33, fleets turned back 28, broken in the dark 5; ships lost by interceptors 31 and by the fleets met 47.
+Sightings with a meeting point against an enemy 221, interceptors sent 12, meetings fought 12; the interceptor won 7, fleets turned back 6, broken in the dark 1; ships lost by interceptors 15 and by the fleets met 13.
 
-Pickets sent 28025; peoples' fleets caught in the dark 33. Fields of wrecks 3080 holding 8843 ships, 52 adrift; crewed 2742 (2212 ships flown home as salvage), read for their art 79, worn to ruin 2996.
+Pickets sent 85388; peoples' fleets caught in the dark 7. Fields of wrecks 1475 holding 5983 ships, 17 adrift; crewed 1286 (1554 ships flown home as salvage), read for their art 39, worn to ruin 1434.
 
 ## Wisdom
 
@@ -1109,481 +1124,427 @@ A fourth level: the capacity to see the counterintuitive. It decides whether a p
 
 | Wisdom | Peoples |
 |---|---|
-| foolish (2 or less) | 0.2% |
-| 2 to 4 | 12.5% |
-| 4 to 6 | 33.0% |
-| 6 to 8 | 32.1% |
-| wise (8 or more) | 22.3% |
+| foolish (2 or less) | 0.4% |
+| 2 to 4 | 8.0% |
+| 4 to 6 | 34.6% |
+| 6 to 8 | 34.0% |
+| wise (8 or more) | 22.9% |
 
-Sources, mean per starfaring people: species 2.45, tech 2.06, experience 0.52, boons 0.63, scars -0.18.
+Sources, mean per starfaring people: species 2.67, tech 1.84, experience 0.52, boons 0.77, scars -0.19.
 
 | Understood | Contacts | Mean years from the meeting |
 |---|---|---|
-| by meeting | 3.5% | 1983 |
-| by kin | 13.2% | 962 |
-| by chorus | 0.2% | 25 |
-| by familiarity | 1.3% | 147768 |
-| by war | 0.1% | 108546 |
-| by taught | 1.8% | 72360 |
-| by broker | 0.2% | 42496 |
-| never | 22.9% | 6578642 (to the end) |
+| by meeting | 3.0% | 1394 |
+| by kin | 6.2% | 1665 |
+| by chorus | 0.2% | 85572 |
+| by familiarity | 1.3% | 864770 |
+| by war | 0.1% | 1544723 |
+| by taught | 1.4% | 590440 |
+| by broker | 0.5% | 1124031 |
+| never | 30.0% | 7756761 (to the end) |
 
 | Difference | Contacts | Never understood | Mean years unfathomed, of those that were |
 |---|---|---|---|
-| kin (0) | 75446 | 21.6% | 13621893 |
-| 0.5 to 2 | 21772 | 25.0% | 10625897 |
-| 2.5 to 4 | 16332 | 25.6% | 19492351 |
-| over 4 | 3452 | 24.9% | 16703197 |
+| kin (0) | 89893 | 30.1% | 14862650 |
+| 0.5 to 2 | 53730 | 23.5% | 14152906 |
+| 2.5 to 4 | 5416 | 30.9% | 11929268 |
+| over 4 | 21786 | 45.3% | 17332123 |
 
-One-sided at the end 53143; pairs that went from one-sided to mutual 2088, median years between 44000. Wars that ended with a side not understood 107; brokered attempts made for nothing 387; remains sealed by looking before the leap 6; messages dropped unread 12914.
+One-sided at the end 76954; pairs that went from one-sided to mutual 2459, median years between 55000. Wars that ended with a side not understood 206; brokered attempts made for nothing 13253; remains sealed by looking before the leap 4; messages dropped unread 29314.
 
 | Wisdom | Councils | Acted-on odds' mean distance from the estimate |
 |---|---|---|
-| foolish (2 or less) | 1 | 0.000 |
-| 2 to 4 | 6144 | 0.028 |
-| 4 to 6 | 53620 | 0.029 |
-| 6 to 8 | 183928 | 0.032 |
-| wise (8 or more) | 395601 | 0.018 |
+| foolish (2 or less) | 0 | - |
+| 2 to 4 | 29302 | 0.062 |
+| 4 to 6 | 268425 | 0.027 |
+| 6 to 8 | 300300 | 0.013 |
+| wise (8 or more) | 531232 | 0.012 |
 
 ## Contracts
 
 A timed payment for a discrete thing: a flow, a rarity, access to one, a node taught, a fleet on guard, a fleet against a world, a world handed over, peace, a sighting, a broker's word. An offer and its answer travel at the lag of light; the contract forms when the answer arrives; a term undelivered two ticks running breaks it, a betrayal on the world.
 
-Per starfaring people: 4.44 contracts formed as the buyer, 4.33 as the seller, 0.26 broken by it; 48.5% had at least one; 37.0% learned a node by being taught; 8.6% earned the name sellswords.
+Per starfaring people: 2.59 contracts formed as the buyer, 2.48 as the seller, 0.16 broken by it; 32.5% had at least one; 23.0% learned a node by being taught; 6.0% earned the name sellswords.
 
 | Asked for | Offered | By the seller | Formed | Done | Broken | Lapsed | Bought off | Mean years run |
 |---|---|---|---|---|---|---|---|---|
-| flow | 27188 | 0 | 26.6% | 6949 | 249 | 39 | 0 | 4878 |
-| teach | 142262 | 0 | 5.0% | 6107 | 405 | 615 | 0 | 30341 |
-| guard | 15758 | 269 | 8.0% | 1126 | 71 | 57 | 14 | 11107 |
-| strike | 105 | 0 | 8.6% | 1 | 4 | 4 | 0 | 7667 |
-| peace | 14 | 0 | 100.0% | 11 | 1 | 2 | 0 | 12500 |
-| sighting | 289 | 289 | 9.7% | 14 | 1 | 13 | 0 | 3107 |
-| broker | 83 | 0 | 24.1% | 18 | 0 | 2 | 0 | 8800 |
+| flow | 44059 | 0 | 64.3% | 2727 | 115 | 25509 | 0 | 489 |
+| teach | 78119 | 0 | 8.2% | 3003 | 174 | 3210 | 0 | 14764 |
+| guard | 11701 | 774 | 54.8% | 585 | 60 | 5766 | 10 | 1251 |
+| strike | 32 | 0 | 56.2% | 0 | 0 | 18 | 0 | 0 |
+| peace | 10 | 0 | 100.0% | 9 | 1 | 0 | 0 | 10500 |
+| sighting | 218 | 218 | 9.2% | 11 | 6 | 3 | 0 | 3250 |
+| broker | 561 | 0 | 89.7% | 13 | 0 | 490 | 0 | 899 |
 
-Paid with: access 1817, flow 178233, teach 5649.
+Paid with: access 324, flow 131030, teach 3346.
 
-Wars that ended in a yield: 3409, of which tribute instead of worlds 23.2%. Tributes paid per starfaring people 0.23.
+Wars that ended in a yield: 1774, of which tribute instead of worlds 33.7%. Tributes paid per starfaring people 0.24.
 
 ## Blocs and slights
 
 A war on a people's partner is a wrong done to that people, sized by their trade, taken as a grudge on the attacker; the council weighs the slights a war would give the peoples it minds. Blocs are nothing declared: the connected components of the partner graph as each people had it at the height of its means.
 
-Blocs of two or more per world 11.1, peoples in one 328.2 per world, the largest 725. Wars inside a bloc 9413, across blocs 95, with a side in none 690.
-Slights taken 50.9 per world by 47.5 peoples per world; councils' verdicts 639294, of which the offence alone held back 0.0%.
+Blocs of two or more per world 9.5, peoples in one 236.8 per world, the largest 777. Wars inside a bloc 3398, across blocs 47, with a side in none 925.
+Slights taken 34.4 per world by 26.5 peoples per world; councils' verdicts 1129259, of which the offence alone held back 0.0%.
 
 ## Sickness
 
 A plague is an actor: born in a people at a rate its dirt raises and its medicine divides, carried on goods, occupation, landings and messages, fought each tick, paid for in worlds. Cradles are peoples born on their own world, not branches, cults or the made.
 
-Plagues born 556.1 per world: 47.9% biological, 52.1% memetic. By cause: born rider 0.2%, breakout 25.7%, clean 17.4%, dark age 6.7%, dirt 37.6%, made 12.2%, relic 0.1%, siege 0.1%.
-Hosts per plague: median 1, mean 1.9; 22.4% reached a second host, 9.2% went past three. Wildfires (ten hosts at once) 4.5 per world. Extinct at the present 94.5%.
-The ones that went past three hosts: contagion median 0.66, lethality median 0.68 (all plagues are drawn uniform on both).
-Taken: 3419 worlds, 2582 peoples ended or brought low, 1057 cults formed; 7151 cures, 36582 peoples closed their ears or ports, 530 reservoirs and walls woken.
-Cradles 1711: 82.1% met a plague at some point, 48.6% in their first half million years.
-Early killers (cradles ended within half a million years, 683): plague 76.6%, faded as a remnant 4.0%, overshoot 3.4%, the wars of faith 1.9%, atomic 1.3%, built a mind that outgrew them 1.3%.
-Peoples that ever had one 79.7%; infections per such people 2.9; ticks contained 5040; peoples cured at least once 7151.
-Parasites 2.7 per world: 13 born with their host, 14 woke from a plague, 0 made to think; 1 standing at the present; peoples ridden 28 (1.0 per parasite), risings 4.
-Engineered plagues 2110 (211.0 per world); 551 peoples tried one on another, of the 2501 that fought a war at era 2 or above (22.0%); attempts 1085, took 273, caught 552; got out at discovery 581, leaked while held 849.
+Plagues born 468.2 per world: 56.5% biological, 43.5% memetic. By cause: born rider 0.4%, breakout 17.5%, clean 17.3%, dark age 6.7%, dirt 52.6%, made 5.3%, relic 0.1%, siege 0.1%.
+Hosts per plague: median 1, mean 2.0; 21.1% reached a second host, 7.9% went past three. Wildfires (ten hosts at once) 6.2 per world. Extinct at the present 97.2%.
+The ones that went past three hosts: contagion median 0.75, lethality median 0.55 (all plagues are drawn uniform on both).
+Taken: 2820 worlds, 2235 peoples ended or brought low, 740 cults formed; 6752 cures, 36375 peoples closed their ears or ports, 376 reservoirs and walls woken.
+Cradles 1755: 77.0% met a plague at some point, 47.9% in their first half million years.
+Early killers (cradles ended within half a million years, 715): plague 73.8%, overshoot 3.5%, faded as a remnant 3.1%, the wars of faith 2.8%, lost the last of their fleets 2.1%, atomic 1.5%.
+Peoples that ever had one 79.4%; infections per such people 3.1; ticks contained 4932; peoples cured at least once 6752.
+Parasites 5.5 per world: 18 born with their host, 37 woke from a plague, 0 made to think; 7 standing at the present; peoples ridden 59 (1.1 per parasite), risings 8.
+Engineered plagues 1065 (106.5 per world); 272 peoples tried one on another, of the 1487 that fought a war at era 2 or above (18.3%); attempts 590, took 119, caught 303; got out at discovery 619, leaked while held 199.
 
 ## Ossification
 
 Nobody dies of age. A people's ways set (stiffness), and past one it faces Ossification: overcome is a renaissance, the near miss sets it, the bad miss breaks it into a civil war or a dark age of variable depth, which shatters it if the forgetting takes the stars. Heirs and shards are new peoples of the old line.
 
-Facings 677.2 per world at mean stiffness 2.18: renaissance 34.8%, set 24.8%, the break 39.7%.
-Civil wars 46.3 per world (319 in 2 heirs, 144 in 3 heirs); shatterings 10.7 per world (64 in 2 shards, 12 in 3 shards, 8 in 4 shards, 3 in 5 shards, 2 in 6 shards, 1 in 7 shards, 17 in 8 shards); dark ages 242.8 per world at median depth 0.50 (quartiles 0.40 to 0.70); worlds reclaimed 40.7 per world; kin meeting again 48.9 per world.
-Standing at the present 31.9 per world: 3.1% ossified, 25.4% set in their ways, the rest still rising.
-Peoples of a line: 30.9% of all peoples.
+Facings 563.3 per world at mean stiffness 2.27: renaissance 31.3%, set 22.2%, the break 39.0%.
+Civil wars 32.8 per world (230 in 2 heirs, 98 in 3 heirs); shatterings 8.3 per world (44 in 2 shards, 11 in 3 shards, 4 in 4 shards, 4 in 5 shards, 2 in 6 shards, 3 in 7 shards, 15 in 8 shards); dark ages 205.4 per world at median depth 0.50 (quartiles 0.40 to 0.70); worlds reclaimed 27.8 per world; kin meeting again 47.8 per world.
+Standing at the present 28.5 per world: 3.9% ossified, 23.2% set in their ways, the rest still rising.
+Peoples of a line: 27.9% of all peoples.
 
 How peoples ended, by cause (the ended only):
 
 | Cause | Peoples | Share |
 |---|---|---|
-| plague | 2716 | 62.9% |
-| sundered | 463 | 10.7% |
-| shattered | 107 | 2.5% |
-| faded as a remnant | 94 | 2.2% |
-| lost the last of their fleets | 84 | 1.9% |
-| the long silence | 53 | 1.2% |
-| built a mind that outgrew them | 46 | 1.1% |
-| thinking machines | 43 | 1.0% |
-| watched their colonies become strangers | 39 | 0.9% |
-| overshoot | 33 | 0.8% |
-| atomic | 29 | 0.7% |
-| starved rider | 26 | 0.6% |
-| were sterilised by the Manna loose | 23 | 0.5% |
-| the wars of faith | 22 | 0.5% |
-| transcendence | 12 | 0.3% |
-| were burned out nest by nest by the Miho | 10 | 0.2% |
-| were burned out nest by nest by the Shih | 6 | 0.1% |
-| were burned out nest by nest by the Takh | 6 | 0.1% |
-| fell with their masters the Khikaotser | 6 | 0.1% |
-| were burned out nest by nest by the Zaqo | 6 | 0.1% |
-| were burned out nest by nest by the Leik | 6 | 0.1% |
-| were burned out nest by nest by the Sest | 5 | 0.1% |
-| were burned out nest by nest by the Akia | 5 | 0.1% |
-| were unmade by the Patient Choir | 5 | 0.1% |
-| were burned out nest by nest by the Rake | 4 | 0.1% |
-| were unmade by the Pale Engine | 4 | 0.1% |
-| were unmade by the Quiet Lattice | 4 | 0.1% |
-| heard the Quiet Sleeper and were changed | 4 | 0.1% |
-| heard the Hungry Garden and were changed | 4 | 0.1% |
-| fell with their masters the Hetogand | 4 | 0.1% |
-| heard the Black Choir and were changed b | 4 | 0.1% |
+| plague | 2349 | 66.2% |
+| sundered | 328 | 9.2% |
+| faded as a remnant | 95 | 2.7% |
+| lost the last of their fleets | 91 | 2.6% |
+| shattered | 82 | 2.3% |
+| thinking machines | 50 | 1.4% |
+| the long silence | 47 | 1.3% |
+| built a mind that outgrew them | 47 | 1.3% |
+| starved rider | 37 | 1.0% |
+| atomic | 33 | 0.9% |
+| overshoot | 31 | 0.9% |
+| the wars of faith | 29 | 0.8% |
+| watched their colonies become strangers | 19 | 0.5% |
+| transcendence | 9 | 0.3% |
+| were consumed by the Patient Swarm | 8 | 0.2% |
+| were sterilised by the Manna loose | 7 | 0.2% |
+| were unmade by the Black Host | 6 | 0.2% |
+| unmade their own world and fled what was | 6 | 0.2% |
+| were unmade by the Cold Signal | 6 | 0.2% |
+| were unmade by the Cold Host | 5 | 0.1% |
+| were unmade by the Pale Sleeper | 5 | 0.1% |
+| fell with their masters the Dronothir | 4 | 0.1% |
+| fell with their masters the Kuulqox | 4 | 0.1% |
+| heard the Grey Host and were changed by  | 4 | 0.1% |
+| were unmade by the Bright Bloom | 4 | 0.1% |
 | heard the Black Swarm and were changed b | 4 | 0.1% |
-| fell with their masters the Thuunel | 4 | 0.1% |
-| were unmade by the Cold Host | 4 | 0.1% |
-| heard the Bright Choir and were changed  | 4 | 0.1% |
-| were unmade by the Quiet Host | 3 | 0.1% |
-| heard the Pale Bloom and were changed by | 3 | 0.1% |
-| were unmade by the Endless Sleeper | 3 | 0.1% |
-| were unmade by the Bright Engine | 3 | 0.1% |
-| were burned out nest by nest by the Irok | 3 | 0.1% |
-| were burned out nest by nest by the Ziad | 3 | 0.1% |
-| fell with their masters the Yuvrotrox | 3 | 0.1% |
-| were unmade by the Cold Signal | 3 | 0.1% |
-| were burned out nest by nest by the Shia | 3 | 0.1% |
-| were burned out nest by nest by the Otse | 3 | 0.1% |
-| were burned out nest by nest by the Kauh | 3 | 0.1% |
-| were burned out nest by nest by the Sokz | 3 | 0.1% |
-| were burned out nest by nest by the Heth | 3 | 0.1% |
-| were sterilised by the failure of the co | 3 | 0.1% |
-| were burned out nest by nest by the Naud | 3 | 0.1% |
-| were burned out nest by nest by the Elya | 3 | 0.1% |
-| fell with their masters the Deithoktsia | 3 | 0.1% |
-| fell with their masters the Aishdras | 3 | 0.1% |
-| were burned out nest by nest by the Yatr | 3 | 0.1% |
-| fell with their masters the Tsiahaith | 3 | 0.1% |
-| were burned out nest by nest by the Nuho | 3 | 0.1% |
-| were burned out nest by nest by the Otht | 2 | 0.0% |
-| were burned out nest by nest by the Otha | 2 | 0.0% |
-| were burned out nest by nest by the Kheg | 2 | 0.0% |
-| died when Añañuca was taken by the Etr | 2 | 0.0% |
-| were burned out nest by nest by the Enao | 2 | 0.0% |
-| heard the Whispering Bloom and were chan | 2 | 0.0% |
-| were burned out nest by nest by the Ute | 2 | 0.0% |
-| were burned out nest by nest by the Phia | 2 | 0.0% |
-| were burned out nest by nest by the Qeku | 2 | 0.0% |
-| were burned out nest by nest by the Iavo | 2 | 0.0% |
-| were unmade by the Bright Choir | 2 | 0.0% |
-| were burned out nest by nest by the Vikh | 2 | 0.0% |
-| were burned out nest by nest by the Edre | 2 | 0.0% |
-| were annihilated in war with the Zapheil | 2 | 0.0% |
-| were consumed by the Cold Tide | 2 | 0.0% |
-| were burned out nest by nest by the Etra | 2 | 0.0% |
-| died when GJ 892 was taken by the Etraon | 2 | 0.0% |
-| were consumed by the Cold Bloom | 2 | 0.0% |
-| were burned out nest by nest by the Shan | 2 | 0.0% |
-| were burned out nest by nest by the Kuur | 2 | 0.0% |
-| were burned out nest by nest by the Khai | 2 | 0.0% |
-| heard the Hungry Swarm and were changed  | 2 | 0.0% |
-| were burned out nest by nest by the Khum | 2 | 0.0% |
-| fell with their masters the Shaixsor | 2 | 0.0% |
-| were unmade by the Endless Signal | 2 | 0.0% |
-| were burned out nest by nest by the Mogo | 2 | 0.0% |
-| were burned out nest by nest by the Shes | 2 | 0.0% |
-| were burned out nest by nest by the Vuum | 2 | 0.0% |
-| heard the Patient Garden and were change | 2 | 0.0% |
-| fell with their masters the Aoshvrusherr | 2 | 0.0% |
-| were burned out nest by nest by the Mits | 2 | 0.0% |
-| were burned out nest by nest by the Drei | 2 | 0.0% |
-| were burned out nest by nest by the Meid | 2 | 0.0% |
-| fell with their masters the Opheth | 2 | 0.0% |
-| were unmade by the Quiet Garden | 2 | 0.0% |
-| were unmade by the Pale Sleeper | 2 | 0.0% |
-| were burned out nest by nest by the Saud | 2 | 0.0% |
-| were burned out nest by nest by the Larr | 1 | 0.0% |
-| were annihilated in war with the Shevax | 1 | 0.0% |
-| were burned out nest by nest by the Qoha | 1 | 0.0% |
-| were scoured from Helvetios by the Uuvra | 1 | 0.0% |
-| died when HIP-78228 was taken by the Mia | 1 | 0.0% |
-| were absorbed into the Bright Bloom | 1 | 0.0% |
-| were burned out nest by nest by the Dait | 1 | 0.0% |
-| heard the Bright Bloom and were changed  | 1 | 0.0% |
-| were scoured from 107 Psc by the Khairne | 1 | 0.0% |
-| were unmade by the Patient Tide | 1 | 0.0% |
-| were scoured from Ol by the Qaipheikha | 1 | 0.0% |
-| were scoured from Tau Boo by the Ototrat | 1 | 0.0% |
-| died when Mi was taken by the Miadosend | 1 | 0.0% |
-| heard the Black Garden and were changed  | 1 | 0.0% |
-| were unmade by the Whispering Bloom | 1 | 0.0% |
-| died when GJ 1132 was taken by the Aidra | 1 | 0.0% |
-| died when L 98-59 was taken by the Kaond | 1 | 0.0% |
-| were scoured from Okzaos by the Helorr | 1 | 0.0% |
-| were scoured from Geinox by the Qimi | 1 | 0.0% |
-| heard the Grey Host and were changed by  | 1 | 0.0% |
-| were burned out nest by nest by the Tuul | 1 | 0.0% |
-| heard the Pale Sleeper and were changed  | 1 | 0.0% |
-| died when Qaurr was taken by the Aidraon | 1 | 0.0% |
-| fell with their masters the Lonaumneith | 1 | 0.0% |
-| fell with their masters the Shirdrauvrei | 1 | 0.0% |
-| were scoured from Qonviath by the Khairn | 1 | 0.0% |
-| were scoured from L 98-59 by the Khairne | 1 | 0.0% |
-| were scoured from Tsau by the Uuqo | 1 | 0.0% |
-| were scoured from Lambda2 For by the Kan | 1 | 0.0% |
-| fell with their masters the Tseigaikhom | 1 | 0.0% |
-| were unmade by the Hungry Lattice | 1 | 0.0% |
-| died when Tabit was taken by the Pherryu | 1 | 0.0% |
-| died when Ligath was taken by the Saorex | 1 | 0.0% |
-| were scoured from Gaia-5 by the Vekurr | 1 | 0.0% |
-| were scoured from Ve by the Phaoskhai | 1 | 0.0% |
-| were annihilated in war with the Khiamne | 1 | 0.0% |
-| were burned out nest by nest by the Yale | 1 | 0.0% |
-| died when Druush was taken by the Traili | 1 | 0.0% |
-| heard the Bright Engine and were changed | 1 | 0.0% |
-| were absorbed into the Whispering Lattic | 1 | 0.0% |
-| fell with their masters the Eyeith | 1 | 0.0% |
-| were scoured from Tupã by the Phaoskhai | 1 | 0.0% |
-| died when Drathhaux was taken by the Niz | 1 | 0.0% |
-| fell with their masters the Naodai | 1 | 0.0% |
-| fell with their masters the Iathzao | 1 | 0.0% |
-| were scoured from Amtuux by the Phathaya | 1 | 0.0% |
-| were burned out nest by nest by the Truy | 1 | 0.0% |
-| were scoured from Ross 128 by the Qimi | 1 | 0.0% |
-| were annihilated in war with the Elyaon | 1 | 0.0% |
-| were burned out nest by nest by the Shat | 1 | 0.0% |
-| were burned out nest by nest by the Drao | 1 | 0.0% |
-| were scoured from Ix by the Ekheixkhias | 1 | 0.0% |
-| heard the Grey Signal and were changed b | 1 | 0.0% |
-| fell with their masters the Yephial | 1 | 0.0% |
-| were scoured from Tabit by the Tseindya | 1 | 0.0% |
-| died when Epsilon Ret was taken by the D | 1 | 0.0% |
-| fell with their masters the Athaukash | 1 | 0.0% |
-| were unmade by the Bright Sleeper | 1 | 0.0% |
-| fell with their masters the Suurmauguu | 1 | 0.0% |
-| were scoured from Triathax by the Ototra | 1 | 0.0% |
-| died when Keid was taken by the Kaondtsi | 1 | 0.0% |
-| died when Añañuca was taken by the Sao | 1 | 0.0% |
-| were unmade by the Patient Lattice | 1 | 0.0% |
-| were burned out nest by nest by the Zaph | 1 | 0.0% |
-| were sterilised by the failure of the sw | 1 | 0.0% |
-| were annihilated in war with the Ekzond | 1 | 0.0% |
-| were burned out nest by nest by the Drim | 1 | 0.0% |
-| died when Tsa was taken by the Hoyoner | 1 | 0.0% |
-| were scoured from Tai by the Teiragian | 1 | 0.0% |
-| were scoured from Tro by the Halalul | 1 | 0.0% |
-| heard the Grey Tide and were changed by  | 1 | 0.0% |
-| died when Lo was taken by the Drathyuusa | 1 | 0.0% |
-| were burned out nest by nest by the Aiph | 1 | 0.0% |
-| heard the Quiet Signal and were changed  | 1 | 0.0% |
-| died when GJ 3192 was taken by the Otrur | 1 | 0.0% |
-| died when GJ 302 was taken by the Otrurm | 1 | 0.0% |
-| died when GJ 163 was taken by the Khatam | 1 | 0.0% |
-| were scoured from HIP-86426 by the Ototr | 1 | 0.0% |
-| died when 20 LMi was taken by the Yagair | 1 | 0.0% |
-| fell with their masters the Sado | 1 | 0.0% |
-| were burned out nest by nest by the Vian | 1 | 0.0% |
-| died when GJ 54.1 was taken by the Etrao | 1 | 0.0% |
-| fell with their masters the Vrophaishko | 1 | 0.0% |
-| were scoured from Denebola by the Qimi | 1 | 0.0% |
-| were unmade by the Drauthphiath | 1 | 0.0% |
-| were annihilated in war with the Mogugei | 1 | 0.0% |
-| fell with their masters the Shihetro | 1 | 0.0% |
-| fell with their masters the Otrushyus | 1 | 0.0% |
-| were scoured from Truuphun by the Iaqaut | 1 | 0.0% |
-| were burned out nest by nest by the Letr | 1 | 0.0% |
-| fell with their masters the Layuth | 1 | 0.0% |
-| fell with their masters the Etotiash | 1 | 0.0% |
-| were scoured from RR Cae by the Iaqauth | 1 | 0.0% |
-| were sterilised by a test of the Unmakin | 1 | 0.0% |
-| were scoured from Alula Australis by the | 1 | 0.0% |
-| died when Keid was taken by the Qedateit | 1 | 0.0% |
-| died when Alchiba was taken by the Gaite | 1 | 0.0% |
-| died when GJ 3323 was taken by the Qedat | 1 | 0.0% |
-| were annihilated in war with the Hukvos | 1 | 0.0% |
-| were scoured from Phaoth by the Naontrai | 1 | 0.0% |
-| died when GJ 1061 was taken by the Aidra | 1 | 0.0% |
-| were scoured from GJ 3512 by the Khairne | 1 | 0.0% |
-| were burned out nest by nest by the Druv | 1 | 0.0% |
-| were scoured from Sumtraum by the Odrosh | 1 | 0.0% |
-| died when Keid was taken by the Etraondt | 1 | 0.0% |
-| died when GJ 3323 was taken by the Pherr | 1 | 0.0% |
-| were scoured from GJ 317 by the Khairnei | 1 | 0.0% |
-| died when 268 G. Cet was taken by the Ot | 1 | 0.0% |
-| fell with their masters the Dremvraisa | 1 | 0.0% |
-| were scoured from GJ 3512 by the Qimi | 1 | 0.0% |
-| were scoured from GJ 239 by the Qimi | 1 | 0.0% |
-| died when 61 Cyg was taken by the Qedate | 1 | 0.0% |
-| were burned out nest by nest by the Nemo | 1 | 0.0% |
-| were burned out nest by nest by the Hadr | 1 | 0.0% |
-| were scoured from 61 Cyg by the Ugiax | 1 | 0.0% |
-| were scoured from Ceibo by the Ruultrets | 1 | 0.0% |
-| were scoured from GJ 3323 by the Ototrat | 1 | 0.0% |
-| were scoured from GJ 338A by the Qimi | 1 | 0.0% |
-| were burned out nest by nest by the Deix | 1 | 0.0% |
-| were annihilated in war with the Tsiatru | 1 | 0.0% |
-| were burned out nest by nest by the Suna | 1 | 0.0% |
-| died when Kapteyn's Star was taken by th | 1 | 0.0% |
-| were burned out nest by nest by the Tsau | 1 | 0.0% |
-| were burned out nest by nest by the Qaol | 1 | 0.0% |
-| were scoured from Tupã by the Quskherr | 1 | 0.0% |
-| were scoured from GJ 273 by the Qimi | 1 | 0.0% |
-| heard the Patient Host and were changed  | 1 | 0.0% |
-| were burned out nest by nest by the Phon | 1 | 0.0% |
-| were scoured from GJ 682 by the Ugiax | 1 | 0.0% |
-| were unmade by the Grey Choir | 1 | 0.0% |
-| were unmade by the Black Garden | 1 | 0.0% |
-| died when Deitath was taken by the Etrao | 1 | 0.0% |
-| died when GJ 317 was taken by the Aidrao | 1 | 0.0% |
-| were scoured from Chi1 Ori by the Khairn | 1 | 0.0% |
-| were burned out nest by nest by the Aivr | 1 | 0.0% |
-| were burned out nest by nest by the Devr | 1 | 0.0% |
-| were burned out nest by nest by the Vaot | 1 | 0.0% |
-| died when HIP-44120 was taken by the Kha | 1 | 0.0% |
-| heard the Quiet Host and were changed by | 1 | 0.0% |
-| fell with their masters the Draunaunaum | 1 | 0.0% |
-| were burned out nest by nest by the Vuva | 1 | 0.0% |
-| were scoured from Wasat by the Khairneis | 1 | 0.0% |
-| were scoured from Dehaush by the Khairne | 1 | 0.0% |
-| died when RR Cae was taken by the Etraon | 1 | 0.0% |
-| were absorbed into the Patient Tide | 1 | 0.0% |
-| died when GJ 687 was taken by the Huuqe | 1 | 0.0% |
-| died when Delta Pav was taken by the Lan | 1 | 0.0% |
-| were unmade by the Quiet Sleeper | 1 | 0.0% |
-| died when GJ 4291 was taken by the Mihot | 1 | 0.0% |
-| were annihilated in war with the Draoyok | 1 | 0.0% |
-| fell with their masters the Othteitsen | 1 | 0.0% |
-| died when Delta Pav was taken by the Kao | 1 | 0.0% |
-| were scoured from Mothallah by the Gizat | 1 | 0.0% |
-| unmade their own world and fled what was | 1 | 0.0% |
-| were scoured from Rana by the Iaqauth | 1 | 0.0% |
-| were sterilised by a gamma-ray burst | 1 | 0.0% |
-| fell with their masters the Arshaoka | 1 | 0.0% |
-| were annihilated in war with the Hethiar | 1 | 0.0% |
-| died when GJ 357 was taken by the Uleina | 1 | 0.0% |
-| were burned out nest by nest by the Huuq | 1 | 0.0% |
-| fell with their masters the Kehak | 1 | 0.0% |
-| were scoured from 59 Vir by the Ototrath | 1 | 0.0% |
-| were scoured from HD 40307 by the Qimi | 1 | 0.0% |
-| were scoured from Gl 725 B by the Heikau | 1 | 0.0% |
-| fell with their masters the Quupha | 1 | 0.0% |
-| were scoured from Chara by the Imtukaox | 1 | 0.0% |
-| were burned out nest by nest by the Okau | 1 | 0.0% |
-| died when Epsilon Ind was taken by the E | 1 | 0.0% |
-| were scoured from Kappa1 Cet by the Iaqa | 1 | 0.0% |
-| were scoured from Ceibo by the Yiasvra | 1 | 0.0% |
-| were burned out nest by nest by the Dres | 1 | 0.0% |
-| died when 94 Cet was taken by the Draoda | 1 | 0.0% |
-| were annihilated in war with the Sihiakh | 1 | 0.0% |
-| fell with their masters the Zaoshevuurr | 1 | 0.0% |
-| were scoured from Dalim by the Gaiterr | 1 | 0.0% |
-| were annihilated in war with the Etather | 1 | 0.0% |
-| were burned out nest by nest by the Tadr | 1 | 0.0% |
-| were burned out nest by nest by the Reit | 1 | 0.0% |
-| fell with their masters the Naiqokuus | 1 | 0.0% |
-| were scoured from Shothshauth by the Odr | 1 | 0.0% |
-| fell with their masters the Khakal | 1 | 0.0% |
-| were burned out nest by nest by the Phar | 1 | 0.0% |
-| died when HD 40307 was taken by the Etra | 1 | 0.0% |
-| were scoured from Keid by the Khetheth | 1 | 0.0% |
-| were scoured from Uurrruk by the Trukhai | 1 | 0.0% |
-| fell with their masters the Kaoshoth | 1 | 0.0% |
-| were burned out nest by nest by the Lais | 1 | 0.0% |
-| were unmade by the Grey Bloom | 1 | 0.0% |
-| were scoured from Achird by the Khairnei | 1 | 0.0% |
-| were scoured from GJ 1002 by the Dakhirr | 1 | 0.0% |
-| died when GJ 229 was taken by the Etraon | 1 | 0.0% |
-| were scoured from Ai by the Helorr | 1 | 0.0% |
-| fell with their masters the Traiphegin | 1 | 0.0% |
-| died when GJ 4291 was taken by the Zoqax | 1 | 0.0% |
-| were annihilated in war with the Nize | 1 | 0.0% |
-| were unmade by the Draokhiath | 1 | 0.0% |
-| fell with their masters the Ransuu | 1 | 0.0% |
-| heard the Patient Tide and were changed  | 1 | 0.0% |
-| were consumed by the Black Choir | 1 | 0.0% |
-| were scoured from Proxima Centauri by th | 1 | 0.0% |
-| were scoured from HD 265866 by the Khair | 1 | 0.0% |
-| were sterilised by the failure of a seal | 1 | 0.0% |
-| were burned out nest by nest by the Khau | 1 | 0.0% |
-| were scoured from Delta Pav by the Khair | 1 | 0.0% |
-| were burned out nest by nest by the Tosh | 1 | 0.0% |
-| were scoured from Nu 2Lup by the Tsaorrg | 1 | 0.0% |
-| died when HIP-16482 was taken by the Uuk | 1 | 0.0% |
-| were unmade by the Bright Bloom | 1 | 0.0% |
-| were scoured from Khiaxqaok by the Zedru | 1 | 0.0% |
-| fell with their masters the Theikaurr | 1 | 0.0% |
-| were scoured from Pheraol by the Imtukao | 1 | 0.0% |
-| heard the Patient Swarm and were changed | 1 | 0.0% |
-| died when GJ 54.1 was taken by the Huzat | 1 | 0.0% |
-| were scoured from Pincoya by the Deyagao | 1 | 0.0% |
-| were scoured from L 98-59 by the Phathay | 1 | 0.0% |
-| were unmade by the Hungry Bloom | 1 | 0.0% |
-| were scoured from Hadriath by the Seirrt | 1 | 0.0% |
-| fell with their masters the Zeyauthaind | 1 | 0.0% |
-| were scoured from Iota Hor by the Qimi | 1 | 0.0% |
-| were scoured from Altair by the Qondqiat | 1 | 0.0% |
-| fell with their masters the Auvriaxnu | 1 | 0.0% |
-| fell with their masters the Vrovageth | 1 | 0.0% |
-| were burned out nest by nest by the Yaga | 1 | 0.0% |
-| were burned out nest by nest by the Zidr | 1 | 0.0% |
-| heard the Black Engine and were changed  | 1 | 0.0% |
-| died when 82 G. Eri was taken by the Aid | 1 | 0.0% |
-| died when 107 Psc was taken by the Qedat | 1 | 0.0% |
-| were annihilated in war with the Shondme | 1 | 0.0% |
-| were burned out nest by nest by the Drog | 1 | 0.0% |
-| were scoured from Taulus by the Teihiar | 1 | 0.0% |
-| died when Epsilon Ret was taken by the E | 1 | 0.0% |
-| were scoured from GJ 700.2 by the Seirrt | 1 | 0.0% |
-| were burned out nest by nest by the Nosh | 1 | 0.0% |
-| were unmade by the Patient Host | 1 | 0.0% |
-| died when Teegarden's Star was taken by  | 1 | 0.0% |
-| were burned out nest by nest by the Qaul | 1 | 0.0% |
-| were scoured from HIP-29737 by the Ugiax | 1 | 0.0% |
-| were burned out nest by nest by the Eivr | 1 | 0.0% |
-| were scoured from Huulak by the Yauleguu | 1 | 0.0% |
-| died when Zeta2 Ret was taken by the Otr | 1 | 0.0% |
-| were scoured from GJ 435 by the Khairnei | 1 | 0.0% |
-| fell with their masters the Lumnaixthal | 1 | 0.0% |
-| became one voice | 1 | 0.0% |
-| were burned out nest by nest by the Shev | 1 | 0.0% |
-| were scoured from Il by the Ugiax | 1 | 0.0% |
-| died when Il was taken by the Qedateith | 1 | 0.0% |
-| were scoured from Nirdorr by the Avoshe | 1 | 0.0% |
-| were burned out nest by nest by the Udia | 1 | 0.0% |
-| fell with their masters the Torrliateim | 1 | 0.0% |
-| died when Mu Cas was taken by the Pherry | 1 | 0.0% |
-| were burned out nest by nest by the Sheg | 1 | 0.0% |
-| died with their star | 1 | 0.0% |
-| were burned out nest by nest by the Shez | 1 | 0.0% |
-| died when 82 G. Eri was taken by the Kao | 1 | 0.0% |
-| were scoured from Pi Men by the Ugiax | 1 | 0.0% |
-| were burned out nest by nest by the Iave | 1 | 0.0% |
-| were scoured from GJ 393 by the Gaiterr | 1 | 0.0% |
-| heard the Endless Host and were changed  | 1 | 0.0% |
-| were scoured from GJ 687 by the Khairnei | 1 | 0.0% |
-| were burned out nest by nest by the Laud | 1 | 0.0% |
+| were unmade by the Quiet Lattice | 4 | 0.1% |
+| stellar engineering | 4 | 0.1% |
+| were unmade by the Black Bloom | 4 | 0.1% |
+| heard the Black Tide and were changed by | 4 | 0.1% |
+| heard the Cold Signal and were changed b | 3 | 0.1% |
+| were unmade by the Whispering Bloom | 3 | 0.1% |
+| saw what was coming and sat down to wait | 3 | 0.1% |
+| were unmade by the Hungry Bloom | 3 | 0.1% |
+| heard the Pale Sleeper and were changed  | 3 | 0.1% |
+| heard the Endless Choir and were changed | 3 | 0.1% |
+| heard the Pale Engine and were changed b | 3 | 0.1% |
+| heard the Whispering Host and were chang | 3 | 0.1% |
+| heard the Whispering Bloom and were chan | 3 | 0.1% |
+| remade themselves once too often | 2 | 0.1% |
+| fell with their masters the Naoseiqaun | 2 | 0.1% |
+| were unmade by the Patient Host | 2 | 0.1% |
+| heard the Quiet Bloom and were changed b | 2 | 0.1% |
+| were unmade by the Grey Bloom | 2 | 0.1% |
+| heard the Whispering Garden and were cha | 2 | 0.1% |
+| died with their queen when Muphrid was t | 2 | 0.1% |
+| fell with their masters the Gaoruuvris | 2 | 0.1% |
+| were unmade by the Patient Tide | 2 | 0.1% |
+| were unmade by the Phemishoth | 2 | 0.1% |
+| heard the Hungry Garden and were changed | 2 | 0.1% |
+| were unmade by the Hungry Lattice | 2 | 0.1% |
+| were unmade by the Patient Choir | 2 | 0.1% |
+| heard the Cold Bloom and were changed by | 2 | 0.1% |
+| fell with their masters the Nokrath | 2 | 0.1% |
+| were unmade by the Bright Choir | 2 | 0.1% |
+| were absorbed into the Pale Garden | 2 | 0.1% |
+| heard the Pale Signal and were changed b | 2 | 0.1% |
+| heard the Black Garden and were changed  | 2 | 0.1% |
+| were unmade by the Pale Engine | 2 | 0.1% |
+| were unmade by the Bright Engine | 2 | 0.1% |
+| were sterilised by a gamma-ray burst | 2 | 0.1% |
+| were unmade by the Khokail | 2 | 0.1% |
+| were scoured from GJ 1132 by the Tsaoqon | 1 | 0.0% |
+| were burned out nest by nest by the Hekh | 1 | 0.0% |
+| were absorbed into the Bright Sleeper | 1 | 0.0% |
+| were scoured from Raoth by the Totram | 1 | 0.0% |
 | heard what else was on the line | 1 | 0.0% |
-| died when GJ 803 was taken by the Otrurm | 1 | 0.0% |
-| died when GJ 1132 was taken by the Otrur | 1 | 0.0% |
-| died when Lacaille 9352 was taken by the | 1 | 0.0% |
-| were scoured from Tras by the Seirrtha | 1 | 0.0% |
-| were scoured from Thash by the Avoshe | 1 | 0.0% |
-| heard the Pale Signal and were changed b | 1 | 0.0% |
-| were sterilised by the failure of the mi | 1 | 0.0% |
-| were annihilated in war with the Ukhumai | 1 | 0.0% |
-| heard the Pale Choir and were changed by | 1 | 0.0% |
-| were scoured from Draosh by the Quskherr | 1 | 0.0% |
-| were scoured from GJ 536 by the Qimi | 1 | 0.0% |
-| were scoured from Chalawan by the Qimi | 1 | 0.0% |
-| were scoured from Thil by the Rikain | 1 | 0.0% |
-| were burned out nest by nest by the Thox | 1 | 0.0% |
-| were scoured from Saumax by the Eikqeshi | 1 | 0.0% |
-| died when Un was taken by the Detrith | 1 | 0.0% |
-| were annihilated in war with the Kupho | 1 | 0.0% |
-| were absorbed into the Hungry Host | 1 | 0.0% |
-| were burned out nest by nest by the Gose | 1 | 0.0% |
-| heard the Bright Garden and were changed | 1 | 0.0% |
-| were burned out nest by nest by the Khat | 1 | 0.0% |
-| were scoured from Noquisi by the Phaohuu | 1 | 0.0% |
-| remade themselves once too often | 1 | 0.0% |
+| were scoured from Tson by the Khukheth | 1 | 0.0% |
+| heard the Quiet Tide and were changed by | 1 | 0.0% |
+| were scoured from Tsanthiak by the Yairk | 1 | 0.0% |
+| died with their queen when Ceibo was tak | 1 | 0.0% |
+| were unmade by the Eisuush | 1 | 0.0% |
+| were scoured from Tabit by the Luuthshao | 1 | 0.0% |
+| died with their queen when Laotse was ta | 1 | 0.0% |
+| fell with their masters the Sero | 1 | 0.0% |
+| fell with their masters the Khuyais | 1 | 0.0% |
+| fell with their masters the Iakphianiak | 1 | 0.0% |
+| were scoured from Shaivrox by the Vrauha | 1 | 0.0% |
+| were annihilated in war with the Shageim | 1 | 0.0% |
+| were unmade by the Taovevri | 1 | 0.0% |
+| were burned out nest by nest by the Qots | 1 | 0.0% |
+| fell with their masters the Yeitseikhox | 1 | 0.0% |
+| were burned out nest by nest by the Athi | 1 | 0.0% |
+| were scoured from Noquisi by the Yendveq | 1 | 0.0% |
+| were unmade by the Whispering Engine | 1 | 0.0% |
+| were scoured from RR Cae by the Toxgesh | 1 | 0.0% |
+| died with their queen when Tabit was tak | 1 | 0.0% |
+| were scoured from Delta Pav by the Yendv | 1 | 0.0% |
+| were burned out nest by nest by the Kheq | 1 | 0.0% |
+| were consumed by the Cold Sleeper | 1 | 0.0% |
+| died with their queen when Raophux was t | 1 | 0.0% |
+| heard the Bright Swarm and were changed  | 1 | 0.0% |
+| were unmade by the Patient Lattice | 1 | 0.0% |
+| were scoured from Nauth by the Khokail | 1 | 0.0% |
+| were scoured from Gor by the Andvror | 1 | 0.0% |
+| were sterilised by the failure of a blac | 1 | 0.0% |
+| heard the Patient Choir and were changed | 1 | 0.0% |
+| were annihilated in war with the Dugo | 1 | 0.0% |
+| heard the Cold Garden and were changed b | 1 | 0.0% |
+| were scoured from Mi by the Luuthshaophi | 1 | 0.0% |
+| were annihilated in war with the Medreiv | 1 | 0.0% |
+| were unmade by the Vaihexdaosh | 1 | 0.0% |
+| were absorbed into the Black Engine | 1 | 0.0% |
+| were scoured from Wasat by the Phaodreph | 1 | 0.0% |
+| heard the Quiet Garden and were changed  | 1 | 0.0% |
+| died with their queen when CWISEP J19351 | 1 | 0.0% |
+| fell with their masters the Notethom | 1 | 0.0% |
+| were scoured from Druuthnu by the Kandhu | 1 | 0.0% |
+| heard the Whispering Engine and were cha | 1 | 0.0% |
+| were scoured from Nu 2Lup by the Viazait | 1 | 0.0% |
+| fell with their masters the Vrushuuva | 1 | 0.0% |
+| died with their queen when GJ 667A was t | 1 | 0.0% |
+| were scoured from Alchiba by the Luuthsh | 1 | 0.0% |
+| were scoured from 61 Cyg by the Phaodrep | 1 | 0.0% |
+| heard the Endless Swarm and were changed | 1 | 0.0% |
+| fell with their masters the Uutsaol | 1 | 0.0% |
+| were scoured from GJ 414A by the Luuthsh | 1 | 0.0% |
+| were unmade by the Grey Host | 1 | 0.0% |
+| were unmade by the Whispering Swarm | 1 | 0.0% |
+| fell with their masters the Ashaith | 1 | 0.0% |
+| were scoured from Yik by the Luuthshaoph | 1 | 0.0% |
+| were scoured from Draushak by the Luuths | 1 | 0.0% |
+| were scoured from Naos by the Ramoklais | 1 | 0.0% |
+| were unmade by the Quiet Garden | 1 | 0.0% |
+| were annihilated in war with the Yairkhe | 1 | 0.0% |
+| were scoured from Thor by the Yengadri | 1 | 0.0% |
+| were scoured from Maor by the Uushdruth  | 1 | 0.0% |
+| were unmade by the Naduusond | 1 | 0.0% |
+| were scoured from Aitei by the Shotseth | 1 | 0.0% |
+| were scoured from Drai by the Raimeingur | 1 | 0.0% |
+| were scoured from Citalá by the Taovevr | 1 | 0.0% |
+| fell with their masters the Qozoruur | 1 | 0.0% |
+| were scoured from HIP-4138 by the Andvro | 1 | 0.0% |
+| died with their queen when He was taken  | 1 | 0.0% |
+| were scoured from Iatro by the Phaodreph | 1 | 0.0% |
+| were consumed by the Cold Signal | 1 | 0.0% |
+| heard the Whispering Signal and were cha | 1 | 0.0% |
+| were absorbed into the Grey Host | 1 | 0.0% |
+| were sterilised by the failure of the co | 1 | 0.0% |
+| heard the Grey Signal and were changed b | 1 | 0.0% |
+| were consumed by the Patient Engine | 1 | 0.0% |
+| were scoured from HIP-38710 by the Iphuu | 1 | 0.0% |
+| were unmade by the Uvrorr | 1 | 0.0% |
+| were scoured from 107 Psc by the Phaodre | 1 | 0.0% |
+| were scoured from GJ 3512 by the Luuthsh | 1 | 0.0% |
+| were scoured from GJ 783.2A by the Yairk | 1 | 0.0% |
+| died with their queen when Vatros was ta | 1 | 0.0% |
+| were scoured from Iath by the Vrauha | 1 | 0.0% |
+| were annihilated in war with the Aino | 1 | 0.0% |
+| died with their queen when HIP-43342 was | 1 | 0.0% |
+| died with their queen when VHS J125601.9 | 1 | 0.0% |
+| were absorbed into the Patient Tide | 1 | 0.0% |
+| were scoured from p Eridani by the Masve | 1 | 0.0% |
+| were unmade by the Phaphaoheth | 1 | 0.0% |
 | were unmade by the Endless Lattice | 1 | 0.0% |
-| were scoured from Epsilon Ind by the Imt | 1 | 0.0% |
-| died when L 98-59 was taken by the Etrao | 1 | 0.0% |
-| died when Zeta1 Ret was taken by the Dru | 1 | 0.0% |
-| were scoured from GJ 302 by the Phathaya | 1 | 0.0% |
-| fell with their masters the Letrik | 1 | 0.0% |
-| were unmade by the Tulraun | 1 | 0.0% |
-| were burned out nest by nest by the Yush | 1 | 0.0% |
-| were burned out nest by nest by the Tave | 1 | 0.0% |
-| were annihilated in war with the Miadose | 1 | 0.0% |
-| were burned out nest by nest by the Mali | 1 | 0.0% |
+| fell with their masters the Oxshel | 1 | 0.0% |
+| died with their queen when Eil was taken | 1 | 0.0% |
+| were unmade by the Tseisno | 1 | 0.0% |
+| were scoured from Khulend by the Uushdru | 1 | 0.0% |
+| fell with their masters the Vaitsuuth | 1 | 0.0% |
+| were scoured from HIP-23197 by the Taove | 1 | 0.0% |
+| were scoured from Shaux by the Atsinlom | 1 | 0.0% |
+| were absorbed into the Hungry Sleeper | 1 | 0.0% |
+| were scoured from Tru by the Naroveik | 1 | 0.0% |
+| were scoured from GJ 674 by the Yendveqa | 1 | 0.0% |
+| heard the Cold Host and were changed by  | 1 | 0.0% |
+| were annihilated in war with the Viviama | 1 | 0.0% |
+| were scoured from 94 Cet by the Masvetai | 1 | 0.0% |
+| fell with their masters the Retrar | 1 | 0.0% |
+| were scoured from Lelaus by the Qathlaon | 1 | 0.0% |
+| were scoured from Qishoth by the Guuthar | 1 | 0.0% |
+| heard the Cold Tide and were changed by  | 1 | 0.0% |
+| fell with their masters the Zaulaosh | 1 | 0.0% |
+| were unmade by the Daitraith | 1 | 0.0% |
+| fell with their masters the Raumteithoth | 1 | 0.0% |
+| were unmade by the Whispering Sleeper | 1 | 0.0% |
+| died with their queen when 70 Vir was ta | 1 | 0.0% |
+| were scoured from GJ 4291 by the Toxgesh | 1 | 0.0% |
+| were scoured from TRAPPIST-1 by the Khok | 1 | 0.0% |
+| were scoured from 83 Leo by the Nezeitao | 1 | 0.0% |
+| were consumed by the Endless Signal | 1 | 0.0% |
+| heard the Quiet Choir and were changed b | 1 | 0.0% |
+| died with their queen when GJ 536 was ta | 1 | 0.0% |
+| died when Emias was taken by the Eishaik | 1 | 0.0% |
+| were absorbed into the Bright Engine | 1 | 0.0% |
+| heard the Patient Garden and were change | 1 | 0.0% |
+| were scoured from GJ 505A by the Khokail | 1 | 0.0% |
+| fell with their masters the Terra | 1 | 0.0% |
+| heard the Patient Host and were changed  | 1 | 0.0% |
+| were unmade by the Uushdruth | 1 | 0.0% |
+| were burned out nest by nest by the Asha | 1 | 0.0% |
+| were annihilated in war with the Vuushse | 1 | 0.0% |
+| were scoured from Achird by the Shuumdra | 1 | 0.0% |
+| were scoured from Lautrom by the Ruphiqu | 1 | 0.0% |
+| heard the Endless Garden and were change | 1 | 0.0% |
+| fell with their masters the Qahak | 1 | 0.0% |
+| heard the Pale Bloom and were changed by | 1 | 0.0% |
+| were scoured from Tsithsher by the Taove | 1 | 0.0% |
+| were scoured from Ek by the Naroveik | 1 | 0.0% |
+| were scoured from 2 MASS J21252752-81382 | 1 | 0.0% |
+| died with their queen when Alchiba was t | 1 | 0.0% |
+| heard the Bright Engine and were changed | 1 | 0.0% |
+| heard the Endless Host and were changed  | 1 | 0.0% |
+| were scoured from GJ 3512 by the Phaodre | 1 | 0.0% |
+| were scoured from Draishaus by the Kenuu | 1 | 0.0% |
+| fell with their masters the Aonnam | 1 | 0.0% |
+| were unmade by the Endless Signal | 1 | 0.0% |
+| were scoured from Proxima Centauri by th | 1 | 0.0% |
+| were scoured from Chara by the Masvetait | 1 | 0.0% |
+| fell with their masters the Nonirr | 1 | 0.0% |
+| were scoured from Na by the Kethus | 1 | 0.0% |
+
+## Kinds
+
+Substrate by modifier: peoples born at a cradle, made (by a maker, a plague that woke, a sundering), and living at the present. A swarm is a biological people with the swarming trait, counted with its nature.
+
+| Nature | biological | eldritch | machine | parasite |
+|---|---|---|---|---|
+| antimemetic | 5 born, 1 made, 0 living | 1 born, 0 made, 0 living |  |  |
+| evolver | 111 born, 85 made, 21 living |  | 2 born, 0 made, 0 living | 0 born, 1 made, 0 living |
+| hive | 140 born, 43 made, 37 living | 2 born, 0 made, 1 living | 5 born, 8 made, 2 living | 0 born, 1 made, 0 living |
+| hive+antimemetic |  | 0 born, 1 made, 1 living |  |  |
+| hive+evolver | 8 born, 3 made, 2 living |  |  |  |
+| hive+replicator | 4 born, 0 made, 1 living |  | 2 born, 0 made, 0 living |  |
+| hive+replicator+evolver | 2 born, 0 made, 2 living |  |  |  |
+| hive+unconscious | 13 born, 1 made, 5 living | 4 born, 0 made, 3 living | 1 born, 0 made, 0 living |  |
+| hive+unconscious+antimemetic |  | 2 born, 0 made, 1 living |  |  |
+| hive+unconscious+evolver | 1 born, 0 made, 0 living |  |  |  |
+| none | 1153 born, 1749 made, 100 living | 35 born, 68 made, 23 living | 31 born, 28 made, 1 living | 0 born, 48 made, 5 living |
+| planetary | 53 born, 11 made, 2 living | 13 born, 3 made, 7 living |  | 0 born, 1 made, 0 living |
+| planetary+antimemetic | 1 born, 0 made, 0 living |  |  |  |
+| planetary+evolver | 3 born, 3 made, 1 living |  |  |  |
+| planetary+hive | 15 born, 4 made, 4 living | 7 born, 0 made, 4 living |  |  |
+| planetary+hive+evolver | 1 born, 0 made, 1 living |  |  |  |
+| planetary+hive+unconscious | 6 born, 0 made, 0 living | 8 born, 0 made, 7 living |  |  |
+| planetary+hive+unconscious+antimemetic |  | 2 born, 0 made, 1 living |  |  |
+| planetary+hive+unconscious+evolver | 1 born, 0 made, 1 living |  |  |  |
+| planetary+unconscious | 2 born, 0 made, 1 living | 14 born, 0 made, 12 living |  |  |
+| planetary+unconscious+antimemetic |  | 1 born, 0 made, 1 living |  |  |
+| replicator | 12 born, 2 made, 1 living | 1 born, 2 made, 2 living | 2 born, 4 made, 0 living | 0 born, 1 made, 0 living |
+| replicator+evolver | 3 born, 3 made, 0 living |  |  |  |
+| unconscious | 59 born, 3 made, 20 living | 18 born, 0 made, 10 living | 1 born, 1 made, 1 living | 0 born, 3 made, 2 living |
+| unconscious+antimemetic |  | 2 born, 0 made, 1 living |  |  |
+| unconscious+evolver | 3 born, 0 made, 0 living |  |  |  |
+| unconscious+replicator | 3 born, 0 made, 1 living |  | 1 born, 0 made, 0 living |  |
+| unconscious+replicator+evolver | 1 born, 0 made, 0 living |  |  |  |
+
+The eldritch pool: 184 eldritch peoples over 10 worlds, 911 deepenings (5.0 per eldritch people), 197 second presences appeared.
+
+| Power | Held at the end | Of them from birth |
+|---|---|---|
+| the long thought | 148 | 97 |
+| a second presence | 152 | 93 |
+| the wide reach | 156 | 91 |
+| the door in it | 151 | 85 |
+| the sight | 157 | 82 |
+| the voice | 151 | 86 |
+| the unmaking | 153 | 86 |
+| the shell | 154 | 88 |
+| the tithe | 153 | 84 |
+| the long sleep | 155 | 87 |
+| the mirror | 149 | 91 |
+| the hunger | 150 | 83 |
+| the making | 152 | 84 |
+| the wound | 149 | 82 |
+
+Living worlds: 17 demands made, 3 heeded (17.6%), 201 wakings. The unmaking turned on a world 115 times. The tithe fell on 4467 peoples. Hive worlds severed from their seat: 7. Sleeps: 236, asleep at the present: 25.
+
+| Nature | Peoples | Wars fought | Won per war | Lost per war | Ended by war | Median life (Myr) |
+|---|---|---|---|---|---|---|
+| biological | 2810 | 6418 | 0.19 | 0.19 | 5.3% | 0.72 |
+| biological, evolver | 187 | 536 | 0.08 | 0.08 | 5.3% | 0.78 |
+| biological, hive | 169 | 262 | 0.29 | 0.13 | 16.0% | 1.25 |
+| eldritch | 103 | 232 | 0.26 | 0.01 | 12.6% | 2.92 |
+| biological (swarm) | 92 | 30 | 0.07 | 0.13 | 7.6% | 0.53 |
+| biological, planetary | 61 | 30 | 0.00 | 0.07 | 4.9% | 0.20 |
+| biological, unconscious | 58 | 227 | 0.04 | 0.06 | 6.9% | 6.80 |
+| machine | 57 | 15 | 0.07 | 0.47 | 7.0% | 0.49 |
+| parasite | 45 | 62 | 0.00 | 0.15 | 0.0% | 0.65 |
+| eldritch, unconscious | 18 | 80 | 0.40 | 0.03 | 33.3% | 19.11 |
+| biological, planetary, hive | 17 | 0 | 0.00 | 0.00 | 5.9% | 2.09 |
+| eldritch, planetary | 16 | 10 | 0.10 | 0.10 | 31.2% | 13.90 |
+| biological, hive (swarm) | 14 | 5 | 0.20 | 0.00 | 0.0% | 0.35 |
+| biological, replicator | 14 | 3 | 0.00 | 0.33 | 7.1% | 0.48 |
+| eldritch, planetary, unconscious | 14 | 1 | 0.00 | 0.00 | 0.0% | 33.81 |
+| machine, hive | 13 | 4 | 0.00 | 0.50 | 23.1% | 1.38 |
+| biological, evolver (swarm) | 9 | 8 | 0.00 | 0.38 | 11.1% | 0.26 |
+| biological, hive, evolver | 9 | 18 | 0.17 | 0.17 | 11.1% | 3.43 |
+| biological, hive, unconscious | 9 | 10 | 0.10 | 0.50 | 22.2% | 16.33 |
+| eldritch, planetary, hive, unconscious | 8 | 3 | 0.33 | 0.00 | 0.0% | 22.81 |
+| eldritch, planetary, hive | 7 | 0 | 0.00 | 0.00 | 0.0% | 38.48 |
+| biological, antimemetic | 6 | 1 | 0.00 | 1.00 | 16.7% | 0.39 |
+| biological, planetary, evolver | 6 | 3 | 0.00 | 0.00 | 0.0% | 0.79 |
+| biological, planetary, hive, unconscious | 6 | 7 | 0.00 | 0.00 | 0.0% | 4.00 |
+| biological, replicator, evolver | 6 | 20 | 0.35 | 0.05 | 16.7% | 1.34 |
+| machine, replicator | 6 | 0 | 0.00 | 0.00 | 16.7% | 0.68 |
+| biological, hive, unconscious (swarm) | 5 | 3 | 0.33 | 0.33 | 0.0% | 3.28 |
+| biological, unconscious (swarm) | 4 | 0 | 0.00 | 0.00 | 0.0% | 15.43 |
+| eldritch, hive, unconscious | 4 | 30 | 0.37 | 0.03 | 0.0% | 33.18 |
+| biological, hive, replicator | 3 | 1 | 0.00 | 0.00 | 33.3% | 5.13 |
+| biological, planetary (swarm) | 3 | 0 | 0.00 | 0.00 | 0.0% | 0.11 |
+| biological, unconscious, evolver | 3 | 2 | 0.00 | 1.00 | 66.7% | 0.40 |
+| biological, unconscious, replicator | 3 | 2 | 0.00 | 0.50 | 33.3% | 4.84 |
+| eldritch, replicator | 3 | 99 | 0.05 | 0.01 | 0.0% | 29.20 |
+| parasite (swarm) | 3 | 249 | 0.00 | 0.00 | 0.0% | 29.62 |
+| parasite, unconscious | 3 | 342 | 0.00 | 0.01 | 0.0% | 5.52 |
+| biological, hive, evolver (swarm) | 2 | 0 | 0.00 | 0.00 | 0.0% | 2.90 |
+| biological, hive, replicator, evolver | 2 | 1 | 0.00 | 0.00 | 0.0% | 37.91 |
+| biological, planetary, hive (swarm) | 2 | 2 | 0.00 | 0.00 | 0.0% | 0.55 |
+| biological, planetary, unconscious | 2 | 0 | 0.00 | 0.00 | 0.0% | 13.38 |
+| eldritch, hive, unconscious, antimemetic | 2 | 16 | 0.25 | 0.00 | 50.0% | 35.99 |
+| eldritch, planetary, hive, unconscious, antimemetic | 2 | 0 | 0.00 | 0.00 | 0.0% | 27.05 |
+| eldritch, unconscious, antimemetic | 2 | 0 | 0.00 | 0.00 | 50.0% | 5.60 |
+| machine (swarm) | 2 | 0 | 0.00 | 0.00 | 0.0% | 17.14 |
+| machine, evolver | 2 | 0 | 0.00 | 0.00 | 0.0% | 0.45 |
+| machine, hive, replicator | 2 | 0 | 0.00 | 0.00 | 0.0% | 0.87 |
+| machine, unconscious | 2 | 2 | 0.00 | 0.50 | 0.0% | 10.63 |
+| biological, hive, replicator (swarm) | 1 | 0 | 0.00 | 0.00 | 0.0% | 0.01 |
+| biological, hive, unconscious, evolver (swarm) | 1 | 0 | 0.00 | 0.00 | 0.0% | 3.46 |
+| biological, planetary, antimemetic | 1 | 0 | 0.00 | 0.00 | 0.0% | 0.07 |
+| biological, planetary, hive, evolver | 1 | 0 | 0.00 | 0.00 | 0.0% | 39.35 |
+| biological, planetary, hive, unconscious, evolver | 1 | 0 | 0.00 | 0.00 | 0.0% | 1.68 |
+| biological, unconscious, replicator, evolver | 1 | 1 | 0.00 | 1.00 | 100.0% | 0.38 |
+| eldritch, antimemetic | 1 | 1 | 0.00 | 1.00 | 100.0% | 3.08 |
+| eldritch, hive | 1 | 1 | 0.00 | 1.00 | 0.0% | 30.61 |
+| eldritch, hive (swarm) | 1 | 0 | 0.00 | 0.00 | 0.0% | 0.17 |
+| eldritch, hive, antimemetic | 1 | 2 | 0.50 | 0.00 | 0.0% | 58.16 |
+| eldritch, planetary, unconscious, antimemetic | 1 | 0 | 0.00 | 0.00 | 0.0% | 51.07 |
+| machine, hive, unconscious | 1 | 0 | 0.00 | 0.00 | 100.0% | 0.29 |
+| machine, unconscious, replicator | 1 | 1 | 0.00 | 1.00 | 100.0% | 0.48 |
+| parasite, evolver | 1 | 0 | 0.00 | 0.00 | 0.0% | 0.38 |
+| parasite, hive (swarm) | 1 | 0 | 0.00 | 0.00 | 0.0% | 2.67 |
+| parasite, planetary | 1 | 0 | 0.00 | 0.00 | 0.0% | 1.32 |
+| parasite, replicator | 1 | 0 | 0.00 | 0.00 | 0.0% | 2.11 |

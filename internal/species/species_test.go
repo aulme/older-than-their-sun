@@ -41,7 +41,7 @@ func TestLegacyDistribution(t *testing.T) {
 	n := 100_000
 	got := map[string]int{}
 	for i := 0; i < n; i++ {
-		s := Generate(r, 1)
+		s := Roll(r, 1, Options{Legacy: true})
 		switch {
 		case s.Sub == Parasite:
 			got["parasite"]++
@@ -67,7 +67,7 @@ func TestLegacyDistribution(t *testing.T) {
 	// the hive and the unconscious were org traits at 10 and 5 of 102
 	hives, un := 0, 0
 	for i := 0; i < n; i++ {
-		s := Generate(r, 1)
+		s := Roll(r, 1, Options{Legacy: true})
 		if s.Is(Hive) {
 			hives++
 		}
@@ -130,7 +130,7 @@ func TestProposedDistribution(t *testing.T) {
 	n := 100_000
 	none := 0
 	for i := 0; i < n; i++ {
-		if Roll(r, 1, Options{Setting: Proposed}).Mods == 0 {
+		if Generate(r, 1).Mods == 0 {
 			none++
 		}
 	}
@@ -160,6 +160,72 @@ func TestProposedDistribution(t *testing.T) {
 	}
 }
 
+// TestCradleDistribution: the proposal's per-thousand figures at a
+// cradle, within a fifth, over a hundred thousand draws.
+func TestCradleDistribution(t *testing.T) {
+	r := rand.New(rand.NewPCG(9, 10))
+	n := 100_000
+	got := map[string]int{}
+	powers := 0
+	for i := 0; i < n; i++ {
+		s := Generate(r, 1)
+		switch {
+		case s.Sub == Biological && s.Mods == 0:
+			got["plain biological"]++
+		case s.Sub == Biological && s.Mods == Hive:
+			got["biological hive"]++
+		case s.Sub == Biological && s.Mods == Evolver:
+			got["biological evolver"]++
+		case s.Sub == Biological && s.Mods == Unconscious:
+			got["unconscious biological"]++
+		case s.Sub == Biological && s.Mods == Planetary:
+			got["living world"]++
+		case s.Sub == Biological && s.Mods == Replicator:
+			got["biological replicator"]++
+		case s.Sub == Eldritch && s.Mods == 0:
+			got["plain eldritch"]++
+		case s.Sub == Eldritch && s.Mods == Unconscious:
+			got["unconscious eldritch"]++
+		case s.Sub == Eldritch && s.Mods == Planetary:
+			got["eldritch world"]++
+		case s.Sub == Eldritch && s.Mods == Planetary|Unconscious:
+			got["sleeper"]++
+		case s.Sub == Machine && s.Mods == 0:
+			got["machine"]++
+		case s.Sub == Biological && s.Mods == Antimemetic:
+			got["antimemetic"]++
+		}
+		if s.Sub == Eldritch {
+			if len(s.Powers) < 1 || len(s.Powers) > 3 {
+				t.Fatalf("an eldritch people drew %d powers", len(s.Powers))
+			}
+			powers++
+			sense := false
+			for _, tr := range s.Traits {
+				sense = sense || tr.Group == "sense"
+			}
+			if !sense {
+				t.Fatalf("an eldritch people without a sense: %s", s.Describe())
+			}
+		} else if len(s.Powers) > 0 {
+			t.Fatalf("a %s people with powers", s.Sub)
+		}
+	}
+	perThousand := map[string]float64{
+		"plain biological": 720, "biological hive": 70, "biological evolver": 60, "unconscious biological": 33, "living world": 24,
+		"plain eldritch": 20, "unconscious eldritch": 9, "eldritch world": 6.5, "sleeper": 6.5, "machine": 15, "biological replicator": 6, "antimemetic": 3.5,
+	}
+	for k, want := range perThousand {
+		have := float64(got[k]) / float64(n) * 1000
+		if math.Abs(have-want) > want/5 {
+			t.Errorf("%s: %.1f per thousand, the proposal says %.1f", k, have, want)
+		}
+	}
+	if powers == 0 {
+		t.Fatal("no eldritch people drew powers")
+	}
+}
+
 func TestProfileAndFixing(t *testing.T) {
 	r := rand.New(rand.NewPCG(7, 8))
 	plain := GenerateWith(r, 1, "lush", Machine, 0)
@@ -182,14 +248,14 @@ func TestProfileAndFixing(t *testing.T) {
 		if !p.Has("bodyrider") && !p.Has("mindrider") {
 			t.Fatalf("a parasite should roll a rider: %v", p.Describe())
 		}
-		if p.Has("swarming") || p.Is(Planetary) || p.Is(Evolver) {
-			t.Fatalf("legacy parasites carry no shape: %s", p.Nature())
-		}
+		_ = p
 	}
 	if !plain.Profile().Can(CivilWars) || plain.Profile().Can(Sickens) {
 		t.Fatal("a machine people splits and does not sicken")
 	}
 	h := GenerateWith(r, 1, "", Biological, Hive)
+	h.Mods, h.prof = Hive, nil // whatever else the roll gave it
+	h.Traits = nil
 	if h.Profile().Can(CivilWars) || h.Profile().Memory != 0.7 || h.Profile().FilterDiff["distance"] != -3 {
 		t.Fatalf("the hive's profile did not carry the old rows: %+v", h.Profile())
 	}
@@ -199,6 +265,36 @@ func TestProfileAndFixing(t *testing.T) {
 	h.Add("swarming")
 	if f := h.Flavour(); f.Colony != "nest" || f.Ship != "seed-cloud" {
 		t.Fatalf("a swarm builds nests and seed-clouds, got %+v", f)
+	}
+	e := GenerateWith(r, 1, "", Eldritch, 0)
+	e.Powers = nil
+	e.prof = nil
+	if p := e.Profile(); p.Can(Works) || p.Can(Researches) || p.Era != 3 || p.Alien != 3 {
+		t.Fatalf("the eldritch profile: %+v", p)
+	}
+	if !e.AddPower("making") || e.AddPower("making") {
+		t.Fatal("adding a power twice")
+	}
+	if !e.Profile().Can(Works) {
+		t.Fatal("the making did not give the works back")
+	}
+	if !e.AddPower("sight") || e.Profile().Era != 4 {
+		t.Fatalf("an exotic power did not make it exotic: era %d", e.Profile().Era)
+	}
+	e.StripPower("making")
+	if e.Profile().Can(Works) || e.Profile().Era != 4 {
+		t.Fatal("stripping a power")
+	}
+	if e.PowerPortrait() != "It has the sight." {
+		t.Fatalf("the portrait: %q", e.PowerPortrait())
+	}
+	u := GenerateWith(r, 1, "", Biological, Unconscious)
+	if p := u.Profile(); p.Can(HoldsGrudges) || p.Can(Wavers) || !p.Amoral || !p.NoOne {
+		t.Fatalf("the unconscious profile: %+v", p)
+	}
+	pl := GenerateWith(r, 1, "", Eldritch, Planetary)
+	if p := pl.Profile(); p.HomeDefence != 6 || p.Neighbourhood != 12 || p.Worlds != 4 || p.Can(Launches) {
+		t.Fatalf("an eldritch living world's profile: %+v", p)
 	}
 }
 

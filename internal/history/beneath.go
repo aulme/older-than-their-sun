@@ -39,6 +39,7 @@ var beneathNames = map[string]string{
 	"ansible":   "The Voice does not cross space; it goes under it. The %s call what it goes under %s. The speakers do not hear it. Anyone who begins to hear it is taken off the line.",
 	"foresight": "The Sight is not a looking forward. It is a leaning on something under time, where before and after are one thing. The %s call it %s, and the ones who lean too hard do not come back up.",
 	"unmaking":  "What the Unmaking does is not destruction. Matter is put back the way it was before it was matter. The %s have a word for that state, %s, and it is a word they say once.",
+	"wound":     "There is a place in the %s where the wall is not. They call what shows through it %s, and it is the only thing they are afraid of.",
 }
 
 // name gives a people its word for the state, once, on first reaching in.
@@ -72,7 +73,7 @@ func (w *World) tickBeneath() {
 			continue
 		}
 		for _, k := range c.held() {
-			if r, ok := wear[k]; ok {
+			if r, ok := wear[k]; ok && c.Miracles[k] != "born" && c.Miracles[k] != "deepening" { // what is evolved does not wear it, as it does not leak; what an eldritch thing is does not either: the wound is its wear
 				w.Thin += r * w.dt
 			}
 		}
@@ -128,6 +129,10 @@ func (w *World) leak() {
 		if !c.Active() {
 			continue
 		}
+		if c.Species.HasPower("wound") {
+			holders = append(holders, c) // the wall is open there
+			continue
+		}
 		for _, k := range c.held() {
 			if causal[k] && c.Miracles[k] != "born" { // what is evolved does not leak
 				holders = append(holders, c)
@@ -145,14 +150,17 @@ func (w *World) leak() {
 				keys = append(keys, k)
 			}
 		}
-		k := keys[w.R.IntN(len(keys))]
+		filter := "door" // what comes through a wound comes as through a door
+		if len(keys) > 0 {
+			filter = tech.Get(keys[w.R.IntN(len(keys))]).Filter
+		}
 		word := c.Word
 		if word == "" {
 			word = "it"
 		}
 		w.log("Some of the %s begin to see %s as a place, with a shore and a weather. That is never good; it means something is coming through.", c.Name, word)
-		delete(c.Faced, tech.Get(k).Filter) // a leak is a second facing
-		w.face(c, tech.Get(k).Filter, 1)
+		delete(c.Faced, filter) // a leak is a second facing
+		w.face(c, filter, 1)
 	case x < 0.85:
 		var sleeping []*Horror
 		for _, h := range w.Horrors {

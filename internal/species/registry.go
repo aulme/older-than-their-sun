@@ -91,16 +91,6 @@ type Flavour struct {
 	Station string
 }
 
-// Setting picks which numbers the generator draws with. Legacy reproduces
-// the old kind table so that histories do not move; Proposed is the kinds
-// proposal's first setting, switched on when the modifier rules land.
-type Setting uint8
-
-const (
-	Legacy Setting = iota
-	Proposed
-)
-
 // Draw is an entry's place in the chain of rolls under one setting.
 type Draw struct {
 	Base   float64            // a weight for a substrate; a chance for a modifier or the swarm roll
@@ -115,24 +105,25 @@ type Entry struct {
 	Portrait string   // the sentence the portrait opens with; "" for the plain case
 	Arising  string   // how the legends say it arose; "" for the plain case
 	Flavour  Flavour  // vocabulary; empty fields fall back to the substrate's
-	Legacy   Draw     // the numbers that reproduce the old kind table
-	Draws    Draw     // the proposal's first setting
+	Legacy   Draw     // the numbers that reproduce the old kind table, kept for a test
+	Draws    Draw     // the proposal's first setting: what the generator draws with
 	Own      []string // trait groups only a people with this entry rolls
 	Profile  Profile  // what it does to the sim
 	Hooks    Hooks
 }
 
-func (e *Entry) draw(s Setting) *Draw {
-	if s == Proposed {
-		return &e.Draws
+func (e *Entry) draw(legacy bool) *Draw {
+	if legacy {
+		return &e.Legacy
 	}
-	return &e.Legacy
+	return &e.Draws
 }
 
 // SubstrateDef is a substrate's registry entry.
 type SubstrateDef struct {
 	Entry
-	Sub Substrate
+	Sub  Substrate
+	Deep float64 // the weight in the deep pass that seeds past ages, where the wonders and the leftovers come from
 }
 
 // ModDef is a modifier's registry entry.
@@ -147,14 +138,15 @@ type ModDef struct {
 // that need them land; every hook is typed on species values only.
 type Hooks struct{}
 
-// Ability is something a people can do unless an entry it carries denies it.
-type Ability uint16
+// Ability is something a people can do unless an entry it carries denies
+// it; a power may give one back (Profile.Allows).
+type Ability uint32
 
 const (
 	Fields        Ability = 1 << iota // grows food
 	Works                             // builds structures
 	Trades                            // sends and takes trade
-	Launches                          // sends expeditions
+	Launches                          // sends fleets of any kind: guards, scouts, campaigns
 	SettlesByShip                     // colonises with ships
 	Stiffens                          // ossifies
 	CivilWars                         // splits under pressure: schism, civil war
@@ -162,6 +154,10 @@ const (
 	Flees                             // takes to the sky when its last world is lost
 	Sickens                           // bears and catches biological plagues
 	Believes                          // bears and catches memetic plagues
+	Researches                        // climbs a tree; a people that cannot draws its powers from a pool instead
+	Pays                              // has an upkeep: uses that want feeding
+	Reseats                           // lives on after its seat is lost: moves the seat to another world
+	Wavers                            // has a morale that rises and falls
 )
 
 // Profile is what an entry does to the sim. The sim reads the composed
@@ -185,6 +181,19 @@ type Profile struct {
 	PlagueMeme    float64            // the same for memetic ones: a mind that copies exactly
 	Frail         float64            // multiplier on the lethality it suffers: one body sickens as one
 	Stiffen       float64            // multiplier on how fast its ways set; see history's ossify.go
+	Forgets       float64            // multiplier on the depth of a dark age: a mind that is backed up forgets less
+	Backups       bool               // a shattering leaves every shard the whole tree: the backups are on every world
+	Range         float64            // light years added to reach, for a people whose reach is not a ship's
+	Neighbourhood float64            // a fixed reach for a people that cannot move: within it godlike, outside it nothing; 0 for a reach that is a ship's
+	HomeDefence   float64            // the body as guns over every world held: this many per level of Military; 0 for none
+	Worlds        int                // a cap on worlds held; 0 for none
+	Era           int                // the era a people reads as from birth, for one with no tree
+	Alien         float64            // added to the difference score from either side: what nothing can model
+	NoOne         bool               // there is no one inside: a large term in the difference against anything conscious
+	Morals        [4]float64         // tilts on the roll of a morality: amoral, individual, herd, fixation; all four zero leaves the roll alone, one zero is impossible
+	Amoral        bool               // the morality is amoral, always: there is nobody to hold a wrong
+	NeverFaces    []string           // filters this people never faces, by key
+	Allows        Ability            // abilities a power gives back to a substrate that denies them
 	// means: see the flow package and history's flow.go
 	Cradle          float64 // multiplier on what the cradle world yields the people that arose on it
 	Upkeep          M       // multiplier on the upkeep of each domain's nodes
@@ -203,7 +212,7 @@ func mul(m float64) float64 {
 
 // Compose multiplies the entries' profiles together.
 func Compose(ps ...Profile) Profile {
-	out := Profile{Reach: 1, Rate: 1, Expand: 1, Memory: 1, Endure: 1, Cradle: 1, PlagueBio: 1, PlagueMeme: 1, Frail: 1, Stiffen: 1, Dom: M{}, Upkeep: M{}, FilterDiff: map[string]float64{}}
+	out := Profile{Reach: 1, Rate: 1, Expand: 1, Memory: 1, Endure: 1, Cradle: 1, PlagueBio: 1, PlagueMeme: 1, Frail: 1, Stiffen: 1, Forgets: 1, Dom: M{}, Upkeep: M{}, FilterDiff: map[string]float64{}, Morals: [4]float64{1, 1, 1, 1}}
 	for _, p := range ps {
 		out.Mil, out.Sur, out.Soc = out.Mil+p.Mil, out.Sur+p.Sur, out.Soc+p.Soc
 		out.Wis += p.Wis
@@ -218,6 +227,24 @@ func Compose(ps ...Profile) Profile {
 		out.PlagueMeme *= mul(p.PlagueMeme)
 		out.Frail *= mul(p.Frail)
 		out.Stiffen *= mul(p.Stiffen)
+		out.Forgets *= mul(p.Forgets)
+		out.Backups = out.Backups || p.Backups
+		out.Range += p.Range
+		out.Neighbourhood = max(out.Neighbourhood, p.Neighbourhood)
+		out.HomeDefence = mulOrAdd(out.HomeDefence, p.HomeDefence)
+		if p.Worlds > 0 && (out.Worlds == 0 || p.Worlds < out.Worlds) {
+			out.Worlds = p.Worlds
+		}
+		out.Era = max(out.Era, p.Era)
+		out.Alien = max(out.Alien, p.Alien)
+		out.NoOne = out.NoOne || p.NoOne
+		out.Amoral = out.Amoral || p.Amoral
+		if p.Morals != [4]float64{} {
+			for i, v := range p.Morals {
+				out.Morals[i] *= v
+			}
+		}
+		out.NeverFaces = append(out.NeverFaces, p.NeverFaces...)
 		out.Expand *= mul(p.Expand)
 		out.Memory *= mul(p.Memory)
 		out.Endure *= mul(p.Endure)
@@ -229,9 +256,21 @@ func Compose(ps ...Profile) Profile {
 		for k, v := range p.FilterDiff {
 			out.FilterDiff[k] += v
 		}
-		out.Cannot |= p.Cannot
+		out.Cannot = (out.Cannot | p.Cannot) &^ p.Allows // a power composes after the entries that deny
 	}
 	return out
+}
+
+// mulOrAdd composes a defence multiplier: the first sets it, the rest
+// multiply it, so a shell on a living world is several times several.
+func mulOrAdd(have, add float64) float64 {
+	switch {
+	case add == 0:
+		return have
+	case have == 0:
+		return add
+	}
+	return have * add
 }
 
 // Substrates is the registry of substrates, indexed by Substrate.

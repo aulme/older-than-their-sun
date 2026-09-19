@@ -200,6 +200,16 @@ func (w *World) breakDown(c *Civ) {
 	w.darkAge(c, "hardened until nothing in them could bend")
 }
 
+// resent is every grudge write: what another people did, added to what is
+// held against it. A people that holds no grudges (the unconscious) holds
+// nothing: the map stays empty and nothing is taken to heart.
+func (c *Civ) resent(id int, by float64) {
+	if !c.Species.Profile().Can(species.HoldsGrudges) || by <= 0 {
+		return
+	}
+	c.Grudge[id] += by
+}
+
 // forgive is the per-tick decay of grudges: a wrong is held only as long
 // as it is remembered, and what is still told feeds it back.
 func (w *World) forgive(c *Civ) {

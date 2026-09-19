@@ -2,6 +2,7 @@ package history
 
 import (
 	"sort"
+	"worldgen/internal/species"
 
 	"worldgen/internal/battle"
 	"worldgen/internal/flow"
@@ -177,7 +178,7 @@ func (w *World) addGuard(c *Civ, star, n int) *Expedition {
 // firstGuard is the ship every starfaring people begins with: a people
 // that reached the stars built at least one.
 func (w *World) firstGuard(c *Civ) {
-	if c.Aloft || w.ships(c) > 0 {
+	if c.Aloft || w.ships(c) > 0 || !c.Species.Profile().Can(species.Launches) {
 		return
 	}
 	w.addGuard(c, c.Home, 1)
@@ -359,7 +360,11 @@ func (w *World) keep(c *Civ) bool {
 		case !shed && x.LaidUp:
 			x.LaidUp = false
 			if x.Ships >= 2 && w.Now-x.Laid >= laidLineAfter*w.Cfg.Step {
-				w.log("The %s man the ships at %s again.", c.Name, w.star(x.Base))
+				at := x.Base
+				if at < 0 {
+					at = x.Star // a laid-up guard sent home from a world lost: manned on the way
+				}
+				w.log("The %s man the ships at %s again.", c.Name, w.star(at))
 			}
 			x.Manned = w.Now
 		}
