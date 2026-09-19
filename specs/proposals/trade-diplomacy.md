@@ -1,6 +1,6 @@
 # Trade diplomacy: the slight of a war on a partner's partner
 
-**Status:** Draft (raised 2026-09-18, after plan step 6; to be built in the AI layer after step 12, see `specs/plan.md` step 12b)
+**Status:** Implemented (plan step 12b, 2026-09-19; see "Trade diplomacy" in `DESIGN_NOTES.md`; the slight, the offence and the bloc reading as proposed, the uses-only rule lifted, the trade caps kept)
 **Last updated:** 2026-09-18
 
 Assumes [one-tick](one-tick.md) and [resources-and-trade](resources-and-trade.md): every rate below is per thousand years, and trade is the per-tick sending of surplus between partners.

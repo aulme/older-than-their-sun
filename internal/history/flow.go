@@ -34,11 +34,13 @@ func (w *World) flows(c *Civ) {
 
 // direct chooses the order and feeds the uses in it, and writes what came
 // of it: the spare, the want, what went dark, and the levels if the
-// working set changed. Goods that came by trade feed uses only, so the
-// spare is capped at what the people's own income would leave. The own
-// want is the want without what partners sent, which is what trade is
-// asked for; the working need is what the fed uses take, which is what a
-// partner's sending may be keeping fed.
+// working set changed. Under Trade.UsesOnly goods that came by trade feed
+// uses only, so the spare is capped at what the people's own income would
+// leave; the rule was step 6's restraint on the war rise from fed roads
+// and is off since the slight took its place. The own want is the want
+// without what partners sent, which is what trade is asked for; the
+// working need is what the fed uses take, which is what a partner's
+// sending may be keeping fed.
 func (w *World) direct(c *Civ, uses []flow.Use, rareChanged bool) {
 	d := w.order(c)
 	if w.Cfg.TraceAI && !sameOrder(c.Order, d.Order) {
@@ -47,7 +49,7 @@ func (w *World) direct(c *Civ, uses []flow.Use, rareChanged bool) {
 	c.Order = d.Order
 	a := flow.Direct(c.Income, uses, d.Order)
 	c.Surplus, c.Want = a.Surplus, a.Want
-	if c.Received != (flow.Income{}) {
+	if w.Cfg.Tuning.Trade.UsesOnly && c.Received != (flow.Income{}) {
 		// what partners sent feeds the uses and nothing else: the spare
 		// that launches and builds draw on is never more than the people's
 		// own income would leave
@@ -76,6 +78,7 @@ func (w *World) direct(c *Civ, uses []flow.Use, rareChanged bool) {
 	if c.Upkeep.Total() > c.highUpkeep {
 		c.highUpkeep = c.Upkeep.Total()
 		c.HighIncome, c.HighUpkeep, c.HighWant = c.Income, c.Upkeep, c.Want
+		c.PeakTrade = sortedInts(c.Trade)
 	}
 	changed := w.setShed(c, uses, a)
 	if changed || rareChanged {

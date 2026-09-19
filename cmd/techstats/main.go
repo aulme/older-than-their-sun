@@ -138,6 +138,7 @@ func main() {
 		pairs   []PairRec
 		ks      []ContractRec
 		sells   []SellRec
+		bloc    BlocRec
 		stats   string
 		ages    float64
 	}
@@ -156,7 +157,7 @@ func main() {
 			legends.Stats(&sb, w)
 			sights, meets, fleets, fields := flattenSightings(w)
 			ks, sells := flattenContracts(w)
-			runs[i] = run{ks: ks, sells: sells, seed: seed, recs: flatten(w), wars: flattenWars(w), battles: flattenBattles(w), sights: sights, meets: meets, fleets: fleets, fields: fields, pairs: flattenPairs(w), stats: sb.String(), ages: float64(w.Present-w.Cfg.Dawn) / 1e6}
+			runs[i] = run{ks: ks, sells: sells, bloc: flattenBlocs(w), seed: seed, recs: flatten(w), wars: flattenWars(w), battles: flattenBattles(w), sights: sights, meets: meets, fleets: fleets, fields: fields, pairs: flattenPairs(w), stats: sb.String(), ages: float64(w.Present-w.Cfg.Dawn) / 1e6}
 		}(i)
 	}
 	wg.Wait()
@@ -171,6 +172,7 @@ func main() {
 	var pairs []PairRec
 	var ks []ContractRec
 	var sells []SellRec
+	var blocs []BlocRec
 	var stats []string
 	ageSum := 0.0
 	for _, r := range runs {
@@ -184,6 +186,7 @@ func main() {
 		pairs = append(pairs, r.pairs...)
 		ks = append(ks, r.ks...)
 		sells = append(sells, r.sells...)
+		blocs = append(blocs, r.bloc)
 		stats = append(stats, r.stats)
 		ageSum += r.ages
 	}
@@ -203,6 +206,7 @@ func main() {
 	sightingsReport(f, recs, sights, meets, fleets, fields)
 	wisdomReport(f, recs, pairs)
 	contractReport(f, sells, ks, wars)
+	blocReport(f, blocs, recs)
 	fmt.Printf("%d civilisations over %d worlds; wrote %s\n", len(recs), *seeds, *out)
 }
 

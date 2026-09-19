@@ -67,6 +67,9 @@ func (w *World) weigh(c, e *Civ, ap Appraisal, bar float64, far, compelled bool)
 	if v.Action != mind.Nothing {
 		c.Tally.Judged++
 		c.Tally.ActedGap += math.Abs(ap.Acted - ap.Odds)
+		if v.Deterred {
+			c.Tally.Deterred++
+		}
 	}
 	switch v.Action {
 	case mind.ScoutFirst:

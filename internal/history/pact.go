@@ -246,7 +246,7 @@ func (w *World) answerPact(f, c *Civ, m *Message) {
 	}
 	in := mind.AnswerInput{
 		Aggressive: m.PactKind == Aggressive, Posture: f.posture(), Target: e != nil, Mil: f.Mil, ProposerMil: c.Mil,
-		Difference: f.differs(c), Infamy: w.infamy(c), Renown: w.renown(c), Dials: f.Dials,
+		Difference: f.differs(c), Infamy: w.infamy(c), ProposerGrudge: f.Grudge[c.ID], Renown: w.renown(c), Dials: f.Dials,
 		Wis: f.Wis, Noise: w.R.NormFloat64(),
 	}
 	against := "whoever comes"

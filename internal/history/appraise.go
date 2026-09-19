@@ -70,6 +70,8 @@ func (w *World) appraise(c, e *Civ, target int) Appraisal {
 	_, in.Dist = w.nearest(c, a.Target)
 	in.Prize = w.prize(c, a.Target)
 	in.Loss = w.tradeLoss(c, e)
+	in.Slights = w.offence(c, e)
+	in.Conqueror = c.posture() == mind.Conqueror
 	a.Appraisal = mind.Appraise(in, w.Cfg.Tuning)
 	return a
 }

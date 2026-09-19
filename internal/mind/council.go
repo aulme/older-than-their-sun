@@ -36,12 +36,13 @@ type JudgeInput struct {
 
 // Verdict is the judgment on one enemy.
 type Verdict struct {
-	Action Action
-	Acted  float64 // what the people acted on
-	Bar    float64 // the bar it faced
-	Low    float64
-	High   float64
-	Margin float64 // acted less the bar; the council takes the largest
+	Action   Action
+	Acted    float64 // what the people acted on
+	Bar      float64 // the bar it faced
+	Low      float64
+	High     float64
+	Margin   float64 // acted less the bar; the council takes the largest
+	Deterred bool    // would have struck but for the offence
 }
 
 // Why says the verdict in a line.
@@ -49,7 +50,11 @@ func (v Verdict) Why() string {
 	if v.Action == Nothing {
 		return "nothing: no front to strike and no fleet to send"
 	}
-	return fmt.Sprintf("%s: acting on %.2f (%.2f to %.2f) against a bar of %.2f", v.Action, v.Acted, v.Low, v.High, v.Bar)
+	s := fmt.Sprintf("%s: acting on %.2f (%.2f to %.2f) against a bar of %.2f", v.Action, v.Acted, v.Low, v.High, v.Bar)
+	if v.Deterred {
+		s += "; the offence alone held them"
+	}
+	return s
 }
 
 // Judge is the council's view of one enemy: strike when the acted odds
@@ -70,6 +75,9 @@ func Judge(in JudgeInput, t *Tuning) Verdict {
 		v.Acted = in.Appraisal.High
 	}
 	v.Margin = v.Acted - v.Bar
+	if v.Acted < v.Bar && v.Acted >= min(1, max(0, in.Bar-in.Appraisal.Alone)) {
+		v.Deterred = true
+	}
 	switch {
 	case v.Acted >= v.Bar:
 		v.Action = Strike

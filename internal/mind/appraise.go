@@ -78,33 +78,37 @@ func Strength(in StrengthInput, t *Tuning) float64 {
 
 // AppraiseInput is a fight as the attacker sees it.
 type AppraiseInput struct {
-	Strength   float64 // the attacker's, from Strength
-	Believed   float64 // the enemy's level as believed
-	Spread     float64 // and how sure
-	EnemyBonus float64 // the enemy's miracles
-	Ships      float64 // the enemy's ships believed at the target
-	Guns       float64 // the guns believed to stand over it
-	Relief     float64 // others' ships seen standing at the target
-	Weakened   bool    // the enemy is plagued or in a dark age
-	OtherWars  int     // the enemy's other wars
-	Risk       float64 // the attacker's risk dial
-	Dist       float64 // to the target, in light years
-	Speed      float64 // years per light year
-	Prize      float64 // what the target is worth to the attacker: its yield the attacker wants, and rarities it lacks
-	Loss       float64 // what a war on the enemy costs the attacker in trade: what the enemy sends it
-	Wis        float64 // the attacker's Wisdom: pulls what it acts on toward the mean
+	Strength   float64    // the attacker's, from Strength
+	Believed   float64    // the enemy's level as believed
+	Spread     float64    // and how sure
+	EnemyBonus float64    // the enemy's miracles
+	Ships      float64    // the enemy's ships believed at the target
+	Guns       float64    // the guns believed to stand over it
+	Relief     float64    // others' ships seen standing at the target
+	Weakened   bool       // the enemy is plagued or in a dark age
+	OtherWars  int        // the enemy's other wars
+	Risk       float64    // the attacker's risk dial
+	Dist       float64    // to the target, in light years
+	Speed      float64    // years per light year
+	Prize      float64    // what the target is worth to the attacker: its yield the attacker wants, and rarities it lacks
+	Loss       float64    // what a war on the enemy costs the attacker in trade: what the enemy sends it
+	Wis        float64    // the attacker's Wisdom: pulls what it acts on toward the mean
+	Slights    []Slighted // the peoples the war would wrong, as far as the attacker minds them
+	Conqueror  bool       // weighs the offence by half
 }
 
 // Appraisal is what a people thinks of a fight.
 type Appraisal struct {
-	Margin float64 // believed strength difference, attacker minus defender
-	Spread float64 // uncertainty of the belief, in levels
-	Odds   float64 // on the mean
-	Low    float64 // on the pessimistic tail
-	High   float64 // on the hopeful tail
-	Acted  float64 // what this people acts on, by its risk dial
-	Lag    float64 // years for a strike or a fleet to arrive
-	Prize  float64 // what the bar drops by for the target's worth, less what the war loses in trade; negative raises it
+	Margin  float64 // believed strength difference, attacker minus defender
+	Spread  float64 // uncertainty of the belief, in levels
+	Odds    float64 // on the mean
+	Low     float64 // on the pessimistic tail
+	High    float64 // on the hopeful tail
+	Acted   float64 // what this people acts on, by its risk dial
+	Lag     float64 // years for a strike or a fleet to arrive
+	Prize   float64 // what the bar drops by for the target's worth, less what the war loses in trade and the offence it gives; negative raises it
+	Alone   float64 // the same without the offence, for the reading of what the offence refused
+	Slights []Slighted
 }
 
 // Why says the appraisal in a line.
@@ -113,9 +117,9 @@ func (a Appraisal) Why() string {
 	if a.Prize > 0 {
 		s += fmt.Sprintf(", a prize worth %.2f off the bar", a.Prize)
 	} else if a.Prize < 0 {
-		s += fmt.Sprintf(", trade worth %.2f on the bar", -a.Prize)
+		s += fmt.Sprintf(", trade and offence worth %.2f on the bar", -a.Prize)
 	}
-	return s
+	return s + slightsWhy(a.Slights)
 }
 
 // Appraise estimates a fight: the believed enemy level with what is
@@ -126,7 +130,8 @@ func (a Appraisal) Why() string {
 // dread. A world is held by nothing but what is in its sky: the home has
 // no flat defence and a grid is its guns. The prize is what the target is
 // worth less what the war would lose in trade, and moves the bar either
-// way.
+// way, and the offence the war would give the peoples the attacker
+// minds counts against it at the offence weight.
 func Appraise(in AppraiseInput, t *Tuning) Appraisal {
 	p := &t.Appraise
 	d := in.Believed + in.EnemyBonus + ShipLevels(in.Ships+in.Guns+in.Relief)
@@ -136,7 +141,10 @@ func Appraise(in AppraiseInput, t *Tuning) Appraisal {
 	for i := 0; i < in.OtherWars; i++ {
 		d -= p.OtherWar
 	}
-	a := Appraisal{Margin: in.Strength - d, Spread: in.Spread, Lag: in.Dist * in.Speed, Prize: max(-p.PrizeMax, min(p.PrizeMax, p.PrizeWeight*(in.Prize-in.Loss)))}
+	offence := Offence(in.Slights, in.Conqueror, t)
+	clampPrize := func(x float64) float64 { return max(-p.PrizeMax, min(p.PrizeMax, p.PrizeWeight*x)) }
+	a := Appraisal{Margin: in.Strength - d, Spread: in.Spread, Lag: in.Dist * in.Speed, Slights: in.Slights,
+		Prize: clampPrize(in.Prize - in.Loss - t.Slight.OffenceWeight*offence), Alone: clampPrize(in.Prize - in.Loss)}
 	a.Odds = phi(a.Margin / p.Scale)
 	a.Low = phi((a.Margin - in.Spread) / p.Scale)
 	a.High = phi((a.Margin + in.Spread) / p.Scale)

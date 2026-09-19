@@ -209,6 +209,7 @@ type Civ struct {
 	HighIncome   flow.Income     // income, upkeep and want at the people's height of means
 	HighUpkeep   flow.Income
 	HighWant     flow.Income
+	PeakTrade    []int // the partners at the height of means, for the bloc reading; see slight.go
 	highUpkeep   float64
 	Loot         flow.Income // taken once, added to the next tick's income: what a horde strips from a world
 	Reserved     flow.Income // what launches and builds took of the spare this tick
@@ -287,6 +288,9 @@ type Tally struct {
 	ActedGap                                             float64
 	// contracts: bought, sold, broken by this people, sold out of by it, tributes paid, sightings sold
 	Hired, Sold, Broke, BoughtOff, Tributes, SoldSightings int
+	// slights: taken in all; councils the offence alone held back
+	Slights  float64
+	Deterred int
 }
 
 // Living is true for active and remnant civilisations.

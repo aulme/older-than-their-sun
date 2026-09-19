@@ -46,6 +46,7 @@ type Tuning struct {
 	Picket    PicketTuning
 	Wisdom    WisdomTuning
 	Contract  ContractTuning
+	Slight    SlightTuning
 }
 
 // BeliefTuning: what a people thinks another's level is from its
@@ -137,6 +138,7 @@ type PactTuning struct {
 	DefConqueror    float64
 	Difference      float64 // per point of difference
 	Infamy          float64
+	ProposerGrudge  float64 // per point of grudge the asked holds against the proposer
 	Renown          float64
 	Loyalty         float64 // times loyalty less a half
 }
@@ -302,6 +304,21 @@ type ContractTuning struct {
 	SellswordShare  float64 // the share of a kind's income that has to be contract pay
 }
 
+// SlightTuning: a war on a partner's partner as a wrong, and its weight
+// before the council.
+type SlightTuning struct {
+	Weight         float64 // the slight per unit of the pair's flow as a share of the slighted people's income
+	Cap            float64 // the most one war slights one people
+	Tick           float64 // the share of the slight taken again each tick the war starves the partner
+	Source         float64 // the slight of a world taken that held a source the partner drew on
+	Fact           float64 // the slight past which it is a fact
+	Dependent      float64 // times, when the partner's sending kept the slighted people's uses fed
+	OffenceWeight  float64 // units of prize one unit of offence costs on the bar
+	StrongWeight   float64 // a strong neighbour's opinion, against a partner's one
+	FearBar        float64 // fear above this doubles the strong neighbour's weight
+	ConquerorShare float64 // a conqueror weighs the whole offence by this
+}
+
 // WantTuning: how many ships a people builds toward.
 type WantTuning struct {
 	Floor      int     // ships kept whatever else is wanted
@@ -326,6 +343,7 @@ type TradeTuning struct {
 	FearBar        float64 // fear above this sends no metal to a stronger, hostile partner
 	SpawnOrganic   float64 // a people fixed on spawning gives organic matter at this times its cap
 	GraspWant      float64 // a partner fixed on holding has its want weighed this much more in the share
+	UsesOnly       bool    // goods that came by trade feed uses only: the spare that launches and builds is capped at what the people's own income would leave
 }
 
 // DirectionTuning: what bends the order the means are fed in.
@@ -367,7 +385,7 @@ func Default() *Tuning {
 			Conqueror: 0.3, OpportunistWeak: 0.2, VengefulGrudge: 0.4, VengefulNone: 0.3, Unyielding: 0.1, GreedWeight: 0.5,
 			FearBase: 0.5, FearPerLevel: 0.25, FearMax: 1.5, EnemyNear: 0.2, AtWar: 0.3, Grudge: 0.2,
 			DefConfederate: 0.3, DefDefensive: 0.2, DefMeek: 0.1, DefOpportunist: 0.2, DefConqueror: 0.1,
-			Difference: 0.1, Infamy: 0.3, Renown: 0.15, Loyalty: 0.2,
+			Difference: 0.1, Infamy: 0.3, ProposerGrudge: 0.5, Renown: 0.15, Loyalty: 0.2,
 		},
 		Call:      CallTuning{Share: 0.3, Floor: 0.1, MinFloor: 1, HelpSlack: 1, SafeLeft: 2, SafeFear: 0.3, Base: 0.3, FearWeight: 0.6, Confederate: 0.2, Betrayed: 1, Want: 0.4, BlameAbove: 3},
 		Forward:   ForwardTuning{NeedStranger: 0.3, NeedMet: 0.5, NeedEnemy: 1, Designs: 0.6, Bar: 0.3},
@@ -380,7 +398,7 @@ func Default() *Tuning {
 		Direction: DirectionTuning{FearBar: 0.6, HungerBar: 0.6, GreedBar: 0.6},
 		Turn:      TurnTuning{Faithful: 0.0005, Practical: 0.01, Faithless: 0.05, Hostile: 2, Vengeful: 3, Opening: 1, GreedBase: 0.5},
 		Roam:      RoamTuning{HopMin: 3, HopMax: 20},
-		Trade:     TradeTuning{CapBase: 0.25, CapFast: 0.5, CapDoor: 1, CapNomad: 0.5, GrudgeBar: 0.3, DifferentShare: 0.5, FearBar: 0.6, SpawnOrganic: 2, GraspWant: 2},
+		Trade:     TradeTuning{CapBase: 0.25, CapFast: 0.5, CapDoor: 1, CapNomad: 0.5, GrudgeBar: 0.3, DifferentShare: 0.5, FearBar: 0.6, SpawnOrganic: 2, GraspWant: 2, UsesOnly: false},
 		Want:      WantTuning{Floor: 1, FearWeight: 1},
 		Garrison:  GarrisonTuning{HomeBase: 0.5, HomeMin: 1, ColonyShare: 0.3},
 		Intercept: InterceptTuning{Muster: 50, Samples: 64},
@@ -392,6 +410,7 @@ func Default() *Tuning {
 			BrokerGiver: 0.1, BrokerBase: 10, MercenaryRate: 0.02, FaithlessBuyOff: 0.3, GraceTicks: 2, TributeLength: 20,
 			BrokerRate: 0.1, BrokerLapse: 30_000, SoldTold: 0.5, SellswordTicks: 10, SellswordShare: 0.5,
 		},
+		Slight: SlightTuning{Weight: 2, Cap: 1, Tick: 0.1, Source: 0.3, Fact: 0.2, Dependent: 2, OffenceWeight: 5, StrongWeight: 0.5, FearBar: 0.6, ConquerorShare: 0.5},
 		Wisdom: WisdomTuning{Tail: 0.08, GrudgeFade: 10, VengefulBelow: 7, Compulsion: 0.08, Folly: 0.04, ThreatSeal: 0.3, AboveEras: 2, AboveWield: 0.07, AboveSeal: 0.2, LeapMargin: -1.5, LeapBar: 6, LeapNoise: 1.5, TeachWeaker: 0, BrokerRate: 0.02},
 	}
 }

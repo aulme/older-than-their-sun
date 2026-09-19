@@ -37,6 +37,11 @@ type War struct {
 	Burn      bool         // a host burns what a parasite has converted
 	Called    map[int]bool // allies already called to this war
 	Hire      int          // the contract this war was declared for, or -1; see contract.go
+	// the slights of the war: see slight.go
+	Slights    map[int]float64 // the slight each partner of the target took at the declaration
+	Sent       map[int]float64 // what the target was sending each the tick before
+	Slighted   map[int]float64 // what each has taken in all, capped
+	SlightTold map[int]bool    // the fact was written
 }
 
 func (wr *War) side(id int) int {
@@ -148,7 +153,8 @@ func (w *World) declare(c, e *Civ, cause string) *War {
 	}
 	c.Fought[e.ID]++
 	e.Fought[c.ID]++
-	wr := &War{ID: len(w.Wars), Sides: [2]int{c.ID, e.ID}, Began: w.Now, Cause: cause, Nth: c.Fought[e.ID], Pact: -1, Principal: -1, Hire: -1, Contested: map[int]int{}, Called: map[int]bool{}}
+	wr := &War{ID: len(w.Wars), Sides: [2]int{c.ID, e.ID}, Began: w.Now, Cause: cause, Nth: c.Fought[e.ID], Pact: -1, Principal: -1, Hire: -1, Contested: map[int]int{}, Called: map[int]bool{},
+		Slights: map[int]float64{}, Sent: map[int]float64{}, Slighted: map[int]float64{}, SlightTold: map[int]bool{}}
 	wr.Will = [2]float64{w.initialWill(c, e, true), w.initialWill(e, c, false)}
 	w.Wars = append(w.Wars, wr)
 	c.Wars[e.ID], e.Wars[c.ID] = true, true
@@ -167,6 +173,7 @@ func (w *World) declare(c, e *Civ, cause string) *War {
 	w.observe(c, e, e.Home, 0.5)
 	w.observe(e, c, c.Home, 0.5)
 	w.factOf(FWar, c, e, -1, cause)
+	w.slighted(c, e, wr)
 	switch {
 	case cause == "infection":
 		// the infection line is already written
@@ -212,6 +219,7 @@ func (w *World) tickWars() {
 		if wr.Over {
 			continue
 		}
+		w.slightTick(wr)
 		w.judge(wr)
 	}
 }
@@ -256,6 +264,7 @@ func (w *World) drain(wr *War, i int) {
 // glassed or converted, by the winner's nature; the home falling is its
 // own matter.
 func (w *World) takeWorld(wr *War, c, e *Civ, t int) {
+	w.sourceSlight(wr, c, e, t)
 	if t == e.Home {
 		w.homeFalls(wr, c, e)
 		return

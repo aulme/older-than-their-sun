@@ -80,6 +80,7 @@ const (
 	FStrikeBought // a people paid a third to send a fleet against another
 	FBoughtOff    // a hired people sold what it was paid to hold
 	FTribute      // a people paid tribute after a war
+	FSlight       // a people made war on the partner of another; see slight.go
 )
 
 // Sort is the moral shape of a fact from the subject's side.
@@ -115,6 +116,7 @@ var factShape = [...]struct {
 	FIntercept: {Deed, 1}, FCaught: {Woe, 1},
 	FFathomed: {Bond, 1}, FBrokered: {Deed, 1},
 	FHire: {Deed, 1}, FTaught: {Deed, 1}, FStrikeBought: {Crime, 1}, FBoughtOff: {Crime, 2}, FTribute: {Woe, 1},
+	FSlight: {Crime, 1},
 }
 
 // Fact is one thing that happened, as it happened.

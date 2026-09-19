@@ -75,6 +75,7 @@ var templates = [...]string{
 	FStrikeBought: "{S} paid the {X} to strike at {T}, a world of {O}.",
 	FBoughtOff:    "{S}, paid by {O} to hold {T}, sold it to the {X}.",
 	FTribute:      "{S} paid {O} in {X} for twenty thousand years.",
+	FSlight:       "{S} made war on the {X}, with whom {O} traded.",
 }
 
 // blamedTemplates are the woes that name their own cause, retold once

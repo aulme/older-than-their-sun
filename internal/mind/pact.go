@@ -64,22 +64,23 @@ func Partner(aggressive, hostile, grudge bool) bool {
 
 // AnswerInput is an offer as the asked sees it.
 type AnswerInput struct {
-	Aggressive  bool
-	Posture     string
-	Target      bool    // the offer names an enemy
-	Believed    float64 // the enemy's level as believed
-	Mil         float64 // one's own
-	Grudge      bool    // against the enemy
-	AlliedEnemy bool    // already sworn to the enemy
-	EnemyNear   bool    // the enemy is met and reaches our home or has a front against us
-	AtWar       bool    // with the enemy
-	ProposerMil float64
-	Difference  float64 // between the two species
-	Infamy      float64 // the proposer's
-	Renown      float64
-	Dials       Dials
-	Wis         float64 // the asked people's Wisdom
-	Noise       float64 // a standard normal draw: the folly on the score
+	Aggressive     bool
+	Posture        string
+	Target         bool    // the offer names an enemy
+	Believed       float64 // the enemy's level as believed
+	Mil            float64 // one's own
+	Grudge         bool    // against the enemy
+	AlliedEnemy    bool    // already sworn to the enemy
+	EnemyNear      bool    // the enemy is met and reaches our home or has a front against us
+	AtWar          bool    // with the enemy
+	ProposerMil    float64
+	Difference     float64 // between the two species
+	Infamy         float64 // the proposer's
+	ProposerGrudge float64 // what the asked holds against the proposer: a slight, a wrong
+	Renown         float64
+	Dials          Dials
+	Wis            float64 // the asked people's Wisdom
+	Noise          float64 // a standard normal draw: the folly on the score
 }
 
 // Answer is the verdict on an offer.
@@ -169,6 +170,7 @@ func AnswerPact(in AnswerInput, t *Tuning) Answer {
 	}
 	score -= p.Difference * in.Difference
 	score -= p.Infamy * in.Infamy
+	score -= p.ProposerGrudge * in.ProposerGrudge
 	score += p.Renown * in.Renown
 	score += p.Loyalty * (in.Dials.Loyalty - 0.5)
 	score = Folly(score, in.Wis, in.Noise, t)
