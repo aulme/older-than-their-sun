@@ -181,6 +181,15 @@ type Civ struct {
 	WisFrom     wisParts     // where the Wisdom comes from, as last derived
 	experience  int          // woes and follies remembered as one's own, counted by reckon
 
+	// contracts: see contract.go
+	Contracts []int          // every contract this people was party to
+	Taught    map[string]int // nodes bought: the node to the people that taught it
+	Paid      flow.Income    // what contracts paid this tick; counted in the next tick's income
+	PaidIn    flow.Income    // what contracts paid into this tick's income
+	Sellsword bool           // earned: lived on contract pay for ten ticks running
+	hiredRun  int            // ticks running that contract pay was more than half an income
+	dealt     map[int]bool   // peoples a bargain has been struck with, for the first line
+
 	// sightings and salvage: see sighting.go, field.go
 	Sightings    map[int]*Sighting // what this people has seen of fleets in flight, by fleet
 	Salvage      int               // ships of others' make in the guards, crewed from a field
@@ -276,6 +285,8 @@ type Tally struct {
 	Fathomed, Unfathomed, Brokered, Misunderstood, Leaps int
 	Dropped, Judged                                      int
 	ActedGap                                             float64
+	// contracts: bought, sold, broken by this people, sold out of by it, tributes paid, sightings sold
+	Hired, Sold, Broke, BoughtOff, Tributes, SoldSightings int
 }
 
 // Living is true for active and remnant civilisations.
@@ -521,6 +532,7 @@ type World struct {
 	pending     []*Sighting // sightings queued on the timetable, not yet happened
 	Expeditions []*Expedition
 	Pacts       []*Pact
+	Contracts   []*Contract // every contract offered; see contract.go
 	Messages    []*Message
 	Betrayals   []Betrayal // and faith kept, with negative weight
 	scratch

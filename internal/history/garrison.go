@@ -143,7 +143,7 @@ func (w *World) sendGuard(c *Civ, g *Expedition, to, n int) *Expedition {
 	n = min(n, g.Ships)
 	x := g
 	if n < g.Ships || g.Kind == Roam {
-		x = &Expedition{ID: len(w.Expeditions), Owner: c.ID, Target: -1, Kind: g.Kind, Star: to, From: g.Base, Ships: n, Back: -1,
+		x = &Expedition{ID: len(w.Expeditions), Owner: c.ID, Target: -1, Kind: g.Kind, Star: to, From: g.Base, Ships: n, Back: -1, Contract: -1, SoldBy: -1,
 			Launched: w.Now, Out: w.Now, Base: g.Base, Fed: w.Now, Manned: w.Now, Seen: map[int]bool{}}
 		g.Ships -= n
 		w.Expeditions = append(w.Expeditions, x)

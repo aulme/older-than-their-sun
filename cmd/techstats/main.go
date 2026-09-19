@@ -136,6 +136,8 @@ func main() {
 		fleets  []FleetRec
 		fields  FieldRec
 		pairs   []PairRec
+		ks      []ContractRec
+		sells   []SellRec
 		stats   string
 		ages    float64
 	}
@@ -153,7 +155,8 @@ func main() {
 			var sb strings.Builder
 			legends.Stats(&sb, w)
 			sights, meets, fleets, fields := flattenSightings(w)
-			runs[i] = run{seed: seed, recs: flatten(w), wars: flattenWars(w), battles: flattenBattles(w), sights: sights, meets: meets, fleets: fleets, fields: fields, pairs: flattenPairs(w), stats: sb.String(), ages: float64(w.Present-w.Cfg.Dawn) / 1e6}
+			ks, sells := flattenContracts(w)
+			runs[i] = run{ks: ks, sells: sells, seed: seed, recs: flatten(w), wars: flattenWars(w), battles: flattenBattles(w), sights: sights, meets: meets, fleets: fleets, fields: fields, pairs: flattenPairs(w), stats: sb.String(), ages: float64(w.Present-w.Cfg.Dawn) / 1e6}
 		}(i)
 	}
 	wg.Wait()
@@ -166,6 +169,8 @@ func main() {
 	var fleets []FleetRec
 	var fields []FieldRec
 	var pairs []PairRec
+	var ks []ContractRec
+	var sells []SellRec
 	var stats []string
 	ageSum := 0.0
 	for _, r := range runs {
@@ -177,6 +182,8 @@ func main() {
 		fleets = append(fleets, r.fleets...)
 		fields = append(fields, r.fields)
 		pairs = append(pairs, r.pairs...)
+		ks = append(ks, r.ks...)
+		sells = append(sells, r.sells...)
 		stats = append(stats, r.stats)
 		ageSum += r.ages
 	}
@@ -195,6 +202,7 @@ func main() {
 	battlesReport(f, recs, battles)
 	sightingsReport(f, recs, sights, meets, fleets, fields)
 	wisdomReport(f, recs, pairs)
+	contractReport(f, sells, ks, wars)
 	fmt.Printf("%d civilisations over %d worlds; wrote %s\n", len(recs), *seeds, *out)
 }
 

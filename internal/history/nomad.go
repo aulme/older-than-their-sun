@@ -213,7 +213,7 @@ func (w *World) roam(c *Civ) {
 		}
 		if x.Ships > 4 && len(fl) < 8 && w.chance(0.1) {
 			if t := w.nextStar(c, x, hop); t >= 0 {
-				nx := &Expedition{ID: len(w.Expeditions), Owner: c.ID, Target: -1, Kind: Roam, Star: t, From: x.Base, Ships: x.Ships / 2, Back: -1,
+				nx := &Expedition{ID: len(w.Expeditions), Owner: c.ID, Target: -1, Kind: Roam, Star: t, From: x.Base, Ships: x.Ships / 2, Back: -1, Contract: -1, SoldBy: -1,
 					Launched: w.Now, Out: w.Now, Base: -1, Fed: w.Now, Manned: w.Now, Seen: map[int]bool{}}
 				x.Ships -= nx.Ships
 				nx.Arrive = w.Now + Year(w.G.Dist(x.Base, t)*c.Speed)

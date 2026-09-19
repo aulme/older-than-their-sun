@@ -123,7 +123,7 @@ func (w *World) addGuard(c *Civ, star, n int) *Expedition {
 	if c.Aloft {
 		kind = Roam
 	}
-	g := &Expedition{ID: len(w.Expeditions), Owner: c.ID, Target: -1, Kind: kind, Star: star, From: star, Ships: n, Back: -1,
+	g := &Expedition{ID: len(w.Expeditions), Owner: c.ID, Target: -1, Kind: kind, Star: star, From: star, Ships: n, Back: -1, Contract: -1, SoldBy: -1,
 		Launched: w.Now, Out: w.Now, Arrive: w.Now, Base: star, Fed: w.Now, Manned: w.Now, Seen: map[int]bool{}}
 	w.Expeditions = append(w.Expeditions, g)
 	return g

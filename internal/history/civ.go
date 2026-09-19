@@ -135,6 +135,7 @@ var civSteps = []civStep{
 	{"fathoming", (*World).fathoming},
 	{"intel", (*World).intelStep},
 	{"council", (*World).council},
+	{"contracting", (*World).contracting},
 	{"garrison", (*World).garrison},
 	{"wartime", (*World).wartime},
 	{"revolt", (*World).revolt},

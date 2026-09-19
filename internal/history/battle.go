@@ -166,6 +166,8 @@ func (w *World) fight(x *Expedition, t int) {
 		if w.guardAt(e, t) != nil {
 			rec.Outcome = "held"
 		}
+	case !fleets && guns == 0 && w.strikeBurns(x, e, t):
+		rec.Outcome = "burned"
 	case !fleets && guns == 0:
 		rec.Outcome = "taken"
 		if lostA > 0 && lostA >= x.Ships {

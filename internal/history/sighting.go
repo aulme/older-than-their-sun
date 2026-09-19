@@ -64,6 +64,7 @@ type Sighting struct {
 	EyeStar            int     // where the eye was; -1 for a fleet
 	Feasible           bool    // a meeting point existed against a fleet worth meeting
 	Intercept          int     // the interceptor sent, or -1
+	Offered            bool    // put up for sale, or judged not for sale; see contract.go
 }
 
 // watchAt is how far a people sees fleets from a star: the tree's range

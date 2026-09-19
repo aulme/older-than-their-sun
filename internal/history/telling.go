@@ -70,6 +70,11 @@ var templates = [...]string{
 	FLoose:        "{S} let loose what they grew for the table, and it ate {T}.",
 	FFathomed:     "{S} came to understand {O}.",
 	FBrokered:     "{S} spoke for {O} to the {X}.",
+	FHire:         "{S} took {X} from {O} to hold {T}.",
+	FTaught:       "{S} taught {O} {X}.",
+	FStrikeBought: "{S} paid the {X} to strike at {T}, a world of {O}.",
+	FBoughtOff:    "{S}, paid by {O} to hold {T}, sold it to the {X}.",
+	FTribute:      "{S} paid {O} in {X} for twenty thousand years.",
 }
 
 // blamedTemplates are the woes that name their own cause, retold once

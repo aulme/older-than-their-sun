@@ -44,6 +44,9 @@ const (
 	MsgIntel
 	MsgNews     // a fact, with the teller's slant
 	MsgSighting // a fleet seen in flight, passed on
+	MsgOffer    // a contract proposed; see contract.go
+	MsgAnswer   // the answer to one, when it was yes
+	MsgTeach    // a node taught under one
 )
 
 // Message is one thing said across the dark.
@@ -58,8 +61,10 @@ type Message struct {
 	About    int      // the subject of a report
 	Intel    *Intel
 	Sighting *Sighting
-	Fact     int  // for news
-	Slant    int8 // the teller's regard for the other party in it
+	Fact     int    // for news
+	Slant    int8   // the teller's regard for the other party in it
+	Contract int    // for offers, answers and teaching
+	Node     string // for teaching
 }
 
 // Betrayal is a promise broken, or with negative weight, kept at a cost.
@@ -114,6 +119,12 @@ func (w *World) tickMessages() {
 			if m.Target >= 0 {
 				w.answerCall(to, from, w.Civs[m.Target])
 			}
+		case MsgOffer:
+			w.answerOffer(to, from, m)
+		case MsgAnswer:
+			w.answered(to, from, m)
+		case MsgTeach:
+			w.taughtNode(to, from, m)
 		}
 	}
 	w.Messages = append(w.Messages, keep...)

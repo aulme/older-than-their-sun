@@ -123,7 +123,7 @@ func (w *World) launchIntercept(o *Civ, g *Expedition, x *Expedition, s *Sightin
 	n = min(n, g.Ships)
 	c := w.Civs[x.Owner]
 	at := w.posAtF(x, float64(t))
-	y := &Expedition{ID: len(w.Expeditions), Owner: o.ID, Target: x.Owner, Kind: Intercept, Star: x.Star, From: g.Base, Ships: n, Back: -1,
+	y := &Expedition{ID: len(w.Expeditions), Owner: o.ID, Target: x.Owner, Kind: Intercept, Star: x.Star, From: g.Base, Ships: n, Back: -1, Contract: -1, SoldBy: -1,
 		Launched: m, Out: m, Arrive: t, Meet: t, Base: -1, Manned: w.Now, Seen: map[int]bool{}, Quarry: x.ID, Leg: x.Launched, Drive: o.Speed,
 		Path: &[2]vec{w.pos(g.Base), at}}
 	g.Ships -= n
@@ -199,6 +199,7 @@ func (w *World) meetInDark(x *Expedition) {
 	w.leaveField(c, lc, near, at, true)
 	w.observeDark(o, c)
 	w.observeDark(c, o)
+	w.sold(q)
 	o.Tally.Meetings++
 	i := wr.side(o.ID)
 	winner, loser := o, c

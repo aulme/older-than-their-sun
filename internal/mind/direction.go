@@ -21,6 +21,7 @@ type DirectionInput struct {
 	Nomad       bool          // aloft: no works, and the road first
 	Fixed       bool          // the people is fixed on one good
 	Fixation    flow.Category // and this is what it feeds first
+	Honour      string        // where the word (what contracts owe) sits: the faithful pay before their works, the practical after, the faithless last
 }
 
 // Direction is the order and the reasons for it.
@@ -57,7 +58,9 @@ func (d Direction) Why() string {
 	return strings.Join(why, "; ")
 }
 
-// Direct decides the order. War or fear with a hostile neighbour in reach
+// Direct decides the order. The word, what contracts owe, sits by honour:
+// the faithful pay before their works go dark, the practical after, the
+// faithless last of all. War or fear with a hostile neighbour in reach
 // puts arms first; hunger puts the mind before the works; greed the road
 // before the mind; a people with no fields drops them; a nomad drops the
 // works and puts the road first, after arms if arms come first. A
@@ -67,6 +70,14 @@ func Direct(in DirectionInput, t *Tuning) Direction {
 	p := &t.Direction
 	d := Direction{}
 	order := append(flow.Order(nil), flow.DefaultOrder...)
+	switch in.Honour {
+	case Faithful:
+		order = before(append(order, flow.Word), flow.Word, flow.Works)
+	case Faithless:
+		order = append(order, flow.Word)
+	default:
+		order = before(append(order, flow.Word), flow.Word, flow.Mind)
+	}
 	if in.Hunger > p.HungerBar {
 		d.MindFirst = true
 		order = before(order, flow.Mind, flow.Works)

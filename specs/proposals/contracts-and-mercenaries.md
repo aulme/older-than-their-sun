@@ -1,6 +1,6 @@
 # Contracts and mercenaries
 
-**Status:** Draft
+**Status:** Implemented (plan step 12, 2026-09-19; see "Contracts" in `DESIGN_NOTES.md`; a rarity term changes hands at once rather than by a fleet, and a strike is against a world or a gun work)
 **Last updated:** 2026-09-17
 
 Assumes [one-tick](one-tick.md): every rate below is per thousand years, and "per tick" means a thousand-year tick, the same thing.

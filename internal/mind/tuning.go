@@ -45,6 +45,7 @@ type Tuning struct {
 	Intercept InterceptTuning
 	Picket    PicketTuning
 	Wisdom    WisdomTuning
+	Contract  ContractTuning
 }
 
 // BeliefTuning: what a people thinks another's level is from its
@@ -266,6 +267,41 @@ type WisdomTuning struct {
 	BrokerRate    float64 // unpaid brokering, per thousand years, by a shared pact or a confederate
 }
 
+// ContractTuning: offers, margins, lengths and the sellsword's trade.
+type ContractTuning struct {
+	AskRate         float64 // how often a people looks for something to buy, per thousand years
+	AskRateGreedy   float64 // for greed above GreedBar or a fixation on holding
+	GreedBar        float64
+	GreedMargin     float64 // the margin of the greedy
+	EagerMargin     float64 // of a fixation selling what it wants sold anyway: conquest a strike, knowing a teach
+	CrimeMargin     float64 // times, when the ask is a crime by the seller's morality
+	XenoMargin      float64 // times, for a xenophobe against the different
+	LengthPerUnit   float64 // thousand years of pay per ship asked or per rarity
+	LengthMin       float64
+	LengthMax       float64
+	FlowRest        float64 // a flow's worth beyond the uses it refills, per unit
+	TeachGiver      float64 // a teach costs the giver this share of what it saves the taught
+	TeachHostile    float64 // times, when the taught is the giver's threat or strikes first
+	GuardGiver      float64 // a guard costs the giver this per ship, times the risk
+	RiskFront       float64 // the risk of loss at a star in a hostile front
+	RiskElse        float64
+	StrikeGrudge    float64 // what a strike costs the giver beyond its ships: the grudge it earns
+	PrizeYears      float64 // a world's prize per tick counts for this many ticks in a worth
+	WillWorth       float64 // a people's war will counts this much per point in the worth of peace
+	SightingWorth   float64 // a sighting's worth per level of the fleet seen, at the start of its crossing
+	BrokerGiver     float64 // a broker's cost: this share of the trade it has with both
+	BrokerBase      float64 // and what understanding is worth to the buyer before the trade
+	MercenaryRate   float64 // offers of a guard per thousand years at full want and full spare fleet
+	FaithlessBuyOff float64 // a faithless hired fleet is bought at this times greed, per thousand years
+	GraceTicks      int     // ticks a term may go undelivered before the contract breaks
+	TributeLength   float64 // thousand years a tribute runs
+	BrokerRate      float64 // brokered attempts per thousand years under a broker contract
+	BrokerLapse     float64 // years after which a broker contract lapses
+	SoldTold        float64 // chance the owner of a sold fleet learns who sold it, when it is met
+	SellswordTicks  int     // ticks living on contract pay before a people is called sellswords
+	SellswordShare  float64 // the share of a kind's income that has to be contract pay
+}
+
 // WantTuning: how many ships a people builds toward.
 type WantTuning struct {
 	Floor      int     // ships kept whatever else is wanted
@@ -349,7 +385,14 @@ func Default() *Tuning {
 		Garrison:  GarrisonTuning{HomeBase: 0.5, HomeMin: 1, ColonyShare: 0.3},
 		Intercept: InterceptTuning{Muster: 50, Samples: 64},
 		Picket:    PicketTuning{Tour: 20_000, FearBar: 0.6, KeepHome: 1, Rate: 0.3},
-		Wisdom:    WisdomTuning{Tail: 0.08, GrudgeFade: 10, VengefulBelow: 7, Compulsion: 0.08, Folly: 0.04, ThreatSeal: 0.3, AboveEras: 2, AboveWield: 0.07, AboveSeal: 0.2, LeapMargin: -1.5, LeapBar: 6, LeapNoise: 1.5, TeachWeaker: 0, BrokerRate: 0.02},
+		Contract: ContractTuning{
+			AskRate: 0.05, AskRateGreedy: 0.15, GreedBar: 0.6, GreedMargin: 1.5, EagerMargin: 0.5, CrimeMargin: 2, XenoMargin: 2,
+			LengthPerUnit: 5, LengthMin: 5, LengthMax: 50, FlowRest: 0.1, TeachGiver: 0.1, TeachHostile: 5,
+			GuardGiver: 0.1, RiskFront: 0.5, RiskElse: 0.1, StrikeGrudge: 3, PrizeYears: 20, WillWorth: 10, SightingWorth: 5,
+			BrokerGiver: 0.1, BrokerBase: 10, MercenaryRate: 0.02, FaithlessBuyOff: 0.3, GraceTicks: 2, TributeLength: 20,
+			BrokerRate: 0.1, BrokerLapse: 30_000, SoldTold: 0.5, SellswordTicks: 10, SellswordShare: 0.5,
+		},
+		Wisdom: WisdomTuning{Tail: 0.08, GrudgeFade: 10, VengefulBelow: 7, Compulsion: 0.08, Folly: 0.04, ThreatSeal: 0.3, AboveEras: 2, AboveWield: 0.07, AboveSeal: 0.2, LeapMargin: -1.5, LeapBar: 6, LeapNoise: 1.5, TeachWeaker: 0, BrokerRate: 0.02},
 	}
 }
 

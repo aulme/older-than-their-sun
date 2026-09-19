@@ -36,6 +36,7 @@ type War struct {
 	Contested map[int]int
 	Burn      bool         // a host burns what a parasite has converted
 	Called    map[int]bool // allies already called to this war
+	Hire      int          // the contract this war was declared for, or -1; see contract.go
 }
 
 func (wr *War) side(id int) int {
@@ -147,7 +148,7 @@ func (w *World) declare(c, e *Civ, cause string) *War {
 	}
 	c.Fought[e.ID]++
 	e.Fought[c.ID]++
-	wr := &War{ID: len(w.Wars), Sides: [2]int{c.ID, e.ID}, Began: w.Now, Cause: cause, Nth: c.Fought[e.ID], Pact: -1, Principal: -1, Contested: map[int]int{}, Called: map[int]bool{}}
+	wr := &War{ID: len(w.Wars), Sides: [2]int{c.ID, e.ID}, Began: w.Now, Cause: cause, Nth: c.Fought[e.ID], Pact: -1, Principal: -1, Hire: -1, Contested: map[int]int{}, Called: map[int]bool{}}
 	wr.Will = [2]float64{w.initialWill(c, e, true), w.initialWill(e, c, false)}
 	w.Wars = append(w.Wars, wr)
 	c.Wars[e.ID], e.Wars[c.ID] = true, true
@@ -544,6 +545,9 @@ func (w *World) yield(wr *War, li int) {
 
 // capitulate cedes the front, and the home too if it lies in reach.
 func (w *World) capitulate(wr *War, l, v *Civ) {
+	if w.tribute(wr, l, v) {
+		return
+	}
 	vi := wr.side(v.ID)
 	ceded := 0
 	// the winner's gains and a little more; the rest of the front is safe by the truce

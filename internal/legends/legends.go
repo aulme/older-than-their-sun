@@ -62,6 +62,9 @@ func levels(c *history.Civ) string {
 	if word := history.WisdomWord(c.Wis); word != "" {
 		s += ", " + word
 	}
+	if c.Sellsword {
+		s += ", sellswords"
+	}
 	return s
 }
 
@@ -309,6 +312,18 @@ func Write(out io.Writer, w *history.World, full bool) {
 		}
 		if c.Word != "" {
 			into += " They called it " + c.Word + "."
+		}
+		if len(c.Taught) > 0 {
+			var ts []string
+			var ks []string
+			for k := range c.Taught {
+				ks = append(ks, k)
+			}
+			sort.Strings(ks)
+			for _, k := range ks {
+				ts = append(ts, tech.Get(k).Name+" (the "+w.Civs[c.Taught[k]].Name+")")
+			}
+			into += " Taught: " + strings.Join(ts, ", ") + "."
 		}
 		made := ""
 		if c.Species.Made != "" {

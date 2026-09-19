@@ -54,6 +54,7 @@ func newWorld(seed uint64, cfg Config) *World {
 		{"messages", (*World).tickMessages},
 		{"civs", (*World).tickCivs},
 		{"trade", (*World).trade},
+		{"contracts", (*World).tickContracts},
 		{"wars", (*World).tickWars},
 		{"expeditions", (*World).tickExpeditions},
 		{"objects", (*World).tickObjects},

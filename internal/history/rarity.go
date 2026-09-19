@@ -195,6 +195,11 @@ func (w *World) rarities(c *Civ) []had {
 			}
 		}
 	}
+	for _, a := range w.accessed(c) {
+		if w.Owner[a.s.Star] == a.via {
+			take(a.s, a.via) // bought the use of
+		}
+	}
 	return out
 }
 

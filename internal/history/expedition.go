@@ -69,6 +69,9 @@ type Expedition struct {
 	Meet   Year // when
 	Leg    Year // the quarry's Launched when it was seen: the leg the meeting was computed on
 	Picket bool // for a scout: it stays at its star and watches
+	// contracts: see contract.go
+	Contract int // the contract this fleet does a guard or a strike under, or -1
+	SoldBy   int // the people that last sold a sighting of it, or -1
 }
 
 // launch sends a fleet of n ships toward a star: the ships are taken
@@ -92,7 +95,7 @@ func (w *World) launch(c *Civ, kind ExpKind, target *Civ, star int, n int) *Expe
 		g.Over = true // an empty guard is nothing; a horde's fleet is its base and stays
 	}
 	d := w.G.Dist(from, star)
-	x := &Expedition{ID: len(w.Expeditions), Owner: c.ID, Target: -1, Kind: kind, Star: star, From: from, Ships: n, Back: -1,
+	x := &Expedition{ID: len(w.Expeditions), Owner: c.ID, Target: -1, Kind: kind, Star: star, From: from, Ships: n, Back: -1, Contract: -1, SoldBy: -1,
 		Launched: w.Now, Out: w.Now, Arrive: w.Now + Year(d*c.Speed), Base: -1, Manned: w.Now, Seen: map[int]bool{}, Drive: c.Speed}
 	if target != nil {
 		x.Target = target.ID
@@ -265,6 +268,17 @@ func (w *World) arrive(x *Expedition) {
 		}
 	case Relief:
 		h := w.Civs[x.Target]
+		if k := w.contractOf(x); k != nil {
+			// a hired guard: it stands whether or not its host is at war, and its clock starts now
+			if k.State != Running || w.Owner[x.Star] != h.ID {
+				w.resolve(x)
+				return
+			}
+			x.Base = x.Star
+			k.Until = w.Now + Year(k.Length*1000)
+			w.log("A fleet of the %s arrives at %s to hold it for the %s, as paid.", c.Name, w.star(x.Base), h.Name)
+			return
+		}
 		if !h.Active() || len(h.Wars) == 0 {
 			w.log("The fleet of the %s arrives at %s to find the war over.", c.Name, w.star(x.Star))
 			w.resolve(x)
@@ -421,7 +435,12 @@ func (w *World) goNative(x *Expedition) {
 // station is a relief fleet's tick with its host.
 func (w *World) station(x *Expedition) {
 	c, h := w.Civs[x.Owner], w.Civs[x.Target]
-	if !h.Active() || len(h.Wars) == 0 {
+	if k := w.contractOf(x); k != nil {
+		if k.State != Running || !h.Active() {
+			w.resolve(x)
+			return
+		}
+	} else if !h.Active() || len(h.Wars) == 0 {
 		w.resolve(x)
 		return
 	}

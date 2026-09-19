@@ -229,7 +229,7 @@ func (w *World) uses(c *Civ) []flow.Use {
 	sort.SliceStable(out, func(i, j int) bool { return learned(out[i].Key) < learned(out[j].Key) })
 	out = append(out, w.works(c)...)
 	out = append(out, w.reservations(c)...)
-	return out
+	return append(out, w.contractUses(c)...)
 }
 
 // needOf is what a node costs a people each tick: the table's upkeep bent
@@ -259,6 +259,7 @@ func (w *World) order(c *Civ) mind.Direction {
 		Greed:       c.Dials.Greed,
 		NoFields:    !c.Species.Profile().Can(species.Fields),
 		Nomad:       c.Aloft,
+		Honour:      c.honour(),
 	}, w.Cfg.Tuning)
 }
 

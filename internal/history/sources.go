@@ -429,6 +429,8 @@ func (w *World) income(c *Civ) flow.Income {
 	in.Add(w.mobileYield(c))
 	in.Add(c.Loot)
 	c.Loot = flow.Income{}
+	in.Add(c.Paid)
+	c.PaidIn, c.Paid = c.Paid, flow.Income{}
 	c.Received = flow.Income{}
 	for _, p := range sortedInts(c.From) {
 		c.Received.Add(c.From[p])

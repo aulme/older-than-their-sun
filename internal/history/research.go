@@ -13,17 +13,7 @@ import (
 // whole tree. Deep nodes cost far more than shallow ones, and miracles cost
 // more still and are a conscious choice: the leap.
 func (w *World) research(c *Civ) {
-	per := 0.03
-	if c.Has("swarming") {
-		per = 0.015 // a nest is a small thing
-	}
-	holdings := len(c.Systems)
-	if c.Aloft {
-		holdings = len(w.fleets(c))
-	}
-	rate := 0.12 * c.Species.Rate() * (1 + 0.08*c.Soc) * (1 + per*float64(holdings))
-	rate *= c.rateMul(w)
-	c.Progress += rate * w.dt
+	c.Progress += w.researchRate(c) * w.dt
 	for c.Active() {
 		if c.Pursuit != "" && !w.canPursue(c, tech.Get(c.Pursuit)) {
 			c.Pursuit = ""
@@ -53,6 +43,21 @@ func (w *World) research(c *Civ) {
 		}
 		w.learn(c, n, true)
 	}
+}
+
+// researchRate is the points a people banks a thousand years: its blood,
+// its society and its holdings, bent by its scars, boons and means.
+func (w *World) researchRate(c *Civ) float64 {
+	per := 0.03
+	if c.Has("swarming") {
+		per = 0.015 // a nest is a small thing
+	}
+	holdings := len(c.Systems)
+	if c.Aloft {
+		holdings = len(w.fleets(c))
+	}
+	rate := 0.12 * c.Species.Rate() * (1 + 0.08*c.Soc) * (1 + per*float64(holdings))
+	return rate * c.rateMul(w)
 }
 
 func (c *Civ) rateMul(w *World) float64 {

@@ -64,17 +64,22 @@ const (
 	FStripped
 	FCycle
 	FSurveyLost
-	FWant      // the lean years: a stretch of shedding past a hundred thousand years
-	FHarness   // a first source of a kind put to use: mines in a belt, a tap on a dead star
-	FEmbargo   // a people closed its ports to a partner in want
-	FCutOff    // a people's uses went dark when a partner stopped sending
-	FManna     // a people eats something that thinks
-	FRise      // what was grown for the table rose as a people
-	FLoose     // what was grown for the table got out
-	FIntercept // a fleet met in the dark and beaten: the winner's
-	FCaught    // the loser's
-	FFathomed  // a people came to understand another
-	FBrokered  // a people spoke for another to a third
+	FWant         // the lean years: a stretch of shedding past a hundred thousand years
+	FHarness      // a first source of a kind put to use: mines in a belt, a tap on a dead star
+	FEmbargo      // a people closed its ports to a partner in want
+	FCutOff       // a people's uses went dark when a partner stopped sending
+	FManna        // a people eats something that thinks
+	FRise         // what was grown for the table rose as a people
+	FLoose        // what was grown for the table got out
+	FIntercept    // a fleet met in the dark and beaten: the winner's
+	FCaught       // the loser's
+	FFathomed     // a people came to understand another
+	FBrokered     // a people spoke for another to a third
+	FHire         // a people took another's pay to hold a star; see contract.go
+	FTaught       // a people taught another a node, for pay
+	FStrikeBought // a people paid a third to send a fleet against another
+	FBoughtOff    // a hired people sold what it was paid to hold
+	FTribute      // a people paid tribute after a war
 )
 
 // Sort is the moral shape of a fact from the subject's side.
@@ -109,6 +114,7 @@ var factShape = [...]struct {
 	FEmbargo: {Crime, 1}, FCutOff: {Woe, 2}, FManna: {Crime, 2}, FRise: {Deed, 3}, FLoose: {Folly, 4},
 	FIntercept: {Deed, 1}, FCaught: {Woe, 1},
 	FFathomed: {Bond, 1}, FBrokered: {Deed, 1},
+	FHire: {Deed, 1}, FTaught: {Deed, 1}, FStrikeBought: {Crime, 1}, FBoughtOff: {Crime, 2}, FTribute: {Woe, 1},
 }
 
 // Fact is one thing that happened, as it happened.
