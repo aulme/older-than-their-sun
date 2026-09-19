@@ -242,6 +242,9 @@ func (w *World) attemptMaster(c *Civ, l *Legacy) {
 			}
 		}
 		w.finding = false
+		if gained > 0 {
+			w.renew(c, 0.2) // an art mastered from a find is something new
+		}
 		return
 	}
 	if l.Maker >= 0 && l.Cond == Ruin {

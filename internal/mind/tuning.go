@@ -49,6 +49,7 @@ type Tuning struct {
 	Contract  ContractTuning
 	Slight    SlightTuning
 	Refuse    RefuseTuning
+	Ossify    OssifyTuning
 	Plague    plague.Tuning // the plagues' own numbers, kept here so one table tunes everything
 }
 
@@ -76,6 +77,7 @@ type AppraiseTuning struct {
 	Scale       float64 // levels of margin per unit of the normal
 	PrizeWeight float64 // the bar drops this much per unit of prize: the target's yield the attacker wants, and its rarities
 	PrizeMax    float64 // and never by more than this
+	Stiff       float64 // stiffness at which a people is a target of opportunity: its ways have set
 }
 
 // BarTuning: the odds a posture needs before it strikes.
@@ -85,6 +87,8 @@ type BarTuning struct {
 	Conqueror      float64
 	Vengeful       float64 // against the grudge target
 	GrudgeDiscount float64 // off the bar when there is a grudge
+	StiffNew       float64 // what a stiff people adds to the bar per point of stiffness past one against a people it never fought: it prefers the wars it knows
+	StiffNoFirst   float64 // stiffness from which a people that never sent a fleet sends none
 }
 
 // CouncilTuning: when a people decides, and how boldly.
@@ -382,12 +386,48 @@ type RefuseTuning struct {
 	Censor  float64 // censorship: the chance at this multiple
 }
 
+// OssifyTuning: how a people's ways set, and when that comes for it. See
+// history's ossify.go for the growth table these feed and the filter.
+type OssifyTuning struct {
+	Base         float64 // stiffness per thousand years for a lone cradle world under a fresh sky
+	PerWorld     float64 // the size term: 1 + worlds times this
+	Fade         float64 // the fading galaxy: 1 + this times one less the fertility
+	Still        float64 // times this when nothing new has happened in the window
+	StillKyr     float64 // the window, thousand years
+	Ossified     float64 // times this once the people has set
+	IronScar     float64 // times this per iron answer held: centralism, stewardship, quarantine, fatalism
+	Chance       float64 // facings per thousand years per point of stiffness past one
+	Renaissance  float64 // added per renaissance
+	Foresight    float64 // taken off for a people that sees it coming
+	ForeseeAt    float64 // stiffness from which the foresighted tilt their research to society
+	ForeseeTilt  float64 // by this
+	Renewal      float64 // research at this multiple after a renaissance
+	RenewalKyr   float64 // for this long
+	Opportunity  float64 // stiffness at which the neighbours read a people as slow to answer
+	CivilWar     float64 // the break: chance of a civil war per world held, capped
+	CivilWarCap  float64
+	DepthBase    float64 // a dark age's depth: base, plus this per unit of stiffness over three, plus this per earlier dark age, plus noise
+	DepthStiff   float64
+	DepthPrior   float64
+	DepthNoise   float64
+	DepthMin     float64
+	DepthMax     float64
+	Shards       int     // the most peoples a shattering makes; the rest of the worlds are abandoned
+	GrudgeDecay  float64 // what a grudge keeps per thousand years
+	GrudgeFloor  float64 // below this a grudge is gone
+	HeirGrudge   float64 // what an heir keeps of the old people's grudges
+	HeldGrudge   float64 // what others keep against an heir of what they held against the old people
+	SunderGrudge float64 // what the heirs of a civil war hold against each other
+	KinLoyalty   float64 // the loyalty term in a pact answer between kin, times
+	KinLine      float64 // the grudge above which kinship's warmth is suspended
+}
+
 // Default is today's numbers.
 func Default() *Tuning {
 	return &Tuning{
 		Belief:   BeliefTuning{UnknownBase: 1, UnknownPerEra: 1.2, UnknownSpread: 3, Spread: 0.3, SpreadPerKyr: 0.1, MaxSpread: 3, UnknownShips: 1, UnknownShipsPerEra: 1, UnknownGuns: 2, UnknownGunsEra: 2},
-		Appraise: AppraiseTuning{Weakened: 1, OtherWar: 0.3, AllyShare: 0.5, Scale: 2, DarkAge: 50_000, PrizeWeight: 0.02, PrizeMax: 0.15},
-		Bar:      BarTuning{Hate: 0.35, Opportunist: 0.75, Conqueror: 0.4, Vengeful: 0.3, GrudgeDiscount: 0.1},
+		Appraise: AppraiseTuning{Weakened: 1, OtherWar: 0.3, AllyShare: 0.5, Scale: 2, DarkAge: 50_000, PrizeWeight: 0.02, PrizeMax: 0.15, Stiff: 1.5},
+		Bar:      BarTuning{Hate: 0.35, Opportunist: 0.75, Conqueror: 0.4, Vengeful: 0.3, GrudgeDiscount: 0.1, StiffNew: 0.2, StiffNoFirst: 2},
 		Council:  CouncilTuning{Cadence: 0.3, Compulsion: 0.1, Compelled: 0.25},
 		Scout:    ScoutTuning{KeepHome: 1, FearBar: 0.8, FearShips: 3, SightNoise: 0.1},
 		Campaign: CampaignTuning{Floor: 0.1, MinFloor: 1, FearCap: 0.4, MaxLag: 20_000, ConquerorLag: 40_000, MusterMax: 30_000},
@@ -424,6 +464,13 @@ func Default() *Tuning {
 		},
 		Slight: SlightTuning{Weight: 2, Cap: 1, Tick: 0.1, Source: 0.3, Fact: 0.2, Dependent: 2, OffenceWeight: 5, StrongWeight: 0.5, FearBar: 0.6, ConquerorShare: 0.5},
 		Refuse: RefuseTuning{Creed: 0.5, Caution: 0.3, Cap: 0.9, Censor: 2},
+		Ossify: OssifyTuning{
+			Base: 0.00025, PerWorld: 1.0 / 8, Fade: 2, Still: 1.5, StillKyr: 200, Ossified: 1.5, IronScar: 1.25,
+			Chance: 0.0015, Renaissance: 1, Foresight: 1, ForeseeAt: 0.7, ForeseeTilt: 1.5, Renewal: 1.5, RenewalKyr: 300, Opportunity: 1.5,
+			CivilWar: 1.0 / 6, CivilWarCap: 0.8,
+			DepthBase: 0.1, DepthStiff: 0.3, DepthPrior: 0.1, DepthNoise: 0.1, DepthMin: 0.1, DepthMax: 0.8, Shards: 8,
+			GrudgeDecay: 0.995, GrudgeFloor: 0.05, HeirGrudge: 0.25, HeldGrudge: 0.5, SunderGrudge: 3, KinLoyalty: 2, KinLine: 0.5,
+		},
 		Plague: plague.Default(),
 		Wisdom: WisdomTuning{Tail: 0.08, GrudgeFade: 10, VengefulBelow: 7, Compulsion: 0.08, Folly: 0.04, ThreatSeal: 0.3, AboveEras: 2, AboveWield: 0.07, AboveSeal: 0.2, LeapMargin: -1.5, LeapBar: 6, LeapNoise: 1.5, TeachWeaker: 0, BrokerRate: 0.02},
 	}

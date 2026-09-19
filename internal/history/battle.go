@@ -392,8 +392,8 @@ func (w *World) sail(x *Expedition, t int) {
 // world, manned.
 func (w *World) reliefsAt(h *Civ, t int) []*Expedition {
 	var out []*Expedition
-	for _, x := range w.Expeditions {
-		if x.Over || x.Kind != Relief || x.Base != t || x.Target != h.ID || x.Returning || x.LaidUp || x.Ships <= 0 {
+	for _, x := range w.liveFleets() {
+		if x.Kind != Relief || x.Base != t || x.Target != h.ID || x.Returning || x.LaidUp || x.Ships <= 0 {
 			continue
 		}
 		out = append(out, x)

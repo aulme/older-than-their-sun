@@ -157,6 +157,8 @@ func (w *World) declare(c, e *Civ, cause string) *War {
 	wr.Will = [2]float64{w.initialWill(c, e, true), w.initialWill(e, c, false)}
 	w.Wars = append(w.Wars, wr)
 	c.Wars[e.ID], e.Wars[c.ID] = true, true
+	w.stir(c) // a war is not still
+	w.stir(e)
 	w.cutTrade(c, e, "the war")
 	w.cutTrade(e, c, "the war")
 	delete(c.Trade, e.ID)
@@ -299,6 +301,12 @@ func (w *World) takeWorld(wr *War, c, e *Civ, t int) {
 		if first {
 			w.log("The %s overrun %s. Where the %s were there is a nest.", c.Name, w.star(t), e.Name)
 		}
+	case c.Claim[t]:
+		w.loseSystem(e, t, "reclaimed "+colony, "")
+		w.Owner[t] = c.ID
+		c.Systems = append(c.Systems, t)
+		wr.Taken[i]++
+		w.reclaimed(c, e, t) // restored to the realm, in the taker's own telling: nobody glasses what was theirs
 	case c.hates(e) || !w.canLive(c, t):
 		w.Bio[t] = BioSimple
 		w.loseSystem(e, t, "glassed world", "")
@@ -683,6 +691,8 @@ func (w *World) endWar(wr *War, result string) {
 	a.Grudge[b.ID] += 0.3 + 0.3*float64(wr.Lost[0])
 	b.Grudge[a.ID] += 0.3 + 0.3*float64(wr.Lost[1])
 	b.Grudge[a.ID] += 0.5 // being struck first is the deeper wrong
+	w.renew(a, 0.1)       // a war fought to its end is something new
+	w.renew(b, 0.1)
 	w.warEnded(wr)
 }
 
@@ -693,8 +703,8 @@ func (w *World) hasFleetAgainst(c, e *Civ) bool {
 }
 
 func (w *World) fleetInFlight(c, e *Civ) bool {
-	for _, x := range w.Expeditions {
-		if !x.Over && x.Owner == c.ID && x.Target == e.ID && x.Kind == Campaign && !x.Returning && x.Base < 0 {
+	for _, x := range w.fleetsOf(c) {
+		if x.Target == e.ID && x.Kind == Campaign && !x.Returning && x.Base < 0 {
 			return true
 		}
 	}
@@ -704,8 +714,8 @@ func (w *World) fleetInFlight(c, e *Civ) bool {
 // fleetFront is e's worlds within a hop of c's fleets at base.
 func (w *World) fleetFront(c, e *Civ) []int {
 	var out []int
-	for _, x := range w.Expeditions {
-		if x.Over || x.Owner != c.ID || x.Target != e.ID || x.Kind != Campaign || x.Returning || x.Base < 0 {
+	for _, x := range w.fleetsOf(c) {
+		if x.Target != e.ID || x.Kind != Campaign || x.Returning || x.Base < 0 {
 			continue
 		}
 		for _, s := range e.Systems {
@@ -723,8 +733,8 @@ func (w *World) canStrikeHome(c, e *Civ) bool {
 }
 
 func (w *World) fleetAtBase(c, e *Civ) bool {
-	for _, x := range w.Expeditions {
-		if !x.Over && x.Owner == c.ID && x.Target == e.ID && x.Kind == Campaign && !x.Returning && x.Base >= 0 {
+	for _, x := range w.fleetsOf(c) {
+		if x.Target == e.ID && x.Kind == Campaign && !x.Returning && x.Base >= 0 {
 			return true
 		}
 	}

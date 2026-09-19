@@ -45,6 +45,7 @@ func (w *World) gain(c *Civ, key, how string) {
 		c.Renewed = w.Now
 		c.Morale += 1
 	}
+	w.reset(c) // whatever they were tired of, they are not tired of this
 	w.recompute(c)
 }
 
@@ -149,13 +150,13 @@ func (c *Civ) miracleDiff(key string) float64 {
 		switch key {
 		case "beacon":
 			d -= 10 // nothing takes root in them that they did not plant
-		case "weight", "hold":
+		case "ossification", "hold":
 			d -= 2
 		}
 	}
 	if c.miracle("ansible") {
 		switch key {
-		case "weight", "hold":
+		case "ossification", "hold":
 			d -= 1
 		case "beacon":
 			d += 1 // everyone hears it at once
@@ -341,7 +342,7 @@ func init() {
 			w.log("The %s think one thought and remain many people. It can be done.", c.Name)
 		},
 		Scar: func(w *World, c *Civ) {
-			c.Scars[ScarOssified] = true
+			c.Ossified, c.Stiff = true, max(c.Stiff, 1) // set, and the filter will come for it
 			w.log("The %s think one thought, and it is the same thought every year after. Nothing new is ever said.", c.Name)
 		},
 		Decline: func(w *World, c *Civ) {

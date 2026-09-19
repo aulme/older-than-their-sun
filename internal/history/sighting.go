@@ -239,7 +239,7 @@ func (w *World) timetable(x *Expedition) {
 // newEye is an eye appearing after fleets have launched: a fleet setting
 // out or a picket at its post checks every fleet in flight.
 func (w *World) newEye(o *Civ, e eye) {
-	for _, x := range w.Expeditions {
+	for _, x := range w.liveFleets() {
 		if !watched(x) || x.Owner == o.ID {
 			continue
 		}

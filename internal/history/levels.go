@@ -99,7 +99,7 @@ func (w *World) recompute(c *Civ) {
 	if c.Scars[ScarCentralism] {
 		soc += 1
 	}
-	if c.Scars[ScarOssified] {
+	if c.Ossified {
 		soc -= 0.5
 	}
 	if c.Scars[ScarLeftBehind] {

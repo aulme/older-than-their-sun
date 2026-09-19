@@ -174,7 +174,7 @@ func Write(out io.Writer, w *history.World, full bool) {
 	for _, c := range w.Civs {
 		fates[c.Fate]++
 	}
-	p("Civilisations: %d arose. %d extinct, %d transformed, %d contracted.", len(w.Civs), fates[history.Extinct], fates[history.Transformed], fates[history.Contracted])
+	p("Civilisations: %d arose. %d extinct, %d transformed, %d contracted, %d sundered into heirs, %d shattered into shards.", len(w.Civs), fates[history.Extinct], fates[history.Transformed], fates[history.Contracted], fates[history.Sundered], fates[history.Shattered])
 	standing := 0
 	for _, c := range w.Civs {
 		if c.Active() {
@@ -191,10 +191,18 @@ func Write(out io.Writer, w *history.World, full bool) {
 			if word := w.RideWord(c); word != "" {
 				sick += "; " + word
 			}
+			line := ""
+			if n := len(c.Line); n > 0 {
+				line = ", heirs of the " + w.Civs[c.Line[n-1]].Name
+			}
+			ways := "; " + c.StiffWord()
+			if len(c.Claim) > 0 {
+				ways += ", claiming the old realm"
+			}
 			if c.Active() && c.Aloft {
-				p("  The %s, aloft, seated for now at %s, %s, in %d fleets. %s. Now: %s; %s%s.", c.Name, c.HomeName, tech.EraNames[c.Era], fleetsOf(w, c), c.Species.Describe(), levels(c), arms(w, c), sick)
+				p("  The %s%s, aloft, seated for now at %s, %s, in %d fleets. %s. Now: %s; %s%s%s.", c.Name, line, c.HomeName, tech.EraNames[c.Era], fleetsOf(w, c), c.Species.Describe(), levels(c), arms(w, c), ways, sick)
 			} else if c.Active() {
-				p("  The %s on %s, %s, holding %s. %s. Now: %s; %s%s.", c.Name, c.HomeName, tech.EraNames[c.Era], systems(len(c.Systems)), c.Species.Describe(), levels(c), arms(w, c), sick)
+				p("  The %s%s on %s, %s, holding %s. %s. Now: %s; %s%s%s.", c.Name, line, c.HomeName, tech.EraNames[c.Era], systems(len(c.Systems)), c.Species.Describe(), levels(c), arms(w, c), ways, sick)
 			}
 		}
 	}
@@ -253,6 +261,8 @@ func Write(out io.Writer, w *history.World, full bool) {
 		}
 		p("  %s, a %s, %s%s.", h.Name, h.Kind, state, made)
 	}
+	p("")
+	lines(p, w)
 	p("")
 	plagues(p, w)
 	p("")
@@ -374,6 +384,59 @@ func Write(out io.Writer, w *history.World, full bool) {
 			p("  %-14s known: %s", "", strings.Join(known, " "))
 		}
 	}
+}
+
+// lines is the family tree of every empire that broke: each people that
+// ended in a sundering or a shattering with its heirs, their heirs in
+// turn, and who holds the old seat now.
+func lines(p func(string, ...any), w *history.World) {
+	p("Lines: the empires that broke, and their heirs.")
+	any := false
+	var tree func(c *history.Civ, depth int)
+	tree = func(c *history.Civ, depth int) {
+		pad := strings.Repeat("    ", depth)
+		state := ""
+		switch {
+		case c.Active():
+			state = fmt.Sprintf("standing, %s", c.StiffWord())
+		case c.Stage == history.Remnant:
+			state = "a remnant"
+		case c.Fate == history.Sundered:
+			state = fmt.Sprintf("sundered %s", year(c.Ended))
+		case c.Fate == history.Shattered:
+			state = fmt.Sprintf("shattered %s", year(c.Ended))
+		default:
+			state = fmt.Sprintf("%s %s: %s", c.Fate, year(c.Ended), c.Cause)
+		}
+		seat := ""
+		if o := w.Owner[c.Cradle]; o >= 0 && o != c.ID && w.Civs[o].Line != nil && contains(w.Civs[o].Line, c.ID) {
+			seat = fmt.Sprintf("; the old seat is held by the %s", w.Civs[o].Name)
+		}
+		p("  %sThe %s (%s), %s%s.", pad, c.Name, year(c.Born), state, seat)
+		for _, h := range w.Civs {
+			if n := len(h.Line); n > 0 && h.Line[n-1] == c.ID {
+				tree(h, depth+1)
+			}
+		}
+	}
+	for _, c := range w.Civs {
+		if (c.Fate == history.Sundered || c.Fate == history.Shattered) && len(c.Line) == 0 {
+			any = true
+			tree(c, 0)
+		}
+	}
+	if !any {
+		p("  none")
+	}
+}
+
+func contains(xs []int, v int) bool {
+	for _, x := range xs {
+		if x == v {
+			return true
+		}
+	}
+	return false
 }
 
 // plagues lists every plague alive at the present, endemic or raging,

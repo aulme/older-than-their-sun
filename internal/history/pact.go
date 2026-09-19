@@ -194,6 +194,9 @@ func (w *World) proposePact(c *Civ) {
 	if w.R.Float64() > plan.Rate {
 		return
 	}
+	if c.Stiff > 1 && !w.swornKind(c, kind) {
+		return // a stiff people makes no new kind of promise
+	}
 	if kind == Aggressive {
 		for _, eid := range sortedInts(c.Met) {
 			e := w.Civs[eid]
@@ -237,6 +240,16 @@ func (w *World) proposePact(c *Civ) {
 	}
 }
 
+// swornKind says whether a people has ever held a pact of a kind.
+func (w *World) swornKind(c *Civ, kind PactKind) bool {
+	for _, pid := range c.Pacts {
+		if p := w.Pacts[pid]; p.Kind == kind || p.Kind == Both {
+			return true
+		}
+	}
+	return false
+}
+
 // answerPact is a people weighing an offer: the appraisal with posture on
 // top, less the proposer's infamy, the score read through its folly.
 func (w *World) answerPact(f, c *Civ, m *Message) {
@@ -253,7 +266,7 @@ func (w *World) answerPact(f, c *Civ, m *Message) {
 	in := mind.AnswerInput{
 		Aggressive: m.PactKind == Aggressive, Posture: f.posture(), Target: e != nil, Mil: f.Mil, ProposerMil: c.Mil,
 		Difference: f.differs(c), Infamy: w.infamy(c), ProposerGrudge: f.Grudge[c.ID], Renown: w.renown(c), Dials: f.Dials,
-		Wis: f.Wis, Noise: w.R.NormFloat64(),
+		Wis: f.Wis, Noise: w.R.NormFloat64(), Kin: w.kin(f, c),
 	}
 	against := "whoever comes"
 	if e != nil {

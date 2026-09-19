@@ -50,22 +50,22 @@ var ruinNames = []string{"the Old Builders", "the Ones Before", "the First Peopl
 
 // wreckages by filter: what a failed filter does to the works of the fallen.
 var filterWreckage = map[string]Wreckage{
-	"atomic":      {0.6, Wreck},
-	"overshoot":   {0.4, Derelict},
-	"machines":    {0.5, Derelict},
-	"distance":    {0.1, Abandoned},
-	"silence":     {0.3, Abandoned},
-	"replication": {0.8, Wreck},
-	"stellar":     {1, Ruin},
-	"transcend":   {0.1, Abandoned},
-	"weight":      {0.2, Abandoned},
-	"door":        {0.5, Wreck},
-	"hold":        {0.3, Derelict},
-	"revolt":      {0.5, Wreck},
-	"containment": {0.3, Derelict},
-	"beacon":      {0.2, Abandoned},
-	"incursion":   {0.3, Derelict},
-	"elder":       {0.2, Abandoned},
+	"atomic":       {0.6, Wreck},
+	"overshoot":    {0.4, Derelict},
+	"machines":     {0.5, Derelict},
+	"distance":     {0.1, Abandoned},
+	"silence":      {0.3, Abandoned},
+	"replication":  {0.8, Wreck},
+	"stellar":      {1, Ruin},
+	"transcend":    {0.1, Abandoned},
+	"ossification": {0.2, Abandoned},
+	"door":         {0.5, Wreck},
+	"hold":         {0.3, Derelict},
+	"revolt":       {0.5, Wreck},
+	"containment":  {0.3, Derelict},
+	"beacon":       {0.2, Abandoned},
+	"incursion":    {0.3, Derelict},
+	"elder":        {0.2, Abandoned},
 }
 
 // wreckages by manner of loss, used when no filter is running (war, cosmic
@@ -253,14 +253,15 @@ func (w *World) makerName(l *Legacy) string {
 	return "the " + w.Civs[l.Maker].Name
 }
 
-// kinship: 2 for one's own works, 1 for those of the same blood, else 0.
+// kinship: 2 for one's own works and the works of one's line (the design
+// is theirs), 1 for those of the same blood, else 0.
 func (w *World) kinship(c *Civ, l *Legacy) int {
 	if l.Maker < 0 {
 		return 0
 	}
 	m := w.Civs[l.Maker]
 	switch {
-	case m == c:
+	case c.ofLine(m.ID):
 		return 2
 	case m.Species.Kin(c.Species):
 		return 1

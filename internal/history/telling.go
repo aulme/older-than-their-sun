@@ -19,7 +19,6 @@ var templates = [...]string{
 	FSettle:       "{S} settled {T}.",
 	FZenith:       "{S} held {N} and feared no one.",
 	FDarkAge:      "{S} {X}, and a dark age followed.",
-	FSchism:       "{S} split, and {O} went their own way.",
 	FFall:         "{S} {X}, and were a remnant after.",
 	FEnd:          "{S} {X}.",
 	FWar:          "{S} made war on {O}, over {X}.",
@@ -85,6 +84,10 @@ var templates = [...]string{
 	FWildfire:     "{X} was everywhere.",
 	FPoisoned:     "{S} made {X} for {O} and hid it in what they sent.",
 	FWoke:         "{X} began to think, and took {O}, and was {S}.",
+	FRenaissance:  "{S} grew old, and then young again.",
+	FSundered:     "{S} tore themselves apart, and {O} declared themselves {X}.",
+	FReclaimed:    "{S} took {T} back from {O}, and called it restored to the realm.",
+	FShattered:    "{S} forgot how to reach the stars, and on {T} {O} woke up alone.",
 }
 
 // blamedTemplates are the woes that name their own cause, retold once
@@ -414,8 +417,10 @@ func (w *World) mythOf(c *Civ, f *Fact) string {
 		return "the lean years"
 	case FCutOff:
 		return "the starving of " + name(f.Subject)
-	case FSchism:
-		return "the schism"
+	case FSundered:
+		return "the sundering"
+	case FShattered:
+		return "the shattering"
 	case FExodus:
 		return "the leaving of " + w.star(f.Star)
 	case FBred:
@@ -448,8 +453,10 @@ func (w *World) blameOf(c *Civ, f *Fact) string {
 		return "brought " + us + " low"
 	case FEnd:
 		return "ended the " + w.Civs[f.Subject].Name
-	case FSchism:
-		return "split " + us
+	case FSundered:
+		return "tore " + us + " apart"
+	case FShattered:
+		return "took the stars from " + us
 	case FHorrorStrike, FSurveyLost:
 		return "woke " + w.horrorName(f)
 	case FDefeat:

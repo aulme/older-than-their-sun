@@ -1,6 +1,8 @@
 package history
 
 import (
+	"sort"
+
 	"worldgen/internal/battle"
 	"worldgen/internal/flow"
 	"worldgen/internal/mind"
@@ -64,15 +66,58 @@ func (w *World) levelOf(c *Civ) float64 {
 	return c.Mil + c.warBonus() + mind.ShipLevels(float64(w.standing(c)))
 }
 
-// fleetsOf is every fleet a people has, of any kind, not over.
+// fleetsOf is every fleet a people has, of any kind, not over, in the
+// order they were made. It reads the index by owner and drops what is
+// over or has changed hands as it goes, so the walk is the live fleets
+// and not every fleet ever made.
 func (w *World) fleetsOf(c *Civ) []*Expedition {
-	var out []*Expedition
-	for _, x := range w.Expeditions {
+	var live []*Expedition // a fresh list each call: a caller may be walking the last one while it changes the fleets
+	for _, x := range w.fleetsBy[c.ID] {
 		if !x.Over && x.Owner == c.ID {
-			out = append(out, x)
+			live = append(live, x)
 		}
 	}
-	return out
+	if w.fleetsBy != nil && len(live) != len(w.fleetsBy[c.ID]) {
+		w.fleetsBy[c.ID] = live
+	}
+	return live
+}
+
+// liveFleets is every fleet not over, in the order they were made,
+// compacted in place as it is read: for the walks that look for fleets
+// against a people or at a star rather than a people's own. A caller
+// must not end a fleet while walking it.
+func (w *World) liveFleets() []*Expedition {
+	live := w.live[:0]
+	for _, x := range w.live {
+		if !x.Over {
+			live = append(live, x)
+		}
+	}
+	w.live = live
+	return live
+}
+
+// addExpedition puts a new fleet on the world's list and its owner's.
+func (w *World) addExpedition(x *Expedition) {
+	w.Expeditions = append(w.Expeditions, x)
+	w.live = append(w.live, x)
+	if w.fleetsBy == nil {
+		w.fleetsBy = map[int][]*Expedition{}
+	}
+	w.fleetsBy[x.Owner] = append(w.fleetsBy[x.Owner], x)
+}
+
+// reown hands a fleet to another people, keeping the index in the order
+// the fleets were made.
+func (w *World) reown(x *Expedition, c *Civ) {
+	x.Owner = c.ID
+	if w.fleetsBy == nil {
+		w.fleetsBy = map[int][]*Expedition{}
+	}
+	l := append(w.fleetsBy[c.ID], x)
+	sort.Slice(l, func(i, j int) bool { return l[i].ID < l[j].ID })
+	w.fleetsBy[c.ID] = l
 }
 
 // ships is every ship a people has in being, in every fleet, laid up or not.
@@ -125,7 +170,7 @@ func (w *World) addGuard(c *Civ, star, n int) *Expedition {
 	}
 	g := &Expedition{ID: len(w.Expeditions), Owner: c.ID, Target: -1, Kind: kind, Star: star, From: star, Ships: n, Back: -1, Contract: -1, SoldBy: -1,
 		Launched: w.Now, Out: w.Now, Arrive: w.Now, Base: star, Fed: w.Now, Manned: w.Now, Seen: map[int]bool{}}
-	w.Expeditions = append(w.Expeditions, g)
+	w.addExpedition(g)
 	return g
 }
 

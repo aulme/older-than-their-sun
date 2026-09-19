@@ -16,7 +16,8 @@ var machine = &SubstrateDef{Sub: Machine, Entry: Entry{
 		Env:             2,    // rock and vacuum are enough
 		Memory:          0.05, // backups on every world
 		Endure:          3,    // cold is only cold
-		FilterDiff:      map[string]float64{"cosmic": -1, "weight": 1, "replication": -1},
+		FilterDiff:      map[string]float64{"cosmic": -1, "replication": -1},
+		Stiffen:         1.5,              // machines ossify
 		Cannot:          Sickens | Fields, // nothing lives in them that they did not put there; nothing to farm
 		PlagueMeme:      2,                // they copy exactly
 		OrganicAsEnergy: true,             // what flesh pays in food, they pay in power

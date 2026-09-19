@@ -65,8 +65,12 @@ func (c *Civ) rateMul(w *World) float64 {
 	if c.Scars[ScarNoMachines] {
 		m *= 0.8
 	}
-	if c.Scars[ScarOssified] {
-		m *= 0.7
+	m *= c.stiffMul() // the ways set: a third slower at one, half at two
+	if c.Ossified {
+		m *= 0.5 // on its on ticks; on its off ticks it banks nothing
+	}
+	if w.renewing(c) {
+		m *= w.Cfg.Tuning.Ossify.Renewal
 	}
 	if c.Scars[ScarLeftBehind] {
 		m *= 0.1
@@ -99,6 +103,7 @@ func (c *Civ) rateMul(w *World) float64 {
 			if c.Known["censorship"] && c.working("censorship") {
 				m *= 0.9 // what may not be said is not thought either
 			}
+			m *= (1 + c.Stiff/2) / (1 + c.Stiff) // the institutions are what set: society is hit hardest
 		}
 	}
 	for p := range c.Trade {
@@ -182,6 +187,7 @@ func (w *World) choose(c *Civ) string {
 // learn adds a node, applies its side effects and fires its filter.
 func (w *World) learn(c *Civ, n *tech.Node, fire bool) {
 	c.Known[n.Key] = true
+	w.stir(c)
 	if _, ok := c.Learned[n.Key]; !ok {
 		c.Learned[n.Key] = w.Now
 	}

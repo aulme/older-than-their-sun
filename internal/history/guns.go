@@ -87,8 +87,8 @@ func (w *World) addGuns(c *Civ, star, n int) {
 
 // sieged says whether an enemy's campaign fleet is in a star's sky.
 func (w *World) sieged(c *Civ, star int) bool {
-	for _, x := range w.Expeditions {
-		if !x.Over && x.Kind == Campaign && x.Target == c.ID && x.Base == star && !x.LaidUp && x.Ships > 0 {
+	for _, x := range w.liveFleets() {
+		if x.Kind == Campaign && x.Target == c.ID && x.Base == star && !x.LaidUp && x.Ships > 0 {
 			return true
 		}
 	}

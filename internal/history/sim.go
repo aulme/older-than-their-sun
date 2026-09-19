@@ -116,10 +116,14 @@ func (w *World) profileLine() {
 }
 
 // runAge is the civilisation engine. It runs from the dawn at one tick to
-// the present, and stops when decline has truly set in: few enough still
-// active, fertility low enough, and then a little longer so the present
-// lands somewhere in the waning. The waning is declared once on the way,
-// and changes nothing but the legends' chapter.
+// the present, and stops when the age has truly faded: fertility low
+// enough, few enough still rising if any measure of that is set, and then
+// a little longer so the present lands somewhere in the waning. Nobody
+// dies of age (ossify.go): an old empire stands, set in its ways or
+// broken into heirs, until something else ends it, so the present finds
+// successors and ruins, not blank stars, and the sky is what ends the
+// age. The waning is declared once on the way, and changes nothing but
+// the legends' chapter.
 func (w *World) runAge() {
 	cfg := w.Cfg
 	w.dt = float64(cfg.Step) / 1000
@@ -129,25 +133,26 @@ func (w *World) runAge() {
 	for {
 		w.Now = y
 		w.runPhases()
-		active := w.activeCount()
+		active := w.risingCount()
 		f := w.fertility()
 		if (y-cfg.Dawn)%1_000_000 == 0 {
 			if w.Cfg.Debug {
-				w.log("[debug: %d active, %d remnants, fertility %.2f, hazard %.2f]", active, len(w.Civs)-active-w.deadCount(), f, w.Hazard)
+				all := w.activeCount()
+				w.log("[debug: %d active, %d of them rising, %d remnants, fertility %.2f, hazard %.2f]", all, active, len(w.Civs)-all-w.deadCount(), f, w.Hazard)
 			}
 			if w.Cfg.Profile {
 				w.profileLine()
 			}
 		}
-		if w.Waning == 0 && active <= cfg.FineActive && f < cfg.FineFertility {
+		if w.Waning == 0 && (cfg.FineActive == 0 || active <= cfg.FineActive) && f < cfg.FineFertility {
 			w.Waning = y
 			w.log("The age is waning. Few still rise, and those that stand are old.")
 		}
-		if !ended && active <= cfg.EndActive && f < w.Cycle.Ends {
+		if !ended && (cfg.EndActive == 0 || active <= cfg.EndActive) && f < w.Cycle.Ends {
 			ended = true
 			stopAt = y + Year(w.R.Float64()*float64(cfg.Linger))
 		}
-		if ended && y >= stopAt && active <= cfg.EndActive {
+		if ended && y >= stopAt {
 			break
 		}
 		if float64(y-cfg.Dawn) > cfg.MaxFades*float64(w.Cycle.Fade) {
@@ -182,6 +187,22 @@ func (w *World) activeCount() int {
 	}
 	return n
 }
+
+// risingCount is the peoples still rising: active, and their ways not
+// yet set. Few still rise, and those that stand are old: that is the
+// waning. The default config sets no bar on it (FineActive and EndActive
+// zero), since under ossification the count never falls: the sky ends
+// the age.
+func (w *World) risingCount() int {
+	n := 0
+	for _, c := range w.Civs {
+		if c.Active() && !c.Ossified && c.Stiff < 1 {
+			n++
+		}
+	}
+	return n
+}
+
 func (w *World) life() {
 	for i, b := range w.Bio {
 		switch b {

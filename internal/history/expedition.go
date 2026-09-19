@@ -100,7 +100,7 @@ func (w *World) launch(c *Civ, kind ExpKind, target *Civ, star int, n int) *Expe
 	if target != nil {
 		x.Target = target.ID
 	}
-	w.Expeditions = append(w.Expeditions, x)
+	w.addExpedition(x)
 	w.timetable(x)
 	if kind != Scout && kind != Survey {
 		w.newEye(c, eye{star: -1, r: max(fleetEye, c.watchRange()/2), fleet: x, kind: eyeFleet})
@@ -424,7 +424,7 @@ func (w *World) goNative(x *Expedition) {
 	}
 	w.forget(nc, 0.1)
 	w.recompute(nc)
-	x.Owner = nc.ID
+	w.reown(x, nc)
 	x.Over = true
 	if x.Ships > 0 {
 		w.addGuard(nc, home, x.Ships)

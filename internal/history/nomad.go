@@ -2,7 +2,6 @@ package history
 
 import (
 	"worldgen/internal/mind"
-	"worldgen/internal/names"
 	"worldgen/internal/species"
 	"worldgen/internal/tech"
 )
@@ -25,8 +24,8 @@ func (c *Civ) nomad() bool { return c.Has("nomadic") && !c.Rested }
 // fleets are a people's roaming fleets.
 func (w *World) fleets(c *Civ) []*Expedition {
 	var out []*Expedition
-	for _, x := range w.Expeditions {
-		if !x.Over && x.Kind == Roam && x.Owner == c.ID {
+	for _, x := range w.fleetsOf(c) {
+		if x.Kind == Roam {
 			out = append(out, x)
 		}
 	}
@@ -217,7 +216,7 @@ func (w *World) roam(c *Civ) {
 					Launched: w.Now, Out: w.Now, Base: -1, Fed: w.Now, Manned: w.Now, Seen: map[int]bool{}}
 				x.Ships -= nx.Ships
 				nx.Arrive = w.Now + Year(w.G.Dist(x.Base, t)*c.Speed)
-				w.Expeditions = append(w.Expeditions, nx)
+				w.addExpedition(nx)
 			}
 		}
 	}
@@ -381,48 +380,4 @@ func (w *World) rest(c *Civ, why string) {
 	} else {
 		w.log("The %s, refugees no longer, settle %s. It is home now.", c.Name, c.HomeName)
 	}
-}
-
-// splitFleets is schism among the aloft: half the fleets go their own way.
-func (w *World) splitFleets(c *Civ) {
-	fl := w.fleets(c)
-	if len(fl) < 2 {
-		w.log("Unrest in the fleets of the %s. It passes, this time.", c.Name)
-		c.Morale -= 0.5
-		return
-	}
-	home := -1
-	for _, x := range fl {
-		if x.Base >= 0 && w.Owner[x.Base] < 0 {
-			home = x.Base
-			break
-		}
-	}
-	if home < 0 {
-		for i, x := range fl {
-			if i%2 == 1 {
-				x.Over = true
-			}
-		}
-		w.log("Schism in the fleets of the %s. Half of them scatter and are not heard of again.", c.Name)
-		return
-	}
-	nc := w.spawnCiv(home, c.Species, -1, names.Civ(w.R))
-	nc.Origin = "a branch of the " + c.Name
-	nc.Master = -1
-	w.Owner[home] = -1
-	nc.Systems = nil
-	nc.Aloft = true
-	for i, x := range fl {
-		if i%2 == 1 {
-			x.Owner = nc.ID
-		}
-	}
-	for _, k := range knownOf(c) {
-		nc.Known[k] = true
-	}
-	w.aloftGuards(nc)
-	w.seat(nc)
-	w.recompute(nc)
-	w.log("Schism in the fleets of the %s. Half of them go their own way as the %s.", c.Name, nc.Name)
 }

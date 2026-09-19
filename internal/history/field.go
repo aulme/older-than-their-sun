@@ -125,7 +125,7 @@ func (w *World) salvage(c *Civ, l *Legacy) {
 	to, _ := w.nearestTo(c, at)
 	x := &Expedition{ID: len(w.Expeditions), Owner: c.ID, Target: -1, Kind: Guard, Star: to, From: l.Star, Ships: n, Back: -1, Contract: -1, SoldBy: -1,
 		Launched: w.Now, Out: w.Now, Base: -1, Returning: true, Manned: w.Now, Seen: map[int]bool{}}
-	w.Expeditions = append(w.Expeditions, x)
+	w.addExpedition(x)
 	w.legFrom(x, at, to, w.Now)
 	c.Salvage += n
 	c.SalvageTaken += n

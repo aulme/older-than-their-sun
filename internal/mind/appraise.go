@@ -160,15 +160,29 @@ type BarInput struct {
 	Aloft   bool // a horde fights from where it is, never by fleet
 	NoShips bool // not a ship manned: nothing to strike with
 	Wis     float64
+	Claim   bool    // the target holds a world of the old realm this people came out of: wanted whatever the posture; see history's sunder.go
+	Kin     bool    // the target is kin with no grudge between them: never wanted on posture alone
+	Stiff   float64 // this people's stiffness; see history's ossify.go
+	Fought  bool    // this people has fought the target before
+	Sailed  bool    // this people has sent a fleet before
 }
 
 // Bar is the odds a posture needs before it strikes, whether it would
 // strike at all, and whether it would send a fleet beyond the front to do
 // it. A grudge lowers the bar less the wiser the people: the grudge is
-// counted at its price, not ignored.
+// counted at its price, not ignored. A claim on what the target holds is
+// wanted at the vengeful bar whatever the posture; kin with no grudge are
+// never wanted on posture alone. A stiff people prefers the wars it has
+// fought before, and one set past the point of a first fleet sends none.
 func Bar(in BarInput, t *Tuning) (bar float64, wants, far bool) {
 	b := &t.Bar
-	if in.Posture == Pacifist || in.NoShips {
+	if in.NoShips {
+		return 0, false, false
+	}
+	if in.Claim {
+		return b.Vengeful, true, !in.Aloft
+	}
+	if in.Posture == Pacifist || in.Kin {
 		return 0, false, false
 	}
 	if in.Hates {
@@ -187,7 +201,10 @@ func Bar(in BarInput, t *Tuning) (bar float64, wants, far bool) {
 	if wants && in.Grudge && in.Posture != Vengeful {
 		bar -= b.GrudgeDiscount * max(0, 1-in.Wis/t.Wisdom.GrudgeFade)
 	}
-	if in.Aloft {
+	if wants && in.Stiff > 1 && !in.Fought {
+		bar = min(1, bar+b.StiffNew*(in.Stiff-1))
+	}
+	if in.Aloft || (in.Stiff >= b.StiffNoFirst && !in.Sailed) {
 		far = false
 	}
 	return

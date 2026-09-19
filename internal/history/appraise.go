@@ -59,7 +59,7 @@ func (w *World) appraise(c, e *Civ, target int) Appraisal {
 	in := mind.AppraiseInput{
 		Strength: w.strength(c, e), Believed: mil, Spread: spread, EnemyBonus: e.warBonus(),
 		Risk: c.Dials.Risk, Speed: c.Speed, Wis: c.Wis,
-		Weakened: w.plagued(e) || float64(w.Now-e.LastDark) < w.Cfg.Tuning.Appraise.DarkAge,
+		Weakened: w.plagued(e) || float64(w.Now-e.LastDark) < w.Cfg.Tuning.Appraise.DarkAge || e.Stiff >= w.Cfg.Tuning.Appraise.Stiff, // their ways have set; a fleet sent there would find the answer late
 	}
 	in.Ships, in.Guns, in.Relief = w.believeSky(c, e, a.Target)
 	for eid := range e.Wars {
@@ -121,7 +121,11 @@ func (w *World) nearest(c *Civ, star int) (int, float64) {
 // would strike at all; far says whether it would send a fleet beyond the
 // front to do it.
 func (w *World) bar(c, e *Civ) (bar float64, wants, far bool) {
-	return mind.Bar(mind.BarInput{Posture: c.posture(), Hates: c.hates(e), Grudge: c.Grudge[e.ID] > 0 || e.Embargo[c.ID], Aloft: c.Aloft, NoShips: w.standing(c) == 0, Wis: c.Wis}, w.Cfg.Tuning)
+	return mind.Bar(mind.BarInput{
+		Posture: c.posture(), Hates: c.hates(e), Grudge: c.Grudge[e.ID] > 0 || e.Embargo[c.ID], Aloft: c.Aloft, NoShips: w.standing(c) == 0, Wis: c.Wis,
+		Claim: w.claims(c, e), Kin: w.kin(c, e) && !w.feud(c, e),
+		Stiff: c.Stiff, Fought: c.Fought[e.ID] > 0, Sailed: c.Tally.Fleets > 0,
+	}, w.Cfg.Tuning)
 }
 
 // explain logs a decision's reason under -ai.

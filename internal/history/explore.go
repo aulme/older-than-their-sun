@@ -211,8 +211,8 @@ func (w *World) survey(c *Civ) {
 	}, tn)
 	c.SurveyWant = want.Asked
 	out := 0
-	for _, x := range w.Expeditions {
-		if !x.Over && x.Kind == Survey && x.Owner == c.ID {
+	for _, x := range w.fleetsOf(c) {
+		if x.Kind == Survey {
 			out++
 		}
 	}
@@ -267,8 +267,8 @@ func (w *World) surveyTarget(c *Civ, from int) int {
 
 // surveyBound says whether surveyors of a people are already on their way to a star.
 func (w *World) surveyBound(c *Civ, t int) bool {
-	for _, x := range w.Expeditions {
-		if !x.Over && x.Kind == Survey && x.Owner == c.ID && !x.Returning && x.Star == t {
+	for _, x := range w.fleetsOf(c) {
+		if x.Kind == Survey && !x.Returning && x.Star == t {
 			return true
 		}
 	}
@@ -309,8 +309,8 @@ func (w *World) surveyArrive(x *Expedition) {
 
 // recallSurveys calls a people's surveyors home at the outbreak of a war.
 func (w *World) recallSurveys(c *Civ) {
-	for _, x := range w.Expeditions {
-		if !x.Over && x.Kind == Survey && x.Owner == c.ID && !x.Returning {
+	for _, x := range w.fleetsOf(c) {
+		if x.Kind == Survey && !x.Returning {
 			x.Recalled = true
 		}
 	}

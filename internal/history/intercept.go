@@ -130,7 +130,7 @@ func (w *World) launchIntercept(o *Civ, g *Expedition, x *Expedition, s *Sightin
 	if g.Ships == 0 && g.Kind == Guard {
 		g.Over = true
 	}
-	w.Expeditions = append(w.Expeditions, y)
+	w.addExpedition(y)
 	s.Intercept = y.ID
 	o.Tally.Intercepts++
 	w.logAt(m, "The %s send %s from %s to meet the fleet of the %s in the dark.", o.Name, shipsWord(n), w.star(g.Base), c.Name)
@@ -144,8 +144,8 @@ func (w *World) launchIntercept(o *Civ, g *Expedition, x *Expedition, s *Sightin
 func (w *World) meetingsDue() {
 	until := w.Now + w.Cfg.Step
 	var due []*Expedition
-	for _, x := range w.Expeditions {
-		if !x.Over && x.Kind == Intercept && x.Base < 0 && !x.Returning && x.Meet < until {
+	for _, x := range w.liveFleets() {
+		if x.Kind == Intercept && x.Base < 0 && !x.Returning && x.Meet < until {
 			due = append(due, x)
 		}
 	}

@@ -54,10 +54,12 @@ const (
 	Extinct
 	Transformed
 	Contracted
+	Sundered  // tore itself into heirs; see sunder.go
+	Shattered // forgot the stars and became one people per world
 )
 
 func (f Fate) String() string {
-	return [...]string{"active", "extinct", "transformed", "contracted"}[f]
+	return [...]string{"active", "extinct", "transformed", "contracted", "sundered", "shattered"}[f]
 }
 
 // Voyage is a colony ship in flight.
@@ -202,6 +204,13 @@ type Civ struct {
 	Barred      map[int]bool       // the peoples whose goods and messages it refuses for good: those that tried to poison it
 	Gross       flow.Income        // the income before a rider's tithe
 
+	// ossification and lines: see ossify.go and sunder.go
+	Stiff    float64      // how far the people's ways have set: zero young, one an empire whose ways are fixed, past two Trantor
+	Ossified bool         // set: acting every other tick, half the research, twice the building
+	Still    Year         // when something new last happened: a war, a world, a node, a meeting
+	Line     []int        // the peoples this one came out of by a sundering or a shattering, oldest first
+	Claim    map[int]bool // the worlds of the old realm an heir holds itself owed
+
 	// sightings and salvage: see sighting.go, field.go
 	Sightings    map[int]*Sighting // what this people has seen of fleets in flight, by fleet
 	Salvage      int               // ships of others' make in the guards, crewed from a field
@@ -307,6 +316,9 @@ type Tally struct {
 	Refusals, Shut                                 int
 	Attempts, Poisoned, Detected, Breakouts, Leaks int // plagues made and tried: attempts, ones that took, ones seen, ones that got out at discovery, ones that leaked while held
 	Ridden, Risen                                  int // peoples ridden by this parasite; risings against a rider
+	// ossification: facings of the filter, renaissances, times set, breaks, and the stiffness summed at each facing; see ossify.go
+	OssFaced, OssRenewed, OssSet, OssBroke int
+	OssStiff                               float64
 }
 
 // Living is true for active and remnant civilisations.
@@ -481,11 +493,12 @@ type Config struct {
 	Dawn      Year // the current age dawns; the engine runs from here
 	DeepStep  Year
 	Step      Year // the tick of the current age, dawn to present; every rate is per thousand years
-	// the waning: declared when this few are active and fertility is this low
+	// the waning: declared when this few are still rising (zero for no bar) and fertility is this low
 	FineActive    int
 	FineFertility float64
-	// the present: stop when this few are active and fertility is below a threshold drawn
-	// per world between EndFertilityLow and EndFertility, then linger a while
+	// the present: stop when this few are still rising (zero for no bar) and fertility is
+	// below a threshold drawn per world between EndFertilityLow and EndFertility, then
+	// linger a while
 	EndActive       int
 	EndFertility    float64
 	EndFertilityLow float64
@@ -503,8 +516,8 @@ func DefaultConfig() Config {
 		Stars: 400, Radius: 150, Thickness: 40,
 		DeepStart: -galaxy.Age, Dawn: 0,
 		DeepStep: 10_000_000, Step: 1_000,
-		FineActive: 12, FineFertility: 0.5,
-		EndActive: 5, EndFertility: 0.2, EndFertilityLow: 0.05, Linger: 2_000_000,
+		FineActive: 0, FineFertility: 0.5,
+		EndActive: 0, EndFertility: 0.2, EndFertilityLow: 0.05, Linger: 2_000_000,
 		MaxFades: 8,
 		Tuning:   mind.Default(),
 	}
@@ -552,6 +565,8 @@ type World struct {
 	Watch       []*Sighting // every sighting, for the batch; see sighting.go
 	pending     []*Sighting // sightings queued on the timetable, not yet happened
 	Expeditions []*Expedition
+	fleetsBy    map[int][]*Expedition // the fleets not over, by owner: an index kept by addExpedition, reown and fleetsOf; see ships.go
+	live        []*Expedition         // the fleets not over, all owners: kept by addExpedition and liveFleets
 	Pacts       []*Pact
 	Contracts   []*Contract        // every contract offered; see contract.go
 	Plagues     []*Plague          // every plague born; see plague.go

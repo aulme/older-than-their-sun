@@ -13,6 +13,7 @@ var planetary = &ModDef{Mod: Planetary, Cradle: "ocean", CradleOdds: 0.6, Entry:
 		Wis:       1,   // slow, and whole
 		Reach:     0.3, // a third until it learns to graft
 		Rate:      1.3, // one vast mind
+		Stiffen:   1.3, // and one that does not change its mind
 		Dom:       M{"propulsion": 0.4, "biology": 1.5, "society": 1.3},
 		Memory:    0.15,
 		PlagueBio: 2,              // one body to sicken

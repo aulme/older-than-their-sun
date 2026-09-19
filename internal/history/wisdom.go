@@ -26,7 +26,7 @@ const (
 	wisCommunion      = 1
 	wisSight          = 1
 	wisCycle          = 1
-	wisOssified       = -1
+	wisOssified       = -1 // while set
 	wisVassal         = -0.25
 	wisSlave          = -0.5
 )
@@ -119,7 +119,7 @@ func (w *World) setWisdom(c *Civ, tree float64) {
 	in := wisInput{
 		Tech: tree, Profile: c.Species.Profile().Wis, Experience: c.experience, Renaissances: c.Renaissances,
 		Communion: c.Boons[BoonCommunion], Sight: c.miracle("foresight"), Cycle: c.KnowsCycle,
-		Ossified: c.Scars[ScarOssified], Vassal: !c.Free() && c.Vassal, Slave: !c.Free() && !c.Vassal,
+		Ossified: c.Ossified, Vassal: !c.Free() && c.Vassal, Slave: !c.Free() && !c.Vassal,
 	}
 	for _, t := range c.Species.Traits {
 		in.Traits = append(in.Traits, t.Key)
@@ -200,11 +200,12 @@ func (w *World) unfathomed(c, e *Civ) bool {
 	return tried && !c.Fathomed[e.ID]
 }
 
-// kin says whether two peoples understand each other at once: a branch,
-// a made successor, an uplift, or the reverse. Step 15's kinship of a
-// broken people extends this.
-func (w *World) kin(a, b *Civ) bool {
-	return a.Species.Kin(b.Species) || a.Sire == b.ID || b.Sire == a.ID
+// sameBlood says whether two peoples understand each other at once: a
+// branch, a made successor, an uplift, or the reverse; and kin by a line
+// (sunder.go), grudge or no grudge, since a shared tongue does not go away
+// because of a war.
+func (w *World) sameBlood(a, b *Civ) bool {
+	return a.Species.Kin(b.Species) || a.Sire == b.ID || b.Sire == a.ID || w.kin(a, b)
 }
 
 // fathomAdj is the adjustment on c's roll to fathom e from how they
@@ -260,7 +261,7 @@ func (w *World) tryFathom(c, e *Civ, how string, extra float64) bool {
 	switch {
 	case c.miracle("chorus"):
 		how = "chorus"
-	case w.kin(c, e):
+	case w.sameBlood(c, e):
 		how = "kin"
 	case !fathomRoll(c.Wis, w.R.NormFloat64(), difference(c.Species, e.Species), w.fathomAdj(c, e)+extra):
 		return false
@@ -281,8 +282,8 @@ func (w *World) fathomed(c, e *Civ, how string) {
 	ago := span(w.Now - since)
 	wars := c.Fought[e.ID]
 	switch {
-	case how == "kin" && rec.Mutual:
-		w.log("The %s and the %s, of one blood, understand each other at once.", c.Name, e.Name)
+	case how == "kin" && rec.Mutual && !w.kin(c, e):
+		w.log("The %s and the %s, of one blood, understand each other at once.", c.Name, e.Name) // a line's meeting has its own line
 	case how == "kin", how == "meeting":
 		// the meeting's own line stands for it
 	case how == "chorus":
@@ -376,12 +377,13 @@ func (w *World) fathoming(c *Civ) {
 // confederate by posture. A go-between that merely trades with both does
 // nothing; its position is the middle, and it keeps it.
 func (w *World) brokering(z *Civ) {
-	for _, cid := range sortedInts(z.Fathomed) {
+	known := sortedInts(z.Fathomed)
+	for _, cid := range known {
 		c := w.Civs[cid]
 		if !c.Active() || !c.Fathomed[z.ID] {
 			continue // the buyer must understand the broker to be spoken to
 		}
-		for _, eid := range sortedInts(z.Fathomed) {
+		for _, eid := range known {
 			if _, met := c.FathomTried[eid]; eid == cid || !met || c.Fathomed[eid] {
 				continue
 			}

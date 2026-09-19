@@ -1,7 +1,7 @@
 # Ossification: how an old people falls
 
-**Status:** Draft
-**Last updated:** 2026-09-17
+**Status:** Implemented (step 15, 2026-09-19). Tuned at build: the facing chance 0.0015 and a renaissance adding one to the difficulty (0.005 and 0.5 here). Built as written but for what the batch found: the age ends on fertility alone, since nobody dies of age and the count of active peoples never falls; heirs carry the old people's renaissance and dark-age counts and its Distance drift, since a fresh count made every heir renew ten times over; see the ledger in `specs/plan.md`.
+**Last updated:** 2026-09-19
 
 Assumes [one-tick](one-tick.md): every rate is per thousand years. Reads [plagues](plagues.md) (a dark age as dirt, sickness as the other great thinner), [resources-and-trade](resources-and-trade.md) (holdings that change hands carry their sources and upkeep), [ships-and-garrisons](ships-and-garrisons.md) (fleets and garrisons as holdings to divide) and [wisdom](wisdom.md) (kin understand each other). None is needed to argue this one.
 

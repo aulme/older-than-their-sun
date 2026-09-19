@@ -97,8 +97,8 @@ func (w *World) holdingsOf(c *Civ) []mind.Holding {
 func (w *World) threats(c *Civ) map[int]float64 {
 	out := map[int]float64{}
 	q := w.quality(c)
-	for _, x := range w.Expeditions {
-		if x.Over || x.Kind != Campaign || x.Target != c.ID || x.Base < 0 || x.LaidUp || x.Ships <= 0 || w.Owner[x.Base] != c.ID {
+	for _, x := range w.liveFleets() {
+		if x.Kind != Campaign || x.Target != c.ID || x.Base < 0 || x.LaidUp || x.Ships <= 0 || w.Owner[x.Base] != c.ID {
 			continue
 		}
 		out[x.Base] = max(out[x.Base], battle.Strength(x.Ships, w.quality(w.Civs[x.Owner]))/q)
@@ -146,7 +146,7 @@ func (w *World) sendGuard(c *Civ, g *Expedition, to, n int) *Expedition {
 		x = &Expedition{ID: len(w.Expeditions), Owner: c.ID, Target: -1, Kind: g.Kind, Star: to, From: g.Base, Ships: n, Back: -1, Contract: -1, SoldBy: -1,
 			Launched: w.Now, Out: w.Now, Base: g.Base, Fed: w.Now, Manned: w.Now, Seen: map[int]bool{}}
 		g.Ships -= n
-		w.Expeditions = append(w.Expeditions, x)
+		w.addExpedition(x)
 	}
 	w.sail(x, to)
 	x.Returning = x.Kind == Guard

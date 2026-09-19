@@ -35,7 +35,6 @@ const (
 	ScarStarFear     = "a fear of their own star"
 	ScarLeftBehind   = "being the ones left behind"
 	ScarQuarantine   = "a quarantine creed"
-	ScarOssified     = "ossification"
 	ScarBurningSky   = "the memory of the burning sky"
 	ScarSignal       = "a cult of the signal"
 	ScarDoor         = "a dread of doors"
@@ -84,7 +83,7 @@ func def(f *Filter) { filters[f.Key] = f }
 
 // traitDiff is the asymmetry: how each trait changes each filter's difficulty.
 var traitDiff = map[string]map[string]float64{
-	"memory":        {"silence": 2, "weight": 1, "find": -1},
+	"memory":        {"silence": 2, "find": -1},
 	"swarming":      {"cosmic": -1, "beacon": 2}, // they scatter; gathered, they hear with one ear
 	"unyielding":    {"atomic": 1, "hold": -1},
 	"opportunist":   {"hold": 0.5},
@@ -97,19 +96,19 @@ var traitDiff = map[string]map[string]float64{
 	"curious":       {"machines": 1, "replication": 0.5, "door": 0.5},
 	"cautious":      {"machines": -1, "replication": -1, "door": -1, "find": 0.5},
 	"collective":    {"atomic": -1, "overshoot": -1},
-	"individualist": {"distance": 1, "weight": -0.5, "hold": 1},
-	"caste":         {"weight": 1, "hold": -0.5},
-	"shortlived":    {"silence": -1, "weight": -1},
-	"longlived":     {"weight": 1.5, "silence": 1},
+	"individualist": {"distance": 1, "hold": 1},
+	"caste":         {"hold": -0.5},
+	"shortlived":    {"silence": -1},
+	"longlived":     {"silence": 1},
 	"radiation":     {"atomic": -1},
-	"solitary":      {"distance": -2, "beacon": -2, "weight": 0.5, "hold": 1},
+	"solitary":      {"distance": -2, "beacon": -2, "hold": 1},
 	"herd":          {"beacon": 2, "atomic": -1, "distance": 1, "hold": -1},
 	"dormancy":      {"cosmic": -1, "dying": -1},
 	"symbiosis":     {"machines": -1.5, "replication": -0.5},
 	"xenophobic":    {"beacon": -1, "find": 1},
 	"submissive":    {"revolt": 1, "hold": -0.5},
 	"skyless":       {"cosmic": -1},
-	"nomadic":       {"weight": -1, "overshoot": -1, "distance": -3},
+	"nomadic":       {"overshoot": -1, "distance": -3},
 }
 
 func (c *Civ) traitDiff(key string) float64 {
@@ -232,20 +231,7 @@ func (w *World) ambientFilters(c *Civ) {
 			w.face(c, "distance", adj)
 		}
 	}
-	if !c.Active() {
-		return
-	}
-	age := float64(w.Now-max(c.Born, c.Renewed)) / 1000
-	lived := float64(w.Now-max(c.Born, c.Ascended)) / 1000 // a miracle makes a people young again
-	// the fading of the age weighs on everyone still alive in it
-	p := 0.0006 * (age / 2000) * (1 + lived/4000) * (1 + float64(len(c.Systems))/8) * w.Hazard * (1 + 2*(1-w.fertility()))
-	if c.Scars[ScarOssified] {
-		p *= 1.5
-	}
-	if w.chance(p) {
-		// every renaissance is harder than the last, and age itself weighs
-		w.face(c, "weight", lived/2500+0.5*float64(c.Renaissances))
-	}
+	w.tickStiff(c) // the ways setting, and the filter that comes for whoever survives the rest: see ossify.go
 }
 
 func init() {
@@ -329,11 +315,10 @@ func init() {
 			w.log("The colonies of the %s begin to drift. %s answers with iron. The drift stops. So does much else.", c.Name, c.HomeName)
 		},
 		Decline: func(w *World, c *Civ) {
-			if w.R.Float64() < 0.6 {
-				w.schism(c)
-			} else {
-				w.contract(c, "watched their colonies become strangers, and then enemies, and then silence")
+			if w.R.Float64() < 0.6 && w.civilWar(c) { // the same story from the colonies' side: strangers, then enemies
+				return
 			}
+			w.contract(c, "watched their colonies become strangers, and then enemies, and then silence")
 		},
 	})
 	def(&Filter{
@@ -415,30 +400,6 @@ func init() {
 		},
 	})
 	def(&Filter{
-		Key: "weight", Name: "the Weight of Ages", Levels: []string{"soc"}, Diff: 5, Repeat: true,
-		Overcome: func(w *World, c *Civ) {
-			c.Renewed = w.Now
-			c.Renaissances++
-			c.Morale += 1
-			w.log("The %s grow old and tired, and then, unexpectedly, young again. A renaissance.", c.Name)
-		},
-		Scar: func(w *World, c *Civ) {
-			c.Scars[ScarOssified] = true
-			w.log("The %s stop changing. Every year is like the last. It works, for a while.", c.Name)
-		},
-		Decline: func(w *World, c *Civ) {
-			x := w.R.Float64()
-			switch {
-			case x < 0.4:
-				w.contract(c, "collapsed under their own weight")
-			case x < 0.7:
-				w.schism(c)
-			default:
-				w.endCiv(c, Extinct, "collapsed under their own weight and did not recover")
-			}
-		},
-	})
-	def(&Filter{
 		Key: "door", Name: "the Door", Levels: []string{"soc"}, Diff: 4.5, Domain: "exotic",
 		Overcome: func(w *World, c *Civ) {
 			w.log("Nothing comes back through the door of the %s that they did not send. This time.", c.Name)
@@ -467,7 +428,9 @@ func init() {
 		},
 		Decline: func(w *World, c *Civ) {
 			w.log("Defeat splits the %s.", c.Name)
-			w.schism(c)
+			if !w.civilWar(c) {
+				c.Morale -= 1
+			}
 		},
 	})
 	def(&Filter{
@@ -504,7 +467,7 @@ func init() {
 // empty field is a slow death for a rider.
 func (c *Civ) natureDiff(key string) float64 {
 	d := c.Species.Profile().FilterDiff[key]
-	if c.Own >= 0 && (key == "silence" || key == "weight") && c.Hosts <= 1 {
+	if c.Own >= 0 && key == "silence" && c.Hosts <= 1 {
 		d++
 	}
 	return d

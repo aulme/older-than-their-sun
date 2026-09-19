@@ -243,17 +243,35 @@ var moralTable = map[FactKind][8]judgment{
 	FPoisoned:     {crime(4), crime(4), none, deed(1), crime(4), crime(3), crime(2), crime(4)},
 }
 
+// moralRows is the table as an array by fact kind, since sortFor runs
+// per tale per people per tick.
+var moralRows []struct {
+	has bool
+	row [8]judgment
+}
+
+func init() {
+	for k, row := range moralTable {
+		for int(k) >= len(moralRows) {
+			moralRows = append(moralRows, struct {
+				has bool
+				row [8]judgment
+			}{})
+		}
+		moralRows[k].has, moralRows[k].row = true, row
+	}
+}
+
 // sortFor is a fact as one people judges it: the table's cell for its
 // morality, else the fact's own sort. A cell of none is a woe of the
 // fact's weight to the sufferer and nothing to anyone else. A woe is a woe
 // under every morality: a morality decides what is done to others, not
 // what hurts.
 func sortFor(c *Civ, f *Fact) (Sort, float64) {
-	row, ok := moralTable[f.Kind]
-	if !ok {
+	if int(f.Kind) >= len(moralRows) || !moralRows[f.Kind].has {
 		return f.sort(), f.weight()
 	}
-	j := row[c.Morality.column()]
+	j := moralRows[f.Kind].row[c.Morality.column()]
 	if !j.None {
 		return j.Sort, j.Weight
 	}

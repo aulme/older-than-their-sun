@@ -30,29 +30,10 @@ func (w *World) spawn(home int, sp *species.Species, maker int, name string, hos
 		}
 	}
 	shared := w.register(sp)
-	if name == "" {
-		name = sp.Name
-	}
-	c := &Civ{
-		ID: len(w.Civs), Name: name, Species: sp, Home: home, HomeName: names.Star(w.R),
-		Cradle: home, Born: w.Now, Renewed: w.Now, Systems: []int{home}, Peak: 1, Master: maker,
-		Known: map[string]bool{}, Learned: map[string]Year{}, Focus: map[string]float64{}, Locked: map[string]bool{},
-		Structures: map[string]int{}, Found: map[int]bool{}, Heard: map[int]bool{},
-		Wars: map[int]bool{}, Met: map[int]bool{}, Reached: map[int]bool{}, Trade: map[int]bool{},
-		Faced: map[string]bool{}, Scars: map[string]bool{}, Boons: map[string]bool{}, Miracles: map[string]string{},
-		Lifted: map[string]bool{},
-		Intel:  map[int]*Intel{}, Grudge: map[int]float64{}, Truce: map[int]Year{}, Fought: map[int]int{},
-		Watched: map[int]bool{}, Asked: map[int]Year{}, Scouted: map[int]Year{}, Ridden: map[int]bool{},
-		Charted: map[int]Year{home: w.Now}, Marked: map[int]bool{},
-		Sire: maker, Fathomed: map[int]bool{}, FathomTried: map[int]Year{},
-		Infections: map[int]*Infection{}, Immune: map[int]bool{}, Suspect: map[int]bool{}, Closed: map[int]bool{},
-		Own: -1, Weapons: map[string]*Weapon{}, Barred: map[int]bool{},
-		LastDark: -1 << 40, foeNow: -1,
-	}
+	c := w.newCiv(home, sp, maker, name)
 	if st.Real {
 		c.HomeName = st.Name // a real star keeps the name Earth knows it by
 	}
-	w.Civs = append(w.Civs, c)
 	old := st.Name
 	if host != nil {
 		c.Systems, c.Peak, c.HomeName = nil, 0, host.HomeName
@@ -113,6 +94,37 @@ func (w *World) spawn(home int, sp *species.Species, maker int, name string, hos
 	if natural {
 		w.bornRider(c)
 	}
+	if maker >= 0 {
+		w.renew(w.Civs[maker], 0.2) // a people made is something new
+	}
+	return c
+}
+
+// newCiv is the bare people: the struct with its maps, on the world's
+// list, holding its home and nothing else. spawn dresses a birth; the
+// heirs of a sundering (sunder.go) are dressed from the old people.
+func (w *World) newCiv(home int, sp *species.Species, maker int, name string) *Civ {
+	w.register(sp)
+	if name == "" {
+		name = sp.Name
+	}
+	c := &Civ{
+		ID: len(w.Civs), Name: name, Species: sp, Home: home, HomeName: names.Star(w.R),
+		Cradle: home, Born: w.Now, Renewed: w.Now, Still: w.Now, Systems: []int{home}, Peak: 1, Master: maker,
+		Known: map[string]bool{}, Learned: map[string]Year{}, Focus: map[string]float64{}, Locked: map[string]bool{},
+		Structures: map[string]int{}, Found: map[int]bool{}, Heard: map[int]bool{},
+		Wars: map[int]bool{}, Met: map[int]bool{}, Reached: map[int]bool{}, Trade: map[int]bool{},
+		Faced: map[string]bool{}, Scars: map[string]bool{}, Boons: map[string]bool{}, Miracles: map[string]string{},
+		Lifted: map[string]bool{},
+		Intel:  map[int]*Intel{}, Grudge: map[int]float64{}, Truce: map[int]Year{}, Fought: map[int]int{},
+		Watched: map[int]bool{}, Asked: map[int]Year{}, Scouted: map[int]Year{}, Ridden: map[int]bool{},
+		Charted: map[int]Year{home: w.Now}, Marked: map[int]bool{},
+		Sire: maker, Fathomed: map[int]bool{}, FathomTried: map[int]Year{},
+		Infections: map[int]*Infection{}, Immune: map[int]bool{}, Suspect: map[int]bool{}, Closed: map[int]bool{},
+		Own: -1, Weapons: map[string]*Weapon{}, Barred: map[int]bool{},
+		LastDark: -1 << 40, foeNow: -1,
+	}
+	w.Civs = append(w.Civs, c)
 	return c
 }
 
@@ -163,6 +175,14 @@ var civSteps = []civStep{
 	{"uplift", (*World).uplift},
 }
 
+// offSteps are the steps an ossified people skips on its off ticks: it
+// holds no council, launches nothing, settles nothing, builds nothing,
+// offers nothing and banks no research. See ossify.go.
+var offSteps = map[string]bool{
+	"shipwright": true, "research": true, "expand": true, "build": true, "explore": true,
+	"council": true, "contracting": true, "uplift": true,
+}
+
 // insertCivStep puts s after the step named after, or at the end if there
 // is no such step.
 func insertCivStep(after string, s civStep) {
@@ -198,9 +218,13 @@ func (w *World) tickCivs() {
 		if c.Ascended == 0 && c.Reach >= 1 && len(c.held()) > 0 {
 			c.Ascended = w.Now // the born reach the stars, and the miracle begins to matter
 		}
+		off := w.offTick(c)
 		for _, step := range civSteps {
 			if !c.Active() {
 				break
+			}
+			if off && offSteps[step.Name] {
+				continue // an ossified people sits this tick out: upkeep, fleets, wars and answers only
 			}
 			step.Run(w, c)
 		}
@@ -212,6 +236,7 @@ func (w *World) tickCivs() {
 			for d, f := range c.Focus {
 				c.Focus[d] = 1 + (f-1)*(1-0.01*w.dt)
 			}
+			w.forgive(c)
 		}
 	}
 	if w.count(0.1) > 0 {
@@ -257,6 +282,7 @@ func (w *World) settle(c *Civ, t int) {
 	w.Owner[t] = c.ID
 	c.Systems = append(c.Systems, t)
 	c.colonies++
+	w.stir(c)
 	w.takeOver(c, t)
 	if len(c.Systems) > c.Peak {
 		c.Peak = len(c.Systems)
@@ -407,7 +433,11 @@ func (w *World) targeted(c *Civ, t int) bool {
 // harnesses, else what lifts it most; and only when the spare covers the
 // upkeep twice over. The choice is mind.Build; this lists the sites.
 func (w *World) build(c *Civ) {
-	if c.Aloft || !w.chance(w.Cfg.Tuning.Build.Rate) {
+	rate := w.Cfg.Tuning.Build.Rate
+	if c.Ossified {
+		rate *= 0.5 // everything takes twice as long
+	}
+	if c.Aloft || !w.chance(rate) {
 		return
 	}
 	sites := w.sites(c)
@@ -569,6 +599,7 @@ func (w *World) loseSystem(c *Civ, s int, kind string, cause string) {
 	if s == c.Home && c.Stage != Dead && !c.Aloft {
 		w.reseat(c)
 	}
+	w.renew(c, 0.05) // a loss is something new
 }
 
 // reseat moves the home to the nearest remaining world after the old one is lost.
@@ -659,20 +690,29 @@ func (w *World) endCiv(c *Civ, f Fate, cause string) {
 	}
 }
 
-// darkAge is a non-terminal decline: tech and reach are lost. A third one is fatal.
+// darkAge is the one dark age, whoever calls it: a share of the tree
+// forgotten, drawn once by the formula (a fresh people a tenth to a
+// fifth, Trantor at three four tenths and up, every earlier dark age a
+// tenth deeper), the colonies lost at the depth, the institutions gone
+// with everything else. Nothing is fatal here; a people that keeps
+// falling forgets more each time until the forgetting takes the stars,
+// and then it shatters (sunder.go).
 func (w *World) darkAge(c *Civ, why string) {
 	if !c.Active() {
 		return
 	}
+	depth := w.darkDepth(c)
 	c.DarkAges++
 	c.LastDark = w.Now
 	c.Morale -= 1
 	c.Voyages = nil
+	w.reset(c)
+	c.Renewed = w.Now
 	if w.wreck == nil {
 		w.wreck = &defaultWreckage
 		defer func() { w.wreck = nil }()
 	}
-	forgotten := w.forget(c, 0.3)
+	forgotten := w.forget(c, depth)
 	// what is forgotten is not always destroyed: a relic of the lost art may
 	// wait at home, written on the eve, with the telling as it stood then
 	if len(forgotten) > 0 && w.R.Float64() < 0.6 {
@@ -686,10 +726,11 @@ func (w *World) darkAge(c *Civ, why string) {
 	}
 	w.forgetting(c)
 	w.forgetFathomed(c)
-	w.factOf(FDarkAge, c, nil, c.Home, why)
+	f := w.factOf(FDarkAge, c, nil, c.Home, why)
+	f.N = int(depth*10 + 0.5)
 	lost := 0
 	for _, s := range append([]int(nil), c.Systems...) {
-		if s != c.Home && w.R.Float64() < 0.5 {
+		if s != c.Home && w.R.Float64() < depth {
 			w.loseSystem(c, s, "abandoned "+c.Species.Flavour().Colony, "")
 			lost++
 		}
@@ -701,15 +742,36 @@ func (w *World) darkAge(c *Civ, why string) {
 	} else if c.Stage == Zenith {
 		c.Stage = Interstellar
 	}
-	if c.DarkAges >= 3 {
-		w.endCiv(c, Extinct, why+", and a third dark age was one too many")
-		return
-	}
 	if lost > 0 {
-		w.log("The %s %s. A dark age follows. %d %ss go silent.", c.Name, why, lost, c.Species.Flavour().Colony)
+		w.log("The %s %s. A dark age follows, and %s of what they knew is forgotten. %d %ss go silent.", c.Name, why, depthWord(depth), lost, c.Species.Flavour().Colony)
 	} else {
-		w.log("The %s %s. A dark age follows.", c.Name, why)
+		w.log("The %s %s. A dark age follows, and %s of what they knew is forgotten.", c.Name, why, depthWord(depth))
 	}
+	if c.Active() && c.Reach < 10 && len(c.Systems) > 1 {
+		w.shatter(c, why)
+	}
+}
+
+// darkDepth is the share of the tree a dark age takes, drawn once.
+func (w *World) darkDepth(c *Civ) float64 {
+	t := &w.Cfg.Tuning.Ossify
+	d := t.DepthBase + t.DepthStiff*min(1, c.Stiff/3) + t.DepthPrior*float64(c.DarkAges) + (2*w.R.Float64()-1)*t.DepthNoise
+	return clamp(d, t.DepthMin, t.DepthMax)
+}
+
+// depthWord says a depth: a tenth, a fifth, a third, half, most.
+func depthWord(d float64) string {
+	switch {
+	case d < 0.15:
+		return "a tenth"
+	case d < 0.25:
+		return "a fifth"
+	case d < 0.4:
+		return "a third"
+	case d < 0.6:
+		return "half"
+	}
+	return "most"
 }
 
 // forget drops a fraction of known nodes, leaves first, so the tree stays
@@ -754,51 +816,6 @@ func (w *World) forget(c *Civ, frac float64) []string {
 	return forgotten
 }
 
-func (w *World) schism(c *Civ) {
-	if c.Aloft {
-		w.splitFleets(c)
-		return
-	}
-	if !c.Species.Profile().Can(species.CivilWars) {
-		w.log("The %s cannot split; a hive has no factions. The pressure goes elsewhere.", c.Name)
-		c.Morale -= 1
-		return
-	}
-	if len(c.Systems) < 2 {
-		w.log("Unrest among the %s on %s. It passes, this time.", c.Name, c.HomeName)
-		c.Morale -= 0.5
-		return
-	}
-	lost := len(c.Systems) / 2
-	var gone []int
-	for i := 0; i < lost; i++ {
-		s := w.pick(c.Systems)
-		if s != c.Home {
-			w.loseSystem(c, s, "abandoned "+c.Species.Flavour().Colony, "")
-			gone = append(gone, s)
-		}
-	}
-	// a branch of the people goes its own way, if the split was clean: the
-	// same blood under a new name
-	if len(gone) > 0 && w.R.Float64() < 0.4 {
-		nc := w.spawnCiv(gone[0], c.Species, -1, names.Civ(w.R))
-		nc.Origin = "a branch of the " + c.Name
-		nc.Master = -1
-		for k := range c.Known {
-			nc.Known[k] = true
-		}
-		w.forget(nc, 0.2)
-		w.recompute(nc)
-		w.log("Schism among the %s. Half their worlds go dark, and at %s the %s declare themselves a new people.", c.Name, w.star(gone[0]), nc.Name)
-		w.branchMorality(nc, c)
-		w.fact(FSchism, c, nc, gone[0])
-		w.inherit(nc, c, 0)
-		return
-	}
-	w.log("Schism among the %s. Half their worlds go dark or go their own way.", c.Name)
-	w.fact(FSchism, c, nil, c.Home)
-}
-
 func (c *Civ) expandMul(w *World) float64 {
 	m := 1.0
 	if c.Has("expansionist") {
@@ -837,7 +854,7 @@ func (c *Civ) expandMul(w *World) float64 {
 	if c.Dying {
 		m *= 3
 	}
-	return m
+	return m * c.stiffMul()
 }
 
 // machinePeople is what is left when a people builds a mind that outgrows

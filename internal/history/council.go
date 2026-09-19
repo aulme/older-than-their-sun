@@ -112,8 +112,8 @@ func (w *World) consider(c, e *Civ) bool {
 // the level can be spared. The Sight reads for free.
 func (w *World) maybeScout(c, e *Civ) {
 	out := false
-	for _, x := range w.Expeditions {
-		if !x.Over && x.Kind == Scout && x.Owner == c.ID && x.Target == e.ID {
+	for _, x := range w.fleetsOf(c) {
+		if x.Kind == Scout && x.Target == e.ID {
 			out = true
 			break
 		}

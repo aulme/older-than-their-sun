@@ -81,6 +81,7 @@ type AnswerInput struct {
 	Dials          Dials
 	Wis            float64 // the asked people's Wisdom
 	Noise          float64 // a standard normal draw: the folly on the score
+	Kin            bool    // the proposer is kin: the loyalty term counts double; see history's sunder.go
 }
 
 // Answer is the verdict on an offer.
@@ -172,7 +173,11 @@ func AnswerPact(in AnswerInput, t *Tuning) Answer {
 	score -= p.Infamy * in.Infamy
 	score -= p.ProposerGrudge * in.ProposerGrudge
 	score += p.Renown * in.Renown
-	score += p.Loyalty * (in.Dials.Loyalty - 0.5)
+	loyalty := p.Loyalty * (in.Dials.Loyalty - 0.5)
+	if in.Kin {
+		loyalty *= t.Ossify.KinLoyalty
+	}
+	score += loyalty
 	score = Folly(score, in.Wis, in.Noise, t)
 	return Answer{Accept: score > p.Accept, Score: score}
 }

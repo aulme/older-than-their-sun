@@ -144,7 +144,13 @@ func (w *World) hearing(a, b *Civ) {
 		w.log("The %s hear the %s across %.0f light years: a signal, then a conversation %.0f years to the answer. Neither can reach the other yet.", a.Name, b.Name, d, 2*d)
 	}
 	w.fact(FMet, a, b, -1)
+	w.renew(a, 0.1) // a stranger is something new
+	w.renew(b, 0.1)
 	w.fathomPair(a, b)
+	if w.warm(a, b) {
+		w.kinMeet(a, b)
+		return
+	}
 	if w.consider(a, b) || w.consider(b, a) {
 		return
 	}
@@ -233,8 +239,14 @@ func (w *World) encounter(a, b *Civ, watched, heard bool, at int) {
 		w.log("The %s and the %s find each other.", a.Name, b.Name)
 	}
 	w.fact(FMet, finder, found, at)
+	w.renew(a, 0.1) // a stranger is something new
+	w.renew(b, 0.1)
 	if a.Wars[b.ID] {
 		return // already at war by fleet; now there is a front
+	}
+	if w.warm(a, b) {
+		w.kinMeet(a, b)
+		return
 	}
 	if w.consider(a, b) || w.consider(b, a) {
 		return
@@ -262,7 +274,7 @@ func (w *World) enslave(m, s *Civ) {
 	m.Peak = max(m.Peak, len(m.Systems))
 	// the slave's fleets become the master's guards, where they stand
 	for _, x := range w.fleetsOf(s) {
-		x.Owner = m.ID
+		w.reown(x, m)
 		if x.Kind == Roam {
 			x.Kind = Guard
 		}

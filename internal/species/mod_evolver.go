@@ -14,5 +14,6 @@ var evolver = &ModDef{Mod: Evolver, Entry: Entry{
 		Env:        1,                                // they change themselves instead of the world
 		Upkeep:     M{"biology": 0.5, "industry": 2}, // flesh is cheap to them and metal dear
 		FilterDiff: map[string]float64{"brood": -1, "overshoot": 1},
+		Stiffen:    0.7, // nothing in them stays put, their institutions included
 	},
 }}

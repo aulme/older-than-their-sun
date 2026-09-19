@@ -99,6 +99,10 @@ type Rec struct {
 	Origin    string             `json:"origin,omitempty"` // a branch, a cult, an uplift; "" for a cradle
 	Sick      float64            `json:"sick_myr"`         // Myr after birth the first plague came; -1 for never
 	Master    bool               `json:"master,omitempty"` // born under a master: made, or held
+	Stiff     float64            `json:"stiff"`            // stiffness at the end
+	Ossified  bool               `json:"ossified"`         // set at the end
+	Line      int                `json:"line"`             // peoples this one came out of by sundering or shattering
+	Claims    int                `json:"claims"`           // worlds of the old realm still claimed at the end
 	ever      map[string]bool
 	frontier  string
 	signature string
@@ -143,6 +147,7 @@ func main() {
 		sells   []SellRec
 		bloc    BlocRec
 		plagues []PlagueRec
+		oss     OssRec
 		stats   string
 		ages    float64
 	}
@@ -161,7 +166,7 @@ func main() {
 			legends.Stats(&sb, w)
 			sights, meets, fleets, fields := flattenSightings(w)
 			ks, sells := flattenContracts(w)
-			runs[i] = run{ks: ks, sells: sells, bloc: flattenBlocs(w), plagues: flattenPlagues(w), seed: seed, recs: flatten(w), wars: flattenWars(w), battles: flattenBattles(w), sights: sights, meets: meets, fleets: fleets, fields: fields, pairs: flattenPairs(w), stats: sb.String(), ages: float64(w.Present-w.Cfg.Dawn) / 1e6}
+			runs[i] = run{ks: ks, sells: sells, bloc: flattenBlocs(w), plagues: flattenPlagues(w), oss: flattenOss(w), seed: seed, recs: flatten(w), wars: flattenWars(w), battles: flattenBattles(w), sights: sights, meets: meets, fleets: fleets, fields: fields, pairs: flattenPairs(w), stats: sb.String(), ages: float64(w.Present-w.Cfg.Dawn) / 1e6}
 		}(i)
 	}
 	wg.Wait()
@@ -178,6 +183,7 @@ func main() {
 	var sells []SellRec
 	var blocs []BlocRec
 	var plagues []PlagueRec
+	var oss []OssRec
 	var stats []string
 	ageSum := 0.0
 	for _, r := range runs {
@@ -193,6 +199,7 @@ func main() {
 		sells = append(sells, r.sells...)
 		blocs = append(blocs, r.bloc)
 		plagues = append(plagues, r.plagues...)
+		oss = append(oss, r.oss)
 		stats = append(stats, r.stats)
 		ageSum += r.ages
 	}
@@ -215,6 +222,7 @@ func main() {
 	contractReport(f, sells, ks, wars)
 	blocReport(f, blocs, recs)
 	sickReport(f, plagues, recs, *seeds)
+	ossReport(f, oss, recs, *seeds)
 	fmt.Printf("%d civilisations over %d worlds; wrote %s\n", len(recs), *seeds, *out)
 }
 
@@ -241,6 +249,7 @@ func flatten(w *history.World) []Rec {
 			Record: append([]string(nil), c.Record...), Mil: c.Mil, Sur: c.Sur, Soc: c.Soc,
 			Wis: c.Wis, PeakWis: c.PeakWis, WisFrom: history.WisdomParts(c),
 			Cycle: c.KnowsCycle, DarkAges: c.DarkAges, Renaiss: c.Renaissances,
+			Stiff: c.Stiff, Ossified: c.Ossified, Line: len(c.Line), Claims: len(c.Claim),
 			ever: map[string]bool{},
 		}
 		if c.FirstPlague > 0 {

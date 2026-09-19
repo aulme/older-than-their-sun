@@ -24,7 +24,6 @@ const (
 	FSettle
 	FZenith
 	FDarkAge
-	FSchism
 	FFall
 	FEnd
 	FWar
@@ -90,6 +89,10 @@ const (
 	FWildfire     // a plague in ten peoples at once
 	FPoisoned     // a people put a plague in another by stealth, or was caught trying; see weapon.go
 	FWoke         // a plague became a people: the subject is the rider, the object its first host; see parasite.go
+	FRenaissance  // a people grew young again; see ossify.go
+	FSundered     // a people tore itself into heirs: the subject is the old people, the object one heir; see sunder.go
+	FReclaimed    // an heir took a world of the old realm from whoever held it
+	FShattered    // a people forgot the stars and became one people per world: the subject the old people, the object one shard
 )
 
 // Sort is the moral shape of a fact from the subject's side.
@@ -111,7 +114,7 @@ var factShape = [...]struct {
 	Weight float64
 }{
 	FArise: {Deed, 3}, FStars: {Deed, 2}, FSettle: {Deed, 1}, FZenith: {Deed, 2},
-	FDarkAge: {Woe, 3}, FSchism: {Woe, 3}, FFall: {Woe, 4}, FEnd: {Woe, 5},
+	FDarkAge: {Woe, 3}, FFall: {Woe, 4}, FEnd: {Woe, 5},
 	FWar: {Crime, 2}, FTaken: {Crime, 2}, FBurned: {Crime, 3}, FHomeBroken: {Crime, 5}, FScoured: {Crime, 5},
 	FYield: {Deed, 3}, FPeace: {Bond, 1}, FEnslaved: {Crime, 4}, FVassal: {Deed, 3}, FFreed: {Deed, 4}, FCrushed: {Crime, 3},
 	FMet: {Bond, 1}, FTrade: {Bond, 1}, FPact: {Bond, 2}, FBetrayal: {Crime, 3}, FRelief: {Deed, 2}, FDefeat: {Woe, 2},
@@ -128,6 +131,7 @@ var factShape = [...]struct {
 	FSlight: {Crime, 1},
 	FPlague: {Woe, 4}, FPlagueGiven: {Crime, 2}, FPlagueWorld: {Woe, 3}, FCured: {Deed, 2}, FRefused: {Crime, 1}, FBelieved: {Woe, 3}, FWildfire: {Woe, 3},
 	FPoisoned: {Crime, 4}, FWoke: {Deed, 3},
+	FRenaissance: {Deed, 3}, FSundered: {Woe, 4}, FReclaimed: {Deed, 2}, FShattered: {Woe, 4},
 }
 
 // Fact is one thing that happened, as it happened.
@@ -258,8 +262,8 @@ func (w *World) regard(c *Civ, id int) int8 {
 	if id < 0 {
 		return 0
 	}
-	if id == c.ID {
-		return 2
+	if c.ofLine(id) {
+		return 2 // the line's deeds are ours
 	}
 	e := w.Civs[id]
 	switch {
@@ -267,7 +271,7 @@ func (w *World) regard(c *Civ, id int) int8 {
 		return -2
 	case c.Wars[id] || c.Grudge[id] > 0.5 || (c.Master == id && !c.Vassal):
 		return -1
-	case c.Trade[id] || w.allied(c, e) || (e.Master == c.ID && e.Vassal) || (c.Master == id && c.Vassal):
+	case c.Trade[id] || w.allied(c, e) || (e.Master == c.ID && e.Vassal) || (c.Master == id && c.Vassal) || w.warm(c, e):
 		return 1
 	}
 	return 0
@@ -370,8 +374,8 @@ func (w *World) reckon(c *Civ) {
 			x[t.Blamed] += v * wt / 3 * (1 + 0.5*float64(t.Wear))
 			continue
 		}
-		if f.Subject == c.ID || (s != Crime && s != Folly) {
-			continue
+		if c.ofLine(f.Subject) || (s != Crime && s != Folly) {
+			continue // our own crimes, and our line's, are not held against us
 		}
 		v := 0.5
 		switch {
@@ -703,9 +707,9 @@ func (w *World) wear(c *Civ) {
 		}
 		s, wt := sortFor(c, f)
 		rate := 0.002 * m * min(1+age, 3) / max(wt, 0.5)
-		own := f.Subject == c.ID || f.Object == c.ID
+		own := c.ofLine(f.Subject) || c.ofLine(f.Object) // the line's tales are kept as our own
 		switch {
-		case f.Subject == c.ID && s == Crime, f.Subject == c.ID && s == Folly:
+		case c.ofLine(f.Subject) && s == Crime, c.ofLine(f.Subject) && s == Folly:
 			rate *= 2 // what we did is easier to forget
 		case own:
 			rate *= 0.6
@@ -735,6 +739,10 @@ func (w *World) wearStep(c *Civ, t *Tale, f *Fact) {
 		return
 	}
 	c.Tally.Myths++
+	if f.Kind == FSundered && f.Object == c.ID && c.Claim != nil {
+		c.Claim = nil // the sundering is a story now, and a faction is a people
+		w.log("Among the %s the sundering has become a story told to children. Nobody speaks of the old realm as theirs any more.", c.Name)
+	}
 	blame := false
 	s, wt := sortFor(c, f)
 	switch {

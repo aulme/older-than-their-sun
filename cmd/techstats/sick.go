@@ -223,7 +223,7 @@ var killers = []struct{ mark, name string }{
 	{"sickened and died", "plague"}, {"hollowed out by", "plague"}, {"listened to", "plague"}, {"nothing left to wear", "starved rider"},
 	{"exhausted their world", "overshoot"},
 	{"burned their world", "atomic"}, {"burned themselves out", "atomic"},
-	{"collapsed under their own weight", "the weight of ages"}, {"faded away", "the weight of ages"},
+	{"collapsed under their own weight", "the weight of ages"}, {"faded away", "faded as a remnant"},
 	{"fought over god", "the wars of faith"},
 	{"consumed by their own machines", "thinking machines"},
 	{"stopped dying", "the long silence"},

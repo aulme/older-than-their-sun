@@ -6,34 +6,33 @@ import (
 	"worldgen/internal/species"
 )
 
-// TestSchismSharesBlood: a branch that declares itself a new people keeps
-// its parent's species and takes a name of its own.
-func TestSchismSharesBlood(t *testing.T) {
-	for seed := uint64(1); seed < 60; seed++ {
-		w := newTestWorld(t, seed, 30)
-		c := spawnAt(w, 0, species.Fixed("collective", "defensive", "practical", "curious"))
-		w.Owner[1] = c.ID
-		c.Systems = append(c.Systems, 1)
-		w.schism(c)
-		if len(w.Civs) < 2 {
-			continue
-		}
-		nc := w.Civs[1]
+// TestHeirsShareBlood: the heirs of a civil war keep the old people's
+// species, take names of their own, and are of its line.
+func TestHeirsShareBlood(t *testing.T) {
+	w := newTestWorld(t, 1, 30)
+	c := spawnAt(w, 0, species.Fixed("collective", "defensive", "practical", "curious"))
+	w.Owner[1] = c.ID
+	c.Systems = append(c.Systems, 1)
+	if !w.civilWar(c) {
+		t.Fatal("two worlds did not make a civil war")
+	}
+	if len(w.Civs) != 3 {
+		t.Fatalf("%d peoples after the sundering", len(w.Civs))
+	}
+	for _, nc := range w.Civs[1:] {
 		if nc.Species != c.Species {
-			t.Fatalf("seed %d: the branch has its own species", seed)
+			t.Fatal("an heir has its own species")
 		}
 		if nc.Name == c.Name || nc.Name == c.Species.Name {
-			t.Fatalf("seed %d: the branch is named %q, its parent %q", seed, nc.Name, c.Name)
+			t.Fatalf("an heir is named %q, its parent %q", nc.Name, c.Name)
 		}
 		if nc.Origin == "" || len(w.Species) != 1 || c.Species.ID != 0 {
-			t.Fatalf("seed %d: origin %q, %d species in the world", seed, nc.Origin, len(w.Species))
+			t.Fatalf("origin %q, %d species in the world", nc.Origin, len(w.Species))
 		}
-		if w.kinship(nc, &Legacy{Maker: c.ID}) != 1 {
-			t.Fatal("a branch should be kin to its parent's works")
+		if w.kinship(nc, &Legacy{Maker: c.ID}) != 2 {
+			t.Fatal("an heir should find the old people's works its own")
 		}
-		return
 	}
-	t.Fatal("no schism made a branch in sixty seeds")
 }
 
 // TestMachineSuccessorIsNewBlood: what a people builds that outgrows them

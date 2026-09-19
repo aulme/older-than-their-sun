@@ -184,6 +184,7 @@ type Profile struct {
 	PlagueBio     float64            // multiplier on bearing and catching biological plagues; see history's plague.go
 	PlagueMeme    float64            // the same for memetic ones: a mind that copies exactly
 	Frail         float64            // multiplier on the lethality it suffers: one body sickens as one
+	Stiffen       float64            // multiplier on how fast its ways set; see history's ossify.go
 	// means: see the flow package and history's flow.go
 	Cradle          float64 // multiplier on what the cradle world yields the people that arose on it
 	Upkeep          M       // multiplier on the upkeep of each domain's nodes
@@ -202,7 +203,7 @@ func mul(m float64) float64 {
 
 // Compose multiplies the entries' profiles together.
 func Compose(ps ...Profile) Profile {
-	out := Profile{Reach: 1, Rate: 1, Expand: 1, Memory: 1, Endure: 1, Cradle: 1, PlagueBio: 1, PlagueMeme: 1, Frail: 1, Dom: M{}, Upkeep: M{}, FilterDiff: map[string]float64{}}
+	out := Profile{Reach: 1, Rate: 1, Expand: 1, Memory: 1, Endure: 1, Cradle: 1, PlagueBio: 1, PlagueMeme: 1, Frail: 1, Stiffen: 1, Dom: M{}, Upkeep: M{}, FilterDiff: map[string]float64{}}
 	for _, p := range ps {
 		out.Mil, out.Sur, out.Soc = out.Mil+p.Mil, out.Sur+p.Sur, out.Soc+p.Soc
 		out.Wis += p.Wis
@@ -216,6 +217,7 @@ func Compose(ps ...Profile) Profile {
 		out.PlagueBio *= mul(p.PlagueBio)
 		out.PlagueMeme *= mul(p.PlagueMeme)
 		out.Frail *= mul(p.Frail)
+		out.Stiffen *= mul(p.Stiffen)
 		out.Expand *= mul(p.Expand)
 		out.Memory *= mul(p.Memory)
 		out.Endure *= mul(p.Endure)
