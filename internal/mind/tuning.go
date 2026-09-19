@@ -17,6 +17,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"worldgen/internal/plague"
 )
 
 // Tuning is every number the decisions use. Default() is today's sim.
@@ -47,6 +48,8 @@ type Tuning struct {
 	Wisdom    WisdomTuning
 	Contract  ContractTuning
 	Slight    SlightTuning
+	Refuse    RefuseTuning
+	Plague    plague.Tuning // the plagues' own numbers, kept here so one table tunes everything
 }
 
 // BeliefTuning: what a people thinks another's level is from its
@@ -370,6 +373,15 @@ type RoamTuning struct {
 	HopMax float64
 }
 
+// RefuseTuning: the chance a people that suspects a sender of sickness
+// closes its ears and its ports to it.
+type RefuseTuning struct {
+	Creed   float64 // what the quarantine creed adds
+	Caution float64 // what a cautious nature adds
+	Cap     float64
+	Censor  float64 // censorship: the chance at this multiple
+}
+
 // Default is today's numbers.
 func Default() *Tuning {
 	return &Tuning{
@@ -411,6 +423,8 @@ func Default() *Tuning {
 			BrokerRate: 0.1, BrokerLapse: 30_000, SoldTold: 0.5, SellswordTicks: 10, SellswordShare: 0.5,
 		},
 		Slight: SlightTuning{Weight: 2, Cap: 1, Tick: 0.1, Source: 0.3, Fact: 0.2, Dependent: 2, OffenceWeight: 5, StrongWeight: 0.5, FearBar: 0.6, ConquerorShare: 0.5},
+		Refuse: RefuseTuning{Creed: 0.5, Caution: 0.3, Cap: 0.9, Censor: 2},
+		Plague: plague.Default(),
 		Wisdom: WisdomTuning{Tail: 0.08, GrudgeFade: 10, VengefulBelow: 7, Compulsion: 0.08, Folly: 0.04, ThreatSeal: 0.3, AboveEras: 2, AboveWield: 0.07, AboveSeal: 0.2, LeapMargin: -1.5, LeapBar: 6, LeapNoise: 1.5, TeachWeaker: 0, BrokerRate: 0.02},
 	}
 }

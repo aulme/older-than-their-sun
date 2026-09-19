@@ -85,7 +85,10 @@ func TestShedFlowBreaks(t *testing.T) {
 	}
 	x.Base, x.Arrive = b.Home, w.Now
 	k.Until = w.Now + 50_000
-	w.ticks(3)
+	for range 3 {
+		s.Loot = flow.Income{10, 10, 10} // the seller keeps its own fleets fed; a laid-up ship rots on a roll
+		w.tick()
+	}
 	if k.State != Broken || k.Broke != b.ID {
 		t.Fatalf("the contract is %s, broken by %d; want broken by the buyer %d (failed %v)", k.State, k.Broke, b.ID, k.Failed)
 	}

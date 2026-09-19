@@ -38,6 +38,7 @@ func (w *World) spawnCiv(home int, sp *species.Species, maker int, name string) 
 		Watched: map[int]bool{}, Asked: map[int]Year{}, Scouted: map[int]Year{}, Ridden: map[int]bool{},
 		Charted: map[int]Year{home: w.Now}, Marked: map[int]bool{},
 		Sire: maker, Fathomed: map[int]bool{}, FathomTried: map[int]Year{},
+		Infections: map[int]*Infection{}, Immune: map[int]bool{}, Suspect: map[int]bool{}, Closed: map[int]bool{},
 		LastDark: -1 << 40, foeNow: -1,
 	}
 	if st.Real {
@@ -249,6 +250,8 @@ func (w *World) settle(c *Civ, t int) {
 		w.factN(FZenith, c, nil, -1, len(c.Systems))
 	}
 	w.chart(c, t, "settle")
+	w.wakeReservoir(c, t)
+	w.settledNear(c, t)
 }
 
 // canLive says whether a star is inside the civilisation's habitable envelope.

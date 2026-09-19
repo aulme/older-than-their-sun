@@ -265,6 +265,9 @@ func (w *World) drain(wr *War, i int) {
 // own matter.
 func (w *World) takeWorld(wr *War, c, e *Civ, t int) {
 	w.sourceSlight(wr, c, e, t)
+	c.LastTaken, e.LastTaken = w.Now, w.Now
+	w.expose(e, c, "occupation")
+	w.expose(c, e, "occupation")
 	if t == e.Home {
 		w.homeFalls(wr, c, e)
 		return
@@ -334,6 +337,7 @@ func (w *World) takeWorld(wr *War, c, e *Civ, t int) {
 	_ = converted
 	if w.Owner[t] == c.ID {
 		w.takeOver(c, t) // the works there come back to use if the taker knows the art
+		w.wakeReservoir(c, t)
 	}
 	c.Peak = max(c.Peak, len(c.Systems))
 	wr.Lost[1-i]++

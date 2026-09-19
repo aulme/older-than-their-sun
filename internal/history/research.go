@@ -87,12 +87,18 @@ func (c *Civ) rateMul(w *World) float64 {
 	if c.miracle("ansible") {
 		m *= 1.5 // every mind in one room
 	}
+	sick, _ := w.sickRate(c)
+	m *= sick
 	if n := tech.Get(c.Pursuit); n != nil {
 		switch n.Domain {
 		case tech.Exotic:
 			m *= w.Law.ExoticMul() // dead stars nearby to learn from
 		case tech.Industry:
 			m *= w.Law.IndustryMul() // metals are ore
+		case tech.Society:
+			if c.Known["censorship"] && c.working("censorship") {
+				m *= 0.9 // what may not be said is not thought either
+			}
 		}
 	}
 	for p := range c.Trade {
@@ -143,6 +149,7 @@ func (w *World) choose(c *Civ) string {
 	}
 	var avail []*tech.Node
 	var open []mind.Pursuit
+	_, sickFocus := w.sickRate(c) // a sick people climbs the ladder it needs
 	for _, n := range tech.Nodes {
 		if !w.canPursue(c, n) {
 			continue
@@ -150,6 +157,9 @@ func (w *World) choose(c *Civ) string {
 		f := c.Focus[n.Domain]
 		if f == 0 {
 			f = 1
+		}
+		if m := sickFocus[n.Domain]; m > 0 {
+			f *= m
 		}
 		_, mult := w.aptitude(c, n)
 		p := mind.Pursuit{Weight: n.Weight, Domain: c.Species.DomainMul(n.Domain), Focus: f, Depth: depth[n.Domain], Aptitude: mult, Miracle: n.Miracle}

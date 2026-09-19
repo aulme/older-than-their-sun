@@ -19,12 +19,14 @@ type Intel struct {
 	Relief float64 // ships of others seen standing with them at Star
 	Star   int     // where the look was taken
 	Year   Year
+	Sick   string // a plague seen raging in them, by name; "" for none
 }
 
 // look takes an observation without storing it.
 func (w *World) look(c, e *Civ, star int, noise float64) *Intel {
 	i := &Intel{
 		Mil:    e.Mil + w.R.NormFloat64()*noise,
+		Sick:   w.sickSeen(e),
 		Guns:   w.gunsAt(e, star),
 		Total:  w.standing(e),
 		Relief: float64(w.reliefAt(e, star)),

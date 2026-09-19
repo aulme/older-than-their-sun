@@ -76,6 +76,13 @@ var templates = [...]string{
 	FBoughtOff:    "{S}, paid by {O} to hold {T}, sold it to the {X}.",
 	FTribute:      "{S} paid {O} in {X} for twenty thousand years.",
 	FSlight:       "{S} made war on the {X}, with whom {O} traded.",
+	FPlague:       "{X} came to {s}.",
+	FPlagueGiven:  "{S} brought {X} to {o}.",
+	FPlagueWorld:  "{X} emptied {T}, and {S} sealed it.",
+	FCured:        "{S} were rid of {X}.",
+	FRefused:      "{S} closed their doors to {O} for fear of {X}.",
+	FBelieved:     "{T} went over to {X}, and was lost to {s}.",
+	FWildfire:     "{X} was everywhere.",
 }
 
 // blamedTemplates are the woes that name their own cause, retold once

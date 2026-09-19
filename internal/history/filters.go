@@ -98,17 +98,17 @@ var traitDiff = map[string]map[string]float64{
 	"collective":    {"atomic": -1, "overshoot": -1},
 	"individualist": {"distance": 1, "weight": -0.5, "hold": 1},
 	"caste":         {"weight": 1, "hold": -0.5},
-	"shortlived":    {"silence": -1, "weight": -1, "plague": 1},
+	"shortlived":    {"silence": -1, "weight": -1},
 	"longlived":     {"weight": 1.5, "silence": 1},
 	"radiation":     {"atomic": -1},
 	"solitary":      {"distance": -2, "beacon": -2, "weight": 0.5, "hold": 1},
 	"herd":          {"beacon": 2, "atomic": -1, "distance": 1, "hold": -1},
-	"dormancy":      {"plague": -1, "cosmic": -1, "dying": -1},
+	"dormancy":      {"cosmic": -1, "dying": -1},
 	"symbiosis":     {"machines": -1.5, "replication": -0.5},
 	"xenophobic":    {"beacon": -1, "find": 1},
 	"submissive":    {"revolt": 1, "hold": -0.5},
 	"skyless":       {"cosmic": -1},
-	"nomadic":       {"weight": -1, "overshoot": -1, "distance": -3, "plague": 1},
+	"nomadic":       {"weight": -1, "overshoot": -1, "distance": -3},
 }
 
 func (c *Civ) traitDiff(key string) float64 {
@@ -224,11 +224,6 @@ func (w *World) ambientFilters(c *Civ) {
 		if !c.miracle("ansible") && !c.Has("swarming") && !c.Species.Is(species.Planetary) { // nothing drifts when every world is in the room, or there is no centre, or it is all one mind
 			w.face(c, "distance", adj)
 		}
-	}
-	if c.miracle("directed_evolution") || !c.Species.Profile().Can(species.Sickens) {
-		c.Plagued = false // nothing lives in them that they did not put there
-	} else if c.Plagued || w.chance(0.0004) {
-		w.face(c, "plague", 0)
 	}
 	if !c.Active() {
 		return
@@ -410,30 +405,6 @@ func init() {
 			w.endCiv(c, Transformed, "went elsewhere")
 			c.Into = "something that left"
 			w.log("The %s go quiet all at once. Their machines still run. Nobody is home.", c.Name)
-		},
-	})
-	def(&Filter{
-		Key: "plague", Name: "Plague", Levels: []string{"sur"}, Diff: 4, Repeat: true, Domain: "biology",
-		Overcome: func(w *World, c *Civ) {
-			c.Plagued = false
-			w.log("A sickness moves through the worlds of the %s. It passes.", c.Name)
-		},
-		Scar: func(w *World, c *Civ) {
-			c.Plagued = false
-			c.Scars[ScarQuarantine] = true
-			w.log("A sickness moves through the worlds of the %s. When it is over they seal every door and never fully open them again.", c.Name)
-		},
-		Decline: func(w *World, c *Civ) {
-			c.Plagued = false
-			x := w.R.Float64()
-			switch {
-			case x < 0.4:
-				w.darkAge(c, "were hollowed out by sickness")
-			case x < 0.7:
-				w.contract(c, "were hollowed out by sickness")
-			default:
-				w.endCiv(c, Extinct, "sickened and died")
-			}
 		},
 	})
 	def(&Filter{

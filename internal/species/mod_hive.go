@@ -17,5 +17,6 @@ var hive = &ModDef{Mod: Hive, Entry: Entry{
 		Dials:      mind.Dials{Loyalty: 0.1, Fear: -0.1},
 		FilterDiff: map[string]float64{"distance": -3, "weight": -2, "beacon": 3, "silence": -1, "machines": -1},
 		Cannot:     CivilWars, // a hive has no factions
+		PlagueMeme: 2,         // one mind: what takes it takes all of it
 	},
 }}

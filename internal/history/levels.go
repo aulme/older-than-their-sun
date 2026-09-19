@@ -139,6 +139,8 @@ func (w *World) recompute(c *Civ) {
 		reach /= p.Reach // a world's reach is a third until it learns to graft
 	}
 	soc += c.Morale
+	ssur, ssoc := w.sickLevels(c)
+	sur, soc = sur-ssur, soc-ssoc
 	c.Mil, c.Sur, c.Soc = clamp(mil, 0, 10), clamp(sur, 0, 10), clamp(soc, 0, 10)
 	w.setWisdom(c, wis)
 	w.setDials(c)

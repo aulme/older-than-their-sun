@@ -52,6 +52,10 @@ type Node struct {
 	Structures        []string // structure keys unlocked; Structure() is the first
 	Gated             string   // a rarity without which the node cannot be learned at all; none is, and TestNoCatch22 keeps it so
 	Milestone         bool     // worth a line in the legends
+	Ladder            string   // a rung of a plague ladder: Bio or Mind; see plague.go
+	Immune            bool     // the top of its ladder: no plague of the kind is born in or caught by a people working it
+	Clean             bool     // halves biological births only: sewers, sealed cities
+	Cure              float64  // what the rung adds to the cure roll; 0 means the usual half
 	Text              string   // legend text; %s is the civilisation name
 	Desc              string   // what it is, in one line; see desc.go
 }
@@ -91,7 +95,7 @@ var Nodes = []*Node{
 		Focus: M{Energy: 1.3, Biology: 1.3, Industry: 1.3, Exotic: 1.3}, Milestone: true,
 		Text: "The %s learn to ask the world questions and to believe the answers."},
 	{Key: "astronomy", Name: "Astronomy", Domain: Exotic, Era: 1, Prereqs: []string{"scientific_method", "star_gazing"}, Focus: M{Propulsion: 1.2, Exotic: 1.1}},
-	{Key: "doubt", Name: "Doubt", Wis: 0.5, Domain: Society, Era: 1, Prereqs: []string{"philosophy", "printing", "organised_religion"}, Soc: 0.1, Filter: "faith"},
+	{Key: "doubt", Name: "Doubt", Wis: 0.5, Domain: Society, Era: 1, Prereqs: []string{"philosophy", "printing", "organised_religion"}, Soc: 0.1, Filter: "faith", Ladder: Mind},
 	{Key: "steam", Name: "Steam Power", Domain: Energy, Era: 1, Prereqs: []string{"metallurgy", "scientific_method"}},
 	{Key: "breach", Name: "the Breach", Domain: Industry, Era: 1, For: "world:iceshell", Prereqs: []string{"steam"}, Milestone: true,
 		Text: "The %s drill up through the ice and break the shell of the world. There is a sky. There was always a sky."},
@@ -100,7 +104,8 @@ var Nodes = []*Node{
 	{Key: "industrial", Name: "the Industrial Revolution", Domain: Industry, Era: 1, Prereqs: []string{"steam"}, Mil: 0.5, Sur: 0.5, Milestone: true,
 		Text: "Smoke rises over the cities of the %s. Nothing is made by hand for long."},
 	{Key: "chemistry", Name: "Chemistry", Domain: Industry, Era: 1, Prereqs: []string{"scientific_method"}},
-	{Key: "medicine", Name: "Medicine", Domain: Biology, Era: 1, Prereqs: []string{"scientific_method"}, Sur: 0.5},
+	{Key: "medicine", Name: "Medicine", Domain: Biology, Era: 1, Prereqs: []string{"scientific_method"}, Sur: 0.5, Ladder: Bio},
+	{Key: "sanitation", Name: "Sanitation", Domain: Biology, Era: 1, Prereqs: []string{"medicine", "industrial"}, Sur: 0.5, Clean: true},
 	{Key: "firearms", Name: "Firearms", Domain: Weapons, Era: 1, Prereqs: []string{"metallurgy", "chemistry"}, Mil: 0.5},
 	{Key: "mass_politics", Name: "Mass Politics", Wis: 0.25, Domain: Society, Era: 1, Prereqs: []string{"printing", "industrial", "doubt"}, Soc: 0.5},
 	{Key: "electricity", Name: "Electricity", Domain: Energy, Era: 1, Prereqs: []string{"scientific_method", "industrial"}, Focus: M{Computation: 1.3}},
@@ -114,7 +119,9 @@ var Nodes = []*Node{
 		Text: "The %s put a machine into orbit and see their world whole for the first time."},
 	{Key: "computers", Name: "Computers", Domain: Computation, Era: 2, Prereqs: []string{"electricity", "mathematics"}, Focus: M{Energy: 1.1, Biology: 1.1, Industry: 1.1}},
 	{Key: "networks", Name: "Global Networks", Domain: Computation, Era: 2, Prereqs: []string{"computers", "mass_politics"}, Soc: 0.5},
-	{Key: "genetics", Name: "Genetics", Domain: Biology, Era: 2, Prereqs: []string{"medicine", "chemistry"}, Sur: 0.5},
+	{Key: "genetics", Name: "Genetics", Domain: Biology, Era: 2, Prereqs: []string{"medicine", "chemistry"}, Sur: 0.5, Ladder: Bio},
+	{Key: "immunology", Name: "Immunology", Domain: Biology, Era: 2, Prereqs: []string{"medicine", "chemistry"}, Sur: 0.5, Ladder: Bio},
+	{Key: "censorship", Name: "Censorship", Domain: Society, Era: 2, Prereqs: []string{"mass_politics", "law"}, Soc: 0.5, Ladder: Mind},
 	{Key: "ecology", Name: "Ecology", Domain: Biology, Era: 2, Prereqs: []string{"medicine", "mass_industry"}, Sur: 0.5, Focus: M{Society: 1.2}},
 	{Key: "orbital_weapons", Name: "Orbital Weapons", Domain: Weapons, Era: 2, Prereqs: []string{"rocketry", "atomic"}, Mil: 0.5, Structures: []string{"silos"}},
 	{Key: "fusion", Name: "Fusion Power", Domain: Energy, Era: 2, Prereqs: []string{"atomic", "computers"}, Mil: 0.3, Sur: 0.3, Milestone: true,
@@ -126,7 +133,7 @@ var Nodes = []*Node{
 	{Key: "machine_minds", Name: "Machine Minds", Domain: Computation, Era: 3, Prereqs: []string{"computers", "neuroscience"}, Soc: 0.5, Filter: "machines", Milestone: true,
 		Focus: M{Energy: 1.2, Industry: 1.2, Biology: 1.2, Exotic: 1.2, Propulsion: 1.2, Weapons: 1.2},
 		Text:  "The %s build a mind that is not one of theirs."},
-	{Key: "closed_ecologies", Name: "Closed Ecologies", Domain: Biology, Era: 3, Prereqs: []string{"ecology", "genetics"}, Sur: 0.5, Env: 1, Structures: []string{"arcology"}},
+	{Key: "closed_ecologies", Name: "Closed Ecologies", Domain: Biology, Era: 3, Prereqs: []string{"ecology", "genetics"}, Sur: 0.5, Env: 1, Structures: []string{"arcology"}, Clean: true},
 	{Key: "orbital_habitats", Name: "Orbital Habitats", Domain: Industry, Era: 3, Prereqs: []string{"rocketry", "closed_ecologies"}, Sur: 0.5, Structures: []string{"shipyard", "observatory"}},
 	{Key: "interplanetary", Name: "Interplanetary Flight", Domain: Propulsion, Era: 3, Prereqs: []string{"rocketry", "fusion", "astronomy"}, Reach: 1},
 	{Key: "slow_interstellar", Name: "Slow Interstellar Travel", Domain: Propulsion, Era: 3, Prereqs: []string{"interplanetary", "closed_ecologies"}, Reach: 12, Speed: 100, Milestone: true,
@@ -138,7 +145,8 @@ var Nodes = []*Node{
 		Text: "The %s remake a dead world in the image of their own."},
 	{Key: "antimatter", Name: "Antimatter", Domain: Energy, Era: 3, Prereqs: []string{"fusion", "physics"}, Mil: 0.5},
 	{Key: "defence_grid", Name: "Planetary Defence", Domain: Weapons, Era: 3, Prereqs: []string{"orbital_weapons", "computers"}, Mil: 0.5, Structures: []string{"defences"}},
-	{Key: "memetics", Name: "Memetic Engineering", Wis: 0.5, Domain: Society, Era: 3, Prereqs: []string{"networks", "neuroscience"}, Soc: 1},
+	{Key: "memetics", Name: "Memetic Engineering", Wis: 0.5, Domain: Society, Era: 3, Prereqs: []string{"networks", "neuroscience"}, Soc: 1, Ladder: Mind},
+	{Key: "cognitive_immunity", Name: "Cognitive Immunity", Domain: Computation, Era: 3, Prereqs: []string{"memetics", "neuroscience"}, Soc: 0.5, Ladder: Mind, Cure: 1},
 	{Key: "relativistic", Name: "Relativistic Travel", Domain: Propulsion, Era: 3, Prereqs: []string{"antimatter", "slow_interstellar"}, Reach: 25, Speed: 4, Milestone: true,
 		Text: "The ships of the %s now cross the dark at a good fraction of the speed of light."},
 	{Key: "relativistic_weapons", Name: "Relativistic Weapons", Domain: Weapons, Era: 3, Prereqs: []string{"relativistic"}, Mil: 1.5, Milestone: true,
@@ -148,7 +156,8 @@ var Nodes = []*Node{
 		Text: "The %s begin to take their star apart for the light."},
 	{Key: "germline", Name: "Germline Engineering", Domain: Biology, Era: 3, Prereqs: []string{"terraforming", "life_extension"}, Env: 1, Sur: 1},
 	{Key: "quantum_computing", Name: "Quantum Computing", Domain: Computation, Era: 3, Prereqs: []string{"computers", "physics"}, Focus: M{Exotic: 1.3, Computation: 1.2}},
-	{Key: "synthetic_biology", Name: "Synthetic Biology", Domain: Biology, Era: 3, Prereqs: []string{"genetics", "closed_ecologies"}, Sur: 0.5, Focus: M{Biology: 1.3}},
+	{Key: "synthetic_biology", Name: "Synthetic Biology", Domain: Biology, Era: 3, Prereqs: []string{"genetics", "closed_ecologies"}, Sur: 0.5, Focus: M{Biology: 1.3}, Ladder: Bio},
+	{Key: "designed_immunity", Name: "Designed Immunity", Domain: Biology, Era: 3, Prereqs: []string{"immunology", "synthetic_biology"}, Sur: 0.5, Ladder: Bio},
 	{Key: "deep_governance", Name: "Deep Governance", Wis: 0.5, Domain: Society, Era: 3, Prereqs: []string{"memetics", "networks", "law"}, Soc: 1},
 	{Key: "beamed_sails", Name: "Beamed Sails", Domain: Propulsion, Era: 3, Prereqs: []string{"slow_interstellar", "orbital_habitats"}, Reach: 18, Speed: 30},
 	{Key: "hibernation", Name: "Hibernation", Domain: Biology, Era: 3, Prereqs: []string{"medicine", "slow_interstellar"}, Sur: 0.5, Reach: 5},
@@ -180,6 +189,10 @@ var Nodes = []*Node{
 	{Key: "world_engines", Name: "World Engines", Domain: Industry, Era: 4, Cost: 500, Prereqs: []string{"matter_compilers", "terraforming"}, Env: 1, Sur: 1},
 	{Key: "substrate_minds", Name: "Substrate Minds", Wis: 0.5, Domain: Computation, Era: 4, Prereqs: []string{"uploading", "quantum_computing"}, Soc: 1, Sur: 0.5, Focus: M{Society: 1.2}},
 	{Key: "panspermia", Name: "Panspermia", Domain: Biology, Era: 4, Prereqs: []string{"synthetic_biology", "germline"}, Env: 1, Sur: 1},
+	{Key: "bodily_sovereignty", Name: "Bodily Sovereignty", Domain: Biology, Era: 4, Prereqs: []string{"designed_immunity", "germline"}, Sur: 1, Ladder: Bio, Immune: true, Milestone: true,
+		Text: "Nothing lives in the %s that they did not put there."},
+	{Key: "sealed_minds", Name: "Sealed Minds", Domain: Society, Era: 4, Prereqs: []string{"cognitive_immunity", "deep_governance"}, Soc: 1, Ladder: Mind, Immune: true, Milestone: true,
+		Text: "No idea enters the %s that they did not invite."},
 	{Key: "posthuman_law", Name: "Posthuman Law", Wis: 0.5, Domain: Society, Era: 4, Prereqs: []string{"deep_governance", "uploading"}, Soc: 1.5},
 	{Key: "long_thought", Name: "the Long Thought", Wis: 1, Domain: Society, Era: 4, Cost: 500, Prereqs: []string{"posthuman_law", "substrate_minds"}, Soc: 1},
 	{Key: "near_light", Name: "Near-light Travel", Domain: Propulsion, Era: 4, Prereqs: []string{"relativistic", "vacuum_energy"}, Reach: 35, Speed: 1.5, Milestone: true,
@@ -236,6 +249,17 @@ var Subs = map[string][]string{
 // Miracles lists the miracle nodes.
 var Miracles []*Node
 
+// The plague ladders: the nodes that divide births, harden against
+// catching and add to the cure, by kind; the Immune node at the top of
+// each is the end of the kind for whoever works it. Ladders is filled from
+// the nodes' markers at init; see plague.go in history for the reading.
+const (
+	Bio  = "bio"
+	Mind = "mind"
+)
+
+var Ladders = map[string][]*Node{}
+
 var byKey = map[string]*Node{}
 
 func init() {
@@ -246,6 +270,9 @@ func init() {
 		byKey[n.Key] = n
 		if n.Miracle {
 			Miracles = append(Miracles, n)
+		}
+		if n.Ladder != "" {
+			Ladders[n.Ladder] = append(Ladders[n.Ladder], n)
 		}
 	}
 	for _, n := range Nodes {

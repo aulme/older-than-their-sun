@@ -203,7 +203,7 @@ func (w *World) makeObject(c *Civ, key string, l *Legacy, parent *Source, how st
 		Form: f.Key, Sentient: sentient, Maker: c.ID, Made: w.Now})
 	if l == nil {
 		l = &Legacy{ID: len(w.Legacies), Age: -1, Maker: c.ID, Kind: Artifact, Star: c.Home, Node: key, Desc: f.Desc,
-			State: Wielded, Horror: -1, Finder: c.ID, Level: "miracle", Cond: Abandoned, Source: s.ID}
+			State: Wielded, Horror: -1, Finder: c.ID, Level: "miracle", Cond: Abandoned, Source: s.ID, Plague: -1}
 		w.Legacies = append(w.Legacies, l)
 	} else {
 		l.Source = s.ID

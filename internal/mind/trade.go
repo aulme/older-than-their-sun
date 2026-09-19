@@ -12,20 +12,21 @@ import (
 
 // TradeInput is one partner as the sender sees it.
 type TradeInput struct {
-	Monster   bool    // the partner is remembered as a thing that does harm
-	Grudge    float64 // what the partner has done to them
-	Xenophobe bool    // the sender's drive
-	Different bool    // the partner counts as different to it
-	Fear      float64 // the sender's fear dial
-	Stronger  bool    // the sender's intel reads the partner as stronger
-	Hostile   bool    // the partner strikes first, by posture
-	InReach   bool    // a holding of the sender is within its reach of a holding of the partner
-	Nomad     bool    // either side lives as fleets
-	Drive     int     // the sender's road: 0 slow, 1 sails or near-light, 2 the Door or wormholes
-	Embargoed bool    // the partner has closed its ports to the sender
-	Holding   bool    // the sender is fixed on holding what it has
-	Spawning  bool    // the sender is fixed on more of itself
-	Grasping  bool    // the partner is fixed on holding: its want is filled first
+	Monster    bool    // the partner is remembered as a thing that does harm
+	Grudge     float64 // what the partner has done to them
+	Xenophobe  bool    // the sender's drive
+	Different  bool    // the partner counts as different to it
+	Fear       float64 // the sender's fear dial
+	Stronger   bool    // the sender's intel reads the partner as stronger
+	Hostile    bool    // the partner strikes first, by posture
+	InReach    bool    // a holding of the sender is within its reach of a holding of the partner
+	Nomad      bool    // either side lives as fleets
+	Drive      int     // the sender's road: 0 slow, 1 sails or near-light, 2 the Door or wormholes
+	Embargoed  bool    // the partner has closed its ports to the sender
+	Quarantine bool    // the sender suspects the partner of carrying a sickness and has closed its own
+	Holding    bool    // the sender is fixed on holding what it has
+	Spawning   bool    // the sender is fixed on more of itself
+	Grasping   bool    // the partner is fixed on holding: its want is filled first
 }
 
 // TradeChoice is the answer: a cap on what crosses, a multiplier on each
@@ -75,6 +76,8 @@ func Trade(in TradeInput, t *Tuning) TradeChoice {
 		return TradeChoice{Refuse: true, Holds: true, reason: "they hold what they have"}
 	case in.Embargoed:
 		return TradeChoice{Refuse: true, reason: "the partner has closed its ports to them"}
+	case in.Quarantine:
+		return TradeChoice{Refuse: true, reason: "the partner is suspected of carrying a sickness"}
 	}
 	switch {
 	case !in.InReach:

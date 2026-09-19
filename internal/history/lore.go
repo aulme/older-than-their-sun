@@ -81,6 +81,13 @@ const (
 	FBoughtOff    // a hired people sold what it was paid to hold
 	FTribute      // a people paid tribute after a war
 	FSlight       // a people made war on the partner of another; see slight.go
+	FPlague       // a people caught a plague; see plague.go
+	FPlagueGiven  // and it came from another, by goods, occupation or a fleet
+	FPlagueWorld  // a world emptied by a plague
+	FCured        // a people rid of one
+	FRefused      // a people closed its ears and its ports to another for fear of one
+	FBelieved     // a world went over to an idea; the object is the cult, if one formed
+	FWildfire     // a plague in ten peoples at once
 )
 
 // Sort is the moral shape of a fact from the subject's side.
@@ -117,6 +124,7 @@ var factShape = [...]struct {
 	FFathomed: {Bond, 1}, FBrokered: {Deed, 1},
 	FHire: {Deed, 1}, FTaught: {Deed, 1}, FStrikeBought: {Crime, 1}, FBoughtOff: {Crime, 2}, FTribute: {Woe, 1},
 	FSlight: {Crime, 1},
+	FPlague: {Woe, 4}, FPlagueGiven: {Crime, 2}, FPlagueWorld: {Woe, 3}, FCured: {Deed, 2}, FRefused: {Crime, 1}, FBelieved: {Woe, 3}, FWildfire: {Woe, 3},
 }
 
 // Fact is one thing that happened, as it happened.
@@ -501,6 +509,7 @@ func (w *World) testament(c *Civ, l *Legacy) {
 		l.Testament = append(l.Testament, Inscription{Tale: *t, Text: w.tell(c, t)})
 	}
 	c.Tally.Testaments++
+	w.wallsWritten(c, l)
 }
 
 // dearness is how much a tale matters to its teller: the fact's weight,
@@ -527,6 +536,7 @@ func (w *World) readTestament(c *Civ, l *Legacy) {
 		c.inscribed = map[int]bool{}
 	}
 	c.inscribed[l.ID] = true
+	w.readWallsPlague(c, l)
 	own := w.kinship(c, l) == 2
 	n := 0
 	for _, td := range l.Testament {
@@ -597,6 +607,7 @@ func (w *World) readWalls(c *Civ, star int) {
 // keeps its parent's tales as its own history, a made people is told what
 // its makers want it to know.
 func (w *World) inherit(nc, parent *Civ, wear int8) {
+	w.inheritImmunity(nc, parent)
 	for _, t := range parent.Lore {
 		if t.Forgot || nc.knows(t.Fact) {
 			continue
@@ -928,7 +939,7 @@ func (w *World) dread(c *Civ, star int) bool {
 			continue
 		}
 		switch f.Kind {
-		case FUnleashed, FHorrorStrike, FSurveyLost, FHorrorMade:
+		case FUnleashed, FHorrorStrike, FSurveyLost, FHorrorMade, FPlagueWorld:
 			return true
 		}
 	}

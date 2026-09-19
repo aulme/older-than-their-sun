@@ -197,6 +197,8 @@ func (w *World) encounter(a, b *Civ, watched, heard bool, at int) {
 	w.observe(a, b, b.Home, 0.5)
 	w.observe(b, a, a.Home, 0.5)
 	w.fathomPair(a, b) // each rolls once at once, whatever follows
+	w.expose(a, b, "landing")
+	w.expose(b, a, "landing")
 	finder, found := a, b
 	// the stronger side is the one with the initiative
 	if b.Mil > a.Mil {

@@ -339,10 +339,6 @@ func (w *World) openPair(a, b *Civ) {
 		return // heard only: the trade is by signal, and nothing crosses with it
 	}
 	w.log("Slow messages cross the dark between the %s and the %s for generations, and then trade.", a.Name, b.Name)
-	if (a.Faced["plague"] || b.Faced["plague"]) && w.R.Float64() < 0.3 {
-		a.Plagued, b.Plagued = true, true
-		w.log("Something crosses with the messages and the trade. Both the %s and the %s begin to sicken.", a.Name, b.Name)
-	}
 }
 
 // fathoming is the per-tick pass for one people: the retries on each

@@ -27,7 +27,7 @@ const envelopeGrace = 10
 func (w *World) flows(c *Civ) {
 	c.Reserved = flow.Income{}
 	rareChanged := w.rare(c)
-	c.Income = w.income(c)
+	c.Income = w.sickIncome(c, w.income(c))
 	w.direct(c, w.uses(c), rareChanged)
 	w.tallyFlows(c)
 }

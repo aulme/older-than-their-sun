@@ -13,5 +13,6 @@ var unconscious = &ModDef{Mod: Unconscious, Entry: Entry{
 		Dom:        M{"exotic": 0.6, "society": 0.4, "biology": 1.3},
 		Memory:     1.5,
 		FilterDiff: map[string]float64{"beacon": -3, "transcend": 2, "machines": -1, "silence": -2},
+		Cannot:     Believes, // no idea can take a mind that is not there
 	},
 }}

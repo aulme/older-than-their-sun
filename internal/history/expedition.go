@@ -277,6 +277,7 @@ func (w *World) arrive(x *Expedition) {
 			x.Base = x.Star
 			k.Until = w.Now + Year(k.Length*1000)
 			w.log("A fleet of the %s arrives at %s to hold it for the %s, as paid.", c.Name, w.star(x.Base), h.Name)
+			w.landed(c, h)
 			return
 		}
 		if !h.Active() || len(h.Wars) == 0 {
@@ -285,6 +286,7 @@ func (w *World) arrive(x *Expedition) {
 			return
 		}
 		x.Base = x.Star
+		w.landed(c, h)
 		if x.Withdrawn {
 			x.Withdrawn = false
 			return

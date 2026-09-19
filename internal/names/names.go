@@ -46,3 +46,26 @@ var horrorNoun = []string{"Tide", "Swarm", "Bloom", "Choir", "Sleeper", "Lattice
 
 // Horror returns an epithet such as "the Grey Tide".
 func Horror(r *rand.Rand) string { return "the " + pick(r, horrorAdj) + " " + pick(r, horrorNoun) }
+
+var plagueAdj = []string{"Red", "Grey", "Weeping", "Glass", "Silent", "Sweating", "Hollow", "Slow", "Quick", "Black", "White", "Wandering", "Crystal"}
+var plagueBody = []string{"Fever", "Rot", "Blight", "Wasting", "Sleep", "Cough", "Bloom", "Pox", "Fade", "Sweat", "Ague"}
+var plagueMind = []string{"Song", "Question", "Doctrine", "Laugh", "Silence", "Certainty", "Word", "Number", "Joke", "Prayer", "Dream", "Argument"}
+
+// Plague names a sickness: "the Grey Rot" for one of the body, "the Silent
+// Question" for one of the mind. One in three is named for its first host
+// instead, "the Qaosh Sweat" or "the Fever of Wolf 359", which is what the
+// neighbours call it; host is the people's name or the star's, and named
+// says whether that was done.
+func Plague(r *rand.Rand, memetic bool, host string) (name string, named bool) {
+	noun := pick(r, plagueBody)
+	if memetic {
+		noun = pick(r, plagueMind)
+	}
+	if host != "" && r.IntN(3) == 0 {
+		if r.IntN(2) == 0 {
+			return "the " + host + " " + noun, true
+		}
+		return "the " + noun + " of " + host, true
+	}
+	return "the " + pick(r, plagueAdj) + " " + noun, false
+}

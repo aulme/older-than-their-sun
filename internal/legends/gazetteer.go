@@ -62,6 +62,15 @@ func gazetteer(p func(string, ...any), w *history.World) {
 			get(l.Star).notes = append(get(l.Star).notes, l.Describe())
 		}
 	}
+	for _, s := range sortedKeys(w.Reservoir) {
+		r := w.Reservoir[s]
+		get(s).notes = append(get(s).notes, fmt.Sprintf("dead cities under quarantine: %s waits there until %s", w.Plagues[r.Plague].Name, year(r.Until)))
+	}
+	for _, l := range w.Legacies {
+		if l.Plague >= 0 && l.Star >= 0 && l.State != history.Lost {
+			get(l.Star).notes = append(get(l.Star).notes, fmt.Sprintf("walls that carry %s", w.Plagues[l.Plague].Name))
+		}
+	}
 	if w.G.Sol >= 0 {
 		get(w.G.Sol)
 	}
@@ -105,6 +114,15 @@ func gazetteer(p func(string, ...any), w *history.World) {
 			p("  %s.", strings.Join(e.notes, "; "))
 		}
 	}
+}
+
+func sortedKeys[V any](m map[int]V) []int {
+	out := make([]int, 0, len(m))
+	for k := range m {
+		out = append(out, k)
+	}
+	sort.Ints(out)
+	return out
 }
 
 func archDesc(key string) string {

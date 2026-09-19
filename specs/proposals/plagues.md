@@ -1,6 +1,6 @@
 # Plagues: sickness as an actor
 
-**Status:** Draft
+**Status:** Partly implemented (stages 1 to 4, step 13, 2026-09-19; stages 5 and 6 are step 14). Tuned at build: base births 0.002 and 0.0005, the toll at `l³`; see the ledger in `specs/plan.md`.
 **Last updated:** 2026-09-17
 
 Assumes [one-tick](one-tick.md): every rate below is per thousand years, and "per tick" means a thousand-year tick, the same thing. Reads [resources-and-trade](resources-and-trade.md) (dormant nodes, trade links, dependence), [ships-and-garrisons](ships-and-garrisons.md) (a world under siege), [wisdom](wisdom.md) (messages need understanding) and [morality](morality.md) (bringing a plague as a crime). None is needed to argue this one; the sanitation modifiers that read dormant nodes and sieges need the first two to build.

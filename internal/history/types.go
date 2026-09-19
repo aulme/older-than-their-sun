@@ -190,6 +190,14 @@ type Civ struct {
 	hiredRun  int            // ticks running that contract pay was more than half an income
 	dealt     map[int]bool   // peoples a bargain has been struck with, for the first line
 
+	// plagues: see plague.go
+	Infections  map[int]*Infection // the plagues this people has, by plague
+	Immune      map[int]bool       // the plagues it cannot catch again
+	Suspect     map[int]bool       // the peoples it thinks are sick
+	Closed      map[int]bool       // the suspects it has closed its ears and its ports to
+	LastTaken   Year               // when a world last changed hands with it on either side
+	FirstPlague Year               // when it first had one, for the batch
+
 	// sightings and salvage: see sighting.go, field.go
 	Sightings    map[int]*Sighting // what this people has seen of fleets in flight, by fleet
 	Salvage      int               // ships of others' make in the guards, crewed from a field
@@ -245,8 +253,7 @@ type Civ struct {
 	Ascended     Year // when a miracle was last gained; the surge runs from here
 	Renewed      Year
 	Renaissances int
-	NextDrift    int // size at which the Distance is faced again
-	Plagued      bool
+	NextDrift    int     // size at which the Distance is faced again
 	Dying        bool    // home star is failing
 	Endure       float64 // kyr left under the failing star
 	Title        string  // ruler title once contracted
@@ -291,6 +298,9 @@ type Tally struct {
 	// slights: taken in all; councils the offence alone held back
 	Slights  float64
 	Deterred int
+	// plagues: caught, cured, ticks contained, worlds lost, cults formed from it; senders closed out, messages dropped for it
+	Sickened, Cured, Contained, WorldsSick, Cults int
+	Refusals, Shut                                int
 }
 
 // Living is true for active and remnant civilisations.
@@ -409,6 +419,7 @@ type Legacy struct {
 	Hardy     float64       // multiplier on the rate of decay; 0 never decays
 	Source    int           // the source record it is, for a bounty or a wielded artifact; -1 if none
 	Testament []Inscription // what its makers told of their age, as they left it
+	Plague    int           // the sickness of the mind its makers had when they wrote, -1 for none; see plague.go
 	// a field of wrecks
 	Wrecks, Derelicts int
 	At                vec  // where it is, for a field adrift
@@ -536,7 +547,9 @@ type World struct {
 	pending     []*Sighting // sightings queued on the timetable, not yet happened
 	Expeditions []*Expedition
 	Pacts       []*Pact
-	Contracts   []*Contract // every contract offered; see contract.go
+	Contracts   []*Contract        // every contract offered; see contract.go
+	Plagues     []*Plague          // every plague born; see plague.go
+	Reservoir   map[int]*Reservoir // plagues waiting in dead cities, by star
 	Messages    []*Message
 	Betrayals   []Betrayal // and faith kept, with negative weight
 	scratch

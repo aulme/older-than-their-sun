@@ -96,6 +96,8 @@ type Rec struct {
 	Ships     int                `json:"ships"`             // the most ships ever in being
 	ShipsEnd  int                `json:"ships_end"`         // ships in being at the end, and of them laid up
 	LaidUp    int                `json:"laid_up"`
+	Origin    string             `json:"origin,omitempty"` // a branch, a cult, an uplift; "" for a cradle
+	Sick      float64            `json:"sick_myr"`         // Myr after birth the first plague came; -1 for never
 	ever      map[string]bool
 	frontier  string
 	signature string
@@ -139,6 +141,7 @@ func main() {
 		ks      []ContractRec
 		sells   []SellRec
 		bloc    BlocRec
+		plagues []PlagueRec
 		stats   string
 		ages    float64
 	}
@@ -157,7 +160,7 @@ func main() {
 			legends.Stats(&sb, w)
 			sights, meets, fleets, fields := flattenSightings(w)
 			ks, sells := flattenContracts(w)
-			runs[i] = run{ks: ks, sells: sells, bloc: flattenBlocs(w), seed: seed, recs: flatten(w), wars: flattenWars(w), battles: flattenBattles(w), sights: sights, meets: meets, fleets: fleets, fields: fields, pairs: flattenPairs(w), stats: sb.String(), ages: float64(w.Present-w.Cfg.Dawn) / 1e6}
+			runs[i] = run{ks: ks, sells: sells, bloc: flattenBlocs(w), plagues: flattenPlagues(w), seed: seed, recs: flatten(w), wars: flattenWars(w), battles: flattenBattles(w), sights: sights, meets: meets, fleets: fleets, fields: fields, pairs: flattenPairs(w), stats: sb.String(), ages: float64(w.Present-w.Cfg.Dawn) / 1e6}
 		}(i)
 	}
 	wg.Wait()
@@ -173,6 +176,7 @@ func main() {
 	var ks []ContractRec
 	var sells []SellRec
 	var blocs []BlocRec
+	var plagues []PlagueRec
 	var stats []string
 	ageSum := 0.0
 	for _, r := range runs {
@@ -187,11 +191,13 @@ func main() {
 		ks = append(ks, r.ks...)
 		sells = append(sells, r.sells...)
 		blocs = append(blocs, r.bloc)
+		plagues = append(plagues, r.plagues...)
 		stats = append(stats, r.stats)
 		ageSum += r.ages
 	}
 	must(writeJSONL(filepath.Join(*out, "civs.jsonl"), recs))
 	must(writeWars(filepath.Join(*out, "wars.jsonl"), wars))
+	must(writeJSONL(filepath.Join(*out, "plagues.jsonl"), plagues))
 	must(os.WriteFile(filepath.Join(*out, "stats.txt"), []byte(strings.Join(stats, "")), 0o644))
 	f, err := os.Create(filepath.Join(*out, "report.md"))
 	must(err)
@@ -207,6 +213,7 @@ func main() {
 	wisdomReport(f, recs, pairs)
 	contractReport(f, sells, ks, wars)
 	blocReport(f, blocs, recs)
+	sickReport(f, plagues, recs, *seeds)
 	fmt.Printf("%d civilisations over %d worlds; wrote %s\n", len(recs), *seeds, *out)
 }
 
@@ -227,13 +234,16 @@ func flatten(w *history.World) []Rec {
 		r := Rec{
 			Seed: w.Seed, ID: c.ID, Name: c.Name, Species: c.Species.Name, Sub: c.Species.Sub.String(), World: c.Species.World.Key, Made: c.Species.Made,
 			Born: float64(c.Born-w.Cfg.Dawn) / 1e6, Lived: float64(end-c.Born) / 1e6,
-			Fate: c.Fate.String(), Cause: c.Cause, Into: c.Into, Standing: c.Active(),
+			Fate: c.Fate.String(), Cause: c.Cause, Into: c.Into, Standing: c.Active(), Origin: c.Origin, Sick: -1,
 			Peak: c.Peak, Ruled: c.Ruled, Uplifts: c.Uplifts, Word: c.Word,
 			Miracles: map[string]string{}, Learned: map[string]float64{},
 			Record: append([]string(nil), c.Record...), Mil: c.Mil, Sur: c.Sur, Soc: c.Soc,
 			Wis: c.Wis, PeakWis: c.PeakWis, WisFrom: history.WisdomParts(c),
 			Cycle: c.KnowsCycle, DarkAges: c.DarkAges, Renaiss: c.Renaissances,
 			ever: map[string]bool{},
+		}
+		if c.FirstPlague > 0 {
+			r.Sick = float64(c.FirstPlague-c.Born) / 1e6
 		}
 		for _, d := range c.Species.Mods.Defs() {
 			r.Mods = append(r.Mods, d.Key)
@@ -335,7 +345,7 @@ func keys(m map[string]bool) []string {
 	return out
 }
 
-func writeJSONL(path string, recs []Rec) error {
+func writeJSONL[T any](path string, recs []T) error {
 	f, err := os.Create(path)
 	if err != nil {
 		return err

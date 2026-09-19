@@ -6,6 +6,7 @@ import (
 	"io"
 	"sort"
 	"strings"
+	"worldgen/internal/plague"
 
 	"worldgen/internal/history"
 	"worldgen/internal/species"
@@ -183,10 +184,14 @@ func Write(out io.Writer, w *history.World, full bool) {
 	if standing > 0 {
 		p("Still standing in the waning of the age: %d.", standing)
 		for _, c := range w.Civs {
+			sick := ""
+			if word := w.SickWord(c); word != "" {
+				sick = "; " + word
+			}
 			if c.Active() && c.Aloft {
-				p("  The %s, aloft, seated for now at %s, %s, in %d fleets. %s. Now: %s; %s.", c.Name, c.HomeName, tech.EraNames[c.Era], fleetsOf(w, c), c.Species.Describe(), levels(c), arms(w, c))
+				p("  The %s, aloft, seated for now at %s, %s, in %d fleets. %s. Now: %s; %s%s.", c.Name, c.HomeName, tech.EraNames[c.Era], fleetsOf(w, c), c.Species.Describe(), levels(c), arms(w, c), sick)
 			} else if c.Active() {
-				p("  The %s on %s, %s, holding %s. %s. Now: %s; %s.", c.Name, c.HomeName, tech.EraNames[c.Era], systems(len(c.Systems)), c.Species.Describe(), levels(c), arms(w, c))
+				p("  The %s on %s, %s, holding %s. %s. Now: %s; %s%s.", c.Name, c.HomeName, tech.EraNames[c.Era], systems(len(c.Systems)), c.Species.Describe(), levels(c), arms(w, c), sick)
 			}
 		}
 	}
@@ -245,6 +250,8 @@ func Write(out io.Writer, w *history.World, full bool) {
 		}
 		p("  %s, a %s, %s%s.", h.Name, h.Kind, state, made)
 	}
+	p("")
+	plagues(p, w)
 	p("")
 	wars(p, w)
 	p("")
@@ -364,6 +371,73 @@ func Write(out io.Writer, w *history.World, full bool) {
 			p("  %-14s known: %s", "", strings.Join(known, " "))
 		}
 	}
+}
+
+// plagues lists every plague alive at the present, endemic or raging,
+// with its kind, its road so far and its toll, and every dead one that
+// took more than three peoples.
+func plagues(p func(string, ...any), w *history.World) {
+	p("Plagues:")
+	any := false
+	for _, pl := range w.Plagues {
+		if pl.Hosts == 0 && pl.Peoples <= 3 {
+			continue
+		}
+		any = true
+		kind := "of the body"
+		if pl.Kind == plague.Memetic {
+			kind = "of the mind"
+		}
+		first := "nobody"
+		if pl.FirstHost >= 0 {
+			first = "the " + w.Civs[pl.FirstHost].Name
+		}
+		state := "dead"
+		if pl.Hosts > 0 {
+			var in []string
+			for _, c := range w.Civs {
+				inf := c.Infections[pl.ID]
+				if !c.Active() || inf == nil {
+					continue
+				}
+				how := "raging"
+				switch {
+				case inf.Carrier:
+					how = "carried"
+				case w.Present-inf.Since > 1_000_000:
+					how = fmt.Sprintf("endemic these %s, and they no longer notice it", spanOf(w.Present-inf.Since))
+				case inf.Contained:
+					how = "contained"
+				}
+				in = append(in, fmt.Sprintf("the %s (%s)", c.Name, how))
+			}
+			state = "in " + strings.Join(in, ", ")
+		}
+		p("  %s, %s, contagion %.2f, lethality %.2f: born %s among %s, %s. Has been in %d peoples, at most %d at once; took %d worlds and %d peoples, made %d cults, was cured %s.",
+			upperFirst(pl.Name), kind, pl.Contagion, pl.Lethality, year(pl.Born), first, state, pl.Caught, pl.Peak, pl.Worlds, pl.Peoples, pl.Cults, times(pl.Cures))
+	}
+	if !any {
+		p("  none alive, and none that took more than three peoples")
+	}
+}
+
+func times(n int) string {
+	switch n {
+	case 0:
+		return "never"
+	case 1:
+		return "once"
+	case 2:
+		return "twice"
+	}
+	return fmt.Sprintf("%d times", n)
+}
+
+func upperFirst(s string) string {
+	if s == "" {
+		return s
+	}
+	return strings.ToUpper(s[:1]) + s[1:]
 }
 
 // wars lists the wars worth remembering: those that took a world or ended

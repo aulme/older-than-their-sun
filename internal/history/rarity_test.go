@@ -59,7 +59,7 @@ func TestFleetLostBuriesRarity(t *testing.T) {
 	w := newTestWorld(t, 16, 30)
 	c := spawnAt(w, 0, species.Fixed("cooperative"))
 	e := spawnAt(w, 1, species.Fixed("cooperative"))
-	l := &Legacy{ID: len(w.Legacies), Age: 0, Maker: -1, Kind: Artifact, Star: 0, Node: "fusion", Desc: "a seed of grey metal", Horror: -1, Finder: -1, Source: -1, State: Wielded, Level: "sur"}
+	l := &Legacy{ID: len(w.Legacies), Age: 0, Maker: -1, Kind: Artifact, Star: 0, Node: "fusion", Desc: "a seed of grey metal", Horror: -1, Finder: -1, Source: -1, Plague: -1, State: Wielded, Level: "sur"}
 	w.Legacies = append(w.Legacies, l)
 	c.Wielded = append(c.Wielded, l)
 	w.wieldRarity(c, l)

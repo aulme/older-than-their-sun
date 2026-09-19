@@ -59,7 +59,7 @@ func (w *World) appraise(c, e *Civ, target int) Appraisal {
 	in := mind.AppraiseInput{
 		Strength: w.strength(c, e), Believed: mil, Spread: spread, EnemyBonus: e.warBonus(),
 		Risk: c.Dials.Risk, Speed: c.Speed, Wis: c.Wis,
-		Weakened: e.Plagued || float64(w.Now-e.LastDark) < w.Cfg.Tuning.Appraise.DarkAge,
+		Weakened: w.plagued(e) || float64(w.Now-e.LastDark) < w.Cfg.Tuning.Appraise.DarkAge,
 	}
 	in.Ships, in.Guns, in.Relief = w.believeSky(c, e, a.Target)
 	for eid := range e.Wars {

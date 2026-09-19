@@ -411,11 +411,11 @@ func (w *World) unleash(c *Civ, l *Legacy) {
 			h.Legacy = l.ID
 			w.log("It was a door, or a voice. It is called %s now.", h.Name)
 		default:
-			w.log("It does what it was made to do, to the %s.", c.Name)
 			if n.Filter != "" {
+				w.log("It does what it was made to do, to the %s.", c.Name)
 				w.face(c, n.Filter, 3)
 			} else {
-				w.face(c, "plague", 3)
+				w.wakeRelic(c, l)
 			}
 		}
 	}

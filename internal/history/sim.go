@@ -45,6 +45,7 @@ func newWorld(seed uint64, cfg Config) *World {
 		w.Bio[g.Sol] = BioSimple
 	}
 	w.Sources, w.sourcesAt = naturalSources(g)
+	w.Reservoir = map[int]*Reservoir{}
 	w.makeCycle()
 	w.phases = []phase{
 		{"life", (*World).life},
@@ -52,6 +53,7 @@ func newWorld(seed uint64, cfg Config) *World {
 		{"horrors", (*World).tickHorrors},
 		{"beneath", (*World).tickBeneath},
 		{"messages", (*World).tickMessages},
+		{"plagues", (*World).tickPlagues},
 		{"civs", (*World).tickCivs},
 		{"trade", (*World).trade},
 		{"contracts", (*World).tickContracts},

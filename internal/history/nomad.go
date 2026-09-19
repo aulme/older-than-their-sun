@@ -375,6 +375,7 @@ func (w *World) rest(c *Civ, why string) {
 	w.takeOver(c, t)
 	w.recompute(c)
 	w.fact(FRest, c, nil, t)
+	w.wakeReservoir(c, t)
 	if c.Has("nomadic") {
 		w.log("The %s come to rest at %s, and are nomads no longer. It was %s that did it.", c.Name, c.HomeName, why)
 	} else {

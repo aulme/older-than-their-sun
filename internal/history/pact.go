@@ -106,6 +106,12 @@ func (w *World) tickMessages() {
 			to.Tally.Dropped++
 			continue // a message from a people not understood means nothing on arrival
 		}
+		if w.shutTo(to, from) {
+			continue // dropped unread: nothing in it is heard, and nothing in it is caught
+		}
+		if from.Active() {
+			w.expose(from, to, "message")
+		}
 		switch m.Kind {
 		case MsgNews:
 			w.news(to, from, m)
