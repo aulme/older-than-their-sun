@@ -188,6 +188,9 @@ func Write(out io.Writer, w *history.World, full bool) {
 			if word := w.SickWord(c); word != "" {
 				sick = "; " + word
 			}
+			if word := w.RideWord(c); word != "" {
+				sick += "; " + word
+			}
 			if c.Active() && c.Aloft {
 				p("  The %s, aloft, seated for now at %s, %s, in %d fleets. %s. Now: %s; %s%s.", c.Name, c.HomeName, tech.EraNames[c.Era], fleetsOf(w, c), c.Species.Describe(), levels(c), arms(w, c), sick)
 			} else if c.Active() {
@@ -391,6 +394,12 @@ func plagues(p func(string, ...any), w *history.World) {
 		first := "nobody"
 		if pl.FirstHost >= 0 {
 			first = "the " + w.Civs[pl.FirstHost].Name
+		}
+		if pl.Maker >= 0 {
+			first += fmt.Sprintf(", made by the %s", w.Civs[pl.Maker].Name)
+		}
+		if pl.Rider >= 0 {
+			first += fmt.Sprintf("; it thinks, and is the %s", w.Civs[pl.Rider].Name)
 		}
 		state := "dead"
 		if pl.Hosts > 0 {

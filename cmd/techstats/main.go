@@ -98,6 +98,7 @@ type Rec struct {
 	LaidUp    int                `json:"laid_up"`
 	Origin    string             `json:"origin,omitempty"` // a branch, a cult, an uplift; "" for a cradle
 	Sick      float64            `json:"sick_myr"`         // Myr after birth the first plague came; -1 for never
+	Master    bool               `json:"master,omitempty"` // born under a master: made, or held
 	ever      map[string]bool
 	frontier  string
 	signature string
@@ -234,7 +235,7 @@ func flatten(w *history.World) []Rec {
 		r := Rec{
 			Seed: w.Seed, ID: c.ID, Name: c.Name, Species: c.Species.Name, Sub: c.Species.Sub.String(), World: c.Species.World.Key, Made: c.Species.Made,
 			Born: float64(c.Born-w.Cfg.Dawn) / 1e6, Lived: float64(end-c.Born) / 1e6,
-			Fate: c.Fate.String(), Cause: c.Cause, Into: c.Into, Standing: c.Active(), Origin: c.Origin, Sick: -1,
+			Fate: c.Fate.String(), Cause: c.Cause, Into: c.Into, Standing: c.Active(), Origin: c.Origin, Sick: -1, Master: c.Sire >= 0,
 			Peak: c.Peak, Ruled: c.Ruled, Uplifts: c.Uplifts, Word: c.Word,
 			Miracles: map[string]string{}, Learned: map[string]float64{},
 			Record: append([]string(nil), c.Record...), Mil: c.Mil, Sur: c.Sur, Soc: c.Soc,

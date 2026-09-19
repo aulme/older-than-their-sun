@@ -22,22 +22,26 @@ import (
 // Plague is one sickness in the world: its shape, and its history here.
 type Plague struct {
 	plague.Plague
-	ID        int
-	Born      Year
-	FirstHost int    // the people it was born in
-	Cause     string // what the birth reads as, for the batch: clean, dirt, siege, dark age, relic
-	Hosts     int    // peoples that have it now
-	Peak      int    // the most at once
-	Caught    int    // peoples that have had it, in all
-	Worlds    int    // worlds lost to it
-	Peoples   int    // peoples ended or brought low by it
-	Cults     int    // peoples that formed around it
-	Cures     int
-	Refusals  int  // ears and ports closed for fear of it
-	Woken     int  // times a reservoir or a wall gave it again
-	LastHost  Year // when it last had a host
-	Extinct   bool
-	Wildfire  bool // had ten hosts at once, once
+	ID         int
+	Born       Year
+	FirstHost  int    // the people it was born in
+	Cause      string // what the birth reads as, for the batch: clean, dirt, siege, dark age, relic
+	Hosts      int    // peoples that have it now
+	Peak       int    // the most at once
+	Caught     int    // peoples that have had it, in all
+	Worlds     int    // worlds lost to it
+	Peoples    int    // peoples ended or brought low by it
+	Cults      int    // peoples that formed around it
+	Cures      int
+	Refusals   int  // ears and ports closed for fear of it
+	Woken      int  // times a reservoir or a wall gave it again
+	LastHost   Year // when it last had a host
+	Extinct    bool
+	Wildfire   bool // had ten hosts at once, once
+	Maker      int  // the people that made it, -1 for one that was born
+	Made       bool // shaped on purpose, as against loose from the vial
+	Rider      int  // the parasite people it became, -1 for none yet; see parasite.go
+	Poisonings int  // peoples it was put in by stealth
 }
 
 // Infection is a plague in one people.
@@ -79,6 +83,10 @@ var roads = map[string]road{
 	"reservoir":  {0, plague.Biological, false, ""},
 	"walls":      {0, plague.Memetic, false, ""},
 	"belief":     {0, plague.Memetic, false, ""},
+	"poison":     {1, plague.Biological, false, "hidden in the goods of the %s"},
+	"whisper":    {1, plague.Memetic, false, "hidden in a message from the %s"},
+	"ridden":     {0, plague.Biological, false, ""},
+	"loose":      {0, plague.Biological, false, ""},
 }
 
 // catchMul is what a trait does to catching: the short-lived and the
@@ -89,7 +97,8 @@ var catchMul = map[string]float64{"shortlived": 1.5, "nomadic": 1.5, "dormancy":
 // tickPlagues is the phase, after messages and before the peoples act:
 // births, the cure rolls and tolls, then the spread on the channels that
 // stand every tick (trade and signal; the rest hook where the contact
-// happens), suspicion, and the books.
+// happens), the makers' and the riders' attempts, suspicion, and the
+// books.
 func (w *World) tickPlagues() {
 	for _, c := range w.Civs {
 		if c.Active() {
@@ -108,15 +117,26 @@ func (w *World) tickPlagues() {
 	}
 	for _, c := range w.Civs {
 		if c.Active() {
+			w.useWeapons(c)
+			w.rideAll(c)
+		}
+	}
+	for _, c := range w.Civs {
+		if c.Active() {
 			w.suspicion(c)
 		}
 	}
 	w.plagueBooks()
+	w.starve()
 }
 
 // bears says whether a people can bear or catch the kind at all: its
-// nature, and the top of the ladder working.
+// nature, and the top of the ladder working. A parasite bears and catches
+// none: there is nothing in it for a plague to be in.
 func (w *World) bears(c *Civ, k plague.Kind) bool {
+	if c.Own >= 0 {
+		return false
+	}
 	p := c.Species.Profile()
 	if k == plague.Biological && (!p.Can(species.Sickens) || c.miracle("directed_evolution")) {
 		return false
@@ -149,11 +169,20 @@ func natureMul(c *Civ, k plague.Kind) float64 {
 }
 
 // rungs counts the working rungs of a ladder, and what they add to the
-// cure roll.
+// cure roll. A ridden people has its rider's ladder as well as its own:
+// the rider wants the body kept.
 func (w *World) rungs(c *Civ, k plague.Kind) (n int, cure float64) {
 	t := &w.Cfg.Tuning.Plague
+	var m *Civ
+	if w.ridden(c) {
+		m = w.Civs[c.Master]
+	}
 	for _, nd := range tech.Ladders[ladderOf(k)] {
-		if nd.Immune || !c.Known[nd.Key] || !c.working(nd.Key) {
+		has := c.Known[nd.Key] && c.working(nd.Key)
+		if m != nil && m.Known[nd.Key] && m.working(nd.Key) {
+			has = true
+		}
+		if nd.Immune || !has {
 			continue
 		}
 		n++
@@ -241,7 +270,7 @@ func (w *World) newPlague(k plague.Kind, host *Civ, cause string) *Plague {
 	if w.R.IntN(2) == 0 {
 		name = host.HomeName
 	}
-	p := &Plague{Plague: plague.New(w.R, k, name, &w.Cfg.Tuning.Plague), ID: len(w.Plagues), Born: w.Now, FirstHost: host.ID, Cause: cause}
+	p := &Plague{Plague: plague.New(w.R, k, name, &w.Cfg.Tuning.Plague), ID: len(w.Plagues), Born: w.Now, FirstHost: host.ID, Cause: cause, Maker: -1, Rider: -1}
 	w.Plagues = append(w.Plagues, p)
 	return p
 }
@@ -249,7 +278,7 @@ func (w *World) newPlague(k plague.Kind, host *Civ, cause string) *Plague {
 // infect puts a plague in a people: the fact, the line by its road, the
 // blame where the road carries it, and the wildfire when it is the tenth
 // host at once.
-func (w *World) infect(c *Civ, p *Plague, from *Civ, roadKey string) {
+func (w *World) infect(c *Civ, p *Plague, from *Civ, roadKey string) *Infection {
 	inf := &Infection{Since: w.Now, From: -1, Road: roadKey}
 	if from != nil {
 		inf.From = from.ID
@@ -263,6 +292,9 @@ func (w *World) infect(c *Civ, p *Plague, from *Civ, roadKey string) {
 	c.Tally.Sickened++
 	if c.FirstPlague == 0 {
 		c.FirstPlague = w.Now
+	}
+	if p.FirstHost < 0 {
+		p.FirstHost = c.ID
 	}
 	w.factOf(FPlague, c, from, c.Home, p.Name)
 	rd := roads[roadKey]
@@ -282,6 +314,7 @@ func (w *World) infect(c *Civ, p *Plague, from *Civ, roadKey string) {
 		w.factOf(FWildfire, c, nil, c.Home, p.Name)
 		w.log("%s is everywhere now.", upper(p.Name))
 	}
+	return inf
 }
 
 func upper(s string) string {
@@ -344,6 +377,14 @@ func (w *World) fightPlagues(c *Civ) {
 		if inf.Carrier || inf.Since == w.Now {
 			continue // a carrier never fights it; what came this tick acts next
 		}
+		rider := w.riderOf(p)
+		ridden := rider != nil && c.Master == rider.ID && !c.Vassal
+		if rider == nil && p.Rider >= 0 && c.Master == p.Rider {
+			w.log("The %s, who rode the %s, are gone. There is nothing left in them to fight.", w.Civs[p.Rider].Name, c.Name)
+			w.freed(c, w.Civs[p.Rider])
+			w.cure(c, p)
+			continue
+		}
 		level := c.Sur
 		if p.Kind == plague.Memetic {
 			level = c.Soc
@@ -353,9 +394,16 @@ func (w *World) fightPlagues(c *Civ) {
 		if p.Kind == plague.Biological && w.partnerCured(c, pid) {
 			cured = t.PartnerCured
 		}
-		margin := plague.CureMargin(level, ladder, w.R.NormFloat64()*t.Spread, p.Contagion, w.dirt(c), cured, t)
+		dirt := w.dirt(c)
+		if ridden {
+			dirt += t.Revolt // a rider is not thrown off; it is cured, and the cure is a science
+		}
+		margin := plague.CureMargin(level, ladder, w.R.NormFloat64()*t.Spread, p.Contagion, dirt, cured, t)
 		switch plague.Band(margin, t) {
 		case plague.Cured:
+			if ridden {
+				w.freed(c, rider)
+			}
 			w.cure(c, p)
 			continue
 		case plague.Contained:
@@ -370,10 +418,13 @@ func (w *World) fightPlagues(c *Civ) {
 				c.Scars[ScarQuarantine] = true
 				w.log("Twenty thousand years behind sealed doors, and the %s no longer remember how to open them. It is a creed now.", c.Name)
 			}
+			if rider != nil && !ridden {
+				w.burn(c, rider) // a contained host burns what the rider took from it
+			}
 		default:
 			inf.Contained, inf.Held = false, 0
 		}
-		w.toll(c, p, inf)
+		w.toll(c, p, inf, ridden)
 	}
 }
 
@@ -385,16 +436,25 @@ func (w *World) cure(c *Civ, p *Plague) {
 	p.Cures++
 	c.Tally.Cured++
 	w.factOf(FCured, c, nil, c.Home, p.Name)
+	if p.Conscious && p.FirstHost == c.ID && p.Rider < 0 {
+		p.Conscious = false
+		w.log("The %s are rid of %s, and never know it had begun to think.", c.Name, p.Name)
+		return
+	}
 	w.log("The %s are rid of %s.", c.Name, p.Name)
 }
 
 // toll is what a plague takes each tick: morale, and each held world with
 // a chance by the lethality. The levels, the research and the income read
-// the infection where they are derived.
-func (w *World) toll(c *Civ, p *Plague, inf *Infection) {
+// the infection where they are derived. A ridden people has no world left
+// to lose to what rides it.
+func (w *World) toll(c *Civ, p *Plague, inf *Infection, ridden bool) {
 	t := &w.Cfg.Tuning.Plague
 	tl := plague.TollOf(p.Plague, inf.Contained, c.Species.Profile().OrganicAsEnergy)
 	c.Morale -= tl.Morale * w.dt
+	if ridden {
+		return
+	}
 	pc := plague.TollChance(p.Lethality, c.Species.Profile().Frail, inf.Contained, t)
 	for _, s := range append([]int(nil), c.Systems...) {
 		if !c.Active() || !contains(c.Systems, s) {
@@ -407,12 +467,23 @@ func (w *World) toll(c *Civ, p *Plague, inf *Infection) {
 }
 
 // worldLost is a held world going to the plague: dark and quarantined
-// for a sickness of the body, gone over for one of the mind.
+// for a sickness of the body, gone over for one of the mind, taken by a
+// plague that is a people, and the home of the first host going over is
+// where a plague that thinks wakes.
 func (w *World) worldLost(c *Civ, p *Plague, s int) {
 	t := &w.Cfg.Tuning.Plague
 	p.Worlds++
 	c.Tally.WorldsSick++
 	home := s == c.Home
+	if rider := w.riderOf(p); rider != nil {
+		w.converted(rider, c, p, s)
+		return
+	}
+	if home && p.Conscious && (p.FirstHost == c.ID || p.Rider >= 0) {
+		p.Peoples++
+		w.wake(p, c)
+		return
+	}
 	if p.Kind == plague.Biological {
 		w.Reservoir[s] = &Reservoir{Plague: p.ID, Until: w.Now + Year(p.Contagion*t.ReservoirMyr*1e6)}
 		w.factOf(FPlagueWorld, c, nil, s, p.Name)
@@ -440,7 +511,9 @@ func (w *World) worldLost(c *Civ, p *Plague, s int) {
 			nc := w.cult(c, p, s)
 			c.Into = "the " + nc.Name
 			f.Object = nc.ID
+			return
 		}
+		w.log("%s takes %s. The %s listen to it and are changed by it, and nobody there answers to anyone now.", upper(p.Name), c.HomeName, c.Name)
 		return
 	}
 	w.loseSystem(c, s, "world that believes", "")
@@ -481,10 +554,10 @@ func (w *World) cult(c *Civ, p *Plague, s int) *Civ {
 func (w *World) contagion(c *Civ) {
 	for _, pid := range sortedInts(c.Infections) {
 		inf := c.Infections[pid]
-		if inf.Contained {
-			continue
-		}
 		p := w.Plagues[pid]
+		if inf.Contained || w.riderOf(p) != nil {
+			continue // a plague that is a people chooses when to try
+		}
 		if p.Kind == plague.Biological {
 			for _, eid := range sortedInts(c.Trade) {
 				e := w.Civs[eid]
@@ -513,9 +586,16 @@ func (w *World) contagion(c *Civ) {
 // second. Certain makes the crossing sure for a contagious plague, as the
 // taking of a world is.
 func (w *World) expose(a, b *Civ, roadKey string) {
+	if a.Own >= 0 {
+		w.tryRide(a, b, roadKey)
+		return
+	}
+	if w.ridden(a) {
+		w.tryRide(w.Civs[a.Master], b, roadKey) // the rider is the mind, and the host its hands
+	}
 	for _, pid := range sortedInts(a.Infections) {
 		p := w.Plagues[pid]
-		if p.Kind == roads[roadKey].Kind {
+		if p.Kind == roads[roadKey].Kind && w.riderOf(p) == nil {
 			w.offer(a, b, p, roadKey)
 		}
 	}
@@ -526,13 +606,10 @@ func (w *World) expose(a, b *Civ, roadKey string) {
 // multiplied by its nature. A contained host offers nothing; an immune
 // people cannot catch it.
 func (w *World) offer(a, b *Civ, p *Plague, roadKey string) bool {
-	if a == b || !b.Active() || b.Infections[p.ID] != nil || b.Immune[p.ID] {
+	if a == b || !b.Active() || !w.catchable(b, p) {
 		return false
 	}
 	if inf := a.Infections[p.ID]; inf == nil || inf.Contained {
-		return false
-	}
-	if !w.bears(b, p.Kind) {
 		return false
 	}
 	rd := roads[roadKey]
@@ -555,10 +632,16 @@ func (w *World) offer(a, b *Civ, p *Plague, roadKey string) bool {
 	return true
 }
 
+// catchable says whether a plague could be in a people at all: not in it
+// or had, of a kind it bears, and of its blood if the plague was tailored.
+func (w *World) catchable(c *Civ, p *Plague) bool {
+	return c.Infections[p.ID] == nil && !c.Immune[p.ID] && w.bears(c, p.Kind) && kin(c, p.Band)
+}
+
 // shutTo says whether a people drops a message from a sender it has
 // closed its ears to.
 func (w *World) shutTo(to, from *Civ) bool {
-	if !to.Closed[from.ID] {
+	if !to.Closed[from.ID] && !to.Barred[from.ID] {
 		return false
 	}
 	to.Tally.Shut++
@@ -616,8 +699,8 @@ func (w *World) suspicion(c *Civ) {
 		if c.Suspect[eid] || !e.Living() || !c.Met[eid] {
 			continue // nothing to close against a people never heard from
 		}
-		if p := w.plagueNamed(suspects[eid]); p != nil && (c.Infections[p.ID] != nil || c.Immune[p.ID]) {
-			continue // nothing to fear from what one has, or has had
+		if p := w.plagueNamed(suspects[eid]); p != nil && (c.Infections[p.ID] != nil || c.Immune[p.ID] || p.Maker == c.ID) {
+			continue // nothing to fear from what one has, or has had, or made
 		}
 		c.Suspect[eid] = true
 		r := mind.Refuse(mind.RefuseInput{Fear: c.Dials.Fear, Creed: c.Scars[ScarQuarantine], Cautious: c.Has("cautious"), Censor: c.Known["censorship"] && c.working("censorship")}, w.Cfg.Tuning)
@@ -673,7 +756,7 @@ func (w *World) plagueBooks() {
 	for _, p := range w.Plagues {
 		if p.Hosts > 0 {
 			p.LastHost = w.Now
-		} else if !p.Extinct && float64(w.Now-p.LastHost) > t.ExtinctYears && !w.reservoired(p.ID) {
+		} else if !p.Extinct && float64(w.Now-p.LastHost) > t.ExtinctYears && !w.reservoired(p.ID) && !w.held(p.ID) {
 			p.Extinct = true
 		}
 	}
@@ -682,6 +765,21 @@ func (w *World) plagueBooks() {
 			delete(w.Reservoir, s)
 		}
 	}
+}
+
+// held says whether a plague is a weapon someone living holds.
+func (w *World) held(pid int) bool {
+	for _, c := range w.Civs {
+		if !c.Living() {
+			continue
+		}
+		for _, wp := range c.Weapons {
+			if wp.Plague == pid {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // reservoired says whether a plague waits somewhere.
@@ -702,7 +800,7 @@ func (w *World) wakeReservoir(c *Civ, s int) {
 		return
 	}
 	p := w.Plagues[r.Plague]
-	if c.Infections[p.ID] != nil || c.Immune[p.ID] || !w.bears(c, p.Kind) {
+	if !w.catchable(c, p) {
 		return
 	}
 	if !w.chance(plague.CatchChance(p.Contagion, 1, 1, natureMul(c, p.Kind))) {
@@ -716,6 +814,10 @@ func (w *World) wakeReservoir(c *Civ, s int) {
 // wallsWritten marks a remain with the sickness of the mind its makers
 // had when they wrote on it.
 func (w *World) wallsWritten(c *Civ, l *Legacy) {
+	if c.Own >= 0 && w.Plagues[c.Own].Kind == plague.Memetic {
+		l.Plague = c.Own
+		return
+	}
 	for _, pid := range sortedInts(c.Infections) {
 		if w.Plagues[pid].Kind == plague.Memetic {
 			l.Plague = pid
@@ -731,7 +833,7 @@ func (w *World) readWallsPlague(c *Civ, l *Legacy) {
 		return
 	}
 	p := w.Plagues[l.Plague]
-	if c.Infections[p.ID] != nil || c.Immune[p.ID] || !w.bears(c, p.Kind) {
+	if !w.catchable(c, p) {
 		return
 	}
 	if !w.chance(plague.CatchChance(p.Contagion, w.Cfg.Tuning.Plague.WallsShare, 1, natureMul(c, p.Kind))) {
@@ -841,6 +943,23 @@ func (w *World) SickWord(c *Civ) string {
 		parts = append(parts, sprintf("sick with %s these %s, %s", p.Name, span(w.Now-inf.Since), state))
 	}
 	return list(parts)
+}
+
+// RideWord is the portrait's line for a parasite: what it rides.
+func (w *World) RideWord(c *Civ) string {
+	if c.Own < 0 {
+		return ""
+	}
+	var names []string
+	for _, h := range w.hostsOf(c) {
+		if h.Master == c.ID && !h.Vassal {
+			names = append(names, "the "+h.Name)
+		}
+	}
+	if len(names) == 0 {
+		return "riding nobody"
+	}
+	return "riding " + list(names)
 }
 
 // Infected lists a people's plagues, for the readers.

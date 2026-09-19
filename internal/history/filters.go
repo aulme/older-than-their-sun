@@ -55,7 +55,8 @@ type Filter struct {
 	Levels    []string // "mil", "sur", "soc"; averaged
 	Diff      float64
 	Repeat    bool
-	Domain    string // research pushed while facing it
+	Domain    string                                                                // research pushed while facing it
+	Adjust    func(w *World, c *Civ) (levels []string, diff float64, domain string) // levels, difficulty and domain set by the occasion; nil for the fixed ones
 	Overcome  func(w *World, c *Civ)
 	Scar      func(w *World, c *Civ)
 	Decline   func(w *World, c *Civ)
@@ -141,12 +142,18 @@ func (w *World) face(c *Civ, key string, diffAdj float64) Outcome {
 		c.Record = append(c.Record, "foresaw "+f.Name)
 		return Overcome
 	}
-	lvl := c.level(f.Levels...)
+	levels, domain := f.Levels, f.Domain
+	if f.Adjust != nil {
+		if l, d, dom := f.Adjust(w, c); l != nil {
+			levels, diffAdj, domain = l, diffAdj+d, dom
+		}
+	}
+	lvl := c.level(levels...)
 	diff := f.Diff + diffAdj + 0.25*float64(len(c.Scars)) + 1.5*(w.Hazard-1) + c.traitDiff(key) + c.natureDiff(key) + c.miracleDiff(key) + w.lawDiff(key) + w.thinDiff(key)
 	roll := w.R.NormFloat64() * 1.5
 	margin := lvl + roll - diff
-	if f.Domain != "" {
-		c.focus(f.Domain, 1.5)
+	if domain != "" {
+		c.focus(domain, 1.5)
 	}
 	var out Outcome
 	var how string
@@ -470,14 +477,7 @@ func init() {
 			c.Master = -1
 			c.Vassal = false
 			c.Scars[ScarChains] = true
-			switch {
-			case m.Species.Sub == species.Parasite && m.Has("mindrider"):
-				w.log("The %s learn to unthink the %s. What was in their heads is gone, and they are free, and never again quite trust a new idea.", c.Name, m.Name)
-			case m.Species.Sub == species.Parasite:
-				w.log("The %s find a drug that kills what rides them. They are free, and careful about their blood ever after.", c.Name)
-			default:
-				w.log("The %s rise against the %s and are free.", c.Name, m.Name)
-			}
+			w.log("The %s rise against the %s and are free.", c.Name, m.Name)
 			if !m.Living() && w.Owner[m.Home] < 0 {
 				w.Owner[m.Home] = c.ID
 				c.Systems = append(c.Systems, m.Home)
@@ -504,7 +504,7 @@ func init() {
 // empty field is a slow death for a rider.
 func (c *Civ) natureDiff(key string) float64 {
 	d := c.Species.Profile().FilterDiff[key]
-	if c.Species.Sub == species.Parasite && (key == "silence" || key == "weight") && c.Hosts <= 1 {
+	if c.Own >= 0 && (key == "silence" || key == "weight") && c.Hosts <= 1 {
 		d++
 	}
 	return d

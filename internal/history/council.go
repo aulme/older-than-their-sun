@@ -56,6 +56,7 @@ func (w *World) council(c *Civ) {
 	if i := mind.Council(verdicts); i >= 0 {
 		w.strikeFirst(c, cands[i].e, cands[i].ap, cands[i].far)
 	}
+	w.armPlagues(c)
 	w.proposePact(c)
 }
 

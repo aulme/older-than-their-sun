@@ -56,6 +56,7 @@ type Node struct {
 	Immune            bool     // the top of its ladder: no plague of the kind is born in or caught by a people working it
 	Clean             bool     // halves biological births only: sewers, sealed cities
 	Cure              float64  // what the rung adds to the cure roll; 0 means the usual half
+	Weapon            *Weapon  // a plague-making craft; nil for none
 	Text              string   // legend text; %s is the civilisation name
 	Desc              string   // what it is, in one line; see desc.go
 }
@@ -122,6 +123,8 @@ var Nodes = []*Node{
 	{Key: "genetics", Name: "Genetics", Domain: Biology, Era: 2, Prereqs: []string{"medicine", "chemistry"}, Sur: 0.5, Ladder: Bio},
 	{Key: "immunology", Name: "Immunology", Domain: Biology, Era: 2, Prereqs: []string{"medicine", "chemistry"}, Sur: 0.5, Ladder: Bio},
 	{Key: "censorship", Name: "Censorship", Domain: Society, Era: 2, Prereqs: []string{"mass_politics", "law"}, Soc: 0.5, Ladder: Mind},
+	{Key: "plague_craft", Name: "Plague-craft", Domain: Biology, Era: 2, Prereqs: []string{"immunology", "mechanised_war"}, Mil: 0.5, Filter: "containment", Weapon: &Weapon{Band: 0.5, Rung: 1}},
+	{Key: "agitation", Name: "Agitation", Domain: Society, Era: 2, Prereqs: []string{"mass_politics", "censorship"}, Mil: 0.5, Filter: "containment", Weapon: &Weapon{Memetic: true, Band: 0.5, Rung: 1}},
 	{Key: "ecology", Name: "Ecology", Domain: Biology, Era: 2, Prereqs: []string{"medicine", "mass_industry"}, Sur: 0.5, Focus: M{Society: 1.2}},
 	{Key: "orbital_weapons", Name: "Orbital Weapons", Domain: Weapons, Era: 2, Prereqs: []string{"rocketry", "atomic"}, Mil: 0.5, Structures: []string{"silos"}},
 	{Key: "fusion", Name: "Fusion Power", Domain: Energy, Era: 2, Prereqs: []string{"atomic", "computers"}, Mil: 0.3, Sur: 0.3, Milestone: true,
@@ -158,6 +161,8 @@ var Nodes = []*Node{
 	{Key: "quantum_computing", Name: "Quantum Computing", Domain: Computation, Era: 3, Prereqs: []string{"computers", "physics"}, Focus: M{Exotic: 1.3, Computation: 1.2}},
 	{Key: "synthetic_biology", Name: "Synthetic Biology", Domain: Biology, Era: 3, Prereqs: []string{"genetics", "closed_ecologies"}, Sur: 0.5, Focus: M{Biology: 1.3}, Ladder: Bio},
 	{Key: "designed_immunity", Name: "Designed Immunity", Domain: Biology, Era: 3, Prereqs: []string{"immunology", "synthetic_biology"}, Sur: 0.5, Ladder: Bio},
+	{Key: "tailored_plague", Name: "Tailored Plagues", Domain: Biology, Era: 3, Prereqs: []string{"plague_craft", "synthetic_biology"}, Mil: 0.5, Filter: "containment", Weapon: &Weapon{Band: 0.8, Tailored: true, Immune: true, Rung: 2}},
+	{Key: "memetic_weapons", Name: "Memetic Weapons", Domain: Society, Era: 3, Prereqs: []string{"agitation", "memetics"}, Mil: 0.5, Filter: "containment", Weapon: &Weapon{Memetic: true, Band: 0.8, Tailored: true, Immune: true, Rung: 2}},
 	{Key: "deep_governance", Name: "Deep Governance", Wis: 0.5, Domain: Society, Era: 3, Prereqs: []string{"memetics", "networks", "law"}, Soc: 1},
 	{Key: "beamed_sails", Name: "Beamed Sails", Domain: Propulsion, Era: 3, Prereqs: []string{"slow_interstellar", "orbital_habitats"}, Reach: 18, Speed: 30},
 	{Key: "hibernation", Name: "Hibernation", Domain: Biology, Era: 3, Prereqs: []string{"medicine", "slow_interstellar"}, Sur: 0.5, Reach: 5},
@@ -193,6 +198,8 @@ var Nodes = []*Node{
 		Text: "Nothing lives in the %s that they did not put there."},
 	{Key: "sealed_minds", Name: "Sealed Minds", Domain: Society, Era: 4, Prereqs: []string{"cognitive_immunity", "deep_governance"}, Soc: 1, Ladder: Mind, Immune: true, Milestone: true,
 		Text: "No idea enters the %s that they did not invite."},
+	{Key: "black_biology", Name: "Black Biology", Domain: Biology, Era: 4, Prereqs: []string{"tailored_plague", "designed_immunity"}, Mil: 1, Filter: "containment", Weapon: &Weapon{Band: 1, Tailored: true, Immune: true, Conscious: true, Rung: 3}},
+	{Key: "basilisk", Name: "the Basilisk", Domain: Computation, Era: 4, Prereqs: []string{"memetic_weapons", "cognitive_immunity"}, Mil: 1, Filter: "containment", Weapon: &Weapon{Memetic: true, Band: 1, Tailored: true, Immune: true, Rung: 3}},
 	{Key: "posthuman_law", Name: "Posthuman Law", Wis: 0.5, Domain: Society, Era: 4, Prereqs: []string{"deep_governance", "uploading"}, Soc: 1.5},
 	{Key: "long_thought", Name: "the Long Thought", Wis: 1, Domain: Society, Era: 4, Cost: 500, Prereqs: []string{"posthuman_law", "substrate_minds"}, Soc: 1},
 	{Key: "near_light", Name: "Near-light Travel", Domain: Propulsion, Era: 4, Prereqs: []string{"relativistic", "vacuum_energy"}, Reach: 35, Speed: 1.5, Milestone: true,
@@ -249,6 +256,24 @@ var Subs = map[string][]string{
 // Miracles lists the miracle nodes.
 var Miracles []*Node
 
+// Weapon is what a plague-making node allows: the kind it makes, the top
+// of the band its contagion and lethality may be chosen in, whether the
+// plague is tailored to one blood, whether the maker is immune to what it
+// makes, and whether it may make one that thinks. Rung is its place on
+// the craft, from one, which the containment filter adds to its difficulty
+// and the vial's scar locks above.
+type Weapon struct {
+	Memetic   bool
+	Band      float64
+	Tailored  bool
+	Immune    bool
+	Conscious bool
+	Rung      int
+}
+
+// Crafts lists the plague-making nodes, filled at init.
+var Crafts []*Node
+
 // The plague ladders: the nodes that divide births, harden against
 // catching and add to the cure, by kind; the Immune node at the top of
 // each is the end of the kind for whoever works it. Ladders is filled from
@@ -273,6 +298,9 @@ func init() {
 		}
 		if n.Ladder != "" {
 			Ladders[n.Ladder] = append(Ladders[n.Ladder], n)
+		}
+		if n.Weapon != nil {
+			Crafts = append(Crafts, n)
 		}
 	}
 	for _, n := range Nodes {

@@ -13,9 +13,16 @@ import (
 // species already in the world (a branch) passes its own name, else "" for
 // the species' name.
 func (w *World) spawnCiv(home int, sp *species.Species, maker int, name string) *Civ {
+	return w.spawn(home, sp, maker, name, nil)
+}
+
+// spawn is spawnCiv with a host: a rider woken in a people holds no world
+// of its own and lives at the host's home, under the host's name for it.
+func (w *World) spawn(home int, sp *species.Species, maker int, name string, host *Civ) *Civ {
 	st := &w.G.Stars[home]
 	sys := w.G.Sys[home]
 	sys.EnsureHome(w.R, st)
+	natural := sp == nil
 	if sp == nil {
 		sp = species.GenerateOn(w.R, st.Mult, sys.Arch)
 		if w.Law.Glare > 3 && !sp.Has("hardy") && !sp.Has("skyless") {
@@ -39,16 +46,29 @@ func (w *World) spawnCiv(home int, sp *species.Species, maker int, name string) 
 		Charted: map[int]Year{home: w.Now}, Marked: map[int]bool{},
 		Sire: maker, Fathomed: map[int]bool{}, FathomTried: map[int]Year{},
 		Infections: map[int]*Infection{}, Immune: map[int]bool{}, Suspect: map[int]bool{}, Closed: map[int]bool{},
+		Own: -1, Weapons: map[string]*Weapon{}, Barred: map[int]bool{},
 		LastDark: -1 << 40, foeNow: -1,
 	}
 	if st.Real {
 		c.HomeName = st.Name // a real star keeps the name Earth knows it by
 	}
 	w.Civs = append(w.Civs, c)
-	w.Owner[home] = c.ID
 	old := st.Name
-	if !st.Real {
-		st.Name = c.HomeName
+	if host != nil {
+		c.Systems, c.Peak, c.HomeName = nil, 0, host.HomeName
+	} else if sp.Sub == species.Parasite {
+		for _, o := range w.Civs {
+			if o != c && o.Species == sp && o.Own >= 0 {
+				c.Own = o.Own // a branch of a rider is the same plague
+				break
+			}
+		}
+	}
+	if host == nil {
+		w.Owner[home] = c.ID
+		if !st.Real {
+			st.Name = c.HomeName
+		}
 	}
 	c.CradleName = c.HomeName
 	prior := ""
@@ -59,7 +79,9 @@ func (w *World) spawnCiv(home int, sp *species.Species, maker int, name string) 
 	}
 	w.recompute(c)
 	w.fact(FArise, c, nil, home)
-	if maker < 0 {
+	if host != nil {
+		w.log("The %s %s the %s, at %s. They are %s.", c.Name, sp.Arising(), host.Name, sys.HomeName(c.HomeName), sp.Describe())
+	} else if maker < 0 {
 		they := "They are " + sp.Describe() + "."
 		if shared {
 			they = "They are a people of the " + sp.Name + "."
@@ -74,12 +96,6 @@ func (w *World) spawnCiv(home int, sp *species.Species, maker int, name string) 
 		}
 	}
 	w.bornMorality(c)
-	if sp.Sub == species.Parasite {
-		c.Hosts = 1
-		if !shared {
-			w.log("They ride %s, and could not think without it.", hostPortraits[w.R.IntN(len(hostPortraits))])
-		}
-	}
 	w.birthright(c)
 	if sp.Has("kinfed") {
 		w.fact(FManna, c, nil, home) // a fact every other people judges by its own lights, once known
@@ -93,6 +109,9 @@ func (w *World) spawnCiv(home int, sp *species.Species, maker int, name string) 
 	}
 	if st.Failing {
 		w.log("Their sun is already failing. They were born under a dying star.")
+	}
+	if natural {
+		w.bornRider(c)
 	}
 	return c
 }
@@ -166,7 +185,13 @@ func (w *World) tickCivs() {
 			w.wear(c) // a remnant's memory goes the same way as everything else of theirs
 			continue
 		}
-		if len(c.Systems) == 0 && !c.Aloft {
+		if c.Own >= 0 && !w.rides(c) {
+			w.starveOne(c) // the last host died since the plagues' pass
+			if !c.Living() {
+				continue
+			}
+		}
+		if len(c.Systems) == 0 && !c.Aloft && !w.rides(c) {
 			panic(sprintf("active civ %s with no worlds: record %v, cause %q, last events: %v", c.Name, c.Record, c.Cause, w.Events[len(w.Events)-4:]))
 		}
 		w.recompute(c)
@@ -290,7 +315,7 @@ func (w *World) expand(c *Civ) {
 	plan := mind.Expand(mind.ExpandInput{
 		Systems: len(c.Systems), Mul: c.expandMul(w), Era: c.Era, Reach: c.Reach,
 		Nowhere:  func() bool { return w.nothingNear(c) },
-		Parasite: c.Species.Sub == species.Parasite && !c.Known["free_living"], FTL: c.miracle("ftl"),
+		Parasite: c.Own >= 0 && !c.Known["free_living"], FTL: c.miracle("ftl"),
 	}, t)
 	if plan.Ships {
 		// necessity: a people with nowhere to go works on ships, whatever else it was doing
@@ -301,7 +326,7 @@ func (w *World) expand(c *Civ) {
 			}
 		}
 	}
-	if c.Reach < 1 {
+	if c.Reach < 1 || len(c.Systems) == 0 {
 		return
 	}
 	if !w.chance(plan.Rate) {
@@ -528,7 +553,7 @@ func (w *World) loseSystem(c *Civ, s int, kind string, cause string) {
 		}
 	}
 	c.Works = keep
-	if c.Stage != Dead && len(c.Systems) == 0 && !c.Aloft {
+	if c.Stage != Dead && len(c.Systems) == 0 && !c.Aloft && !w.rides(c) {
 		if cause == "" {
 			cause = "lost their last world"
 		}
@@ -813,17 +838,6 @@ func (c *Civ) expandMul(w *World) float64 {
 		m *= 3
 	}
 	return m
-}
-
-// hostPortraits are what a parasite rides at home, before it finds anyone better.
-var hostPortraits = []string{
-	"a slow, six-limbed grazer of the plains",
-	"a burrowing thing with a long memory and no curiosity",
-	"a tall, patient browser of the high forests",
-	"a shoal-fish that thinks a little when it schools",
-	"a great flightless bird that has never needed to think at all",
-	"a colony of builders no bigger than a hand",
-	"a night-flier with a mind made for maps",
 }
 
 // machinePeople is what is left when a people builds a mind that outgrows

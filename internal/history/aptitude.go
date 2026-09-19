@@ -126,7 +126,7 @@ var aptitudes = []apt{
 	dear("medicine", "sub:parasite", 0.6), dear("neuroscience", "sub:parasite", 0.6), dear("memetics", "sub:parasite", 0.6),
 	innate("computers", "sub:machine"), innate("machine_minds", "sub:machine"), innate("hibernation", "sub:machine"),
 	moot("fire", "sub:machine"), moot("agriculture", "sub:machine"), moot("medicine", "sub:machine"), moot("genetics", "sub:machine"), moot("neuroscience", "sub:machine"), moot("burial", "sub:machine"), moot("closed_ecologies", "sub:machine"),
-	never("germline", "sub:machine", ""), never("directed_evolution", "sub:machine", ""),
+	never("germline", "sub:machine", ""), never("directed_evolution", "sub:machine", ""), never("plague_craft", "sub:machine", ""),
 	dear("synthetic_biology", "sub:machine", 1.5), dear("panspermia", "sub:machine", 2), dear("uploading", "sub:machine", 0.3), dear("self_replication", "sub:machine", 0.5), dear("terraforming", "sub:machine", 1.5),
 	dear("domain:biology", "mod:evolver", 0.5), dear("metallurgy", "mod:evolver", 1.3), dear("industrial", "mod:evolver", 1.3), dear("self_replication", "mod:evolver", 1.5), dear("machine_minds", "mod:evolver", 1.5), dear("uploading", "mod:evolver", 2),
 }

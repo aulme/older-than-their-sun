@@ -35,9 +35,9 @@ type Plague struct {
 	Contagion  float64 // c, in (0, 1]
 	Lethality  float64 // l, in (0, 1]
 	Named      bool    // named for its first host, which that host remembers
-	Conscious  bool    // a parasite people waiting to happen; read from step 14
-	Engineered bool    // made as a weapon; step 14
-	Band       int     // the people it was tailored to catch, -1 for any body; step 14
+	Conscious  bool    // a parasite people waiting to happen: it wakes when its first host's home goes over
+	Engineered bool    // made as a weapon
+	Band       int     // the species it was tailored to catch, with its kin; -1 for any body
 }
 
 // Tuning is every number the plagues use.
@@ -74,6 +74,15 @@ type Tuning struct {
 	WallsShare    float64 // walls carry a memetic plague at c times this
 	CultChance    float64 // a world gone over that declares itself a people
 	Weakened      float64 // the lethality from which a raging host reads as weakened to its neighbours
+	BornRider     float64 // the share of cradles born with a rider already in them
+	Revolt        float64 // what riding adds to the cure contest's difficulty: a rider is not thrown off, it is cured
+	Detect        float64 // the chance an attempt that failed is seen, per working rung of the ladder
+	DetectCap     float64
+	DetectCensor  float64 // what censorship adds against a memetic attempt
+	Leak          float64 // per kyr, a held weapon gets out, times the dirt
+	LeakShed      float64 // times this when the programme is unpaid
+	WorldsAim     float64 // the lethality, as a share of the band, of a plague made to soften a rival for the taking
+	GoneAim       float64 // the contagion, as a share of the band, of one made to end it
 }
 
 // Default is today's numbers.
@@ -82,8 +91,9 @@ func Default() Tuning {
 		BaseBio: 0.002, BaseMeme: 0.0005, PerWorlds: 8, Rung: 3, Halving: 2, Siege: 2, SiegeCap: 4,
 		Shed: 2, Dark: 3, DarkYears: 100_000, Taken: 2, TakenYears: 10_000, Faith: 2, Beacon: 2,
 		Hygiene: 1.5, Difficulty: 3, PerContagion: 6, Spread: 1.5, RungCure: 0.5, Dirt: 1, PartnerCured: 2, Contain: -2,
-		Power: 3, ContainedToll: 0.5, Conscious: 0.05, CreedTicks: 20, Wildfire: 10, ExtinctYears: 100_000, ReservoirMyr: 2, WallsShare: 0.5,
+		Power: 3, ContainedToll: 0.5, Conscious: 0.02, CreedTicks: 20, Wildfire: 10, ExtinctYears: 100_000, ReservoirMyr: 2, WallsShare: 0.5,
 		CultChance: 0.4, Weakened: 0.2,
+		BornRider: 0.01, Revolt: 4, Detect: 0.2, DetectCap: 0.9, DetectCensor: 0.3, Leak: 0.0002, LeakShed: 10, WorldsAim: 0.25, GoneAim: 0.75,
 	}
 }
 
@@ -128,6 +138,18 @@ func BirthChance(kind Kind, f Factors, t *Tuning) float64 {
 	if kind == Biological {
 		p /= math.Pow(t.Halving, float64(f.Halvings))
 	}
+	p *= Dirt(kind, f, t)
+	if f.Mul > 0 {
+		p *= f.Mul
+	}
+	return p
+}
+
+// Dirt is the birth table's multipliers alone: what a siege, a shed use,
+// a dark age, a taking, the Wars of Faith and a beacon do, by kind. One
+// with nothing.
+func Dirt(kind Kind, f Factors, t *Tuning) float64 {
+	p := 1.0
 	if f.Sieged > 0 {
 		p *= min(t.SiegeCap, math.Pow(t.Siege, float64(f.Sieged)))
 	}
@@ -148,8 +170,63 @@ func BirthChance(kind Kind, f Factors, t *Tuning) float64 {
 			p *= t.Beacon
 		}
 	}
-	if f.Mul > 0 {
-		p *= f.Mul
+	return p
+}
+
+// Aim is what a maker wants of a plague it makes.
+type Aim uint8
+
+const (
+	AimWorlds Aim = iota // the rival's worlds: a drag that softens it for the taking
+	AimGone              // the rival gone: the top of the band in lethality
+	AimAll               // the different, wholly: the top of both
+)
+
+func (a Aim) String() string { return [...]string{"the worlds", "the end of them", "everything"}[a] }
+
+// Shape is the contagion and lethality a maker picks for an aim within
+// the band its craft allows: high contagion and low lethality to soften,
+// the top in lethality to end, both to the top for hate.
+func Shape(aim Aim, band float64, t *Tuning) (c, l float64) {
+	switch aim {
+	case AimWorlds:
+		return band, band * t.WorldsAim
+	case AimGone:
+		return band * t.GoneAim, band
+	}
+	return band, band
+}
+
+// Make is a plague made to a shape: the name is the maker's to give.
+func Make(kind Kind, c, l float64, conscious bool) Plague {
+	return Plague{Kind: kind, Contagion: c, Lethality: l, Engineered: true, Conscious: conscious, Band: -1}
+}
+
+// Loose is a plague that got out of the vial before it was shaped: drawn
+// within the band, and it may think.
+func Loose(r *rand.Rand, kind Kind, band float64, host string, t *Tuning) Plague {
+	p := New(r, kind, host, t)
+	p.Contagion, p.Lethality, p.Engineered = p.Contagion*band, p.Lethality*band, true
+	return p
+}
+
+// DetectChance is the chance a target sees an attempt that failed: a
+// share per working rung of the ladder, capped, and censorship against a
+// memetic one.
+func DetectChance(rungs int, censor bool, t *Tuning) float64 {
+	p := t.Detect * float64(rungs)
+	if censor {
+		p += t.DetectCensor
+	}
+	return min(t.DetectCap, p)
+}
+
+// LeakChance is the chance per kyr a held weapon gets out: the base by the
+// maker's dirt, ten times if the programme is unpaid.
+func LeakChance(dirt float64, shed bool, t *Tuning) float64 {
+	p := t.Leak * dirt
+	if shed {
+		p *= t.LeakShed
 	}
 	return p
 }

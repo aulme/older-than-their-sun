@@ -436,12 +436,13 @@ func (w *World) income(c *Civ) flow.Income {
 		c.Received.Add(c.From[p])
 	}
 	in.Add(c.Received)
-	if len(c.Ridden) > 0 {
-		for _, h := range sortedInts(c.Ridden) {
-			if o := w.Civs[h]; o.Living() && o.Master == c.ID {
-				in.Add(o.Income)
+	if c.Own >= 0 {
+		for _, h := range w.hostsOf(c) {
+			if h.Master == c.ID && !h.Vassal {
+				in.Add(h.Gross) // a rider's capacity is its hosts', before its own tithe
 			}
 		}
 	}
-	return in
+	c.Gross = in
+	return w.riderTithe(c, in)
 }

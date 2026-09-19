@@ -62,7 +62,7 @@ var filterWreckage = map[string]Wreckage{
 	"door":        {0.5, Wreck},
 	"hold":        {0.3, Derelict},
 	"revolt":      {0.5, Wreck},
-	"infection":   {0.3, Derelict},
+	"containment": {0.3, Derelict},
 	"beacon":      {0.2, Abandoned},
 	"incursion":   {0.3, Derelict},
 	"elder":       {0.2, Abandoned},

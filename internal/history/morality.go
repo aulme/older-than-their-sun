@@ -240,6 +240,7 @@ var moralTable = map[FactKind][8]judgment{
 	FSlight:       {crime(1), crime(1), none, none, crime(1), none, none, crime(3)},
 	FPlagueGiven:  {crime(2), crime(2), none, none, crime(1), crime(1), none, crime(2)},
 	FRefused:      {crime(1), crime(1), none, none, crime(1), none, none, crime(2)},
+	FPoisoned:     {crime(4), crime(4), none, deed(1), crime(4), crime(3), crime(2), crime(4)},
 }
 
 // sortFor is a fact as one people judges it: the table's cell for its

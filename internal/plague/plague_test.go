@@ -166,10 +166,43 @@ func TestNew(t *testing.T) {
 	if named < 900 || named > 1100 {
 		t.Errorf("%d of 3000 named for the host, want about a third", named)
 	}
-	if conscious < 100 || conscious > 200 {
-		t.Errorf("%d of 3000 conscious, want about one in twenty", conscious)
+	if conscious < 35 || conscious > 90 {
+		t.Errorf("%d of 3000 conscious, want about one in fifty", conscious)
 	}
 	if p := New(r, Memetic, "", &tn); p.Named || p.Kind != Memetic {
 		t.Errorf("a plague with no host to name it for: %+v", p)
+	}
+}
+
+// TestMade: the shapes a maker picks within a band, detection by rungs,
+// and the leak.
+func TestMade(t *testing.T) {
+	tn := Default()
+	if c, l := Shape(AimWorlds, 0.8, &tn); c != 0.8 || l != 0.2 {
+		t.Errorf("a plague for the worlds: %.2f %.2f", c, l)
+	}
+	if c, l := Shape(AimGone, 0.8, &tn); c != 0.6000000000000001 || l != 0.8 {
+		t.Errorf("a plague for the end: %.2f %.2f", c, l)
+	}
+	if c, l := Shape(AimAll, 0.5, &tn); c != 0.5 || l != 0.5 {
+		t.Errorf("a plague for everything: %.2f %.2f", c, l)
+	}
+	if p := Make(Memetic, 0.6, 0.8, true); !p.Engineered || !p.Conscious || p.Band != -1 || p.Kind != Memetic {
+		t.Errorf("a made plague: %+v", p)
+	}
+	if d := DetectChance(2, false, &tn); d != 0.4 {
+		t.Errorf("detection at two rungs %.2f", d)
+	}
+	if d := DetectChance(4, true, &tn); d != 0.9 {
+		t.Errorf("detection capped %.2f", d)
+	}
+	if l := LeakChance(4, true, &tn); l != 0.008 {
+		t.Errorf("the leak from a shed programme under dirt 4: %.4f", l)
+	}
+	r := rand.New(rand.NewPCG(9, 9))
+	for range 100 {
+		if p := Loose(r, Biological, 0.5, "x", &tn); p.Contagion > 0.5 || p.Lethality > 0.5 || !p.Engineered {
+			t.Fatalf("a loose plague outside its band: %+v", p)
+		}
 	}
 }

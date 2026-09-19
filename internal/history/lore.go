@@ -88,6 +88,8 @@ const (
 	FRefused      // a people closed its ears and its ports to another for fear of one
 	FBelieved     // a world went over to an idea; the object is the cult, if one formed
 	FWildfire     // a plague in ten peoples at once
+	FPoisoned     // a people put a plague in another by stealth, or was caught trying; see weapon.go
+	FWoke         // a plague became a people: the subject is the rider, the object its first host; see parasite.go
 )
 
 // Sort is the moral shape of a fact from the subject's side.
@@ -125,6 +127,7 @@ var factShape = [...]struct {
 	FHire: {Deed, 1}, FTaught: {Deed, 1}, FStrikeBought: {Crime, 1}, FBoughtOff: {Crime, 2}, FTribute: {Woe, 1},
 	FSlight: {Crime, 1},
 	FPlague: {Woe, 4}, FPlagueGiven: {Crime, 2}, FPlagueWorld: {Woe, 3}, FCured: {Deed, 2}, FRefused: {Crime, 1}, FBelieved: {Woe, 3}, FWildfire: {Woe, 3},
+	FPoisoned: {Crime, 4}, FWoke: {Deed, 3},
 }
 
 // Fact is one thing that happened, as it happened.

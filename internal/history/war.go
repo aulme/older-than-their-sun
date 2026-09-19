@@ -34,7 +34,6 @@ type War struct {
 	Pact      int // pact this war was joined under, -1
 	Principal int // the ally whose war this is, -1
 	Contested map[int]int
-	Burn      bool         // a host burns what a parasite has converted
 	Called    map[int]bool // allies already called to this war
 	Hire      int          // the contract this war was declared for, or -1; see contract.go
 	// the slights of the war: see slight.go
@@ -175,8 +174,6 @@ func (w *World) declare(c, e *Civ, cause string) *War {
 	w.factOf(FWar, c, e, -1, cause)
 	w.slighted(c, e, wr)
 	switch {
-	case cause == "infection":
-		// the infection line is already written
 	case wr.Nth > 1:
 		w.log("The %s go to war with the %s again, the %s time, over %s.", c.Name, e.Name, ordinal(wr.Nth), cause)
 	default:
@@ -284,25 +281,14 @@ func (w *World) takeWorld(wr *War, c, e *Civ, t int) {
 		wr.Glassed[i]++
 		w.log("The %s unmake %s, a %s of the %s. There is nothing left to glass.", c.Name, w.star(t), colony, e.Name)
 		w.fact(FBurned, c, e, t)
-	case wr.Burn && e.Species.Sub == species.Parasite:
-		w.Bio[t] = BioSimple
-		w.loseSystem(e, t, "burned host-world", "")
-		wr.Glassed[i]++
-		wr.Will[1-i] -= 0.4
-		w.log("The %s burn %s to be rid of what the %s put there.", c.Name, w.star(t), e.Name)
-		w.fact(FBurned, c, e, t)
-	case c.Species.Sub == species.Parasite:
+	case c.Own >= 0:
 		w.loseSystem(e, t, "host-world", "")
 		w.Owner[t] = c.ID
 		c.Systems = append(c.Systems, t)
 		wr.Taken[i]++
 		converted = true
 		w.fact(FTaken, c, e, t)
-		if !c.Ridden[e.ID] {
-			c.Ridden[e.ID] = true
-			c.Hosts = 1 + len(c.Ridden)
-			w.log("The %s of %s are riders now. The %s wear them.", e.Name, w.star(t), c.Name)
-		}
+		w.log("The %s of %s are riders now. The %s wear them.", e.Name, w.star(t), c.Name)
 	case c.Has("swarming"):
 		w.loseSystem(e, t, "overrun "+colony, "")
 		w.Owner[t] = c.ID
@@ -426,7 +412,7 @@ func (w *World) homeFalls(wr *War, c, e *Civ) {
 		w.log("The %s defeat the %s and, having no use for a conquest, leave them be.", c.Name, e.Name)
 		w.fact(FYield, c, e, e.Home)
 		w.endWar(wr, "peace")
-	case c.Species.Sub == species.Parasite:
+	case c.Own >= 0:
 		w.log("The %s break the last defences of %s.", c.Name, e.HomeName)
 		w.ride(c, e)
 		w.endWar(wr, "enslaved")
@@ -441,13 +427,23 @@ func (w *World) homeFalls(wr *War, c, e *Civ) {
 	}
 }
 
-// ride is a parasite taking a people as hosts: slaves, and half their tree.
+// ride is a parasite taking a people as hosts: slaves, and half their
+// tree, and the parasite's plague in them if it was not already.
 func (w *World) ride(p, h *Civ) {
 	w.enslave(p, h)
 	if !p.Ridden[h.ID] {
 		p.Ridden[h.ID] = true
-		p.Hosts = 1 + len(p.Ridden)
+		p.Tally.Ridden++
 	}
+	if p.Own >= 0 && h.Infections[p.Own] == nil && !h.Immune[p.Own] {
+		w.infect(h, w.Plagues[p.Own], p, "ridden")
+	}
+	for _, eid := range sortedInts(h.Met) {
+		if eid != p.ID {
+			p.Met[eid] = true // the rider sees with the host's eyes
+		}
+	}
+	p.Hosts = len(w.hostsOf(p))
 	for _, k := range knownOf(h) {
 		if !p.Known[k] && w.R.Float64() < 0.5 {
 			if mode, _ := w.aptitude(p, tech.Get(k)); mode == aptDear {
@@ -485,7 +481,7 @@ func (w *World) judge(wr *War) {
 // the other, or the war is an infection, which is no negotiation and
 // needs no understanding.
 func (w *World) canTreat(wr *War) bool {
-	return wr.Cause == "infection" || w.mutual(w.Civs[wr.Sides[0]], w.Civs[wr.Sides[1]])
+	return w.mutual(w.Civs[wr.Sides[0]], w.Civs[wr.Sides[1]])
 }
 
 // exhausted is both wills gone between peoples that do not understand
@@ -601,7 +597,7 @@ func (w *World) capitulate(wr *War, l, v *Civ) {
 		w.log("The %s yield to the %s, who take %s and want nothing more, after %s.", l.Name, v.Name, worlds(ceded), w.warSpan(wr))
 		w.factN(FYield, v, l, -1, ceded)
 		w.endWar(wr, "capitulation")
-	case v.Species.Sub == species.Parasite:
+	case v.Own >= 0:
 		w.log("The %s yield to the %s, after %s.", l.Name, v.Name, w.warSpan(wr))
 		w.ride(v, l)
 		w.endWar(wr, "enslaved")

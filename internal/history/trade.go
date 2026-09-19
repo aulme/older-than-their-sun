@@ -113,7 +113,7 @@ func (w *World) sendGoods(a *Civ) {
 // willing asks the mind what a people sends a partner.
 func (w *World) willing(a, b *Civ) mind.TradeChoice {
 	in := mind.TradeInput{
-		Monster: w.monster(a, b), Grudge: a.Grudge[b.ID], Embargoed: b.Embargo[a.ID], Quarantine: a.Closed[b.ID],
+		Monster: w.monster(a, b), Grudge: a.Grudge[b.ID], Embargoed: b.Embargo[a.ID], Quarantine: a.Closed[b.ID] || a.Barred[b.ID],
 		Xenophobe: a.Has("xenophobic"), Different: a.differs(b) >= 1,
 		Fear: a.Dials.Fear, Hostile: b.hostile(),
 		Nomad: a.Aloft || b.Aloft, Drive: w.drive(a), InReach: w.partnerInReach(a, b),

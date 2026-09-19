@@ -33,7 +33,9 @@ func TestTilted(t *testing.T) {
 	}
 }
 
-// oldKinds is the old kind table's shares, which the legacy numbers must reproduce.
+// oldKinds is the old kind table's shares, which the legacy numbers must
+// reproduce, less the parasite, which no cradle rolls since the plagues
+// draft: a rider is born of a plague that woke.
 func TestLegacyDistribution(t *testing.T) {
 	r := rand.New(rand.NewPCG(3, 4))
 	n := 100_000
@@ -55,9 +57,9 @@ func TestLegacyDistribution(t *testing.T) {
 			t.Fatalf("rolled a kind the old table did not have: %s", s.Nature())
 		}
 	}
-	old := map[string]float64{"standard": 74, "swarm": 7, "planetary mind": 4, "parasite": 4, "evolver": 8}
+	old := map[string]float64{"standard": 74, "swarm": 7, "planetary mind": 4, "parasite": 0, "evolver": 8}
 	for k, w := range old {
-		want := w / 97
+		want := w / 93
 		if have := float64(got[k]) / float64(n); math.Abs(have-want) > 0.01 {
 			t.Errorf("%s: %.3f, want %.3f", k, have, want)
 		}

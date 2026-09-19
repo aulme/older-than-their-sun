@@ -145,13 +145,6 @@ func (w *World) hearing(a, b *Civ) {
 	}
 	w.fact(FMet, a, b, -1)
 	w.fathomPair(a, b)
-	if a.Has("mindrider") || b.Has("mindrider") {
-		w.infection(a, b) // an idea needs no ship
-		return
-	}
-	if a.Species.Sub == species.Parasite || b.Species.Sub == species.Parasite {
-		return
-	}
 	if w.consider(a, b) || w.consider(b, a) {
 		return
 	}
@@ -174,7 +167,7 @@ func (w *World) primitives(old, young *Civ) bool {
 	case old.hostile() && !young.Has("swarming") && !young.Species.Is(species.Planetary) && w.R.Float64() < 0.3*(0.5+old.Dials.Greed):
 		old.Met[young.ID], young.Met[old.ID] = true, true
 		w.log("The %s find the %s on %s, still at the plough, and take them. There is no war to speak of.", old.Name, young.Name, young.HomeName)
-		if old.Species.Sub == species.Parasite {
+		if old.Own >= 0 {
 			w.ride(old, young)
 		} else {
 			w.enslave(old, young)
@@ -203,10 +196,6 @@ func (w *World) encounter(a, b *Civ, watched, heard bool, at int) {
 	// the stronger side is the one with the initiative
 	if b.Mil > a.Mil {
 		a, b = b, a
-	}
-	if a.Species.Sub == species.Parasite || b.Species.Sub == species.Parasite {
-		w.infection(a, b)
-		return
 	}
 	gap := a.Mil - b.Mil
 	switch {
@@ -255,41 +244,6 @@ func (w *World) encounter(a, b *Civ, watched, heard bool, at int) {
 	}
 }
 
-// infection: a parasite meets a host species. The parasite always opens;
-// the host's Infection filter is its first response, and the war that
-// follows is fought by conversion and burning.
-func (w *World) infection(a, b *Civ) {
-	p, h := a, b
-	if p.Species.Sub != species.Parasite {
-		p, h = b, a
-	}
-	if h.Species.Sub == species.Parasite || h.Species.Sub == species.Machine {
-		w.log("The %s and the %s find each other, and find nothing in the other worth having.", a.Name, b.Name)
-		return
-	}
-	if p.Has("mindrider") {
-		w.log("The %s reach the %s. Within a generation the %s are in their heads.", p.Name, h.Name, p.Name)
-	} else {
-		w.log("The %s find the %s. Within a generation the %s are inside them.", p.Name, h.Name, p.Name)
-	}
-	out := w.face(h, "infection", 0)
-	wr := w.declare(p, h, "infection")
-	if wr == nil {
-		return
-	}
-	hi := wr.side(h.ID)
-	switch out {
-	case Overcome:
-		wr.Will[hi] += 1
-	case Scarred:
-		wr.Burn = true
-		w.log("The %s cannot cut it out. They will burn what it takes.", h.Name)
-	case Declined:
-		wr.Will[hi] = 0
-		w.log("The %s do not fight it. World by world, they are ridden.", h.Name)
-	}
-}
-
 func (w *World) enslave(m, s *Civ) {
 	m.Ruled++
 	s.Master, s.Vassal = m.ID, false
@@ -330,8 +284,8 @@ func (w *World) vassal(m, s *Civ) {
 // revolt: slaves and vassals watch their master. A master's decline is the
 // slaves' chance; a master's death forces the question.
 func (w *World) revolt(c *Civ) {
-	if c.Free() || !c.Active() {
-		return
+	if c.Free() || !c.Active() || w.ridden(c) {
+		return // a ridden people's rising is the cure contest; see plague.go
 	}
 	m := w.Civs[c.Master]
 	if m.Living() && m.Declines == c.Seen {
@@ -402,17 +356,4 @@ func (w *World) breed(m, s *Civ) {
 	w.log("The %s remake the %s into the %s: %s.", m.Name, s.Name, nc.Name, sp.Describe())
 	w.fact(FBred, m, s, home)
 	w.inherit(nc, s, 1)
-}
-
-func init() {
-	def(&Filter{
-		Key: "infection", Name: "Infection", Levels: []string{"sur"}, Diff: 5, Domain: "biology",
-		Overcome: func(w *World, c *Civ) {
-			w.log("The %s find the thing inside them and cut it out. Then they go looking for where it came from.", c.Name)
-		},
-		Scar: func(w *World, c *Civ) {
-			c.Scars[ScarQuarantine] = true
-		},
-		Decline: func(w *World, c *Civ) {},
-	})
 }

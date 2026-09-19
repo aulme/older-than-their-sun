@@ -97,7 +97,7 @@ func (c *Civ) leapWeight(key string) float64 {
 			m *= 2
 		}
 	case "directed_evolution":
-		if c.Species.Is(species.Evolver) || c.Species.Sub == species.Parasite {
+		if c.Species.Is(species.Evolver) || c.Own >= 0 {
 			m *= 3
 		}
 	case "ftl":
@@ -195,18 +195,6 @@ func (w *World) holdDiff(c *Civ) float64 {
 		return 0
 	}
 	d := 0.0
-	if m.Species.Sub == species.Parasite {
-		// a rider is not thrown off; it is cured, and the cure is a science
-		d += 4
-		switch {
-		case m.Has("mindrider") && c.Known["memetics"]:
-			d -= 4
-		case m.Has("mindrider") && c.Known["religion"]:
-			d -= 1 // the old prayers turn out to be worth something
-		case !m.Has("mindrider") && c.Known["medicine"] && c.Known["genetics"]:
-			d -= 4
-		}
-	}
 	if m.miracle("chorus") {
 		d += 3
 	}

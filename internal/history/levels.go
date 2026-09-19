@@ -132,7 +132,7 @@ func (w *World) recompute(c *Civ) {
 	}
 	p := c.Species.Profile()
 	env += p.Env
-	if c.Species.Sub == species.Parasite {
+	if c.Own >= 0 {
 		soc += min(2, 0.5*float64(c.Hosts+slaves)) // a parasite is as rich as its hosts
 	}
 	if c.Species.Is(species.Planetary) && c.Known["grafting"] {

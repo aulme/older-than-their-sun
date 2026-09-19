@@ -231,6 +231,7 @@ func (w *World) uses(c *Civ) []flow.Use {
 	}
 	sort.SliceStable(out, func(i, j int) bool { return learned(out[i].Key) < learned(out[j].Key) })
 	out = append(out, w.works(c)...)
+	out = append(out, w.weaponUses(c)...)
 	out = append(out, w.reservations(c)...)
 	return append(out, w.contractUses(c)...)
 }

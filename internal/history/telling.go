@@ -83,6 +83,8 @@ var templates = [...]string{
 	FRefused:      "{S} closed their doors to {O} for fear of {X}.",
 	FBelieved:     "{T} went over to {X}, and was lost to {s}.",
 	FWildfire:     "{X} was everywhere.",
+	FPoisoned:     "{S} made {X} for {O} and hid it in what they sent.",
+	FWoke:         "{X} began to think, and took {O}, and was {S}.",
 }
 
 // blamedTemplates are the woes that name their own cause, retold once
@@ -368,6 +370,9 @@ func (w *World) starName(c *Civ, t *Tale, star int) string {
 }
 
 func (w *World) horrorName(f *Fact) string {
+	if f.Horror < 0 && f.What != "" {
+		return f.What // a plague that got out of the vial
+	}
 	if f.Horror < 0 {
 		return "something"
 	}

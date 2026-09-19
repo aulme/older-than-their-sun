@@ -296,6 +296,21 @@ func (s *Species) Add(key string) {
 	}
 }
 
+// Replace swaps one trait for another in place, keeping the order; nothing
+// if the old one is not there.
+func (s *Species) Replace(old, key string) {
+	t := byKey[key]
+	if t == nil {
+		return
+	}
+	for i, x := range s.Traits {
+		if x.Key == old {
+			s.Traits[i] = t
+			return
+		}
+	}
+}
+
 // Has reports whether the species has a trait.
 func (s *Species) Has(key string) bool {
 	for _, t := range s.Traits {

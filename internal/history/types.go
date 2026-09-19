@@ -85,7 +85,7 @@ type Civ struct {
 	Cause      string          // why it ended
 	Into       string          // what it became, if transformed
 	Word       string          // the people's word for the state beneath, once they have reached into it
-	Hosts      int             // for parasites: host species ridden, the local one included
+	Hosts      int             // for parasites: peoples ridden or fighting its plague
 	Morality   Morality        // what the people counts as wrong; see morality.go
 	Lifted     map[string]bool // world blocks lifted by a colony: sea, sky, fire
 	Systems    []int
@@ -197,6 +197,10 @@ type Civ struct {
 	Closed      map[int]bool       // the suspects it has closed its ears and its ports to
 	LastTaken   Year               // when a world last changed hands with it on either side
 	FirstPlague Year               // when it first had one, for the batch
+	Own         int                // for parasites: the plague it is; -1 for a people that is not one
+	Weapons     map[string]*Weapon // the plagues it has made and holds, by the craft that made them
+	Barred      map[int]bool       // the peoples whose goods and messages it refuses for good: those that tried to poison it
+	Gross       flow.Income        // the income before a rider's tithe
 
 	// sightings and salvage: see sighting.go, field.go
 	Sightings    map[int]*Sighting // what this people has seen of fleets in flight, by fleet
@@ -299,8 +303,10 @@ type Tally struct {
 	Slights  float64
 	Deterred int
 	// plagues: caught, cured, ticks contained, worlds lost, cults formed from it; senders closed out, messages dropped for it
-	Sickened, Cured, Contained, WorldsSick, Cults int
-	Refusals, Shut                                int
+	Sickened, Cured, Contained, WorldsSick, Cults  int
+	Refusals, Shut                                 int
+	Attempts, Poisoned, Detected, Breakouts, Leaks int // plagues made and tried: attempts, ones that took, ones seen, ones that got out at discovery, ones that leaked while held
+	Ridden, Risen                                  int // peoples ridden by this parasite; risings against a rider
 }
 
 // Living is true for active and remnant civilisations.
@@ -550,6 +556,7 @@ type World struct {
 	Contracts   []*Contract        // every contract offered; see contract.go
 	Plagues     []*Plague          // every plague born; see plague.go
 	Reservoir   map[int]*Reservoir // plagues waiting in dead cities, by star
+	wokeOnMaker bool               // the plague that woke on its maker has been told: once per galaxy
 	Messages    []*Message
 	Betrayals   []Betrayal // and faith kept, with negative weight
 	scratch
