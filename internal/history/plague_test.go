@@ -199,7 +199,7 @@ func TestCult(t *testing.T) {
 func TestWalls(t *testing.T) {
 	w, a, b, p := sickPair(t, 5, plague.Memetic, 1, 0.1)
 	w.fact(FArise, a, nil, a.Home)
-	l := &Legacy{ID: len(w.Legacies), Age: -1, Maker: a.ID, Kind: Artifact, Star: 7, Node: "writing", Horror: -1, Finder: -1, Source: -1, Plague: -1}
+	l := &Legacy{ID: len(w.Legacies), Age: -1, Maker: a.ID, Kind: Artifact, Star: 7, Node: "writing", People: -1, Finder: -1, Source: -1, Plague: -1}
 	w.Legacies = append(w.Legacies, l)
 	w.testament(a, l)
 	if l.Plague != p.ID {
@@ -208,7 +208,7 @@ func TestWalls(t *testing.T) {
 	caught := 0
 	for i := range 200 {
 		w2, a2, b2, _ := sickPair(t, uint64(700+i), plague.Memetic, 1, 0.1)
-		l2 := &Legacy{ID: len(w2.Legacies), Age: -1, Maker: a2.ID, Kind: Artifact, Star: 7, Node: "writing", Horror: -1, Finder: -1, Source: -1, Plague: 0, Testament: []Inscription{{Text: "x"}}}
+		l2 := &Legacy{ID: len(w2.Legacies), Age: -1, Maker: a2.ID, Kind: Artifact, Star: 7, Node: "writing", People: -1, Finder: -1, Source: -1, Plague: 0, Testament: []Inscription{{Text: "x"}}}
 		w2.Legacies = append(w2.Legacies, l2)
 		w2.Plagues[0].Extinct = true
 		w2.readTestament(b2, l2)

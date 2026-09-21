@@ -43,7 +43,7 @@ var Pool = []*Power{
 		Line: "{S} have grown a shell, and nothing that comes for them gets in."},
 	{Key: "tithe", Name: "the tithe", Domain: "industry", Weight: 7, Grants: Profile{Sur: 1},
 		Line: "{S} have begun to take a share of every harvest within their reach. Nobody agreed to it."},
-	{Key: "sleep", Name: "the long sleep", Domain: "biology", Weight: 8, Grants: Profile{Sur: 1.5},
+	{Key: "sleep", Name: "the long sleep", Domain: "biology", Weight: 8, Grants: Profile{Sur: 1.5, Dormant: true},
 		Line: "{S} have learned to sleep, and will sleep when there is nothing left they want."},
 	{Key: "mirror", Name: "the mirror", Domain: "society", Weight: 7, Grants: Profile{Soc: 1},
 		Line: "{S} have begun to answer every message in the sender's own voice."},

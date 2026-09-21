@@ -1,4 +1,4 @@
-// Package names generates names for civilisations, stars, horrors and rulers.
+// Package names generates names for civilisations, stars, plagues and rulers.
 // Purely syllabic for now; later this could be per-civilisation phonologies.
 package names
 
@@ -40,12 +40,6 @@ var titleNoun = []string{"Emperor", "Regent", "Matriarch", "Hierarch", "Custodia
 
 // Title returns a ruler title for a contracted remnant civilisation.
 func Title(r *rand.Rand) string { return "the " + pick(r, titleAdj) + " " + pick(r, titleNoun) }
-
-var horrorAdj = []string{"Grey", "Hungry", "Patient", "Bright", "Quiet", "Cold", "Black", "Endless", "Pale", "Whispering"}
-var horrorNoun = []string{"Tide", "Swarm", "Bloom", "Choir", "Sleeper", "Lattice", "Signal", "Host", "Garden", "Engine"}
-
-// Horror returns an epithet such as "the Grey Tide".
-func Horror(r *rand.Rand) string { return "the " + pick(r, horrorAdj) + " " + pick(r, horrorNoun) }
 
 var plagueAdj = []string{"Red", "Grey", "Weeping", "Glass", "Silent", "Sweating", "Hollow", "Slow", "Quick", "Black", "White", "Wandering", "Crystal"}
 var plagueBody = []string{"Fever", "Rot", "Blight", "Wasting", "Sleep", "Cough", "Bloom", "Pox", "Fade", "Sweat", "Ague"}

@@ -55,7 +55,7 @@ func (w *World) appear(c *Civ) {
 	var cands []int
 	for _, from := range c.Systems {
 		for _, s := range w.G.Near(from, c.Reach) {
-			if w.Owner[s] < 0 && w.Held[s] < 0 && s != w.G.Sol && w.canLive(c, s) && !contains(cands, s) {
+			if w.Owner[s] < 0 && s != w.G.Sol && w.canLive(c, s) && !contains(cands, s) {
 				cands = append(cands, s)
 			}
 		}
@@ -207,8 +207,9 @@ func (w *World) mirrored(a, b *Civ) {
 	}
 }
 
-// sleep is the long sleep: it sleeps when its will is spent, and sits
-// every tick out but its guns until disturbed.
+// sleep is the long sleep, for a people whose profile says Dormant (the
+// long sleep of the pool, or a thing that eats): it sleeps when its will
+// is spent, and sits every tick out but its guns until disturbed.
 func (w *World) sleep(c *Civ) {
 	if c.Asleep || !c.Active() {
 		return
@@ -220,38 +221,86 @@ func (w *World) sleep(c *Civ) {
 	w.log("The %s go still. There is nothing left they want, and nothing near them moves. They sleep.", c.Name)
 }
 
-// rouse is the sleeper disturbed: by whoever settled inside its reach, on
-// whom a world wakes (waking.go) and anything else declares war.
+// rouse is the sleeper disturbed: by whoever settled inside its reach,
+// brought a war to it, or unleashed it; by nothing, when the wall is
+// thin. A world wakes on everything inside its neighbourhood, the
+// disturber first (waking.go); anything else declares war on the
+// disturber.
 func (w *World) rouse(c, by *Civ) {
 	if !c.Asleep {
 		return
 	}
+	if by == c {
+		by = nil // its own doing: the Find beneath its own cities
+	}
 	c.Asleep = false
 	c.Tally.Wakings++
 	w.recompute(c)
-	w.log("Something settled too close, and the %s wake.", c.Name)
-	if by == nil || !by.Active() {
+	if by != nil {
+		w.log("Something came too close, and the %s wake.", c.Name)
+	} else {
+		w.log("The %s wake.", c.Name)
+	}
+	if by != nil && by.Active() {
+		c.Met[by.ID], by.Met[c.ID] = true, true
+	}
+	if w.canWake(c) {
+		w.wakeOnAll(c, by)
 		return
 	}
-	c.Met[by.ID], by.Met[c.ID] = true, true
-	if c.Species.Profile().Neighbourhood > 0 {
-		if worlds := w.inside(c, by); len(worlds) > 0 {
-			w.waking(c, by, worlds)
-			return
-		}
+	if by != nil && by.Active() && c.Truce[by.ID] <= w.Now {
+		w.declare(c, by, "the disturbing of its sleep") // not again within the truce of the last time: it stirs, and that is all
 	}
-	w.declare(c, by, "the disturbing of its sleep")
 }
 
-// spent is a war ended with a side's will gone: a people with the long
-// sleep sleeps.
+// wakeOnAll is the waking on everything inside the neighbourhood: the
+// disturber first, then every other people with a world inside it.
+func (w *World) wakeOnAll(c, first *Civ) {
+	var order []*Civ
+	if first != nil && first.Active() {
+		order = append(order, first)
+	}
+	for _, e := range w.Civs {
+		if e != c && e != first && e.Active() {
+			order = append(order, e)
+		}
+	}
+	for _, e := range order {
+		if !c.Active() || c.Asleep {
+			return
+		}
+		if worlds := w.inside(c, e); len(worlds) > 0 && e.Active() {
+			c.Met[e.ID], e.Met[c.ID] = true, true
+			w.waking(c, e, worlds)
+		}
+	}
+}
+
+// spent is a war ended with a side's will gone: a people that sleeps
+// sleeps.
 func (w *World) spent(wr *War) {
 	for i, id := range wr.Sides {
 		c := w.Civs[id]
-		if c.Species.HasPower("sleep") && wr.Will[i] <= 0 && len(c.Wars) == 0 {
+		if c.Species.Profile().Dormant && wr.Will[i] <= 0 && len(c.Wars) == 0 {
 			w.sleep(c)
 		}
 	}
+}
+
+// sleeperAt is a sleeper: an eldritch thing, one world and no one home,
+// with the long sleep, asleep at the star until disturbed. From the
+// deep pass as a legacy, or from the Door's scar; the legacy of kind
+// Sleeper points at it.
+func (w *World) sleeperAt(star int, made string) *Civ {
+	sp := species.GenerateWith(w.R, w.G.Stars[star].Mult, w.G.Sys[star].Arch, species.Eldritch, species.Planetary|species.Unconscious)
+	sp.AddPower("sleep")
+	c := w.ariseAt(star, sp, made)
+	if c == nil {
+		return nil
+	}
+	c.Origin = made
+	w.sleep(c)
+	return c
 }
 
 // disturbed is a world newly held: every sleeper with the star inside
@@ -262,4 +311,17 @@ func (w *World) disturbed(c *Civ, t int) {
 			w.rouse(e, c)
 		}
 	}
+}
+
+// sleeperStar is where something that came through a people's door goes
+// to sleep: the nearest star to one of its worlds that nobody holds, or
+// -1 when there is none within a hop.
+func (w *World) sleeperStar(c *Civ) int {
+	from := w.aWorld(c)
+	for _, s := range w.G.Near(from, 20) {
+		if w.Owner[s] < 0 && s != w.G.Sol {
+			return s
+		}
+	}
+	return -1
 }

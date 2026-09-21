@@ -194,6 +194,12 @@ type Profile struct {
 	Amoral        bool               // the morality is amoral, always: there is nobody to hold a wrong
 	NeverFaces    []string           // filters this people never faces, by key
 	Allows        Ability            // abilities a power gives back to a substrate that denies them
+	Innate        []string           // tech nodes a people has from birth, their filters counted as faced: what its nature is, not what it learned
+	Body          string             // what the substrate is made of, as a flow kind's key ("organic", "metal"); "" for nothing the sim's means name
+	Eats          bool               // grows by eating: every world's yield of what its body is made of is ships and nothing else; a won world is stripped and held empty; see history's replicator.go
+	Monster       bool               // a monster to everyone by rule: nothing fathoms it and nothing settles beside it
+	NoTerms       bool               // makes peace only by exhaustion: no terms, no truce, no yielding, and no offer of them is heard
+	Dormant       bool               // sleeps when its will is spent, and sits every tick out until disturbed; see history's eldritch.go
 	// means: see the flow package and history's flow.go
 	Cradle          float64 // multiplier on what the cradle world yields the people that arose on it
 	Upkeep          M       // multiplier on the upkeep of each domain's nodes
@@ -245,6 +251,14 @@ func Compose(ps ...Profile) Profile {
 			}
 		}
 		out.NeverFaces = append(out.NeverFaces, p.NeverFaces...)
+		out.Innate = append(out.Innate, p.Innate...)
+		if out.Body == "" {
+			out.Body = p.Body // the substrate's, since it composes first
+		}
+		out.Eats = out.Eats || p.Eats
+		out.Monster = out.Monster || p.Monster
+		out.NoTerms = out.NoTerms || p.NoTerms
+		out.Dormant = out.Dormant || p.Dormant
 		out.Expand *= mul(p.Expand)
 		out.Memory *= mul(p.Memory)
 		out.Endure *= mul(p.Endure)

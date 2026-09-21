@@ -362,7 +362,7 @@ func (w *World) breakout(c *Civ, n *tech.Node, p *Plague) {
 		return
 	}
 	inf := w.infect(c, p, nil, "loose")
-	w.factOf(FHorrorMade, c, nil, c.Home, p.Name)
+	w.factOf(FUnleashed, c, nil, c.Home, p.Name) // the breakout: what was in the vial let loose, and remembered as a folly
 	if wd.Immune {
 		inf.Carrier = true
 		c.Immune[p.ID] = true

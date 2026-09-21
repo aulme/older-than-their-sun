@@ -230,7 +230,6 @@ var moralTable = map[FactKind][8]judgment{
 	FStripped:     {crime(3), crime(2), none, deed(1), crime(2), crime(1), crime(2), crime(4)},
 	FManna:        {crime(2), none, none, none, folly(1), crime(1), none, none},
 	FUnleashed:    {folly(4), folly(4), folly(2), folly(3), folly(4), crime(2), crime(4), folly(4)},
-	FHorrorMade:   {folly(4), folly(4), folly(2), folly(3), folly(4), crime(2), crime(4), folly(4)},
 	FSealed:       {deed(2), deed(2), none, deed(1), deed(1), folly(2), folly(3), deed(2)},
 	FMastered:     {deed(2), deed(2), deed(1), deed(1), deed(1), deed(4), deed(5), deed(3)},
 	FFind:         {deed(2), deed(2), deed(1), deed(1), deed(1), deed(4), deed(5), deed(3)},

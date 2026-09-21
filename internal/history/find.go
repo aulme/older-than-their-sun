@@ -34,6 +34,9 @@ func (w *World) find(c *Civ) {
 		if l.Maker >= 0 && c.Known[l.Node] && l.ships() == 0 {
 			continue // nothing to learn; a structure is taken over on settling; a field with ships is worth the ships
 		}
+		if l.People == c.ID {
+			continue // the remain is what it is: a sleeper does not find itself
+		}
 		d := w.G.Dist(c.Home, l.Star)
 		for _, s := range c.Systems {
 			d = min(d, w.G.Dist(s, l.Star))
@@ -296,7 +299,7 @@ func (w *World) attemptWield(c *Civ, l *Legacy) {
 			l.Cond = Derelict // repaired, after a fashion
 		}
 		c.Record = append(c.Record, "wielded a legacy of "+w.makerName(l))
-		if l.Kind == Structure && l.Maker >= 0 && (contains(c.Systems, l.Star) || (w.Owner[l.Star] < 0 && w.Held[l.Star] < 0 && w.canLive(c, l.Star))) {
+		if l.Kind == Structure && l.Maker >= 0 && (contains(c.Systems, l.Star) || (w.Owner[l.Star] < 0 && w.canLive(c, l.Star))) {
 			if !contains(c.Systems, l.Star) {
 				w.settle(c, l.Star)
 			}
@@ -370,18 +373,18 @@ func (w *World) unleash(c *Civ, l *Legacy) {
 	c.Record = append(c.Record, "unleashed a legacy of "+w.makerName(l))
 	w.factL(FUnleashed, c, l)
 	switch l.Kind {
-	case Sleeper:
-		h := w.Horrors[l.Horror]
-		w.log("It wakes.")
-		w.wakeElder(h)
-	case Threat:
-		h := w.Horrors[l.Horror]
-		h.Dormant = false
-		if h.Kind == Beacon {
-			w.log("The transmitter at %s speaks again. It is called %s.", w.star(l.Star), h.Name)
-		} else {
-			w.log("The machines at %s wake, and begin to eat. They are called %s.", w.star(l.Star), h.Name)
+	case Sleeper, Threat:
+		if l.People < 0 {
+			w.log("The transmitter at %s speaks again.", w.star(l.Star))
+			break
 		}
+		p := w.Civs[l.People]
+		if !p.Active() {
+			w.log("Whatever slept at %s is not there any more.", w.star(l.Star))
+			break
+		}
+		w.log("It wakes.")
+		w.rouse(p, c)
 	case Structure:
 		if l.Maker >= 0 {
 			w.blast(l.Star, 3, "the failure of "+l.Desc, "Something at %s that its makers left running comes apart.", 1)
@@ -406,17 +409,20 @@ func (w *World) unleash(c *Civ, l *Legacy) {
 		}
 		switch n.Domain {
 		case tech.Industry, tech.Weapons:
-			h := w.spawnHorror(Replicators, l.Star, -1)
-			h.Legacy = l.ID
-			w.log("Whatever it was, it makes more of itself. It is called %s.", h.Name)
+			w.log("Whatever it was, it makes more of itself.")
+			if nc := w.replicatorAt(l.Star, species.Machine, "what got out of "+l.Desc, false); nc != nil {
+				w.log("It is called the %s, by those who have to call it something: %s.", nc.Name, nc.Species.Describe())
+			}
 		case tech.Computation:
-			h := w.spawnHorror(RogueMind, l.Star, -1)
-			h.Legacy = l.ID
-			w.log("It was a mind, and it is awake, and it is called %s.", h.Name)
+			w.log("It was a mind, and it is awake.")
+			sp := species.GenerateWith(w.R, w.G.Stars[l.Star].Mult, w.G.Sys[l.Star].Arch, species.Machine, 0)
+			if nc := w.ariseAt(l.Star, sp, "a mind that woke in "+l.Desc); nc != nil {
+				nc.Origin = sp.Made
+				w.log("It calls itself the %s: %s.", nc.Name, sp.Describe())
+			}
 		case tech.Exotic, tech.Propulsion:
-			h := w.spawnHorror(Beacon, l.Star, -1)
-			h.Legacy = l.ID
-			w.log("It was a door, or a voice. It is called %s now.", h.Name)
+			w.makeTransmitter(l.Star, -1, true)
+			w.log("It was a door, or a voice. It speaks now, from %s.", w.star(l.Star))
 		default:
 			if n.Filter != "" {
 				w.log("It does what it was made to do, to the %s.", c.Name)

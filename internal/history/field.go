@@ -60,7 +60,7 @@ func (w *World) leaveField(loser *Civ, ships int, star int, at vec, adrift bool)
 			}
 		}
 	}
-	l := &Legacy{ID: len(w.Legacies), Age: -1, Maker: loser.ID, Kind: Field, Star: star, Node: bestArt(loser), Horror: -1, Finder: -1, Source: -1, Plague: -1,
+	l := &Legacy{ID: len(w.Legacies), Age: -1, Maker: loser.ID, Kind: Field, Star: star, Node: bestArt(loser), People: -1, Finder: -1, Source: -1, Plague: -1,
 		Wrecks: wrecks, Derelicts: derelicts, At: at, Adrift: adrift, Cond: Wreck, Hardy: hardyDead}
 	if derelicts > 0 {
 		l.Cond = Derelict

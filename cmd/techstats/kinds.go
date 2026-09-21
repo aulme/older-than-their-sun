@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io"
+	"slices"
 	"sort"
 	"strings"
 
@@ -31,6 +32,16 @@ type KindRec struct {
 	Severed  int
 	Sleeps   int
 	Asleep   int // asleep at the present
+	// the transmitter
+	Transmitters int // made in this age, by a people or by the wall
+	Elder        int // left by the deep pass
+	Seeds        int // of all of them, carrying a seed
+	Listeners    int // peoples taken: scarred, ended, or seeded
+	SeedsWoke    int // parasites woken down a seed
+	Speaking     int // live at the present
+	// what eats
+	Eaten    int // ships grown of what was eaten
+	Consumed int // worlds stripped and held empty
 }
 
 func flattenKinds(w *history.World) KindRec {
@@ -48,6 +59,26 @@ func flattenKinds(w *history.World) KindRec {
 		r.Sleeps += c.Tally.Sleeps
 		if c.Active() && c.Asleep {
 			r.Asleep++
+		}
+		r.Eaten += c.Tally.Eaten
+		r.Consumed += c.Tally.Consumed
+	}
+	for _, l := range w.Legacies {
+		if !l.Transmitter() {
+			continue
+		}
+		if l.Age < 0 {
+			r.Transmitters++
+		} else {
+			r.Elder++
+		}
+		if l.Payload == history.Seed {
+			r.Seeds++
+		}
+		r.Listeners += l.Listeners
+		r.SeedsWoke += l.Woken
+		if l.Speaking() {
+			r.Speaking++
 		}
 	}
 	gained := map[string]int{} // by the power's name
@@ -154,6 +185,42 @@ func kindsReport(out io.Writer, ks []KindRec, recs []Rec, seeds int) {
 	p("")
 	p("Living worlds: %d demands made, %d heeded (%s), %d wakings. The unmaking turned on a world %d times. The tithe fell on %d peoples. Hive worlds severed from their seat: %d. Sleeps: %d, asleep at the present: %d.",
 		demands, left, pct(left, demands), wakings, unmade, tithed, severed, sleeps, asleep)
+	p("")
+	// the transmitter and what eats
+	made, elder, seeds, listeners, woke, live, eaten, consumed := 0, 0, 0, 0, 0, 0, 0, 0
+	for _, k := range ks {
+		made += k.Transmitters
+		elder += k.Elder
+		seeds += k.Seeds
+		listeners += k.Listeners
+		woke += k.SeedsWoke
+		live += k.Speaking
+		eaten += k.Eaten
+		consumed += k.Consumed
+	}
+	p("Transmitters: %d made in the age and %d left by the deep pass, %d of them carrying a seed; %d listeners taken, %d things woken down a seed; %d speaking at the present.", made, elder, seeds, listeners, woke, live)
+	var reps []Rec
+	for _, r := range recs {
+		if slices.Contains(r.Mods, "replicator") {
+			reps = append(reps, r)
+		}
+	}
+	repLiving := count(reps, func(r Rec) bool { return r.Standing })
+	repBorn := count(reps, func(r Rec) bool { return r.Made == "" && r.Origin == "" })
+	ends := newCounter()
+	for _, r := range reps {
+		if !r.Standing {
+			ends.add(r.Cause, r.Lived)
+		}
+	}
+	p("Things that eat: %d replicator peoples, %d born at a cradle and %d made; %d living at the present; %d ships grown of what was eaten, %d worlds stripped and held empty.", len(reps), repBorn, len(reps)-repBorn, repLiving, eaten, consumed)
+	if len(ends.sorted()) > 0 {
+		var parts []string
+		for _, k := range ends.sorted() {
+			parts = append(parts, fmt.Sprintf("%s (%d)", k, ends.n[k]))
+		}
+		p("What ended them: %s.", strings.Join(parts, "; "))
+	}
 	p("")
 	// the natures in war
 	p("| Nature | Peoples | Wars fought | Won per war | Lost per war | Ended by war | Median life (Myr) |")

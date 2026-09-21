@@ -22,26 +22,27 @@ import (
 // Plague is one sickness in the world: its shape, and its history here.
 type Plague struct {
 	plague.Plague
-	ID         int
-	Born       Year
-	FirstHost  int    // the people it was born in
-	Cause      string // what the birth reads as, for the batch: clean, dirt, siege, dark age, relic
-	Hosts      int    // peoples that have it now
-	Peak       int    // the most at once
-	Caught     int    // peoples that have had it, in all
-	Worlds     int    // worlds lost to it
-	Peoples    int    // peoples ended or brought low by it
-	Cults      int    // peoples that formed around it
-	Cures      int
-	Refusals   int  // ears and ports closed for fear of it
-	Woken      int  // times a reservoir or a wall gave it again
-	LastHost   Year // when it last had a host
-	Extinct    bool
-	Wildfire   bool // had ten hosts at once, once
-	Maker      int  // the people that made it, -1 for one that was born
-	Made       bool // shaped on purpose, as against loose from the vial
-	Rider      int  // the parasite people it became, -1 for none yet; see parasite.go
-	Poisonings int  // peoples it was put in by stealth
+	ID          int
+	Born        Year
+	FirstHost   int    // the people it was born in
+	Cause       string // what the birth reads as, for the batch: clean, dirt, siege, dark age, relic
+	Hosts       int    // peoples that have it now
+	Peak        int    // the most at once
+	Caught      int    // peoples that have had it, in all
+	Worlds      int    // worlds lost to it
+	Peoples     int    // peoples ended or brought low by it
+	Cults       int    // peoples that formed around it
+	Cures       int
+	Refusals    int  // ears and ports closed for fear of it
+	Woken       int  // times a reservoir or a wall gave it again
+	LastHost    Year // when it last had a host
+	Extinct     bool
+	Wildfire    bool // had ten hosts at once, once
+	Maker       int  // the people that made it, -1 for one that was born
+	Made        bool // shaped on purpose, as against loose from the vial
+	Rider       int  // the parasite people it became, -1 for none yet; see parasite.go
+	Transmitter int  // the transmitter it came down from, -1 for none; see transmitter.go
+	Poisonings  int  // peoples it was put in by stealth
 }
 
 // Infection is a plague in one people.
@@ -270,7 +271,7 @@ func (w *World) newPlague(k plague.Kind, host *Civ, cause string) *Plague {
 	if w.R.IntN(2) == 0 {
 		name = host.HomeName
 	}
-	p := &Plague{Plague: plague.New(w.R, k, name, &w.Cfg.Tuning.Plague), ID: len(w.Plagues), Born: w.Now, FirstHost: host.ID, Cause: cause, Maker: -1, Rider: -1}
+	p := &Plague{Plague: plague.New(w.R, k, name, &w.Cfg.Tuning.Plague), ID: len(w.Plagues), Born: w.Now, FirstHost: host.ID, Cause: cause, Maker: -1, Rider: -1, Transmitter: -1}
 	w.Plagues = append(w.Plagues, p)
 	return p
 }

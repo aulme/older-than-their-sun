@@ -29,7 +29,7 @@ type Pact struct {
 	ID      int
 	Members []int
 	Kind    PactKind
-	Target  int // the people or horror it is against, -1 for whoever comes
+	Target  int // the people it is against, -1 for whoever comes
 	Formed  Year
 	Ended   Year
 	Over    bool

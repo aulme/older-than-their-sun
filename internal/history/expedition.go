@@ -184,7 +184,7 @@ func (w *World) tickExpeditions() {
 		}
 		if x.Returning {
 			if w.Now >= x.Arrive {
-				if o := w.Owner[x.Star]; (x.Kind == Campaign || x.Kind == Relief || x.Kind == Intercept) && ((o >= 0 && o != c.ID) || w.Held[x.Star] >= 0) {
+				if o := w.Owner[x.Star]; (x.Kind == Campaign || x.Kind == Relief || x.Kind == Intercept) && o >= 0 && o != c.ID {
 					w.goHome(x) // turned back to a star somebody else holds: on from there
 					continue
 				}
@@ -392,6 +392,15 @@ func (w *World) goHome(x *Expedition) {
 // and the fleet is its guard.
 func (w *World) goNative(x *Expedition) {
 	c := w.Civs[x.Owner]
+	if c.Species.Profile().Eats {
+		// a fleet of a thing that eats has no captains: what holds the worlds is more of it, and stays where it is as a guard, or is lost with it
+		if c.Active() && x.Base >= 0 {
+			w.mergeInto(x, x.Base)
+		} else {
+			x.Over = true
+		}
+		return
+	}
 	var held []int
 	for _, s := range x.Held {
 		if w.Owner[s] == c.ID && s != c.Home {

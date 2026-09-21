@@ -78,6 +78,7 @@ func (w *World) spawn(home int, sp *species.Species, maker int, name string, hos
 	}
 	w.bornMorality(c)
 	w.birthright(c)
+	w.innate(c)
 	w.bornPowers(c)
 	if sp.Has("kinfed") {
 		w.fact(FManna, c, nil, home) // a fact every other people judges by its own lights, once known
@@ -153,6 +154,7 @@ type civStep struct {
 var civSteps = []civStep{
 	{"arrivals", (*World).arrivals},
 	{"flows", (*World).flows},
+	{"eat", (*World).eat},
 	{"shipwright", (*World).shipwright},
 	{"guns", (*World).guns},
 	{"objects", (*World).objects},
@@ -265,7 +267,7 @@ func (w *World) arrivals(c *Civ) {
 			w.trace(t, "derelict "+ship, c.ID)
 			w.log("A %s of the %s arrives at %s to find the %s already there.", ship, c.Name, w.star(t), w.Civs[w.Owner[t]].Name)
 			w.chart(c, t, "ship")
-		case w.Owner[t] >= 0 || w.Held[t] >= 0:
+		case w.Owner[t] >= 0:
 			w.trace(t, "derelict "+ship, c.ID)
 			w.log("A %s of the %s arrives at %s to find it already taken. It is never heard from again.", ship, c.Name, w.star(t))
 			w.chart(c, t, "ship")
@@ -400,15 +402,18 @@ func (w *World) expand(c *Civ) {
 	if target < 0 {
 		return
 	}
-	// a ship is a reservation of the means: it goes only if the spare covers it
-	need := w.shipReservation(c)
-	if !w.afford(c, need) {
-		if w.Cfg.TraceAI {
-			w.log("[the %s cannot spare a ship for %s: %v short]", c.Name, w.star(target), need.Less(c.Surplus.Less(c.Reserved)))
+	// a ship is a reservation of the means: it goes only if the spare
+	// covers it; a people with no upkeep is sustained by whatever it is
+	if p.Can(species.Pays) {
+		need := w.shipReservation(c)
+		if !w.afford(c, need) {
+			if w.Cfg.TraceAI {
+				w.log("[the %s cannot spare a ship for %s: %v short]", c.Name, w.star(target), need.Less(c.Surplus.Less(c.Reserved)))
+			}
+			return
 		}
-		return
+		w.reserve(c, need)
 	}
-	w.reserve(c, need)
 	if blind {
 		c.Tally.Blind++
 	}

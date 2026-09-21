@@ -445,6 +445,10 @@ type KindsTuning struct {
 	HeedMeek    float64 // added for the submissive and the pacifist
 	HeedProud   float64 // taken off for the unyielding and the conqueror
 	HeedGrudge  float64 // taken off for a grudge against the demander
+	Eat         float64 // ships a thousand years per unit of its body's matter a world yields, for a people that grows by eating
+	EatOut      float64 // years from the first bite until a world's sources are eaten to nothing
+	Listen      float64 // chance per thousand years a people within a live transmitter's range hears it
+	SeedShare   float64 // the share of transmitters made carrying a seed rather than a corruption
 }
 
 // HeedInput is a people told to leave a world by a living world that
@@ -540,6 +544,7 @@ func Default() *Tuning {
 		Kinds: KindsTuning{
 			Appear: 0.0005, Deepen: 0.0005, Tithe: 0.1, TitheGrudge: 0.01, TitheHazard: 0.01, WoundWear: 0.001, Mirror: 0.5, MirrorWis: 2,
 			WakingBase: -1, WakingMil: 0.5, WakingYoung: 1, Demand: 3, UnmakeRest: 3000, HeedGap: 0.1, HeedMeek: 0.5, HeedProud: 0.5, HeedGrudge: 0.2,
+			Eat: 0.005, EatOut: 1_000_000, Listen: 0.001, SeedShare: 0.1,
 		},
 		Plague: plague.Default(),
 		Wisdom: WisdomTuning{Tail: 0.08, GrudgeFade: 10, VengefulBelow: 7, Compulsion: 0.08, Folly: 0.04, ThreatSeal: 0.3, AboveEras: 2, AboveWield: 0.07, AboveSeal: 0.2, LeapMargin: -1.5, LeapBar: 6, LeapNoise: 1.5, TeachWeaker: 0, BrokerRate: 0.02},

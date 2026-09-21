@@ -143,16 +143,18 @@ func Write(out io.Writer, w *history.World, full bool) {
 	if sky := history.SkyFeatures(w.G); sky != "" {
 		p("Beyond: %s.", sky)
 	}
-	held, complex := 0, 0
-	for i := range w.G.Stars {
-		if w.Held[i] >= 0 {
-			held++
+	eaten, complex := 0, 0
+	for _, c := range w.Civs {
+		if c.Active() && c.Species.Profile().Eats {
+			eaten += len(c.Systems)
 		}
+	}
+	for i := range w.G.Stars {
 		if w.Bio[i] == history.BioComplex {
 			complex++
 		}
 	}
-	p("at the present: galactic hazard %.2f, %d stars held by horrors, %d worlds with complex life; the wall between this and what is beneath it is %s", w.Hazard, held, complex, w.ThinWord())
+	p("at the present: galactic hazard %.2f, %d stars held by things that eat them, %d transmitters speaking, %d worlds with complex life; the wall between this and what is beneath it is %s", w.Hazard, eaten, speaking(w), complex, w.ThinWord())
 	cy := w.Cycle
 	if w.Capped {
 		p("WARNING: the age never wound down on its own; stopped after %.0f fades", w.Cfg.MaxFades)
@@ -236,36 +238,51 @@ func Write(out io.Writer, w *history.World, full bool) {
 		p("  none")
 	}
 	p("")
-	p("Things that are not civilisations:")
-	for _, h := range w.Horrors {
-		state := ""
-		switch h.Kind {
-		case history.Replicators, history.RogueMind:
-			state = fmt.Sprintf("holding %d systems", len(h.Systems))
-			if h.Dormant {
-				state += ", silent"
-			}
-		case history.Beacon:
-			if h.Dormant {
-				state = fmt.Sprintf("silent at %s", w.G.Stars[h.Origin].Name)
-			} else {
-				state = fmt.Sprintf("broadcasting from %s, %d listeners lost", w.G.Stars[h.Origin].Name, h.Victims)
-			}
-		case history.SleeperHorror:
-			state = fmt.Sprintf("sleeping near %s, woke %d times", w.G.Stars[h.Origin].Name, h.Wakings)
+	p("What is still there:")
+	any = false
+	for _, c := range w.Civs {
+		pr := c.Species.Profile()
+		if !c.Active() || !(pr.Eats || pr.Monster || c.Asleep || !pr.Can(species.Researches)) {
+			continue
+		}
+		any = true
+		state := fmt.Sprintf("holding %s", systems(len(c.Systems)))
+		switch {
+		case c.Asleep:
+			state = fmt.Sprintf("asleep at %s since %s, woke %d times", c.HomeName, year(c.Slept), c.Tally.Wakings)
+		case pr.Eats:
+			state += fmt.Sprintf(", %d ships grown of what it ate, %d worlds stripped", c.Tally.Eaten, c.Tally.Consumed)
 		}
 		made := ""
-		if h.FromCiv >= 0 {
-			made = fmt.Sprintf(", made by the %s", w.Civs[h.FromCiv].Name)
-		} else if h.Legacy >= 0 {
-			l := w.Legacies[h.Legacy]
-			if l.Maker >= 0 {
-				made = fmt.Sprintf(", from a relic of the %s", w.Civs[l.Maker].Name)
-			} else {
-				made = fmt.Sprintf(", a legacy of %s", elderName(l))
+		if c.Origin != "" {
+			made = ", " + c.Origin
+		} else if c.Species.Made != "" {
+			made = ", " + c.Species.Made
+		}
+		p("  The %s, %s, %s%s.", c.Name, c.Species.Describe(), state, made)
+	}
+	for _, l := range w.Legacies {
+		if !l.Transmitter() || l.State == history.Lost {
+			continue
+		}
+		any = true
+		state := fmt.Sprintf("silent at %s", w.G.Stars[l.Star].Name)
+		if l.Speaking() {
+			state = fmt.Sprintf("speaking from %s, %d listeners taken", w.G.Stars[l.Star].Name, l.Listeners)
+			if l.Woken > 0 {
+				state += fmt.Sprintf(", %d things woken down it", l.Woken)
 			}
 		}
-		p("  %s, a %s, %s%s.", h.Name, h.Kind, state, made)
+		made := ""
+		if l.Maker >= 0 {
+			made = fmt.Sprintf(", in the voice of the %s", w.Civs[l.Maker].Name)
+		} else if l.Elder != nil {
+			made = fmt.Sprintf(", a legacy of %s", elderName(l))
+		}
+		p("  A transmitter carrying a %s, %s%s.", l.Payload, state, made)
+	}
+	if !any {
+		p("  nothing")
 	}
 	p("")
 	lines(p, w)
@@ -709,9 +726,20 @@ func Stats(out io.Writer, w *history.World) {
 			}
 		}
 	}
-	fmt.Fprintf(out, "%s seed %d: age %.1f Myr, fade %.0f Myr, fertility %.1f%%, %d civs (lived <0.5/<1/<3/<10/10+ Myr: %d/%d/%d/%d/%d), standing %d, remnants %d, knowers %d, whole tree %d, miracles born/leap/found/wielded %d/%d/%d/%d, horrors %d, remains %d (mastered %d, wielded %d, sealed %d, unleashed %d, crumbled %d; still buried abandoned/derelict/wreck/ruin %d/%d/%d/%d), wall %.1f, capped %v\n",
+	fmt.Fprintf(out, "%s seed %d: age %.1f Myr, fade %.0f Myr, fertility %.1f%%, %d civs (lived <0.5/<1/<3/<10/10+ Myr: %d/%d/%d/%d/%d), standing %d, remnants %d, knowers %d, whole tree %d, miracles born/leap/found/wielded %d/%d/%d/%d, transmitters %d, remains %d (mastered %d, wielded %d, sealed %d, unleashed %d, crumbled %d; still buried abandoned/derelict/wreck/ruin %d/%d/%d/%d), wall %.1f, capped %v\n",
 		w.G.Region.Code,
-		w.Seed, float64(w.Present-w.Cfg.Dawn)/1e6, float64(w.Cycle.Fade)/1e6, 100*w.FertilityNow(), len(w.Civs), b[0], b[1], b[2], b[3], b[4], standing, remnants, knowers, whole, miracles["born"], miracles["leap"], miracles["found"], miracles["wielded"], len(w.Horrors),
+		w.Seed, float64(w.Present-w.Cfg.Dawn)/1e6, float64(w.Cycle.Fade)/1e6, 100*w.FertilityNow(), len(w.Civs), b[0], b[1], b[2], b[3], b[4], standing, remnants, knowers, whole, miracles["born"], miracles["leap"], miracles["found"], miracles["wielded"], speaking(w),
 		nRuins, ruins[history.Mastered], ruins[history.Wielded], ruins[history.Sealed], ruins[history.Unleashed], ruins[history.Lost],
 		conds[history.Abandoned], conds[history.Derelict], conds[history.Wreck], conds[history.Ruin], w.Thin, w.Capped)
+}
+
+// speaking counts the transmitters that are live.
+func speaking(w *history.World) int {
+	n := 0
+	for _, l := range w.Legacies {
+		if l.Speaking() {
+			n++
+		}
+	}
+	return n
 }

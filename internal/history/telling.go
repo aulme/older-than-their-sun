@@ -11,8 +11,8 @@ import (
 // peoples is two different stories, and the same people tells it
 // differently as the ages pass.
 
-// templates are the plain lines. S and O are the parties, T the star, H
-// the horror, L the remain, X the word, N the count.
+// templates are the plain lines. S and O are the parties, T the star, L
+// the remain, X the word, N the count.
 var templates = [...]string{
 	FArise:        "{S} arose on {T}.",
 	FStars:        "{S} reached the stars.",
@@ -43,10 +43,7 @@ var templates = [...]string{
 	FFind:         "{S} found {L} at {T}.",
 	FMastered:     "{S} understood {L}, and how it was made.",
 	FSealed:       "{S} sealed {L} at {T} and set a watch on it.",
-	FUnleashed:    "{S} opened {L} at {T}, and {H} came out.",
-	FHorrorStrike: "{H} fell upon {s} at {T}.",
-	FHorrorBeaten: "{S} burned {H} off {T}.",
-	FHorrorMade:   "{S} made {H}, and it got loose.",
+	FUnleashed:    "{S} let {L} loose at {T}.",
 	FOvercome:     "{S} faced {X} and came through.",
 	FScarred:      "{S} faced {X} and were marked by it.",
 	FDeclined:     "{X} broke {s}.",
@@ -59,7 +56,7 @@ var templates = [...]string{
 	FRest:         "{S} came to rest at {T}.",
 	FStripped:     "{S} stripped {T} of its ships and its people, and {O} with it.",
 	FCycle:        "{S} learned that the galaxy had done all this before, and would again.",
-	FSurveyLost:   "{P} surveyors did not come back from {T}. {H} is there.",
+	FSurveyLost:   "{P} surveyors did not come back from {T}. Something is there.",
 	FWant:         "{S} went without, and called them the lean years.",
 	FHarness:      "{S} put {X} to use.",
 	FEmbargo:      "{S} closed their ports to {O}.",
@@ -173,7 +170,6 @@ func (w *World) tell(c *Civ, t *Tale) string {
 		"{O}", oName,
 		"{o}", pronoun(we == 2),
 		"{T}", w.starName(c, t, f.Star),
-		"{H}", w.horrorName(f),
 		"{L}", w.remainName(f),
 		"{X}", what,
 		"{N}", systems(n),
@@ -379,17 +375,10 @@ func (w *World) starName(c *Civ, t *Tale, star int) string {
 	return w.star(star)
 }
 
-func (w *World) horrorName(f *Fact) string {
-	if f.Horror < 0 && f.What != "" {
+func (w *World) remainName(f *Fact) string {
+	if f.Legacy < 0 && f.What != "" {
 		return f.What // a plague that got out of the vial
 	}
-	if f.Horror < 0 {
-		return "something"
-	}
-	return w.Horrors[f.Horror].Name
-}
-
-func (w *World) remainName(f *Fact) string {
 	if f.Legacy < 0 {
 		return "something"
 	}
@@ -416,7 +405,7 @@ func (w *World) mythOf(c *Civ, f *Fact) string {
 		return "the rising against " + name(f.Object)
 	case FBetrayal:
 		return "the betrayal by " + name(f.Subject)
-	case FUnleashed, FHorrorMade:
+	case FUnleashed:
 		return "what was let loose at " + w.star(f.Star)
 	case FDarkAge:
 		return "the dark age"
@@ -472,8 +461,8 @@ func (w *World) blameOf(c *Civ, f *Fact) string {
 		return "took the stars from " + us
 	case FSevered:
 		return "cut " + w.star(f.Star) + " from " + us
-	case FHorrorStrike, FSurveyLost:
-		return "woke " + w.horrorName(f)
+	case FSurveyLost:
+		return "took the surveyors at " + w.star(f.Star)
 	case FDefeat:
 		return "broke the fleet at " + w.star(f.Star)
 	case FCaught:
@@ -500,7 +489,7 @@ func (w *World) deedOf(f *Fact) string {
 		return f.What
 	case FStripped:
 		return "stripped " + w.star(f.Star)
-	case FUnleashed, FHorrorMade:
+	case FUnleashed:
 		return "let it loose"
 	case FWar:
 		return "made war on the " + w.Civs[f.Object].Name

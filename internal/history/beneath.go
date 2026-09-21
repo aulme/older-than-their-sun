@@ -162,23 +162,23 @@ func (w *World) leak() {
 		delete(c.Faced, filter) // a leak is a second facing
 		w.face(c, filter, 1)
 	case x < 0.85:
-		var sleeping []*Horror
-		for _, h := range w.Horrors {
-			if h.Dormant && h.Kind == SleeperHorror {
-				sleeping = append(sleeping, h)
+		var sleeping []*Civ
+		for _, c := range w.Civs {
+			if c.Active() && c.Asleep {
+				sleeping = append(sleeping, c)
 			}
 		}
 		if len(sleeping) > 0 {
-			h := sleeping[w.R.IntN(len(sleeping))]
-			w.log("The wall is thin near %s now, and something that slept there notices.", w.star(h.Origin))
-			w.wakeElder(h)
+			c := sleeping[w.R.IntN(len(sleeping))]
+			w.log("The wall is thin near %s now, and something that slept there notices.", c.HomeName)
+			w.rouse(c, nil)
 			return
 		}
 		fallthrough
 	default:
 		var free []int
 		for i := range w.G.Stars {
-			if w.Owner[i] < 0 && w.Held[i] < 0 && i != w.G.Sol {
+			if w.Owner[i] < 0 && i != w.G.Sol {
 				free = append(free, i)
 			}
 		}
@@ -186,8 +186,8 @@ func (w *World) leak() {
 			return
 		}
 		s := free[w.R.IntN(len(free))]
-		h := w.spawnHorror(Beacon, s, -1)
-		w.log("Something speaks from %s in no language, in a voice that did not cross space to get there. It is called %s. It came through.", w.star(s), h.Name)
+		w.makeTransmitter(s, -1, true)
+		w.log("Something speaks from %s in no language, in a voice that did not cross space to get there. It came through.", w.star(s))
 	}
 }
 

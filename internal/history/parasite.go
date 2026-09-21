@@ -69,6 +69,11 @@ func (w *World) wake(p *Plague, host *Civ) *Civ {
 	nc := w.spawn(host.Home, sp, -1, "", host)
 	nc.Own, p.Rider, p.Conscious = p.ID, nc.ID, true
 	nc.Origin = "something that woke in " + p.Name
+	if p.Transmitter >= 0 {
+		l := w.Legacies[p.Transmitter]
+		l.Woken++
+		nc.Origin = "something that came down the signal from " + w.star(l.Star)
+	}
 	if p.Maker >= 0 && p.Made && w.Civs[p.Maker].Active() {
 		m := w.Civs[p.Maker]
 		nc.Master, nc.Vassal, nc.Seen = m.ID, true, m.Declines

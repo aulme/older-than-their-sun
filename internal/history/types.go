@@ -328,6 +328,7 @@ type Tally struct {
 	OssStiff                               float64
 	// kinds: see eldritch.go and waking.go
 	Appeared, Deepened, Tithed, Sleeps, Wakings, Demands, Unmade int
+	Eaten, Consumed                                              int // ships grown by eating; worlds stripped and held empty
 }
 
 // Living is true for active and remnant civilisations.
@@ -342,35 +343,17 @@ func (c *Civ) Free() bool { return c.Master < 0 }
 // Has reports a species trait.
 func (c *Civ) Has(trait string) bool { return c.Species.Has(trait) }
 
-// HorrorKind is which alien horror category an actor belongs to.
-type HorrorKind uint8
+// Payload is what a transmitter carries: a corruption, which is the
+// Signal as a map hazard; or a seed, a conscious memetic plague that wakes
+// a mind-rider in whoever's home goes over to it. See transmitter.go.
+type Payload uint8
 
 const (
-	Replicators   HorrorKind = iota // self-copying machines
-	Beacon                          // memetic hazard broadcast
-	SleeperHorror                   // an elder that withdrew and went still; the legacy kind is Sleeper
-	RogueMind                       // machine intelligence that outgrew its makers
+	Corruption Payload = iota
+	Seed
 )
 
-func (k HorrorKind) String() string {
-	return [...]string{"replicator swarm", "memetic beacon", "sleeper", "rogue intelligence"}[k]
-}
-
-// Horror is a non-civilisation actor.
-type Horror struct {
-	ID      int
-	Kind    HorrorKind
-	Name    string
-	Origin  int
-	Born    Year
-	Systems []int
-	Dormant bool
-	Wakings int
-	Sleep   Year // will not wake before this
-	Victims int
-	FromCiv int // -1 if not made by a civilisation
-	Legacy  int // legacy record it belongs to, -1 if none
-}
+func (p Payload) String() string { return [...]string{"corruption", "seed"}[p] }
 
 // LegacyKind is what an age leaves behind.
 type LegacyKind uint8
@@ -439,9 +422,12 @@ type Legacy struct {
 	Desc      string // "a ring of black metal around a dead star"
 	Name      string // given by the finder
 	State     LegacyState
-	Horror    int    // horror id for threats and sleepers, -1 if none
-	Finder    int    // civ that last acted on it, -1 if none
-	Level     string // for wielded artifacts: which level it lifts, or "miracle"
+	People    int     // the people a threat or a sleeper is: asleep at the star until disturbed; -1 for none
+	Payload   Payload // what a transmitter carries
+	Listeners int     // peoples a transmitter has taken: scarred, ended, or seeded
+	Woken     int     // parasites a transmitter's seed woke
+	Finder    int     // civ that last acted on it, -1 if none
+	Level     string  // for wielded artifacts: which level it lifts, or "miracle"
 	Cond      Condition
 	Hardy     float64       // multiplier on the rate of decay; 0 never decays
 	Source    int           // the source record it is, for a bounty or a wielded artifact; -1 if none
@@ -549,7 +535,6 @@ type World struct {
 	phaseTime  map[string]time.Duration
 	Bio        []BioState
 	Owner      []int // civ id owning each star, -1 if none
-	Held       []int // horror id holding each star, -1 if none
 	Hazard     float64
 	Thin       float64 // how worn the wall between this and the state beneath is; see beneath.go
 	ThinStage  int
@@ -558,7 +543,6 @@ type World struct {
 	Sources    []*Source          // everything with a yield, by ID; see sources.go
 	sourcesAt  [][]int            // the sources that yield at each star, ranged ones included
 	mobile     []int              // the sources that move with a holder, by ID; see rarity.go
-	Horrors    []*Horror
 	Ages       []*AgeRecord
 	Cycle      *Cycle
 	Fathomings []Fathoming // every understanding reached, for the batch; see wisdom.go
@@ -590,9 +574,7 @@ type World struct {
 type scratch struct {
 	blastWorlds []int
 	blastWhat   string
-	beacon      *Horror
-	incursionAt int
-	incursionBy *Horror
+	transmitter *Legacy      // the transmitter being listened to, for the Signal's filter
 	wreck       *Wreckage    // set while a filter's outcome runs
 	finding     bool         // set while the Find teaches a civilisation what it mastered
 	fleet       *Expedition  // the fleet taking a world, while it does; what it carries off rides with it

@@ -37,11 +37,6 @@ func gazetteer(p func(string, ...any), w *history.World) {
 			}
 		}
 	}
-	for i, hid := range w.Held {
-		if hid >= 0 {
-			get(i).notes = append(get(i).notes, "held by "+w.Horrors[hid].Name)
-		}
-	}
 	for _, c := range w.Civs {
 		if !c.Active() {
 			continue

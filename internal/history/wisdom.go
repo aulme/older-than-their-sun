@@ -264,6 +264,8 @@ func (w *World) tryFathom(c, e *Civ, how string, extra float64) bool {
 	switch {
 	case c.miracle("chorus"):
 		how = "chorus"
+	case e.Species.Profile().Monster:
+		return false // nothing in it to understand: it wants nothing but more of itself
 	case w.sameBlood(c, e):
 		how = "kin"
 	case !fathomRoll(c.Wis, w.R.NormFloat64(), difference(c.Species, e.Species), w.fathomAdj(c, e)+extra):

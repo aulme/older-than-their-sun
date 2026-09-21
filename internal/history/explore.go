@@ -35,8 +35,8 @@ func (w *World) read(c *Civ, t int) bool {
 // knownTaken says whether a people knows a star is somebody's: charted,
 // its own, or the owner loud enough to hear from one of its holdings.
 func (w *World) knownTaken(c *Civ, t int) bool {
-	o, h := w.Owner[t], w.Held[t]
-	if o < 0 && h < 0 {
+	o := w.Owner[t]
+	if o < 0 {
 		return false
 	}
 	if o == c.ID {
@@ -76,6 +76,9 @@ func (w *World) chart(c *Civ, t int, how string) {
 		if l.Maker >= 0 && c.Known[l.Node] && l.ships() == 0 {
 			continue // nothing to learn; a structure is taken over on settling; a field with ships is worth the ships
 		}
+		if l.People == c.ID {
+			continue // a sleeper does not find itself
+		}
 		if !visit {
 			if !c.Marked[t] {
 				c.Marked[t] = true
@@ -93,8 +96,8 @@ func (w *World) chart(c *Civ, t int, how string) {
 	if !visit || !c.Active() {
 		return
 	}
-	if h := w.Held[t]; h >= 0 && how == "survey" && w.R.Float64() < 0.3 {
-		w.log("Surveyors of the %s find %s held by something that is not a people, and do not go closer.", c.Name, w.star(t))
+	if w.lurks(t) && how == "survey" && w.R.Float64() < 0.3 {
+		w.log("Surveyors of the %s find %s held by something that is not a people as they know one, and do not go closer.", c.Name, w.star(t))
 	}
 	if o := w.Owner[t]; o >= 0 && o != c.ID {
 		e := w.Civs[o]
@@ -277,7 +280,7 @@ func (w *World) surveyBound(c *Civ, t int) bool {
 
 // surveyArrive is surveyors reaching a star: read it, and go on to the
 // next, or home after a tour, or when called back by a war. A star held by
-// a horror keeps half the ships that reach it.
+// a monster keeps half the ships that reach it.
 func (w *World) surveyArrive(x *Expedition) {
 	c := w.Civs[x.Owner]
 	t := x.Star
@@ -286,9 +289,10 @@ func (w *World) surveyArrive(x *Expedition) {
 		x.Over = true
 		return
 	}
-	if h := w.Held[t]; h >= 0 && w.R.Float64() < 0.5 {
-		w.log("The surveyors of the %s do not come back from %s. What they sent before the end says enough: %s is there.", c.Name, w.star(t), w.Horrors[h].Name)
-		w.factH(FSurveyLost, c, t, w.Horrors[h])
+	if w.lurks(t) && w.R.Float64() < 0.5 {
+		o := w.Civs[w.Owner[t]]
+		w.log("The surveyors of the %s do not come back from %s. What they sent before the end says enough: the %s are there.", c.Name, w.star(t), o.Name)
+		w.fact(FSurveyLost, c, o, t)
 		c.Morale -= 0.3
 		x.Over = true
 		w.fleetLost(x, t)
@@ -374,7 +378,7 @@ func (w *World) picketStar(c, e *Civ) int {
 	mid := w.pos(h).lerp(w.pos(ew), 0.5)
 	best, bd := -1, float64(fleetHop)
 	for s := range w.G.Stars {
-		if w.Held[s] >= 0 || (w.Owner[s] >= 0 && w.Owner[s] != c.ID) {
+		if w.Owner[s] >= 0 && w.Owner[s] != c.ID {
 			continue
 		}
 		if d := w.pos(s).dist(mid); d < bd {
@@ -397,4 +401,11 @@ func (w *World) picketStep(x *Expedition) {
 		return
 	}
 	w.goHome(x)
+}
+
+// lurks says whether a star is held by something surveyors do not come
+// back from: a people that is a monster by its nature, awake or asleep.
+func (w *World) lurks(t int) bool {
+	o := w.Owner[t]
+	return o >= 0 && w.Civs[o].Species.Profile().Monster
 }

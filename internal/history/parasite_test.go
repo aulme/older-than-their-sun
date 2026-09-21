@@ -209,8 +209,8 @@ func TestBreakout(t *testing.T) {
 	if inf := a.Infections[p.ID]; inf == nil || inf.Carrier || a.Immune[p.ID] || p.Maker != a.ID || p.Cause != "breakout" || !p.Engineered || p.Contagion > 0.5 || p.Lethality > 0.5 {
 		t.Errorf("a crude breakout: %+v, plague %+v", a.Infections[p.ID], p.Plague)
 	}
-	if n := len(w.Facts); w.Facts[n-1].Kind != FHorrorMade || w.Facts[n-1].What != p.Name {
-		t.Error("the breakout is not FHorrorMade with the plague's name")
+	if n := len(w.Facts); w.Facts[n-1].Kind != FUnleashed || w.Facts[n-1].What != p.Name {
+		t.Error("the breakout is not FUnleashed with the plague's name")
 	}
 	b := spawnAt(w, 2, species.Fixed("cooperative"))
 	b.Known["tailored_plague"] = true

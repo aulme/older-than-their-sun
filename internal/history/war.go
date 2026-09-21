@@ -147,8 +147,11 @@ func (w *World) declare(c, e *Civ, cause string) *War {
 	if wr := w.warBetween(c.ID, e.ID); wr != nil {
 		return wr
 	}
-	if !c.Active() || !e.Active() {
+	if !c.Active() || !e.Active() || c == e {
 		return nil
+	}
+	if e.Asleep {
+		w.rouse(e, nil) // a war brought to a sleeper wakes it; the strike it wakes with is its own council's
 	}
 	c.Fought[e.ID]++
 	e.Fought[c.ID]++
@@ -267,6 +270,11 @@ func (w *World) takeWorld(wr *War, c, e *Civ, t int) {
 	c.LastTaken, e.LastTaken = w.Now, w.Now
 	w.expose(e, c, "occupation")
 	w.expose(c, e, "occupation")
+	if c.Species.Profile().Eats {
+		w.carryOff(c, e, t, w.fleet)
+		w.consume(wr, c, e, t) // stripped, home or not, and held empty: see replicator.go
+		return
+	}
 	if t == e.Home {
 		w.homeFalls(wr, c, e)
 		return
@@ -404,6 +412,12 @@ func (w *World) homeFalls(wr *War, c, e *Civ) {
 		w.fact(FHomeBroken, c, e, e.Home)
 		w.endCiv(e, Extinct, sprintf("were annihilated in war with the %s", c.Name))
 		w.endWar(wr, "extinction")
+	case !e.treats():
+		w.Bio[e.Home] = BioSimple
+		w.log("The %s burn %s clean of the %s. There was nothing there to rule; what there was ate the world, and it can only be ended.", c.Name, e.HomeName, e.Name)
+		w.fact(FScoured, c, e, e.Home)
+		w.endCiv(e, Extinct, sprintf("were burned out of %s by the %s", e.HomeName, c.Name))
+		w.endWar(wr, "extinction")
 	case e.Has("swarming"):
 		w.Bio[e.Home] = BioSimple
 		w.log("The %s burn out the last nest of the %s. A swarm cannot be held; it can only be ended.", c.Name, e.Name)
@@ -472,13 +486,19 @@ func (w *World) ride(p, h *Civ) {
 // is decided: the war it was sent to has not begun. Peace with terms
 // needs each side to understand the other; a war between two peoples
 // neither of whom fathoms the other ends only when a side falls or both
-// wills run out.
+// wills run out; a war with a side that makes no terms (a thing that
+// eats) ends only by exhaustion, both wills gone and nothing signed.
 func (w *World) judge(wr *War) {
 	a, b := w.Civs[wr.Sides[0]], w.Civs[wr.Sides[1]]
 	if w.fleetInFlight(a, b) || w.fleetInFlight(b, a) {
 		return
 	}
 	switch {
+	case w.noTerms(wr) && wr.Will[0] <= 0 && wr.Will[1] <= 0:
+		w.log("The %s and the %s stop fighting, both sides spent, after %s. Nothing is signed; there is nobody on one side to sign it.", a.Name, b.Name, w.warSpan(wr))
+		w.endWar(wr, "exhaustion")
+	case w.noTerms(wr):
+		// no offer of terms is heard: the war goes on until the other side tires too
 	case wr.Will[0] <= 0 && wr.Will[1] <= 0 && w.canTreat(wr):
 		w.peace(wr, "both sides tired of it")
 	case wr.Will[0] <= 0 && wr.Will[1] <= 0:

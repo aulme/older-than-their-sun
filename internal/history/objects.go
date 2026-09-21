@@ -203,7 +203,7 @@ func (w *World) makeObject(c *Civ, key string, l *Legacy, parent *Source, how st
 		Form: f.Key, Sentient: sentient, Maker: c.ID, Made: w.Now})
 	if l == nil {
 		l = &Legacy{ID: len(w.Legacies), Age: -1, Maker: c.ID, Kind: Artifact, Star: c.Home, Node: key, Desc: f.Desc,
-			State: Wielded, Horror: -1, Finder: c.ID, Level: "miracle", Cond: Abandoned, Source: s.ID, Plague: -1}
+			State: Wielded, People: -1, Finder: c.ID, Level: "miracle", Cond: Abandoned, Source: s.ID, Plague: -1}
 		w.Legacies = append(w.Legacies, l)
 	} else {
 		l.Source = s.ID
@@ -383,18 +383,19 @@ func (w *World) rise(c *Civ, s *Source) {
 	w.inherit(nc, c, 1)
 }
 
-// getLoose is a Manna getting out: it yields to nobody, its remain is a
-// threat at that star, and it eats what is near.
+// getLoose is a Manna getting out: it yields to nobody, it eats what is
+// near, and what is left of it at that star is a people that makes more
+// of itself out of what it finds; its remain is lost, since it is the
+// people now.
 func (w *World) getLoose(c *Civ, s *Source) {
 	star := s.Star
 	w.lose(s, c, "loose")
-	if s.Legacy >= 0 {
-		l := w.Legacies[s.Legacy]
-		l.Kind, l.State, l.Star = Threat, Unleashed, star
-		l.Desc = "the Manna loose: a growth from the tables of the " + c.Name + " that eats worlds"
-	}
 	w.fact(FLoose, c, nil, star)
 	w.blast(star, looseRadius, "the Manna loose", sprintf("What the %s grew for the table at %%s gets out, and eats.", c.Name), 1)
+	if nc := w.replicatorAt(star, species.Biological, "the Manna of the "+c.Name+", loose", false); nc != nil {
+		nc.Species.Parent = c.Species
+		w.log("What is at %s now is a growth that eats worlds, and it calls itself the %s, if it calls itself anything: %s.", w.star(star), nc.Name, nc.Species.Describe())
+	}
 }
 
 // cutting is a Manna given: a partner in want of organic matter and

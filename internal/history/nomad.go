@@ -122,7 +122,7 @@ func (w *World) flee(c *Civ, lost int, cause string) bool {
 	}
 	base := lost
 	for _, t := range w.G.Near(lost, min(max(c.Reach, 3), 20)) {
-		if w.Owner[t] < 0 && w.Held[t] < 0 {
+		if w.Owner[t] < 0 {
 			base = t
 			break
 		}
@@ -233,13 +233,13 @@ func (w *World) roam(c *Civ) {
 }
 
 // nextStar is where a fleet goes next: a star within a hop, not the one it
-// is at, not held by a horror, an unowned one or a trade partner's by
+// is at, not held by a monster, an unowned one or a trade partner's by
 // preference.
 func (w *World) nextStar(c *Civ, x *Expedition, hop float64) int {
 	var ports []mind.Port
 	for _, t := range w.G.Near(x.Base, hop) {
 		o := w.Owner[t]
-		ports = append(ports, mind.Port{ID: t, Held: w.Held[t] >= 0, Good: o < 0 || c.Trade[o]})
+		ports = append(ports, mind.Port{ID: t, Held: w.lurks(t), Good: o < 0 || c.Trade[o]})
 	}
 	return mind.NextStar(ports, w.R)
 }
@@ -345,11 +345,11 @@ func (w *World) rest(c *Civ, why string) {
 		return
 	}
 	t := -1
-	if w.Owner[best.Base] < 0 && w.Held[best.Base] < 0 && w.canLive(c, best.Base) {
+	if w.Owner[best.Base] < 0 && w.canLive(c, best.Base) {
 		t = best.Base
 	} else {
 		for _, s := range w.G.Near(best.Base, hop) {
-			if w.Owner[s] < 0 && w.Held[s] < 0 && w.canLive(c, s) {
+			if w.Owner[s] < 0 && w.canLive(c, s) {
 				t = s
 				break
 			}

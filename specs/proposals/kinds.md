@@ -1,7 +1,7 @@
 # Substrates and modifiers: what a people is made of, with the horrors dissolved into it
 
-**Status:** In Progress (stage 1 landed at plan step 3, 2026-09-17: the registry, the profile, the chain generator with legacy numbers, every kind switch a profile read; stages 2 and 3 landed at plan step 16, 2026-09-19: the proposal's numbers switched on, the modifier rules through the profile, the eldritch pool with appearing and deepening, the living world's demand and waking, the hive's cut, the seat rules, the unconscious; stages 4 to 7 are plan steps 17 and 18)
-**Last updated:** 2026-09-19
+**Status:** In Progress (stage 1 landed at plan step 3, 2026-09-17: the registry, the profile, the chain generator with legacy numbers, every kind switch a profile read; stages 2 and 3 landed at plan step 16, 2026-09-19: the proposal's numbers switched on, the modifier rules through the profile, the eldritch pool with appearing and deepening, the living world's demand and waking, the hive's cut, the seat rules, the unconscious; stages 4 and 5 landed at plan step 17, 2026-09-21: the horrors dissolved into peoples and the transmitter, the replicator's eating and dormancy, the deep pass birthing sleepers and dormant replicators; stages 6 and 7 are plan step 18)
+**Last updated:** 2026-09-21
 
 Assumes [one-tick](one-tick.md). Reads [plagues](plagues.md) (which plagues touch which minds; parasites as plagues; conscious plagues), [wisdom](wisdom.md) (the difference score and fathoming), [ossification](ossification.md) (who stiffens and who cannot), [resources-and-trade](resources-and-trade.md) (what each substrate eats), [morality](morality.md) (who is amoral by nature), [ships-and-garrisons](ships-and-garrisons.md) (how a world holds against what comes for it), [tellings](tellings.md) (facts, tales and what a people can know).
 

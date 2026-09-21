@@ -332,7 +332,7 @@ func (w *World) fallback(c *Civ, t int) int {
 		return s
 	}
 	for _, s := range w.G.Near(t, fleetHop) {
-		if w.Owner[s] < 0 && w.Held[s] < 0 {
+		if w.Owner[s] < 0 {
 			return s
 		}
 	}

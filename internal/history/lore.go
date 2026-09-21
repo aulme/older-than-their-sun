@@ -47,9 +47,6 @@ const (
 	FMastered
 	FSealed
 	FUnleashed
-	FHorrorStrike
-	FHorrorBeaten
-	FHorrorMade
 	FOvercome
 	FScarred
 	FDeclined
@@ -126,7 +123,6 @@ var factShape = [...]struct {
 	FYield: {Deed, 3}, FPeace: {Bond, 1}, FEnslaved: {Crime, 4}, FVassal: {Deed, 3}, FFreed: {Deed, 4}, FCrushed: {Crime, 3},
 	FMet: {Bond, 1}, FTrade: {Bond, 1}, FPact: {Bond, 2}, FBetrayal: {Crime, 3}, FRelief: {Deed, 2}, FDefeat: {Woe, 2},
 	FFind: {Deed, 2}, FMastered: {Deed, 3}, FSealed: {Deed, 2}, FUnleashed: {Folly, 4},
-	FHorrorStrike: {Woe, 3}, FHorrorBeaten: {Deed, 3}, FHorrorMade: {Folly, 4},
 	FOvercome: {Deed, 2}, FScarred: {Woe, 2}, FDeclined: {Woe, 3},
 	FMiracle: {Deed, 3}, FUplift: {Deed, 3}, FBred: {Crime, 4},
 	FCosmic: {Woe, 3}, FDoom: {Woe, 3}, FExodus: {Woe, 3}, FRest: {Deed, 2}, FStripped: {Crime, 3}, FCycle: {Deed, 3}, FSurveyLost: {Woe, 2},
@@ -150,7 +146,6 @@ type Fact struct {
 	Subject int    // the people it is about
 	Object  int    // the other people, or -1
 	Star    int    // where, or -1
-	Horror  int    // the horror in it, or -1
 	Legacy  int    // the remain in it, or -1
 	N       int    // a count: worlds
 	What    string // a cause, a filter's name, a miracle, a shape of betrayal
@@ -192,7 +187,7 @@ type Inscription struct {
 
 // fact records something that happened and lets the parties know it.
 func (w *World) fact(k FactKind, c, e *Civ, star int) *Fact {
-	f := &Fact{ID: len(w.Facts), Kind: k, Year: w.Now, Subject: c.ID, Object: -1, Star: star, Horror: -1, Legacy: -1}
+	f := &Fact{ID: len(w.Facts), Kind: k, Year: w.Now, Subject: c.ID, Object: -1, Star: star, Legacy: -1}
 	if e != nil {
 		f.Object = e.ID
 	}
@@ -229,15 +224,6 @@ func (w *World) factOf(k FactKind, c, e *Civ, star int, what string) *Fact {
 	return f
 }
 
-// factH is a fact with a horror in it.
-func (w *World) factH(k FactKind, c *Civ, star int, h *Horror) *Fact {
-	f := w.fact(k, c, nil, star)
-	if h != nil {
-		f.Horror = h.ID
-	}
-	return f
-}
-
 // factL is a fact with a remain in it.
 func (w *World) factL(k FactKind, c *Civ, l *Legacy) *Fact {
 	var m *Civ
@@ -246,9 +232,6 @@ func (w *World) factL(k FactKind, c *Civ, l *Legacy) *Fact {
 	}
 	f := w.fact(k, c, m, l.Star)
 	f.Legacy = l.ID
-	if l.Horror >= 0 {
-		f.Horror = l.Horror
-	}
 	return f
 }
 
@@ -357,8 +340,10 @@ func (w *World) judgeLine(c *Civ, f *Fact, t *Tale) {
 // enough crimes held against it, weighed by whom they were done to and
 // how far into myth they have gone, reckoned once a tick; or a people met
 // and not yet fathomed (wisdom.go), which is a monster until it is
-// understood.
-func (w *World) monster(c, e *Civ) bool { return c.monsters[e.ID] || w.unfathomed(c, e) }
+// understood; or a thing that is a monster by its nature, to everyone.
+func (w *World) monster(c, e *Civ) bool {
+	return c.monsters[e.ID] || w.unfathomed(c, e) || e.Species.Profile().Monster
+}
 
 // reckon works out whom a people remembers as monsters, and counts what
 // it went through.
@@ -482,7 +467,7 @@ func (w *World) readRuins(c *Civ, star int) {
 			continue
 		}
 		switch f.Kind {
-		case FSettle, FTaken, FBurned, FHomeBroken, FScoured, FEnd, FFall, FUnleashed, FHorrorStrike, FArise, FExodus, FCosmic:
+		case FSettle, FTaken, FBurned, FHomeBroken, FScoured, FEnd, FFall, FUnleashed, FWaking, FUnmade, FArise, FExodus, FCosmic:
 			pick = append(pick, f)
 		}
 	}
@@ -945,9 +930,11 @@ func (w *World) prune(c *Civ) {
 	sort.SliceStable(c.Lore, func(i, j int) bool { return c.Lore[i].Learned < c.Lore[j].Learned })
 }
 
-// dread says whether a people remembers something at a star that eats
-// ships: no surveyor goes there, no colony ship is sent, until the tale
-// has worn to myth.
+// dread is whether a people remembers a star as somewhere its surveyors
+// do not come back from: something let loose there, a survey lost, a
+// world emptied by a plague, the Signal heard from there, or a deed at
+// it by a people it remembers as a monster. A tale that has worn to myth
+// no longer keeps anyone away.
 func (w *World) dread(c *Civ, star int) bool {
 	for _, t := range c.Lore {
 		if t.Forgot || t.Wear >= 2 {
@@ -958,8 +945,16 @@ func (w *World) dread(c *Civ, star int) bool {
 			continue
 		}
 		switch f.Kind {
-		case FUnleashed, FHorrorStrike, FSurveyLost, FHorrorMade, FPlagueWorld:
+		case FUnleashed, FSurveyLost, FPlagueWorld:
 			return true
+		case FScarred, FDeclined:
+			if f.Legacy >= 0 {
+				return true // the Signal, from there
+			}
+		case FTaken, FBurned, FStripped, FHomeBroken, FScoured, FWaking, FUnmade:
+			if f.Subject != c.ID && f.Subject >= 0 && w.monster(c, w.Civs[f.Subject]) {
+				return true
+			}
 		}
 	}
 	return false
@@ -987,7 +982,7 @@ func (w *World) loreDials(c *Civ) Dials {
 			d.Hate += 0.06 * k
 			d.Fear += 0.04 * k
 			d.Patience += 0.04 * k
-		case self && (f.Kind == FTaken || f.Kind == FHomeBroken || f.Kind == FYield || f.Kind == FHorrorBeaten):
+		case self && (f.Kind == FTaken || f.Kind == FHomeBroken || f.Kind == FYield):
 			d.Aggression += 0.06 * k
 			d.Greed += 0.04 * k
 		case self && s == Folly:

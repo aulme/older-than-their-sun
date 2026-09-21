@@ -282,8 +282,8 @@ func init() {
 			home := c.Home
 			w.endCiv(c, Transformed, "became one voice")
 			c.Into = "one voice"
-			h := w.spawnHorror(Beacon, home, c.ID)
-			w.log("The %s stop being many. From %s one voice goes out that used to be all of theirs. It is called %s.", c.Name, w.star(home), h.Name)
+			w.makeTransmitter(home, c.ID, true)
+			w.log("The %s stop being many. From %s one voice goes out that used to be all of theirs.", c.Name, w.star(home))
 		},
 	})
 	def(&Filter{
@@ -301,7 +301,19 @@ func init() {
 			w.log("The %s come out the other side of the change %s. They did not mean to.", c.Name, t.Name)
 		},
 		Decline: func(w *World, c *Civ) {
-			w.remake(c, "remade themselves once too often")
+			if w.R.Float64() < 0.5 {
+				w.remake(c, "remade themselves once too often")
+				return
+			}
+			// what they bred eats them: a swarm of flesh that makes more of itself, at one of their worlds, and the old people gone
+			s := w.aWorld(c)
+			w.log("What the %s bred at %s does not stop breeding, and does not stop at what it was bred from.", c.Name, w.star(s))
+			w.loseSystem(c, s, "stripped world", "were eaten by what they bred")
+			w.endCiv(c, Extinct, "were eaten by what they bred")
+			if nc := w.replicatorAt(s, species.Biological, "what the "+c.Name+" bred", false); nc != nil {
+				nc.Species.Parent = c.Species
+				w.log("It calls itself the %s, if it calls itself anything: %s.", nc.Name, nc.Species.Describe())
+			}
 		},
 	})
 	def(&Filter{
@@ -354,8 +366,8 @@ func init() {
 			home := c.Home
 			w.endCiv(c, Transformed, "became the thought they were thinking")
 			c.Into = "a chorus"
-			h := w.spawnHorror(Beacon, home, c.ID)
-			w.log("The thought of the %s gets loose. From %s it goes out to whoever will hear it. It is called %s.", c.Name, w.star(home), h.Name)
+			w.makeTransmitter(home, c.ID, true)
+			w.log("The thought of the %s gets loose. From %s it goes out to whoever will hear it.", c.Name, w.star(home))
 		},
 	})
 	def(&Filter{

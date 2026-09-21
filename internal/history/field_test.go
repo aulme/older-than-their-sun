@@ -115,7 +115,7 @@ func TestRuinNoShips(t *testing.T) {
 func TestSalvage(t *testing.T) {
 	w, c, e := watcher(t, 75)
 	e.Known["slow_interstellar"] = true
-	l := &Legacy{ID: len(w.Legacies), Age: -1, Maker: e.ID, Kind: Field, Star: c.Home, Node: "slow_interstellar", Horror: -1, Finder: -1, Source: -1, Plague: -1, Wrecks: 8, Derelicts: 2, Cond: Derelict, Hardy: hardyLiving}
+	l := &Legacy{ID: len(w.Legacies), Age: -1, Maker: e.ID, Kind: Field, Star: c.Home, Node: "slow_interstellar", People: -1, Finder: -1, Source: -1, Plague: -1, Wrecks: 8, Derelicts: 2, Cond: Derelict, Hardy: hardyLiving}
 	w.Legacies = append(w.Legacies, l)
 	w.salvage(c, l)
 	if c.Salvage != 4 || l.Cond != Ruin {

@@ -12,7 +12,7 @@ func RoamHop(reach float64, t *Tuning) float64 {
 // Port is a star a fleet weighs.
 type Port struct {
 	ID   int
-	Held bool // by a horror: never
+	Held bool // by a monster: never
 	Good bool // unowned, or a trade partner's: preferred
 }
 

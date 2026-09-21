@@ -37,9 +37,8 @@ func newWorld(seed uint64, cfg Config) *World {
 	n := len(g.Stars)
 	w.Bio = make([]BioState, n)
 	w.Owner = make([]int, n)
-	w.Held = make([]int, n)
 	for i := range n {
-		w.Owner[i], w.Held[i] = -1, -1
+		w.Owner[i] = -1
 	}
 	if g.Sol >= 0 {
 		w.Bio[g.Sol] = BioSimple
@@ -50,7 +49,7 @@ func newWorld(seed uint64, cfg Config) *World {
 	w.phases = []phase{
 		{"life", (*World).life},
 		{"cosmic", (*World).cosmic},
-		{"horrors", (*World).tickHorrors},
+		{"transmitters", (*World).tickTransmitters},
 		{"beneath", (*World).tickBeneath},
 		{"messages", (*World).tickMessages},
 		{"plagues", (*World).tickPlagues},
@@ -215,29 +214,23 @@ func (w *World) life() {
 				w.Bio[i] = BioComplex
 			}
 		case BioComplex:
-			if i != w.G.Sol && w.Owner[i] < 0 && w.Held[i] < 0 && !w.G.Stars[i].Dead() && w.chance(0.0004*w.fertility()) {
+			if i != w.G.Sol && w.Owner[i] < 0 && !w.G.Stars[i].Dead() && w.chance(0.0004*w.fertility()) {
 				w.spawnCiv(i, nil, -1, "")
 			}
 		}
 	}
 }
 
-// updateHazard: the galaxy gets more dangerous as horrors accumulate.
-// This is what makes the aftermath the natural outcome rather than a forced one.
+// updateHazard: the galaxy gets more dangerous as what is still there
+// accumulates: the worlds held by whatever eats them, the transmitters
+// speaking, the tithes taken, the wall wearing thin. This is what makes
+// the aftermath the natural outcome rather than a forced one.
 func (w *World) updateHazard() {
-	held := 0
-	beacons := 0
-	for _, h := range w.Horrors {
-		switch h.Kind {
-		case Replicators, RogueMind:
-			if !h.Dormant {
-				held += len(h.Systems)
-			}
-		case Beacon:
-			if !h.Dormant {
-				beacons++
-			}
+	eaten := 0
+	for _, c := range w.Civs {
+		if c.Active() && !c.Asleep && c.Species.Profile().Eats {
+			eaten += len(c.Systems)
 		}
 	}
-	w.Hazard = min(2.5, w.Law.Hazard()+0.005*float64(held)+0.06*float64(beacons)+w.Cfg.Tuning.Kinds.TitheHazard*float64(w.tithes())+min(0.5, 0.1*w.Thin))
+	w.Hazard = min(2.5, w.Law.Hazard()+0.005*float64(eaten)+0.06*float64(w.transmitters())+w.Cfg.Tuning.Kinds.TitheHazard*float64(w.tithes())+min(0.5, 0.1*w.Thin))
 }

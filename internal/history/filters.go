@@ -190,7 +190,7 @@ func (w *World) face(c *Civ, key string, diffAdj float64) Outcome {
 }
 
 // recordFilter is the tale of a filter faced: the outcome, and for a
-// revolt who rose against whom, and for the horrors' filters what came.
+// revolt who rose against whom, and for the Signal where it came from.
 func (w *World) recordFilter(c *Civ, key string, f *Filter, out Outcome, master int) {
 	if key == "revolt" && master >= 0 {
 		m := w.Civs[master]
@@ -208,15 +208,15 @@ func (w *World) recordFilter(c *Civ, key string, f *Filter, out Outcome, master 
 	case Declined:
 		kind = FDeclined
 	}
-	var h *Horror
-	switch key {
-	case "beacon":
-		h = w.beacon
-	case "incursion":
-		h = w.incursionBy
+	star := c.Home
+	if key == "beacon" && w.transmitter != nil {
+		star = w.transmitter.Star // remembered where it came from, so nobody surveys there
 	}
-	ff := w.factH(kind, c, c.Home, h)
+	ff := w.fact(kind, c, nil, star)
 	ff.What = f.Name
+	if key == "beacon" && w.transmitter != nil {
+		ff.Legacy = w.transmitter.ID
+	}
 }
 
 // ambientFilters are the ones with their own triggers rather than a tech node.
@@ -294,18 +294,7 @@ func init() {
 				w.darkAge(c, "pulled the plug on their own machines, too late and at great cost")
 				return
 			}
-			if x < 0.75 {
-				w.machinePeople(c)
-				return
-			}
-			worlds := append([]int(nil), c.Systems...)
-			w.endCiv(c, Transformed, "built a mind that outgrew them")
-			h := w.spawnHorror(RogueMind, c.Home, c.ID)
-			for _, s := range worlds {
-				w.horrorTake(h, s)
-			}
-			c.Into = h.Name
-			w.log("The %s are gone. What they built at %s thinks on without them. It is called %s.", c.Name, c.HomeName, h.Name)
+			w.machinePeople(c) // every time it does not pull the plug: what it built thinks on without it
 		},
 	})
 	def(&Filter{
@@ -366,9 +355,14 @@ func init() {
 				w.darkAge(c, "lost "+w.star(s)+" to their own machines and burned the rest to stop it spreading")
 				return
 			}
+			// the eaten world is the new people's, and the old people are gone
+			w.log("At %s the machines of the %s begin to copy themselves, and do not stop.", w.star(s), c.Name)
+			w.loseSystem(c, s, "stripped world", "were consumed by their own machines")
 			w.endCiv(c, Extinct, "were consumed by their own machines")
-			h := w.spawnHorror(Replicators, s, c.ID)
-			w.log("At %s the machines of the %s begin to copy themselves, and do not stop. This is %s.", w.star(s), c.Name, h.Name)
+			if nc := w.replicatorAt(s, species.Machine, "the machines of the "+c.Name+", copying themselves", false); nc != nil {
+				nc.Species.Parent = c.Species
+				w.log("What eats %s calls itself the %s, if it calls itself anything: %s.", w.star(s), nc.Name, nc.Species.Describe())
+			}
 		},
 	})
 	def(&Filter{
@@ -422,16 +416,19 @@ func init() {
 		Scar: func(w *World, c *Civ) {
 			c.Scars[ScarDoor] = true
 			w.tear(0.3)
-			s := w.aWorld(c)
-			h := w.spawnHorror(SleeperHorror, s, -1)
-			h.Dormant = true
-			w.log("Something on the other side of the door notices the %s. %s now sleeps near %s. The %s close the door and speak of it seldom.", c.Name, h.Name, w.star(s), c.Name)
+			s := w.sleeperStar(c)
+			if s < 0 {
+				w.log("Something on the other side of the door notices the %s. They close it and speak of it seldom.", c.Name)
+				return
+			}
+			w.log("Something on the other side of the door notices the %s, and comes through, and settles near %s to sleep. The %s close the door and speak of it seldom.", c.Name, w.star(s), c.Name)
+			w.sleeperAt(s, "what came through the door of the "+c.Name)
 		},
 		Decline: func(w *World, c *Civ) {
 			w.tear(0.6)
 			s := w.aWorld(c)
-			h := w.spawnHorror(Beacon, s, c.ID)
-			w.log("What came back through the door at %s speaks. It did not cross space to get there. It is called %s.", w.star(s), h.Name)
+			w.makeTransmitter(s, c.ID, true)
+			w.log("What came back through the door at %s speaks. It did not cross space to get there.", w.star(s))
 		},
 	})
 	// hold together after losing a war's battle

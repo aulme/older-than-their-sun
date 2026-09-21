@@ -204,8 +204,8 @@ type dock struct {
 // docks are a people's: its home, each shipyard, and for a horde each fleet
 // at a base at a quarter; a vassal's work at half, a slave's not at all.
 func (w *World) docks(c *Civ) []dock {
-	if c.Starfaring == 0 || (!c.Free() && !c.Vassal) {
-		return nil
+	if c.Starfaring == 0 || (!c.Free() && !c.Vassal) || c.Species.Profile().Eats {
+		return nil // a thing that eats has no yards: its ships are grown where it eats (replicator.go)
 	}
 	mul := 1.0
 	if c.Vassal {

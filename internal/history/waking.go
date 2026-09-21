@@ -231,3 +231,40 @@ func (w *World) unmake(c, e *Civ, s int) {
 
 // launches says whether a people sends fleets at all.
 func (c *Civ) launches() bool { return c.Species.Profile().Can(species.Launches) }
+
+func init() {
+	def(&Filter{
+		Key: "waking", Name: "the waking", Levels: []string{"sur"}, Diff: 5, Repeat: true, Domain: "propulsion",
+		Overcome: func(w *World, c *Civ) {
+			w.log("The %s hide in the deep places while %s passes over them. It does not notice.", c.Name, w.blastWhat)
+		},
+		Scar: func(w *World, c *Civ) {
+			for _, s := range w.blastWorlds {
+				if s != c.Home {
+					w.loseSystem(c, s, "silent world", "")
+				}
+			}
+			w.log("The %s lose every world near %s but their own.", c.Name, w.blastWhat)
+		},
+		Decline: func(w *World, c *Civ) {
+			homeHit := contains(w.blastWorlds, c.Home)
+			for _, s := range w.blastWorlds {
+				if s != c.Home {
+					w.loseSystem(c, s, "silent world", sprintf("were unmade by %s", w.blastWhat))
+				}
+			}
+			if !c.Active() {
+				return
+			}
+			if homeHit {
+				if len(c.Systems) > 1 && c.Reach >= 12 {
+					w.leaveHome(c, "flee "+w.blastWhat)
+				} else {
+					w.loseSystem(c, c.Home, "silent world", sprintf("were unmade by %s", w.blastWhat))
+				}
+			} else {
+				w.contract(c, sprintf("withdrew to %s after %s took their worlds", c.HomeName, w.blastWhat))
+			}
+		},
+	})
+}

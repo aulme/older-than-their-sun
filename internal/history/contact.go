@@ -171,7 +171,7 @@ func (w *World) primitives(old, young *Civ) bool {
 		w.Bio[young.Home] = BioSimple
 		w.endCiv(young, Extinct, sprintf("were scoured from %s by the %s before they had looked up", young.HomeName, old.Name))
 		return true
-	case old.hostile() && !young.Has("swarming") && !young.Species.Is(species.Planetary) && w.R.Float64() < 0.3*(0.5+old.Dials.Greed):
+	case old.hostile() && !young.Has("swarming") && !young.Species.Is(species.Planetary) && young.treats() && w.R.Float64() < 0.3*(0.5+old.Dials.Greed):
 		old.Met[young.ID], young.Met[old.ID] = true, true
 		w.log("The %s find the %s on %s, still at the plough, and take them. There is no war to speak of.", old.Name, young.Name, young.HomeName)
 		if old.Own >= 0 {
@@ -206,15 +206,15 @@ func (w *World) encounter(a, b *Civ, watched, heard bool, at int) {
 	}
 	gap := a.Mil - b.Mil
 	switch {
-	case a.miracle("chorus") && !b.miracle("chorus") && !b.Species.Is(species.Hive) && !b.Species.Is(species.Unconscious) && w.R.Float64() < 0.6:
+	case a.miracle("chorus") && !b.miracle("chorus") && !b.Species.Is(species.Hive) && !b.Species.Is(species.Unconscious) && b.treats() && w.R.Float64() < 0.6:
 		w.log("The %s find the %s, and speak. Within a generation the %s ask to be ruled.", a.Name, b.Name, b.Name)
 		w.vassal(a, b)
 		return
-	case b.miracle("chorus") && !a.miracle("chorus") && !a.Species.Is(species.Hive) && !a.Species.Is(species.Unconscious) && w.R.Float64() < 0.6:
+	case b.miracle("chorus") && !a.miracle("chorus") && !a.Species.Is(species.Hive) && !a.Species.Is(species.Unconscious) && a.treats() && w.R.Float64() < 0.6:
 		w.log("The %s find the %s, and the %s speak. Within a generation the %s ask to be ruled.", a.Name, b.Name, b.Name, a.Name)
 		w.vassal(b, a)
 		return
-	case a.miracle("unmaking") && b.hostile() && !b.miracle("unmaking"):
+	case a.miracle("unmaking") && b.hostile() && !b.miracle("unmaking") && b.treats():
 		w.log("The %s meet the %s and learn what they hold. There is no war. The %s bend the knee.", b.Name, a.Name, b.Name)
 		w.vassal(a, b)
 		return
@@ -334,7 +334,7 @@ func (w *World) uplift(c *Civ) {
 		return
 	}
 	for _, t := range w.G.Near(c.Home, c.Reach) {
-		if w.Bio[t] == BioComplex && w.Owner[t] < 0 && w.Held[t] < 0 && t != w.G.Sol {
+		if w.Bio[t] == BioComplex && w.Owner[t] < 0 && t != w.G.Sol {
 			sp := species.Generate(w.R, w.G.Stars[t].Mult)
 			sp.Add("uplifted")
 			sp.Made = "uplifted by the " + c.Name

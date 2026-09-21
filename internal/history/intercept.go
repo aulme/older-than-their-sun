@@ -258,7 +258,7 @@ func (w *World) turnBack(q *Expedition, at vec, y Year) {
 	if dest < 0 {
 		bd = fleetHop
 		for s := range w.G.Stars {
-			if d := w.pos(s).dist(at); back(s) && w.Held[s] < 0 && d <= bd {
+			if d := w.pos(s).dist(at); back(s) && d <= bd {
 				dest, bd = s, d
 			}
 		}

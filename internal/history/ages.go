@@ -3,6 +3,7 @@ package history
 import (
 	"math"
 
+	"worldgen/internal/species"
 	"worldgen/internal/tech"
 )
 
@@ -162,7 +163,7 @@ func (w *World) leaveLegacy(e *Elder, at Year) {
 	if s == w.G.Sol {
 		return
 	}
-	l := &Legacy{ID: len(w.Legacies), Age: e.Age, Elder: e, Maker: -1, Star: s, Horror: -1, Finder: -1, Source: -1, Plague: -1, Cond: Condition(w.R.IntN(2))}
+	l := &Legacy{ID: len(w.Legacies), Age: e.Age, Elder: e, Maker: -1, Star: s, People: -1, Finder: -1, Source: -1, Plague: -1, Cond: Condition(w.R.IntN(2))}
 	x := w.R.Float64()
 	switch {
 	case x < 0.1:
@@ -192,33 +193,31 @@ func (w *World) leaveLegacy(e *Elder, at Year) {
 		l.Kind = Threat
 		w.Now = at
 		if w.R.Float64() < 0.5 {
-			h := w.spawnHorror(Replicators, s, -1)
-			h.Dormant = true
-			h.Legacy = l.ID
-			l.Horror = h.ID
+			// a dormant replicator people: machines that sleep in the rubble until something settles too close
 			l.Node = "self_replication"
 			l.Desc = "machines that sleep in the rubble of " + w.star(s)
+			if p := w.replicatorAt(s, species.Machine, "left in the rubble of "+w.star(s)+" by "+e.Portrait, true); p != nil {
+				l.People = p.ID
+			}
 		} else {
-			h := w.spawnHorror(Beacon, s, -1)
-			h.Dormant = w.R.Float64() < 0.5
-			h.Legacy = l.ID
-			l.Horror = h.ID
 			l.Node = "memetics"
-			if h.Dormant {
+			if w.R.Float64() < 0.5 {
 				l.Desc = "a transmitter at " + w.star(s) + ", silent"
 			} else {
 				l.Desc = "a transmitter at " + w.star(s) + " that has never stopped"
 				l.State = Unleashed
 			}
+			if w.R.Float64() < w.Cfg.Tuning.Kinds.SeedShare {
+				l.Payload = Seed
+			}
 		}
 	case x < 0.94:
 		l.Kind = Sleeper
 		w.Now = at
-		h := w.spawnHorror(SleeperHorror, s, -1)
-		h.Dormant = true
-		h.Legacy = l.ID
-		l.Horror = h.ID
 		l.Desc = "something that withdrew into the dark near " + w.star(s) + " and went still"
+		if p := w.sleeperAt(s, "something of "+e.Portrait+" that withdrew into the dark and went still"); p != nil {
+			l.People = p.ID
+		}
 	default:
 		l.Kind = Law
 		l.Desc = lawDescs[w.R.IntN(len(lawDescs))]

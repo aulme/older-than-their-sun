@@ -7,4 +7,5 @@ var biological = &SubstrateDef{Sub: Biological, Deep: 55, Entry: Entry{
 	Flavour: Flavour{"colony", "colony ship", "station"},
 	Legacy:  Draw{Base: 93}, // the old standard, swarm, planetary mind and evolver together
 	Draws:   Draw{Base: 92},
+	Profile: Profile{Body: "organic"},
 }}
