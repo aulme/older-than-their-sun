@@ -179,15 +179,15 @@ func Get(key string) *Trait { return byKey[key] }
 // path (an uplift, a machine successor, a remaking, the Brood's change),
 // which makes a new entry with the old as Parent.
 type Species struct {
-	ID     int
-	Name   string
-	Sub    Substrate
-	Mods   Mod
-	Powers []string // the eldritch pool's powers held, by key, in the order gained; see pool.go
-	World  *Archetype
-	Traits []*Trait
-	Made   string   // who made them, "" if they arose naturally
-	Parent *Species // the species this one was made from, nil if none
+	ID      int
+	Sub     Substrate
+	Channel string // how the people communicates: sound, light, electromagnetic, chemical, touch, none; see Channels
+	Mods    Mod
+	Powers  []string // the eldritch pool's powers held, by key, in the order gained; see pool.go
+	World   *Archetype
+	Traits  []*Trait
+	Made    string   // who made them, "" if they arose naturally
+	Parent  *Species // the species this one was made from, nil if none
 
 	profSub  Substrate
 	profMods Mod
@@ -265,7 +265,37 @@ func (s *Species) Portrait() []string {
 	if p := s.PowerPortrait(); p != "" {
 		out = append(out, p)
 	}
+	if s.Sub == Biological && !s.Is(Hive) && s.Channel != Sound && s.Channel != "" {
+		if d := ChannelDesc[s.Channel]; d != "" {
+			out = append(out, strings.ToUpper(d[:1])+d[1:]+".")
+		}
+	}
 	return out
+}
+
+// Channels are the ways a people communicates. The channel decides the
+// voice the names pass gives the people: sound is transcribed, anything
+// else translated. It is rolled at generation from the substrate and the
+// senses (rollChannel) and shown in the portrait through the lookup.
+const (
+	Sound           = "sound"
+	Light           = "light"
+	Electromagnetic = "electromagnetic"
+	Chemical        = "chemical"
+	Touch           = "touch"
+	NoChannel       = "none"
+)
+
+// Channels lists them, for the tables.
+var Channels = []string{Sound, Light, Electromagnetic, Chemical, Touch, NoChannel}
+
+// ChannelDesc is how the portrait says a channel other than sound.
+var ChannelDesc = map[string]string{
+	Light:           "they speak in light",
+	Electromagnetic: "they speak in pulses of the electromagnetic field",
+	Chemical:        "they speak in scents",
+	Touch:           "they speak by touch",
+	NoChannel:       "they have no language",
 }
 
 // Arising is how the legends say the people came to be: "arise on" for the
@@ -305,7 +335,7 @@ func (s *Species) Branch() *Species {
 // world with exactly the traits named, in that order, and no roll. Unknown
 // keys are ignored.
 func Fixed(traits ...string) *Species {
-	s := &Species{Name: "Fixed", World: ArchetypeByKey("lush")}
+	s := &Species{World: ArchetypeByKey("lush"), Channel: Sound}
 	for _, t := range traits {
 		s.Add(t)
 	}

@@ -6,12 +6,13 @@ import (
 	"strings"
 
 	"worldgen/internal/history"
+	"worldgen/internal/names"
 )
 
 // gazetteer lists every star the history touched, with its system and
 // what happened there. This is the lazy-detail layer's first form: the
 // stars that matter get their worlds spelled out.
-func gazetteer(p func(string, ...any), w *history.World) {
+func gazetteer(p func(string, ...any), w *history.World, book *names.Book) {
 	type entry struct {
 		star  int
 		notes []string
@@ -27,13 +28,13 @@ func gazetteer(p func(string, ...any), w *history.World) {
 	}
 	for _, c := range w.Civs {
 		e := get(c.Cradle)
-		e.notes = append(e.notes, fmt.Sprintf("cradle of the %s (%s)", c.Name, year(c.Born)))
+		e.notes = append(e.notes, fmt.Sprintf("cradle of the %s (%s)", c.Tok(), year(c.Born)))
 	}
 	for i, cid := range w.Owner {
 		if cid >= 0 {
 			c := w.Civs[cid]
 			if i != c.Cradle {
-				get(i).notes = append(get(i).notes, fmt.Sprintf("held by the %s", c.Name))
+				get(i).notes = append(get(i).notes, fmt.Sprintf("held by the %s", c.Tok()))
 			}
 		}
 	}
@@ -48,7 +49,7 @@ func gazetteer(p func(string, ...any), w *history.World) {
 		sort.Ints(claimed)
 		for _, s := range claimed {
 			if w.Owner[s] != c.ID {
-				get(s).notes = append(get(s).notes, "claimed by the "+c.Name)
+				get(s).notes = append(get(s).notes, "claimed by the "+c.Tok())
 			}
 		}
 	}
@@ -58,7 +59,7 @@ func gazetteer(p func(string, ...any), w *history.World) {
 		}
 		note := history.RarityFrame(s.Key)
 		if s.Holder >= 0 && w.Owner[s.Star] == s.Holder {
-			note += ", held by the " + w.Civs[s.Holder].Name
+			note += ", held by the " + w.Civs[s.Holder].Tok()
 		}
 		get(s.Star).notes = append(get(s.Star).notes, note)
 	}
@@ -74,11 +75,11 @@ func gazetteer(p func(string, ...any), w *history.World) {
 	}
 	for _, s := range sortedKeys(w.Reservoir) {
 		r := w.Reservoir[s]
-		get(s).notes = append(get(s).notes, fmt.Sprintf("dead cities under quarantine: %s waits there until %s", w.Plagues[r.Plague].Name, year(r.Until)))
+		get(s).notes = append(get(s).notes, fmt.Sprintf("dead cities under quarantine: %s waits there until %s", w.Plagues[r.Plague].Tok(), year(r.Until)))
 	}
 	for _, l := range w.Legacies {
 		if l.Plague >= 0 && l.Star >= 0 && l.State != history.Lost {
-			get(l.Star).notes = append(get(l.Star).notes, fmt.Sprintf("walls that carry %s", w.Plagues[l.Plague].Name))
+			get(l.Star).notes = append(get(l.Star).notes, fmt.Sprintf("walls that carry %s", w.Plagues[l.Plague].Tok()))
 		}
 	}
 	if w.G.Sol >= 0 {
@@ -99,7 +100,7 @@ func gazetteer(p func(string, ...any), w *history.World) {
 	for _, i := range ids {
 		s := &w.G.Stars[i]
 		sys := w.G.Sys[i]
-		head := fmt.Sprintf("%s, %s", s.Name, s.ClassName())
+		head := fmt.Sprintf("%s, %s", book.Star(s), s.ClassName())
 		if s.Alt != "" {
 			head += " (" + s.Alt + ")"
 		}
@@ -113,9 +114,9 @@ func gazetteer(p func(string, ...any), w *history.World) {
 			head += ", a named star"
 		}
 		p("%s", head)
-		p("  %s.", sys.Describe(s.Name))
+		p("  %s.", sys.Describe(star(i)))
 		if sys.Home >= 0 {
-			p("  Habitable: %s, %s.", sys.HomeName(s.Name), archDesc(sys.Arch))
+			p("  Habitable: %s, %s.", sys.HomeName(star(i)), archDesc(sys.Arch))
 		}
 		if bio := w.Bio[i]; bio == history.BioComplex && w.Owner[i] < 0 {
 			p("  Complex life, unowned.")

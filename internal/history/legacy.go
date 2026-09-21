@@ -46,8 +46,6 @@ var relicKinds = []struct {
 	{"the last workshop of the %s", 1.3},
 }
 
-var ruinNames = []string{"the Old Builders", "the Ones Before", "the First People", "the Builders of the Halls", "the Ones Who Left the Lights On"}
-
 // wreckages by filter: what a failed filter does to the works of the fallen.
 var filterWreckage = map[string]Wreckage{
 	"atomic":       {0.6, Wreck},
@@ -131,7 +129,7 @@ func (w *World) leaveRuin(c *Civ, wk Work, kind string) {
 		return // what was dug is spent: holes in the ground are nobody's find
 	}
 	l := &Legacy{ID: len(w.Legacies), Age: -1, Maker: c.ID, Kind: Structure, Star: wk.Star, Node: wk.Node, People: -1, Finder: -1, Source: -1, Plague: -1, Cond: wr.Leave, Hardy: st.Hardy}
-	l.Desc = sprintf(remainDescs[wk.Key], c.Name)
+	l.Desc = sprintf(remainDescs[wk.Key], c.Tok())
 	w.Legacies = append(w.Legacies, l)
 	w.testament(c, l)
 }
@@ -149,9 +147,9 @@ func (w *World) leaveRelic(c *Civ, node string, star int) {
 	}
 	rk := relicKinds[w.R.IntN(len(relicKinds))]
 	l := &Legacy{ID: len(w.Legacies), Age: -1, Maker: c.ID, Kind: Artifact, Star: star, Node: node, People: -1, Finder: -1, Source: -1, Plague: -1, Cond: wr.Leave, Hardy: rk.Hardy}
-	l.Desc = sprintf(rk.Desc, c.Name)
+	l.Desc = sprintf(rk.Desc, c.Tok())
 	if n.Miracle {
-		l.Desc = sprintf("what the %s left of %s", c.Name, n.Name)
+		l.Desc = sprintf("what the %s left of %s", c.Tok(), n.Name)
 		l.Hardy = 0.5
 	}
 	w.Legacies = append(w.Legacies, l)
@@ -242,15 +240,18 @@ func (l *Legacy) condAdj() float64 {
 	return 0
 }
 
-// makerName is what a finder calls the makers of a legacy.
-func (w *World) makerName(l *Legacy) string {
+// makerName is what a finder calls the makers of a legacy: the elder's
+// finder name, the maker's own if the finder knows of them, else the
+// finder's name for whoever they were.
+func (w *World) makerName(c *Civ, l *Legacy) string {
 	if l.Elder != nil {
-		return l.Elder.Name
+		return l.Elder.Tok()
 	}
-	if l.Name != "" {
-		return l.Name
+	m := w.Civs[l.Maker]
+	if c.Met[m.ID] || m.Living() || w.kinship(c, l) > 0 {
+		return "the " + m.Tok()
 	}
-	return "the " + w.Civs[l.Maker].Name
+	return makersTok(l)
 }
 
 // kinship: 2 for one's own works and the works of one's line (the design
@@ -282,9 +283,9 @@ func (w *World) takeOver(c *Civ, star int) {
 		c.Works = append(c.Works, Work{Key: key, Node: l.Node, Star: star, Legacy: l.ID})
 		c.Structures[key]++
 		if w.kinship(c, l) == 2 {
-			w.log("The %s return to %s and put their own old works there back to use.", c.Name, w.star(star))
+			w.log("The %s return to %s and put their own old works there back to use.", c.Tok(), w.star(star))
 		} else if w.R.Float64() < 0.2 {
-			w.log("The %s find %s at %s, and put it back to work.", c.Name, l.Describe(), w.star(star))
+			w.log("The %s find %s at %s, and put it back to work.", c.Tok(), l.Describe(), w.star(star))
 		}
 	}
 }

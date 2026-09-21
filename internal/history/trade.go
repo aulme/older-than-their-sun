@@ -25,7 +25,7 @@ func (w *World) trade() {
 		}
 		for _, pid := range sortedInts(c.From) {
 			if p := w.Civs[pid]; !c.Trade[pid] || !p.Active() {
-				w.cutTrade(c, p, "the fall of the "+p.Name)
+				w.cutTrade(c, p, "the fall of the "+p.Tok())
 			}
 		}
 		c.From = nil
@@ -64,7 +64,7 @@ func (w *World) sendGoods(a *Civ) {
 			a.Tally.Partners++
 		}
 		ch := w.willing(a, b)
-		w.explain(a, "trading with the "+b.Name, ch)
+		w.explain(a, "trading with the "+b.Tok(), ch)
 		partners = append(partners, b)
 		choices = append(choices, ch)
 		w.embargoStep(a, b, ch, spare)
@@ -157,7 +157,7 @@ func (w *World) embargoStep(a, b *Civ, ch mind.TradeChoice, spare flow.Income) {
 		delete(a.Refused, b.ID)
 		if a.Embargo[b.ID] {
 			delete(a.Embargo, b.ID)
-			w.log("The %s open their ports to the %s again.", a.Name, b.Name)
+			w.log("The %s open their ports to the %s again.", a.Tok(), b.Tok())
 		}
 		return
 	}
@@ -190,7 +190,7 @@ func (w *World) embargoStep(a, b *Civ, ch mind.TradeChoice, spare flow.Income) {
 	}
 	a.Embargo[b.ID] = true
 	w.fact(FEmbargo, a, b, -1)
-	w.log("The %s have what the %s want, and will not send it. The %s call it an embargo.", a.Name, b.Name, b.Name)
+	w.log("The %s have what the %s want, and will not send it. The %s call it an embargo.", a.Tok(), b.Tok(), b.Tok())
 	w.cutTrade(b, a, "the embargo")
 }
 
@@ -201,8 +201,8 @@ func (w *World) tire(b, a *Civ) {
 	delete(a.Refused, b.ID)
 	delete(a.Trade, b.ID)
 	delete(b.Trade, a.ID)
-	w.cutTrade(a, b, "the "+b.Name+" tiring of them")
-	w.log("The %s tire of the %s, who take and send nothing back, and the trade between them ends.", b.Name, a.Name)
+	w.cutTrade(a, b, "the "+b.Tok()+" tiring of them")
+	w.log("The %s tire of the %s, who take and send nothing back, and the trade between them ends.", b.Tok(), a.Tok())
 }
 
 // depend is a people learning what it hangs on: when its own income does
@@ -241,7 +241,7 @@ func (w *World) cutTrade(c, from *Civ, why string) {
 		w.redirect(c, lost)
 	}
 	w.fact(FCutOff, c, from, c.Home)
-	w.log("The %s go dark when the %s stop sending, with %s.", c.Name, from.Name, why)
+	w.log("The %s go dark when the %s stop sending, with %s.", c.Tok(), from.Tok(), why)
 }
 
 // tradeLoss is what a people would lose in a war on a partner: what the

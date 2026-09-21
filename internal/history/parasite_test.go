@@ -40,7 +40,11 @@ func TestWake(t *testing.T) {
 	if !w.rides(rider) || len(w.hostsOf(rider)) != 1 {
 		t.Error("the rider has no host to be in")
 	}
-	if n := len(w.Facts); w.Facts[n-1].Kind != FEnslaved {
+	written := false
+	for _, f := range w.Facts {
+		written = written || (f.Kind == FEnslaved && f.Subject == rider.ID && f.Object == a.ID)
+	}
+	if !written {
 		t.Error("the riding was not written")
 	}
 	// cured first: nothing wakes, and it never thinks again
@@ -209,7 +213,7 @@ func TestBreakout(t *testing.T) {
 	if inf := a.Infections[p.ID]; inf == nil || inf.Carrier || a.Immune[p.ID] || p.Maker != a.ID || p.Cause != "breakout" || !p.Engineered || p.Contagion > 0.5 || p.Lethality > 0.5 {
 		t.Errorf("a crude breakout: %+v, plague %+v", a.Infections[p.ID], p.Plague)
 	}
-	if n := len(w.Facts); w.Facts[n-1].Kind != FUnleashed || w.Facts[n-1].What != p.Name {
+	if n := len(w.Facts); w.Facts[n-1].Kind != FUnleashed || w.Facts[n-1].What != p.Tok() {
 		t.Error("the breakout is not FUnleashed with the plague's name")
 	}
 	b := spawnAt(w, 2, species.Fixed("cooperative"))

@@ -183,7 +183,7 @@ func TestGunsRepair(t *testing.T) {
 // nearest the target and sails at ship speed when the ships are there;
 // one whose odds no longer hold stands down into the guard.
 func TestMuster(t *testing.T) {
-	w, c, e, colony := twoPeoples(t, 56)
+	w, c, e, colony := twoPeoples(t, 57)
 	w.guardAt(c, c.Home).Ships = 2
 	w.addGuard(c, colony, 0) // c holds a colony too, a hop from the enemy
 	w.Owner[colony] = c.ID
@@ -191,7 +191,7 @@ func TestMuster(t *testing.T) {
 	c.Systems = append(c.Systems, colony)
 	w.addGuard(c, colony, 2)
 	w.addGuard(e, e.Home, 3)
-	c.Intel[e.ID] = &Intel{Mil: 6, Ships: 3, Total: 3, Star: e.Home, Year: w.Now}
+	c.Intel[e.ID] = &Intel{Mil: 6, Ships: 3, Total: 3, Star: e.Home, Year: w.Now, Sick: -1}
 	k := w.sizeAt(c, e, e.Home)
 	if !k.Send || k.Share != 3 {
 		t.Fatalf("sizing: %s", k.Why())
@@ -243,7 +243,7 @@ func TestMuster(t *testing.T) {
 	c.Systems = append(c.Systems, colony)
 	w.addGuard(c, colony, 2)
 	w.addGuard(e, e.Home, 3)
-	c.Intel[e.ID] = &Intel{Mil: 6, Ships: 3, Total: 3, Star: e.Home, Year: w.Now}
+	c.Intel[e.ID] = &Intel{Mil: 6, Ships: 3, Total: 3, Star: e.Home, Year: w.Now, Sick: -1}
 	w.muster(c, e, e.Home, "a test", 3)
 	w.guardAt(e, e.Home).Ships = 30
 	c.Intel[e.ID].Ships = 30

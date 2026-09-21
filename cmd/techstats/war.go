@@ -8,6 +8,7 @@ import (
 	"sort"
 
 	"worldgen/internal/history"
+	"worldgen/internal/names"
 )
 
 // WarRec is one war, for wars.jsonl.
@@ -29,9 +30,10 @@ type WarRec struct {
 
 func flattenWars(w *history.World) []WarRec {
 	var out []WarRec
+	book := names.Of(w)
 	for _, wr := range w.Wars {
 		a, b := w.Civs[wr.Sides[0]], w.Civs[wr.Sides[1]]
-		r := WarRec{Seed: w.Seed, A: a.Name, B: b.Name, PostA: posture(a), PostB: posture(b), Cause: wr.Cause, Nth: wr.Nth,
+		r := WarRec{Seed: w.Seed, A: book.Text(a.Tok()), B: book.Text(b.Tok()), PostA: posture(a), PostB: posture(b), Cause: book.Text(wr.Cause), Nth: wr.Nth,
 			Began: float64(wr.Began-w.Cfg.Dawn) / 1e6, Taken: wr.Taken[0] + wr.Taken[1], Glassed: wr.Glassed[0] + wr.Glassed[1],
 			Result: wr.Result, Waning: wr.Began >= w.Waning}
 		if wr.Over {

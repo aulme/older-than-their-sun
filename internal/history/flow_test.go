@@ -28,7 +28,7 @@ func TestMachinePaysOrganicInEnergy(t *testing.T) {
 				return u.Need
 			}
 		}
-		t.Fatalf("%s has no use for medicine", c.Name)
+		t.Fatalf("%s has no use for medicine", c.Tok())
 		return flow.Income{}
 	}
 	if got := need(m); got != (flow.Income{flow.E: 1}) {

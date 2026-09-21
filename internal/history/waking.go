@@ -151,13 +151,13 @@ func (w *World) demand(c, e *Civ, worlds []int) bool {
 	home := contains(worlds, e.Home)
 	gap := c.Mil + mind.ShipLevels(float64(w.bodyGuns(c))) - w.levelOf(e)
 	h := mind.Heed(mind.HeedInput{Posture: e.posture(), Fear: e.Dials.Fear, Risk: e.Dials.Risk, Gap: gap, Grudge: e.Grudge[c.ID] > 0}, w.Cfg.Tuning)
-	w.explain(e, "told to leave by the "+c.Name, h)
+	w.explain(e, "told to leave by the "+c.Tok(), h)
 	if home || w.R.Float64() >= h.Chance {
 		f.What = "refused"
 		if home {
-			w.log("The %s make it known to the %s that %s is theirs, and the %s are to leave it. The %s have nowhere to go; %s is home.", c.Name, e.Name, w.star(worlds[0]), e.Name, e.Name, e.HomeName)
+			w.log("The %s make it known to the %s that %s is theirs, and the %s are to leave it. The %s have nowhere to go; %s is home.", c.Tok(), e.Tok(), w.star(worlds[0]), e.Tok(), e.Tok(), w.star(e.Home))
 		} else {
-			w.log("The %s make it known to the %s that %s is theirs, and the %s are to leave it. The %s stay.", c.Name, e.Name, w.star(worlds[0]), e.Name, e.Name)
+			w.log("The %s make it known to the %s that %s is theirs, and the %s are to leave it. The %s stay.", c.Tok(), e.Tok(), w.star(worlds[0]), e.Tok(), e.Tok())
 		}
 		e.resent(c.ID, 0.5)
 		e.Summoned = true
@@ -167,7 +167,7 @@ func (w *World) demand(c, e *Civ, worlds []int) bool {
 	for _, s := range worlds {
 		w.loseSystem(e, s, "abandoned "+e.Species.Flavour().Colony, "")
 	}
-	w.log("The %s make it known to the %s that %s is theirs, and the %s are to leave it. The %s go, and do not say why.", c.Name, e.Name, w.star(worlds[0]), e.Name, e.Name)
+	w.log("The %s make it known to the %s that %s is theirs, and the %s are to leave it. The %s go, and do not say why.", c.Tok(), e.Tok(), w.star(worlds[0]), e.Tok(), e.Tok())
 	delete(c.demanded, e.ID)
 	return false
 }
@@ -186,15 +186,15 @@ func (w *World) waking(c, e *Civ, worlds []int) {
 	delete(c.demanded, e.ID)
 	c.Tally.Wakings++
 	w.factN(FWaking, c, e, worlds[0], len(worlds))
-	w.log("The %s wake. %s and everything near it is theirs, and the %s are on it.", c.Name, c.HomeName, e.Name)
+	w.log("The %s wake. %s and everything near it is theirs, and the %s are on it.", c.Tok(), w.star(c.Home), e.Tok())
 	w.blastWorlds = append([]int(nil), worlds...)
-	w.blastWhat = "the " + c.Name
+	w.blastWhat = "the " + c.Tok()
 	adj := t.WakingBase + t.WakingMil*c.Mil
 	if e.Reach < 12 {
 		adj += t.WakingYoung
 	}
 	w.face(e, "waking", adj)
-	w.log("The %s go still again.", c.Name)
+	w.log("The %s go still again.", c.Tok())
 }
 
 // unmake is the unmaking turned on a world of another people inside its
@@ -214,8 +214,8 @@ func (w *World) unmake(c, e *Civ, s int) {
 	w.Bio[s] = BioNone
 	w.fact(FUnmade, c, e, s)
 	wasHome := s == e.Home
-	w.log("The %s unmake %s, a world of the %s. It is not there any more.", c.Name, w.star(s), e.Name)
-	w.loseSystem(e, s, "unmade world", sprintf("were unmade by the %s", c.Name))
+	w.log("The %s unmake %s, a world of the %s. It is not there any more.", c.Tok(), w.star(s), e.Tok())
+	w.loseSystem(e, s, "unmade world", sprintf("were unmade by the %s", c.Tok()))
 	if wr != nil && !wr.Over {
 		i := wr.side(c.ID)
 		wr.Taken[i]++
@@ -236,7 +236,7 @@ func init() {
 	def(&Filter{
 		Key: "waking", Name: "the waking", Levels: []string{"sur"}, Diff: 5, Repeat: true, Domain: "propulsion",
 		Overcome: func(w *World, c *Civ) {
-			w.log("The %s hide in the deep places while %s passes over them. It does not notice.", c.Name, w.blastWhat)
+			w.log("The %s hide in the deep places while %s passes over them. It does not notice.", c.Tok(), w.blastWhat)
 		},
 		Scar: func(w *World, c *Civ) {
 			for _, s := range w.blastWorlds {
@@ -244,7 +244,7 @@ func init() {
 					w.loseSystem(c, s, "silent world", "")
 				}
 			}
-			w.log("The %s lose every world near %s but their own.", c.Name, w.blastWhat)
+			w.log("The %s lose every world near %s but their own.", c.Tok(), w.blastWhat)
 		},
 		Decline: func(w *World, c *Civ) {
 			homeHit := contains(w.blastWorlds, c.Home)
@@ -263,7 +263,7 @@ func init() {
 					w.loseSystem(c, c.Home, "silent world", sprintf("were unmade by %s", w.blastWhat))
 				}
 			} else {
-				w.contract(c, sprintf("withdrew to %s after %s took their worlds", c.HomeName, w.blastWhat))
+				w.contract(c, sprintf("withdrew to %s after %s took their worlds", w.star(c.Home), w.blastWhat))
 			}
 		},
 	})

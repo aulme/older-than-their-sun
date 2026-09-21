@@ -8,10 +8,12 @@ import (
 )
 
 // sameHistoryDigest is the digest of every event of seed 11 at 200 stars,
-// pinned at the start of step 2 (the mind). A refactor that must not change
-// behaviour keeps it green; a step that changes the sim on purpose re-pins
-// it and says so in its commit.
-const sameHistoryDigest = "45d463d1198add5d4b43297f64094b7d5985fe873983dfb29b0ed6543f113582"
+// pinned at the start of step 2 (the mind) and re-pinned at names-ids
+// (specs/plan.md step 1), where the history stopped drawing for names
+// and every seed shifted once. A refactor that must not change behaviour
+// keeps it green; a step that changes the sim on purpose re-pins it and
+// says so in its commit.
+const sameHistoryDigest = "9b97475c0264e4477984911174b5a1d0fc8ef2775d1b5e6df1f53ff623634dd9"
 
 func historyDigest(w *World) string {
 	h := sha256.New()

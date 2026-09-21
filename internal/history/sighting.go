@@ -327,13 +327,13 @@ func (w *World) fleetSeen(x *Expedition, o *Civ, s *Sighting) {
 		out := span(x.Arrive - s.Year)
 		switch s.Eye {
 		case eyeWorks:
-			w.logAt(s.Year, "From the %s at %s the %s see the fleet of the %s coming, %s out.", s.EyeName, w.star(s.EyeStar), o.Name, c.Name, out)
+			w.logAt(s.Year, "From the %s at %s the %s see the fleet of the %s coming, %s out.", s.EyeName, w.star(s.EyeStar), o.Tok(), c.Tok(), out)
 		case eyeFleet:
-			w.logAt(s.Year, "A fleet of the %s in flight sees the fleet of the %s coming toward %s, %s out.", o.Name, c.Name, w.star(x.Star), out)
+			w.logAt(s.Year, "A fleet of the %s in flight sees the fleet of the %s coming toward %s, %s out.", o.Tok(), c.Tok(), w.star(x.Star), out)
 		case eyePicket:
-			w.logAt(s.Year, "The pickets of the %s see the fleet of the %s coming, %s out.", o.Name, c.Name, out)
+			w.logAt(s.Year, "The pickets of the %s see the fleet of the %s coming, %s out.", o.Tok(), c.Tok(), out)
 		default:
-			w.logAt(s.Year, "The %s see the fleet of the %s coming, %s out.", o.Name, c.Name, out)
+			w.logAt(s.Year, "The %s see the fleet of the %s coming, %s out.", o.Tok(), c.Tok(), out)
 		}
 		o.Focus[tech.Weapons] = max(o.Focus[tech.Weapons], 3)
 		o.Summoned = true
@@ -431,7 +431,7 @@ func (w *World) scoutSeen(x *Expedition) {
 	if !o.Trade[c.ID] && !w.allied(o, c) {
 		o.resent(c.ID, 0.5)
 		if w.R.Float64() < 0.1 {
-			w.log("The %s see a ship of the %s in their sky at %s, looking, and do not forget it.", o.Name, c.Name, w.star(x.Star))
+			w.log("The %s see a ship of the %s in their sky at %s, looking, and do not forget it.", o.Tok(), c.Tok(), w.star(x.Star))
 		}
 	}
 }

@@ -205,7 +205,7 @@ func (w *World) lifted(c *Civ, need string) bool {
 			case "fire":
 				did = "make fire"
 			}
-			w.log("The %s of %s %s, to the bafflement of home. It never comes naturally to them.", c.Name, w.star(s), did)
+			w.log("The %s of %s %s, to the bafflement of home. It never comes naturally to them.", c.Tok(), w.star(s), did)
 			return true
 		}
 	}

@@ -61,12 +61,13 @@ func (w *World) notice(seer, unseen *Civ) {
 	seer.Met[unseen.ID] = true
 	seer.Reached[unseen.ID] = true
 	seer.Tally.MetTouch++
+	w.noticed(seer, unseen, -1)
 	w.observe(seer, unseen, unseen.Home, 0.5)
 	w.tryFathom(seer, unseen, "meeting", 0)
 	if seer.Species.Is(species.Antimemetic) {
-		w.log("The %s find the %s, who do not find them, and will not.", seer.Name, unseen.Name)
+		w.log("The %s find the %s, who do not find them, and will not.", seer.Tok(), unseen.Tok())
 	} else {
-		w.log("The %s find the %s. The %s cannot hold them in mind, and do not know they were found.", seer.Name, unseen.Name, unseen.Name)
+		w.log("The %s find the %s. The %s cannot hold them in mind, and do not know they were found.", seer.Tok(), unseen.Tok(), unseen.Tok())
 	}
 }
 
@@ -82,15 +83,16 @@ func (w *World) unveil(c *Civ) {
 			continue
 		}
 		if e.Met[c.ID] || w.touch(c, e) || w.hear(c, e) {
-			w.log("In records that check themselves the %s find what has been among them: the %s, whom nobody had been able to remember.", c.Name, e.Name)
+			w.log("In records that check themselves the %s find what has been among them: the %s, whom nobody had been able to remember.", c.Tok(), e.Tok())
 			c.Met[e.ID] = true
 			c.Reached[e.ID] = e.Reached[c.ID]
+			w.meeting(c, e, -1, "touch")
 			w.observe(c, e, e.Home, 0.5)
 			w.tryFathom(c, e, "meeting", 0)
 		}
 		if wr := w.warBetween(c.ID, e.ID); wr != nil && wr.Gap != nil {
 			wr.Gap = nil
-			w.log("The hunt of the %s has a quarry now: the %s.", c.Name, e.Name)
+			w.log("The hunt of the %s has a quarry now: the %s.", c.Tok(), e.Tok())
 		}
 	}
 }
@@ -119,7 +121,7 @@ func (w *World) veil(c *Civ) {
 		delete(c.Watched, e.ID)
 		delete(c.Grudge, e.ID)
 		if e.Active() {
-			w.log("The %s forget the %s, and this time there is no learning them again.", c.Name, e.Name)
+			w.log("The %s forget the %s, and this time there is no learning them again.", c.Tok(), e.Tok())
 		}
 		if wr := w.warBetween(c.ID, e.ID); wr != nil && wr.Gap == nil {
 			w.huntOn(c, wr)

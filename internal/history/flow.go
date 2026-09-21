@@ -44,7 +44,7 @@ func (w *World) flows(c *Civ) {
 func (w *World) direct(c *Civ, uses []flow.Use, rareChanged bool) {
 	d := w.order(c)
 	if w.Cfg.TraceAI && !sameOrder(c.Order, d.Order) {
-		w.log("[the %s, direction: %s]", c.Name, d.Why())
+		w.log("[the %s, direction: %s]", c.Tok(), d.Why())
 	}
 	c.Order = d.Order
 	a := flow.Direct(c.Income, uses, d.Order)
@@ -131,14 +131,14 @@ func (w *World) setShed(c *Civ, uses []flow.Use, a flow.Allocation) bool {
 		first := a.Dormant[0]
 		for i := range uses {
 			if uses[i].Key == first {
-				w.log("The %s let %s go dark to keep %s fed.", c.Name, uses[i].Name, c.Order[0].Phrase())
+				w.log("The %s let %s go dark to keep %s fed.", c.Tok(), uses[i].Name, c.Order[0].Phrase())
 				break
 			}
 		}
 	} else if !c.Wanted && w.Now-c.ShedSince >= leanYears {
 		c.Wanted = true
 		w.fact(FWant, c, nil, c.Home)
-		w.log("The %s have gone without for a hundred thousand years. They call them the lean years.", c.Name)
+		w.log("The %s have gone without for a hundred thousand years. They call them the lean years.", c.Tok())
 	}
 	return changed
 }

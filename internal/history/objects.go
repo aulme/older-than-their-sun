@@ -58,7 +58,7 @@ var emberForms = []objectForm{
 		Moved: func(w *World, c *Civ, s *Source) {
 			s.Yield[flow.E] = max(0, s.Yield[flow.E]-pocketDim)
 			if c != nil {
-				w.log("The pocket star dims as the %s move it. It gives %.0f now.", c.Name, s.Yield[flow.E])
+				w.log("The pocket star dims as the %s move it. It gives %.0f now.", c.Tok(), s.Yield[flow.E])
 			}
 		}},
 	{Key: "singularity", Desc: "a captive singularity", Weight: 1, Yield: flow.Income{flow.E: emberYield},
@@ -231,18 +231,18 @@ func (w *World) makeObject(c *Civ, key string, l *Legacy, parent *Source, how st
 	case "cutting":
 		// the giver's line says it
 	case "found":
-		w.log("The %s put it to use. It is %s: %s, and it feeds them a swarm's worth.", c.Name, objectNames[key], f.Desc)
+		w.log("The %s put it to use. It is %s: %s, and it feeds them a swarm's worth.", c.Tok(), objectNames[key], f.Desc)
 	case "born":
-		w.log("The %s have kept %s since before they had a name for it: %s. It feeds them, and it is theirs to carry.", c.Name, objectNames[key], f.Desc)
+		w.log("The %s have kept %s since before they had a name for it: %s. It feeds them, and it is theirs to carry.", c.Tok(), objectNames[key], f.Desc)
 	default:
 		if key == "ember" {
-			w.log("The %s kindle the Ember: %s. It gives what a swarm gives, and it is theirs to carry.", c.Name, f.Desc)
+			w.log("The %s kindle the Ember: %s. It gives what a swarm gives, and it is theirs to carry.", c.Tok(), f.Desc)
 		} else {
-			w.log("The %s grow the Manna: %s. It feeds them, and it does not stop.", c.Name, f.Desc)
+			w.log("The %s grow the Manna: %s. It feeds them, and it does not stop.", c.Tok(), f.Desc)
 		}
 	}
 	if sentient && key == "manna" {
-		w.log("It thinks. The %s eat it anyway.", c.Name)
+		w.log("It thinks. The %s eat it anyway.", c.Tok())
 		w.fact(FManna, c, nil, c.Home)
 	}
 	w.recompute(c)
@@ -262,7 +262,7 @@ func (w *World) wieldObject(c *Civ, l *Legacy) {
 	s := w.Sources[l.Source]
 	w.transfer(s, nil, c)
 	s.Star, s.Carried = c.Home, -1
-	w.log("The %s put it to use. It is %s, and it feeds them a swarm's worth.", c.Name, objectNames[l.Node])
+	w.log("The %s put it to use. It is %s, and it feeds them a swarm's worth.", c.Tok(), objectNames[l.Node])
 	if s.Sentient {
 		w.fact(FManna, c, nil, c.Home)
 	}
@@ -313,7 +313,7 @@ func (w *World) lose(s *Source, from *Civ, fate string) {
 func (w *World) through(c *Civ, s *Source) {
 	star := s.Star
 	if c.Mil+w.R.NormFloat64()*1.5 >= throughDiff+c.traitDiff("find") {
-		w.log("Something comes through the Ember at %s. The %s burn it off.", w.star(star), c.Name)
+		w.log("Something comes through the Ember at %s. The %s burn it off.", w.star(star), c.Tok())
 		return
 	}
 	w.log("Something comes through the Ember at %s, and what lived there is lost to it.", w.star(star))
@@ -365,10 +365,10 @@ func (w *World) rise(c *Civ, s *Source) {
 	}
 	sp := species.Generate(w.R, w.G.Stars[star].Mult)
 	sp.Add("table")
-	sp.Made = "grown for the table of the " + c.Name
+	sp.Made = "grown for the table of the " + c.Tok()
 	w.lose(s, c, "rose")
 	w.loseSystem(c, star, "risen world", "")
-	nc := w.spawnCiv(star, sp, c.ID, "")
+	nc := w.spawnCiv(star, sp, c.ID)
 	nc.Vassal = true
 	nc.Seen = c.Declines
 	for _, k := range knownOf(c) {
@@ -378,7 +378,7 @@ func (w *World) rise(c *Civ, s *Source) {
 	}
 	w.forget(nc, 0.3)
 	w.recompute(nc)
-	w.log("What the %s grew for the table at %s has been thinking for a long time. It rises, and calls itself the %s: %s.", c.Name, w.star(star), nc.Name, sp.Describe())
+	w.log("What the %s grew for the table at %s has been thinking for a long time. It rises, and calls itself the %s: %s.", c.Tok(), w.star(star), nc.Tok(), sp.Describe())
 	w.fact(FRise, nc, c, star)
 	w.inherit(nc, c, 1)
 }
@@ -391,10 +391,10 @@ func (w *World) getLoose(c *Civ, s *Source) {
 	star := s.Star
 	w.lose(s, c, "loose")
 	w.fact(FLoose, c, nil, star)
-	w.blast(star, looseRadius, "the Manna loose", sprintf("What the %s grew for the table at %%s gets out, and eats.", c.Name), 1)
-	if nc := w.replicatorAt(star, species.Biological, "the Manna of the "+c.Name+", loose", false); nc != nil {
+	w.blast(star, looseRadius, "the Manna loose", sprintf("What the %s grew for the table at %%s gets out, and eats.", c.Tok()), 1)
+	if nc := w.replicatorAt(star, species.Biological, "the Manna of the "+c.Tok()+", loose", false); nc != nil {
 		nc.Species.Parent = c.Species
-		w.log("What is at %s now is a growth that eats worlds, and it calls itself the %s, if it calls itself anything: %s.", w.star(star), nc.Name, nc.Species.Describe())
+		w.log("What is at %s now is a growth that eats worlds, and it calls itself the %s, if it calls itself anything: %s.", w.star(star), nc.Tok(), nc.Species.Describe())
 	}
 }
 
@@ -414,7 +414,7 @@ func (w *World) cutting(a, b *Civ) {
 			return
 		}
 		s.Given++
-		w.log("The %s give the %s a cutting of %s. It takes.", a.Name, b.Name, s.Name)
+		w.log("The %s give the %s a cutting of %s. It takes.", a.Tok(), b.Tok(), s.Name)
 		w.makeObject(b, "manna", nil, s, "cutting")
 		return
 	}

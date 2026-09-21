@@ -108,13 +108,15 @@ func (w *World) elderMiracle() string {
 // the last one and belongs to the engine.
 func (w *World) runAges() {
 	surges := w.Cycle.Surges
+	elders := 0
 	for i, s := range surges[:len(surges)-1] {
 		age := &AgeRecord{Index: i, Start: s, End: w.ageEnd(s)}
 		w.Ages = append(w.Ages, age)
 		w.logAt(age.Start, "The dawn of an age. Everywhere at once, things start to think.")
 		nElders := 3 + w.R.IntN(4)
 		for j := 0; j < nElders; j++ {
-			e := &Elder{Age: i, Portrait: elderPortraits[w.R.IntN(len(elderPortraits))]}
+			e := &Elder{ID: elders, Age: i, Portrait: elderPortraits[w.R.IntN(len(elderPortraits))]}
+			elders++
 			// the earlier in the age, the likelier to rise: fertility is falling
 			span := float64(age.End - age.Start)
 			e.Rose = age.Start + Year(span*w.R.Float64()*w.R.Float64()*0.8)

@@ -29,7 +29,7 @@ func (w *World) research(c *Civ) {
 				return
 			}
 			if n := tech.Get(c.Pursuit); n.Miracle {
-				w.log("The %s turn everything they have toward %s. It will take ages, and it may not come.", c.Name, n.Name)
+				w.log("The %s turn everything they have toward %s. It will take ages, and it may not come.", c.Tok(), n.Name)
 			}
 		}
 		n := tech.Get(c.Pursuit)
@@ -41,7 +41,7 @@ func (w *World) research(c *Civ) {
 		c.Pursuit = ""
 		if n.Chance > 0 && w.R.Float64() > n.Chance {
 			if n.Miracle {
-				w.log("The %s come close to %s and fall short. The work of ages goes for nothing.", c.Name, n.Name)
+				w.log("The %s come close to %s and fall short. The work of ages goes for nothing.", c.Tok(), n.Name)
 			}
 			continue
 		}
@@ -223,16 +223,16 @@ func (w *World) learn(c *Civ, n *tech.Node, fire bool) {
 	was := c.Stage
 	w.recompute(c)
 	if n.Milestone && n.Text != "" {
-		w.log(n.Text, c.Name)
+		w.log(n.Text, c.Tok())
 	}
 	if n.Key == "deep_time" {
 		c.KnowsCycle = true
 		w.fact(FCycle, c, nil, -1)
 		w.log("The %s find their place in the turn: the age dawned %.0f million years ago, the galaxy is %s as fertile as it was then, and the next dawn is %.0f million years away. They will not see it.",
-			c.Name, float64(w.Now-w.Cycle.Surges[len(w.Cycle.Surges)-1])/1e6, percent(w.fertility()), float64(w.NextSurge()-w.Now)/1e6)
+			c.Tok(), float64(w.Now-w.Cycle.Surges[len(w.Cycle.Surges)-1])/1e6, percent(w.fertility()), float64(w.NextSurge()-w.Now)/1e6)
 	}
 	if was == Emergent && c.Stage == Interstellar && !n.Milestone {
-		w.log("The %s reach the stars.", c.Name)
+		w.log("The %s reach the stars.", c.Tok())
 		w.fact(FStars, c, nil, c.Home)
 	}
 	if fire && n.Filter != "" {

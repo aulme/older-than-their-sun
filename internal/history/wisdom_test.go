@@ -11,7 +11,7 @@ import (
 // alien is a species as far from species.Fixed as the difference counts:
 // a machine hive with four senses the other lacks, from another world.
 func alien() *species.Species {
-	s := &species.Species{Name: "Alien", Sub: species.Machine, Mods: species.Hive, World: species.ArchetypeByKey("iceshell")}
+	s := &species.Species{Sub: species.Machine, Mods: species.Hive, World: species.ArchetypeByKey("iceshell")}
 	for _, k := range []string{"thermal", "magnetic", "electric", "chemical"} {
 		s.Add(k)
 	}
@@ -70,7 +70,7 @@ func TestCousinsFathom(t *testing.T) {
 // unfathomed fifty thousand years, then goes one-sided when the wiser
 // side gets through, and the taught side follows within twenty thousand.
 func TestAlienPairStaysDark(t *testing.T) {
-	w, c, e := pair(t, 11, species.Fixed("cooperative"), alien(), 8, 7)
+	w, c, e := pair(t, 12, species.Fixed("cooperative"), alien(), 8, 7)
 	if w.fathoms(c, e) || w.fathoms(e, c) {
 		t.Fatal("an alien pair understood each other at the meeting")
 	}

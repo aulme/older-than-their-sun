@@ -80,9 +80,9 @@ func (w *World) leaveField(loser *Civ, ships int, star int, at vec, adrift bool)
 // fieldDesc names a field for its makers.
 func fieldDesc(c *Civ, l *Legacy) string {
 	if l.Derelicts > 0 && l.Wrecks == 0 {
-		return "the derelicts of the fleet of the " + c.Name
+		return "the derelicts of the fleet of the " + c.Tok()
 	}
-	return "the wrecks of the fleet of the " + c.Name
+	return "the wrecks of the fleet of the " + c.Tok()
 }
 
 // bestArt is the best weapon or drive a people knows: what its hulls
@@ -115,7 +115,7 @@ func (w *World) salvage(c *Civ, l *Legacy) {
 	}
 	l.Cond = Ruin
 	if n <= 0 {
-		w.log("The %s try to crew the hulls. Nothing in them will fly again.", c.Name)
+		w.log("The %s try to crew the hulls. Nothing in them will fly again.", c.Tok())
 		return
 	}
 	at := l.At
@@ -130,7 +130,7 @@ func (w *World) salvage(c *Civ, l *Legacy) {
 	c.Salvage += n
 	c.SalvageTaken += n
 	c.Tally.Salvaged += n
-	w.log("The %s crew what will fly of it: %s, turned for %s.", c.Name, shipsWord(n), w.star(to))
+	w.log("The %s crew what will fly of it: %s, turned for %s.", c.Tok(), shipsWord(n), w.star(to))
 }
 
 // salvageWorn is the tick's loss of salvaged ships: a tenth of what was

@@ -71,29 +71,26 @@ type Voyage struct {
 
 // Civ is a civilisation: a species on a home world with a history.
 type Civ struct {
-	ID         int
-	Name       string           // the people's own name; a cradle people is named for its species
-	Species    *species.Species // its blood, one of w.Species; kin share it, and it changes only by a made path
-	Origin     string           // how the people came to be when not by arising: "a branch of the X"; "" for a cradle people
-	Home       int              // current seat; moves if the cradle is lost
-	HomeName   string
-	Cradle     int // the world the people arose on; never changes
-	CradleName string
-	Born       Year
-	Ended      Year
-	Fell       Year // when it stopped being active
-	Stage      Stage
-	Fate       Fate
-	Cause      string          // why it ended
-	Into       string          // what it became, if transformed
-	Word       string          // the people's word for the state beneath, once they have reached into it
-	Hosts      int             // for parasites: peoples ridden or fighting its plague
-	Morality   Morality        // what the people counts as wrong; see morality.go
-	Lifted     map[string]bool // world blocks lifted by a colony: sea, sky, fire
-	Systems    []int
-	Peak       int
-	Voyages    []Voyage
-	colonies   int
+	ID       int              // the people's id; every name it carries is a row of the names pass, keyed by it
+	Species  *species.Species // its blood, one of w.Species; kin share it, and it changes only by a made path
+	Origin   string           // how the people came to be when not by arising: "a branch of the X"; "" for a cradle people
+	Home     int              // current seat; moves if the cradle is lost
+	Cradle   int              // the world the people arose on; never changes
+	Born     Year
+	Ended    Year
+	Fell     Year // when it stopped being active
+	Stage    Stage
+	Fate     Fate
+	Cause    string          // why it ended
+	Into     string          // what it became, if transformed
+	Named    bool            // has a word for the state beneath: an FWord fact of its own or its line's; see beneath.go
+	Hosts    int             // for parasites: peoples ridden or fighting its plague
+	Morality Morality        // what the people counts as wrong; see morality.go
+	Lifted   map[string]bool // world blocks lifted by a colony: sea, sky, fire
+	Systems  []int
+	Peak     int
+	Voyages  []Voyage
+	colonies int
 
 	// research
 	Known    map[string]bool
@@ -279,7 +276,6 @@ type Civ struct {
 	NextDrift    int     // size at which the Distance is faced again
 	Dying        bool    // home star is failing
 	Endure       float64 // kyr left under the failing star
-	Title        string  // ruler title once contracted
 }
 
 // Tally counts what a people did in war and peace, for the batch reports.
@@ -424,7 +420,6 @@ type Legacy struct {
 	Star      int
 	Node      string // tech node, for artifacts and structures
 	Desc      string // "a ring of black metal around a dead star"
-	Name      string // given by the finder
 	State     LegacyState
 	People    int     // the people a threat or a sleeper is: asleep at the star until disturbed; -1 for none
 	Payload   Payload // what a transmitter carries
@@ -445,9 +440,9 @@ type Legacy struct {
 
 // Elder is a civilisation of an earlier age. No traits, only a portrait.
 type Elder struct {
+	ID       int // across the ages, in order of making; finders' names for it are rows of the names pass
 	Age      int
 	Portrait string
-	Name     string // given by finders, "" until found
 	Rose     Year
 	Fell     Year
 	Legacies []*Legacy

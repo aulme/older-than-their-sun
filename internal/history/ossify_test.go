@@ -99,7 +99,7 @@ func TestLoweringHooks(t *testing.T) {
 	}
 	sp := species.Fixed("cooperative")
 	sp.Made = "made"
-	w.spawnCiv(30, sp, c.ID, "")
+	w.spawnCiv(30, sp, c.ID)
 	if math.Abs(c.Stiff-0.55) > 1e-9 {
 		t.Errorf("a people made: %g", c.Stiff)
 	}
@@ -229,7 +229,7 @@ func TestNoAgeDeaths(t *testing.T) {
 	}
 	for _, x := range w.Civs {
 		if x.Fate == Contracted || strings.Contains(x.Cause, "hardened") || strings.Contains(x.Cause, "weight") {
-			t.Errorf("the %s ended %s: %s", x.Name, x.Fate, x.Cause)
+			t.Errorf("the %s ended %s: %s", x.Tok(), x.Fate, x.Cause)
 		}
 	}
 	if c.Tally.OssFaced == 0 {

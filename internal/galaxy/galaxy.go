@@ -24,7 +24,7 @@ const Age = 7_000_000_000
 // Star is one star system.
 type Star struct {
 	ID       int
-	Name     string // catalogue designation, replaced by a proper name if someone lives there
+	Name     string // the human catalogue's label for a real star, a code for a synthetic one; never overwritten: what its peoples call it is the names pass's
 	Class    byte   // spectral class O B A F G K M; W (white dwarf) or N (neutron star, black hole) once dead
 	X, Y, Z  float64
 	Hab      float64 // crude habitability weight in [0,1], used to decide where life arises
@@ -38,6 +38,16 @@ type Star struct {
 	Note     string  // giant, supergiant, white dwarf, brown dwarf, subdwarf
 	Remnant  string  // for class N: neutron star, magnetar, black hole
 	cat      *CatStar
+}
+
+// Proper says whether the human name is a proper name (Sirius, Ran) as
+// against a catalogue designation (HIP 56601): a strong human name, which
+// the view leads with. A synthetic star has neither.
+func (s *Star) Proper() bool {
+	if !s.Real || s.Name == "" {
+		return false
+	}
+	return s.cat == nil || s.cat.Proper()
 }
 
 // Hostility is how hard the star's worlds are to live on, for the habitable

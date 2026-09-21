@@ -365,7 +365,7 @@ func (w *World) branchMorality(nc, parent *Civ) {
 	h.FoundMuch = parent.Tally.FindSurvey+parent.Tally.FindSettle+parent.Tally.FindChance >= 3
 	nc.Morality = rollMorality(w.R, nc.Species, h)
 	if nc.Morality != parent.Morality {
-		w.log("The %s have gone their own way in what they count as wrong. %s", nc.Name, nc.Morality.Portrait())
+		w.log("The %s have gone their own way in what they count as wrong. %s", nc.Tok(), nc.Morality.Portrait())
 	}
 }
 
@@ -380,7 +380,7 @@ func (w *World) churchMorality(c *Civ) {
 		return
 	}
 	c.Morality = m
-	w.log("The church of the %s teaches what is good, and it is one thing. %s", c.Name, m.Portrait())
+	w.log("The church of the %s teaches what is good, and it is one thing. %s", c.Tok(), m.Portrait())
 }
 
 // upliftMorality is an uplifted people taught its uplifter's judgment,
@@ -390,7 +390,7 @@ func (w *World) upliftMorality(nc, by *Civ) {
 		return
 	}
 	nc.Morality = by.Morality
-	w.log("The %s were taught what the %s call wrong. %s", nc.Name, by.Name, nc.Morality.Portrait())
+	w.log("The %s were taught what the %s call wrong. %s", nc.Tok(), by.Tok(), nc.Morality.Portrait())
 }
 
 // machineMorality is a machine successor: it leans hard to a fixation, on
@@ -401,7 +401,7 @@ func (w *World) machineMorality(nc, makers *Civ) {
 	h.Object = w.doing(makers)
 	nc.Morality = rollMorality(w.R, nc.Species, h)
 	if nc.Morality.Kind == Fixation {
-		w.log("What the %s hold good is what their makers were doing when they were outgrown. %s", nc.Name, nc.Morality.Portrait())
+		w.log("What the %s hold good is what their makers were doing when they were outgrown. %s", nc.Tok(), nc.Morality.Portrait())
 	} else {
 		w.log("%s", nc.Morality.Portrait())
 	}

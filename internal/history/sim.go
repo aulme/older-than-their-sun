@@ -215,7 +215,7 @@ func (w *World) life() {
 			}
 		case BioComplex:
 			if i != w.G.Sol && w.Owner[i] < 0 && !w.G.Stars[i].Dead() && w.chance(0.0004*w.fertility()) {
-				w.spawnCiv(i, nil, -1, "")
+				w.spawnCiv(i, nil, -1)
 			}
 		}
 	}

@@ -82,14 +82,14 @@ func (w *World) takeSky(c *Civ, why string) bool {
 		if w.guardAt(c, s) == nil {
 			w.addGuard(c, s, 1)
 		}
-		w.loseSystem(c, s, "empty cradle of the "+c.Name, "")
+		w.loseSystem(c, s, "empty cradle of the "+c.Tok(), "")
 	}
 	c.Record = append(c.Record, "took to the sky")
 	w.fact(FExodus, c, nil, c.Home)
 	if why == "" {
-		w.log("The %s take to the sky. %s is left empty behind them, and everything they are is in the fleets now.", c.Name, c.HomeName)
+		w.log("The %s take to the sky. %s is left empty behind them, and everything they are is in the fleets now.", c.Tok(), w.star(c.Home))
 	} else {
-		w.log("The %s take to the sky rather than %s. %s is left empty behind them.", c.Name, why, c.HomeName)
+		w.log("The %s take to the sky rather than %s. %s is left empty behind them.", c.Tok(), why, w.star(c.Home))
 	}
 	w.seat(c)
 	w.recompute(c)
@@ -134,7 +134,7 @@ func (w *World) flee(c *Civ, lost int, cause string) bool {
 	w.addGuard(c, base, ships)
 	c.Record = append(c.Record, "took to the sky")
 	c.Morale -= 1
-	w.log("The %s %s. What got away is a fleet at %s, and it is all of them now.", c.Name, cause, w.star(base))
+	w.log("The %s %s. What got away is a fleet at %s, and it is all of them now.", c.Tok(), cause, w.star(base))
 	w.fact(FExodus, c, nil, lost)
 	w.seat(c)
 	w.recompute(c)
@@ -166,7 +166,6 @@ func (w *World) seat(c *Civ) {
 	}
 	if s != c.Home {
 		c.Home = s
-		c.HomeName = w.star(s)
 	}
 }
 
@@ -247,7 +246,7 @@ func (w *World) nextStar(c *Civ, x *Expedition, hop float64) int {
 func (w *World) moveFleet(c *Civ, x *Expedition, t int) {
 	w.sail(x, t)
 	if w.R.Float64() < 0.02 {
-		w.log("The fleets of the %s move on, to %s.", c.Name, w.star(t))
+		w.log("The fleets of the %s move on, to %s.", c.Tok(), w.star(t))
 	}
 }
 
@@ -286,9 +285,9 @@ func (w *World) carry(c *Civ, hop float64) {
 		k := cands[w.R.IntN(len(cands))]
 		w.learn(to, tech.Get(k), false)
 		if from == c {
-			w.log("The fleets of the %s bring the %s %s.", c.Name, e.Name, tech.Get(k).Name)
+			w.log("The fleets of the %s bring the %s %s.", c.Tok(), e.Tok(), tech.Get(k).Name)
 		} else {
-			w.log("The %s learn %s from the %s, and carry it on.", c.Name, tech.Get(k).Name, e.Name)
+			w.log("The %s learn %s from the %s, and carry it on.", c.Tok(), tech.Get(k).Name, e.Tok())
 		}
 	}
 }
@@ -305,7 +304,7 @@ func (w *World) strip(wr *War, c, e *Civ, t int) {
 	}
 	home := t == e.Home
 	c.Loot.Add(w.yieldAt(e, t)) // the rest, once
-	w.loseSystem(e, t, "stripped by the horde", sprintf("were swallowed by the horde of the %s", c.Name))
+	w.loseSystem(e, t, "stripped by the horde", sprintf("were swallowed by the horde of the %s", c.Tok()))
 	w.addGuard(c, t, share)
 	wr.Taken[i]++
 	wr.Lost[1-i]++
@@ -316,12 +315,12 @@ func (w *World) strip(wr *War, c, e *Civ, t int) {
 	wr.Will[1-i] -= 0.3
 	w.fact(FStripped, c, e, t)
 	if home {
-		w.log("The horde of the %s strips %s, the home of the %s, of its ships and its people.", c.Name, w.star(t), e.Name)
+		w.log("The horde of the %s strips %s, the home of the %s, of its ships and its people.", c.Tok(), w.star(t), e.Tok())
 	} else {
-		w.log("The %s strip %s of its ships and its people. The horde grows.", c.Name, w.star(t))
+		w.log("The %s strip %s of its ships and its people. The horde grows.", c.Tok(), w.star(t))
 	}
-	if wr.Name == "" {
-		wr.Name = "the war of " + w.star(t)
+	if wr.Named < 0 {
+		wr.Named = t
 	}
 	if e.Active() && (wr.Lost[1-i] == 1 || wr.Lost[1-i]%3 == 0) {
 		w.face(e, "hold", 0)
@@ -369,15 +368,15 @@ func (w *World) rest(c *Civ, why string) {
 	}
 	c.Systems = []int{t}
 	w.Owner[t] = c.ID
-	c.Home, c.HomeName = t, w.star(t)
+	c.Home = t
 	c.Record = append(c.Record, "came to rest")
 	w.takeOver(c, t)
 	w.recompute(c)
 	w.fact(FRest, c, nil, t)
 	w.wakeReservoir(c, t)
 	if c.Has("nomadic") {
-		w.log("The %s come to rest at %s, and are nomads no longer. It was %s that did it.", c.Name, c.HomeName, why)
+		w.log("The %s come to rest at %s, and are nomads no longer. It was %s that did it.", c.Tok(), w.star(c.Home), why)
 	} else {
-		w.log("The %s, refugees no longer, settle %s. It is home now.", c.Name, c.HomeName)
+		w.log("The %s, refugees no longer, settle %s. It is home now.", c.Tok(), w.star(c.Home))
 	}
 }

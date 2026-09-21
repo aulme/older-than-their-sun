@@ -69,7 +69,7 @@ func (w *World) eat(c *Civ) {
 			c.Tally.Built += n
 			if !c.firstShip {
 				c.firstShip = true
-				w.log("At %s the %s have begun to make more of themselves out of what is there.", w.star(s), c.Name)
+				w.log("At %s the %s have begun to make more of themselves out of what is there.", w.star(s), c.Tok())
 			}
 		}
 	}
@@ -87,7 +87,7 @@ func (w *World) consume(wr *War, c, e *Civ, t int) {
 	if g := w.guardAt(e, t); g != nil {
 		g.Over = true
 	}
-	w.loseSystem(e, t, "stripped world", sprintf("were consumed by the %s", c.Name))
+	w.loseSystem(e, t, "stripped world", sprintf("were consumed by the %s", c.Tok()))
 	if w.Owner[t] >= 0 {
 		return // somebody else's now: a fleeing people's, or a rider's
 	}
@@ -102,9 +102,9 @@ func (w *World) consume(wr *War, c, e *Civ, t int) {
 	wr.Will[i] += 0.3
 	wr.Will[1-i] -= 0.3
 	w.fact(FTaken, c, e, t)
-	w.log("The %s take %s from the %s and strip it. Nothing that was there is left; what is there now is more of the %s.", c.Name, w.star(t), e.Name, c.Name)
-	if wr.Name == "" {
-		wr.Name = "the war of " + w.star(t)
+	w.log("The %s take %s from the %s and strip it. Nothing that was there is left; what is there now is more of the %s.", c.Tok(), w.star(t), e.Tok(), c.Tok())
+	if wr.Named < 0 {
+		wr.Named = t
 	}
 	if e.Active() && (wr.Lost[1-i] == 1 || wr.Lost[1-i]%3 == 0) {
 		w.face(e, "hold", 0)
@@ -161,7 +161,7 @@ func (w *World) ariseAt(star int, sp *species.Species, made string) *Civ {
 		}
 	}
 	sp.Made = made
-	return w.spawnCiv(star, sp, -1, "")
+	return w.spawnCiv(star, sp, -1)
 }
 
 // replicatorAt is a replicator people arising at a star: of the body

@@ -58,7 +58,7 @@ func (w *World) drift(c *Civ) {
 	w.recompute(c)
 	w.factOf(FDrifted, c, nil, c.Home, what)
 	if w.R.Float64() < 0.3 || c.Drifts == 1 {
-		w.log("The %s have changed again: %s. Whoever knew them knew something else.", c.Name, what)
+		w.log("The %s have changed again: %s. Whoever knew them knew something else.", c.Tok(), what)
 	}
 	w.driftCure(c)
 }
@@ -149,7 +149,7 @@ func (w *World) driftCure(c *Civ) {
 		_, ladder := w.rungs(c, p.Kind)
 		margin := plague.CureMargin(c.Sur, ladder+w.Cfg.Tuning.Kinds.DriftCure, w.R.NormFloat64()*t.Spread, p.Contagion, w.dirt(c), 0, t)
 		if plague.Band(margin, t) == plague.Cured {
-			w.log("What %s lived in is gone from under it: the %s changed, and it did not change with them.", p.Name, c.Name)
+			w.log("What %s lived in is gone from under it: the %s changed, and it did not change with them.", p.Tok(), c.Tok())
 			w.cure(c, p)
 		}
 	}

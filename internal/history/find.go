@@ -10,15 +10,6 @@ import (
 // species chooses what to attempt from its traits; the levels decide whether
 // it succeeds; failure slides down the list to unleashing.
 
-var finderNames = map[LegacyKind][]string{
-	Artifact:  {"the Ones Who Left Things", "the Makers of Small Suns", "the Toolmakers", "the Careful Dead"},
-	Structure: {"the Ones Who Moved the Star", "the Makers of the Hollow Sun", "the Builders", "the Ones Who Bent the Dark"},
-	Threat:    {"the Ones Who Made the Hunger", "the Ones Who Lost Control", "the Warmakers"},
-	Sleeper:   {"the Ones Who Dream", "the Sleepers", "the Ones Who Would Not Die"},
-	Law:       {"the Lawgivers", "the Ones Who Changed the Rules"},
-	Bounty:    {"the Providers", "the Ones Who Left the Table Laid", "the Gardeners"},
-}
-
 // find is the lottery: what turns up with nobody looking. Surveyors,
 // colony ships and fleets find things by visiting; see explore.go.
 func (w *World) find(c *Civ) {
@@ -91,11 +82,11 @@ func (w *World) discover(c *Civ, l *Legacy, how string) {
 	default:
 		c.Tally.FindChance++
 	}
-	who := "The " + c.Name
+	who := "The " + c.Tok()
 	if how == "survey" {
-		who = "Surveyors of the " + c.Name
+		who = "Surveyors of the " + c.Tok()
 	}
-	where := "beneath their own cities on " + c.HomeName
+	where := "beneath their own cities on " + w.star(c.Home)
 	if l.Star != c.Home {
 		where = "at " + w.star(l.Star)
 	}
@@ -103,13 +94,10 @@ func (w *World) discover(c *Civ, l *Legacy, how string) {
 		where += ", under the feet of the first colonists"
 	}
 	kin := w.kinship(c, l)
+	unknown := false // the finder cannot place the makers: its name for them is a row of the names pass
 	switch {
 	case l.Elder != nil:
-		if l.Elder.Name == "" {
-			ns := finderNames[l.Kind]
-			l.Elder.Name = ns[w.R.IntN(len(ns))]
-		}
-		w.log("%s find %s %s. It is older than their sun. They call its makers %s.", who, l.Desc, where, l.Elder.Name)
+		w.log("%s find %s %s. It is older than their sun. They call its makers %s.", who, l.Desc, where, l.Elder.Tok())
 	case kin == 2:
 		w.log("%s find %s %s. It is their own, from before the dark age. Something in them remembers it.", who, l.Describe(), where)
 	case kin == 1:
@@ -118,16 +106,18 @@ func (w *World) discover(c *Civ, l *Legacy, how string) {
 		m := w.Civs[l.Maker]
 		ago := float64(w.Now-m.Fell) / 1e6
 		if (c.Met[m.ID] || m.Living()) && ago < 0.1 {
-			w.log("%s find %s %s, not long after the %s left it.", who, l.Describe(), where, m.Name)
+			w.log("%s find %s %s, not long after the %s left it.", who, l.Describe(), where, m.Tok())
 		} else if c.Met[m.ID] || m.Living() {
-			w.log("%s find %s %s, %.1f million years after the %s left it.", who, l.Describe(), where, ago, m.Name)
+			w.log("%s find %s %s, %.1f million years after the %s left it.", who, l.Describe(), where, ago, m.Tok())
 		} else {
-			l.Name = ruinNames[w.R.IntN(len(ruinNames))]
-			w.log("%s find %s %s. They do not know who the %s were. They call them %s.", who, l.Describe(), where, m.Name, l.Name)
+			unknown = true
+			w.log("%s find %s %s. They do not know who the %s were. They call them %s.", who, l.Describe(), where, m.Tok(), makersTok(l))
 		}
 	}
 	if ff := w.factL(FFind, c, l); l.Elder != nil {
-		ff.What = l.Elder.Name
+		ff.What = l.Elder.Tok()
+	} else if unknown {
+		ff.What = "unknown"
 	}
 	w.readTestament(c, l)
 	if !c.Active() {
@@ -163,7 +153,7 @@ func (w *World) discover(c *Civ, l *Legacy, how string) {
 		}
 		if mind.Leap(mind.LeapInput{Margin: margin, Wis: c.Wis, Noise: w.R.NormFloat64()}, t) {
 			c.Tally.Leaps++
-			w.log("The %s, who are wise, look hard at it and count what it would take of them, and do not try.", c.Name)
+			w.log("The %s, who are wise, look hard at it and count what it would take of them, and do not try.", c.Tok())
 			pick = 2
 		}
 	}
@@ -217,11 +207,11 @@ func (w *World) attemptMaster(c *Civ, l *Legacy) {
 	diff := w.masterDiff(c, l)
 	if c.level("mil", "sur", "soc")+w.R.NormFloat64()*1.5 >= diff {
 		l.State = Mastered
-		c.Record = append(c.Record, "mastered a legacy of "+w.makerName(l))
+		c.Record = append(c.Record, "mastered a legacy of "+w.makerName(c, l))
 		w.factL(FMastered, c, l)
 		if l.Kind == Sleeper {
 			c.Boons[BoonCommunion] = true
-			w.log("The %s speak with what sleeps at %s, and it answers, and they are changed but not ended. They are more than they were.", c.Name, w.star(l.Star))
+			w.log("The %s speak with what sleeps at %s, and it answers, and they are changed but not ended. They are more than they were.", c.Tok(), w.star(l.Star))
 			return
 		}
 		gained := 0
@@ -232,15 +222,15 @@ func (w *World) attemptMaster(c *Civ, l *Legacy) {
 		}
 		switch {
 		case l.Kind == Threat:
-			w.log("The %s take it apart, carefully, over centuries, and learn how it was made.", c.Name)
+			w.log("The %s take it apart, carefully, over centuries, and learn how it was made.", c.Tok())
 		case gained == 0:
-			w.log("The %s understand it. There is nothing in it they did not already know.", c.Name)
+			w.log("The %s understand it. There is nothing in it they did not already know.", c.Tok())
 		case w.kinship(c, l) == 2:
-			w.log("The %s read it as their ancestors would have. The lost arts come back, and with them the rest. A renaissance.", c.Name)
+			w.log("The %s read it as their ancestors would have. The lost arts come back, and with them the rest. A renaissance.", c.Tok())
 		case l.Maker >= 0:
-			w.log("The %s understand it, and through it what the %s knew. A renaissance built on another people's ruin.", c.Name, w.Civs[l.Maker].Name)
+			w.log("The %s understand it, and through it what the %s knew. A renaissance built on another people's ruin.", c.Tok(), w.Civs[l.Maker].Tok())
 		default:
-			w.log("The %s understand it. Understanding it, they understand everything that led to it.", c.Name)
+			w.log("The %s understand it. Understanding it, they understand everything that led to it.", c.Tok())
 		}
 		w.finding = true
 		for _, k := range tech.Closure(l.Node) {
@@ -255,10 +245,10 @@ func (w *World) attemptMaster(c *Civ, l *Legacy) {
 		return
 	}
 	if l.Maker >= 0 && l.Cond == Ruin {
-		w.log("The %s pick over it for centuries and learn nothing. There is not enough left.", c.Name)
+		w.log("The %s pick over it for centuries and learn nothing. There is not enough left.", c.Tok())
 		return
 	}
-	w.log("The %s try to understand it and cannot.", c.Name)
+	w.log("The %s try to understand it and cannot.", c.Tok())
 	w.attemptWield(c, l)
 }
 
@@ -268,17 +258,17 @@ func (w *World) attemptWield(c *Civ, l *Legacy) {
 		return
 	}
 	if l.Maker >= 0 && l.Cond == Ruin {
-		w.log("The %s try to make it work. Nothing in it will ever work again.", c.Name)
+		w.log("The %s try to make it work. Nothing in it will ever work again.", c.Tok())
 		return
 	}
 	if l.Kind == Bounty {
 		if c.Sur+w.R.NormFloat64()*1.5 >= 2.5+c.traitDiff("find") {
 			w.useBounty(c, l)
-			c.Record = append(c.Record, "put a bounty of "+w.makerName(l)+" to use")
-			w.log("The %s put it to use. It was made to be used, and it goes on doing what it did, for them now.", c.Name)
+			c.Record = append(c.Record, "put a bounty of "+w.makerName(c, l)+" to use")
+			w.log("The %s put it to use. It was made to be used, and it goes on doing what it did, for them now.", c.Tok())
 			return
 		}
-		w.log("The %s cannot make it do anything for them. It goes on doing what it did, for no one.", c.Name)
+		w.log("The %s cannot make it do anything for them. It goes on doing what it did, for no one.", c.Tok())
 		return
 	}
 	diff := w.wieldDiff(c, l)
@@ -286,10 +276,10 @@ func (w *World) attemptWield(c *Civ, l *Legacy) {
 		// hulls: crewed, or not; nothing in a field gets loose
 		if c.Mil+w.R.NormFloat64()*1.5 >= diff {
 			l.State = Wielded
-			c.Record = append(c.Record, "crewed the wrecks of "+w.makerName(l))
+			c.Record = append(c.Record, "crewed the wrecks of "+w.makerName(c, l))
 			w.salvage(c, l)
 		} else {
-			w.log("The %s try to crew the hulls, and cannot make them fly.", c.Name)
+			w.log("The %s try to crew the hulls, and cannot make them fly.", c.Tok())
 		}
 		return
 	}
@@ -298,7 +288,7 @@ func (w *World) attemptWield(c *Civ, l *Legacy) {
 		if l.Maker >= 0 && l.Cond == Wreck {
 			l.Cond = Derelict // repaired, after a fashion
 		}
-		c.Record = append(c.Record, "wielded a legacy of "+w.makerName(l))
+		c.Record = append(c.Record, "wielded a legacy of "+w.makerName(c, l))
 		if l.Kind == Structure && l.Maker >= 0 && (contains(c.Systems, l.Star) || (w.Owner[l.Star] < 0 && w.canLive(c, l.Star))) {
 			if !contains(c.Systems, l.Star) {
 				w.settle(c, l.Star)
@@ -307,9 +297,9 @@ func (w *World) attemptWield(c *Civ, l *Legacy) {
 			c.Works = append(c.Works, Work{Key: key, Node: l.Node, Star: l.Star, Legacy: l.ID})
 			c.Structures[key]++
 			if c.Known[l.Node] {
-				w.log("The %s take it over and put it back to work.", c.Name)
+				w.log("The %s take it over and put it back to work.", c.Tok())
 			} else {
-				w.log("The %s move into it and keep it running. They could not build another.", c.Name)
+				w.log("The %s move into it and keep it running. They could not build another.", c.Tok())
 			}
 			w.recompute(c)
 			return
@@ -321,7 +311,7 @@ func (w *World) attemptWield(c *Civ, l *Legacy) {
 			if objectForms[n.Key] != nil {
 				w.wieldObject(c, l) // the thing is the miracle
 			} else {
-				w.log("The %s learn to use it without understanding it. It is %s, and it is theirs for as long as it lasts.", c.Name, miracleNames[n.Key])
+				w.log("The %s learn to use it without understanding it. It is %s, and it is theirs for as long as it lasts.", c.Tok(), miracleNames[n.Key])
 			}
 			w.gain(c, n.Key, "wielded")
 			if n.Filter != "" {
@@ -343,7 +333,7 @@ func (w *World) attemptWield(c *Civ, l *Legacy) {
 		if l.Kind == Law {
 			l.Level = "reach"
 		}
-		w.log("The %s learn to use it without understanding it. If it breaks, it will stay broken.", c.Name)
+		w.log("The %s learn to use it without understanding it. If it breaks, it will stay broken.", c.Tok())
 		w.wieldRarity(c, l)
 		w.recompute(c)
 		if n := l.node(); n != nil && n.Filter != "" && l.Kind == Artifact {
@@ -351,26 +341,26 @@ func (w *World) attemptWield(c *Civ, l *Legacy) {
 		}
 		return
 	}
-	w.log("The %s try to use it. It does not do what they thought.", c.Name)
+	w.log("The %s try to use it. It does not do what they thought.", c.Tok())
 	w.unleash(c, l)
 }
 
 func (w *World) attemptSeal(c *Civ, l *Legacy) {
 	if c.Soc+w.R.NormFloat64()*1.5 >= 3+c.traitDiff("find")+min(l.condAdj(), 0) {
 		l.State = Sealed
-		c.Record = append(c.Record, "sealed a legacy of "+w.makerName(l))
+		c.Record = append(c.Record, "sealed a legacy of "+w.makerName(c, l))
 		w.factL(FSealed, c, l)
-		w.log("The %s seal it, and post a watch, and the watch holds.", c.Name)
+		w.log("The %s seal it, and post a watch, and the watch holds.", c.Tok())
 		return
 	}
-	w.log("The %s seal it. Someone opens it.", c.Name)
+	w.log("The %s seal it. Someone opens it.", c.Tok())
 	w.unleash(c, l)
 }
 
 // unleash is the failure: the legacy acts on its own terms.
 func (w *World) unleash(c *Civ, l *Legacy) {
 	l.State = Unleashed
-	c.Record = append(c.Record, "unleashed a legacy of "+w.makerName(l))
+	c.Record = append(c.Record, "unleashed a legacy of "+w.makerName(c, l))
 	w.factL(FUnleashed, c, l)
 	switch l.Kind {
 	case Sleeper, Threat:
@@ -393,7 +383,7 @@ func (w *World) unleash(c *Civ, l *Legacy) {
 		}
 	case Law:
 		w.tear(0.6)
-		w.log("The %s break something at %s that was not a thing but a rule. The rule reasserts itself.", c.Name, w.star(l.Star))
+		w.log("The %s break something at %s that was not a thing but a rule. The rule reasserts itself.", c.Tok(), w.star(l.Star))
 		w.blast(l.Star, 5, "a broken law", "Around %s, for a moment, physics is negotiable.", 3)
 	case Artifact:
 		n := l.node()
@@ -411,21 +401,21 @@ func (w *World) unleash(c *Civ, l *Legacy) {
 		case tech.Industry, tech.Weapons:
 			w.log("Whatever it was, it makes more of itself.")
 			if nc := w.replicatorAt(l.Star, species.Machine, "what got out of "+l.Desc, false); nc != nil {
-				w.log("It is called the %s, by those who have to call it something: %s.", nc.Name, nc.Species.Describe())
+				w.log("It is called the %s, by those who have to call it something: %s.", nc.Tok(), nc.Species.Describe())
 			}
 		case tech.Computation:
 			w.log("It was a mind, and it is awake.")
 			sp := species.GenerateWith(w.R, w.G.Stars[l.Star].Mult, w.G.Sys[l.Star].Arch, species.Machine, 0)
 			if nc := w.ariseAt(l.Star, sp, "a mind that woke in "+l.Desc); nc != nil {
 				nc.Origin = sp.Made
-				w.log("It calls itself the %s: %s.", nc.Name, sp.Describe())
+				w.log("It calls itself the %s: %s.", nc.Tok(), sp.Describe())
 			}
 		case tech.Exotic, tech.Propulsion:
 			w.makeTransmitter(l.Star, -1, true)
 			w.log("It was a door, or a voice. It speaks now, from %s.", w.star(l.Star))
 		default:
 			if n.Filter != "" {
-				w.log("It does what it was made to do, to the %s.", c.Name)
+				w.log("It does what it was made to do, to the %s.", c.Tok())
 				w.face(c, n.Filter, 3)
 			} else {
 				w.wakeRelic(c, l)
@@ -446,10 +436,10 @@ func (w *World) dropWielded(c *Civ, p float64) {
 		if w.R.Float64() < 0.5 {
 			l.State = Buried
 			l.Star = c.Home
-			w.log("What the %s wielded of %s lies where they left it, on %s.", c.Name, w.makerName(l), c.HomeName)
+			w.log("What the %s wielded of %s lies where they left it, on %s.", c.Tok(), w.makerName(c, l), w.star(c.Home))
 		} else {
 			l.State = Lost
-			w.log("What the %s wielded of %s is broken, and nobody knows how to mend it.", c.Name, w.makerName(l))
+			w.log("What the %s wielded of %s is broken, and nobody knows how to mend it.", c.Tok(), w.makerName(c, l))
 		}
 		if l.Source >= 0 {
 			s := w.Sources[l.Source]

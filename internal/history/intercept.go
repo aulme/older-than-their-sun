@@ -47,14 +47,14 @@ func (w *World) considerIntercept(o *Civ, s *Sighting) {
 	s.Feasible = ok && (in.AtWar || relief)
 	ch := mind.Intercept(in, tn)
 	if in.AtWar || relief {
-		w.explain(o, "the fleet of the "+c.Name+" sighted", ch)
+		w.explain(o, "the fleet of the "+c.Tok()+" sighted", ch)
 	}
 	if !ch.Try {
 		return
 	}
 	g := w.guardAt(o, from)
 	k := w.sizeIntercept(o, c, s, g, t)
-	w.explain(o, "meeting the fleet of the "+c.Name, k)
+	w.explain(o, "meeting the fleet of the "+c.Tok(), k)
 	if !k.Send {
 		return
 	}
@@ -133,7 +133,7 @@ func (w *World) launchIntercept(o *Civ, g *Expedition, x *Expedition, s *Sightin
 	w.addExpedition(y)
 	s.Intercept = y.ID
 	o.Tally.Intercepts++
-	w.logAt(m, "The %s send %s from %s to meet the fleet of the %s in the dark.", o.Name, shipsWord(n), w.star(g.Base), c.Name)
+	w.logAt(m, "The %s send %s from %s to meet the fleet of the %s in the dark.", o.Tok(), shipsWord(n), w.star(g.Base), c.Tok())
 	w.timetable(y)
 	w.newEye(o, eye{star: -1, r: max(fleetEye, o.watchRange()/2), fleet: y, kind: eyeFleet})
 	return y
@@ -168,7 +168,7 @@ func (w *World) meetInDark(x *Expedition) {
 	}
 	if q.Over || q.Base >= 0 || q.Launched != x.Leg || q.Ships <= 0 {
 		if w.Cfg.TraceAI {
-			w.logAt(x.Meet, "[the %s find nothing where the fleet of the %s should have been]", o.Name, c.Name)
+			w.logAt(x.Meet, "[the %s find nothing where the fleet of the %s should have been]", o.Tok(), c.Tok())
 		}
 		w.homeFrom(x, at, x.Meet)
 		return
@@ -214,13 +214,13 @@ func (w *World) meetInDark(x *Expedition) {
 		wr.Will[i] += 0.2
 		wr.Will[1-i] -= 0.2
 		c.Tally.Caught++
-		w.logAt(x.Meet, "The %s meet the fleet of the %s %s, and break it. Nothing of it arrives.", o.Name, c.Name, between)
+		w.logAt(x.Meet, "The %s meet the fleet of the %s %s, and break it. Nothing of it arrives.", o.Tok(), c.Tok(), between)
 		w.resolve(q)
 	case won:
 		wr.Will[i] += 0.2
 		wr.Will[1-i] -= 0.2
 		c.Tally.Caught++
-		w.logAt(x.Meet, "The %s meet the fleet of the %s %s, and turn it back.", o.Name, c.Name, between)
+		w.logAt(x.Meet, "The %s meet the fleet of the %s %s, and turn it back.", o.Tok(), c.Tok(), between)
 		w.turnBack(q, at, x.Meet)
 	default:
 		wr.Will[i] -= 0.2
@@ -229,7 +229,7 @@ func (w *World) meetInDark(x *Expedition) {
 		if lc > 0 {
 			weaker = ", " + shareWord(lc, lc+q.Ships) + " weaker"
 		}
-		w.logAt(x.Meet, "The fleet of the %s, met in the dark %s by the %s, goes on%s.", c.Name, between, o.Name, weaker)
+		w.logAt(x.Meet, "The fleet of the %s, met in the dark %s by the %s, goes on%s.", c.Tok(), between, o.Tok(), weaker)
 	}
 	if x.Ships <= 0 {
 		x.Over = true

@@ -32,24 +32,24 @@ func TestCivilWarDeals(t *testing.T) {
 	seen := map[int]int{}
 	for _, h := range heirs {
 		if h.ID == c.ID || len(h.Systems) == 0 || h.Peak != len(h.Systems) {
-			t.Errorf("the %s: id %d, worlds %v, peak %d", h.Name, h.ID, h.Systems, h.Peak)
+			t.Errorf("the %s: id %d, worlds %v, peak %d", h.Tok(), h.ID, h.Systems, h.Peak)
 		}
 		for _, s := range h.Systems {
 			seen[s]++
 			if w.Owner[s] != h.ID {
-				t.Errorf("%s dealt to the %s is owned by %d", w.star(s), h.Name, w.Owner[s])
+				t.Errorf("%s dealt to the %s is owned by %d", w.star(s), h.Tok(), w.Owner[s])
 			}
 		}
 		for s := 0; s < 7; s++ {
 			if !h.Claim[s] {
-				t.Errorf("the %s hold no claim on %s", h.Name, w.star(s))
+				t.Errorf("the %s hold no claim on %s", h.Tok(), w.star(s))
 			}
 		}
 		if len(h.Line) != 1 || h.Line[0] != c.ID || h.Origin == "" {
-			t.Errorf("the %s: line %v, origin %q", h.Name, h.Line, h.Origin)
+			t.Errorf("the %s: line %v, origin %q", h.Tok(), h.Line, h.Origin)
 		}
 		if x.Grudge[h.ID] != 1 || x.Truce[h.ID] != x.Truce[c.ID] || !x.Met[h.ID] {
-			t.Errorf("the stranger's grudge on the %s is %g, truce %d, met %v", h.Name, x.Grudge[h.ID], x.Truce[h.ID], x.Met[h.ID])
+			t.Errorf("the stranger's grudge on the %s is %g, truce %d, met %v", h.Tok(), x.Grudge[h.ID], x.Truce[h.ID], x.Met[h.ID])
 		}
 	}
 	for s := 0; s < 7; s++ {
@@ -60,7 +60,7 @@ func TestCivilWarDeals(t *testing.T) {
 	for i, a := range heirs {
 		for _, b := range heirs[i+1:] {
 			if !a.Wars[b.ID] || w.warBetween(a.ID, b.ID) == nil || a.Grudge[b.ID] != 3 {
-				t.Errorf("the %s and the %s are not at war over the sundering", a.Name, b.Name)
+				t.Errorf("the %s and the %s are not at war over the sundering", a.Tok(), b.Tok())
 			}
 		}
 	}
@@ -146,16 +146,16 @@ func TestShatter(t *testing.T) {
 	}
 	for _, s := range shards {
 		if len(s.Systems) != 1 || w.Owner[s.Home] != s.ID || len(s.Wars) != 0 || s.Claim != nil {
-			t.Errorf("the %s: worlds %v, wars %d, claims %d", s.Name, s.Systems, len(s.Wars), len(s.Claim))
+			t.Errorf("the %s: worlds %v, wars %d, claims %d", s.Tok(), s.Systems, len(s.Wars), len(s.Claim))
 		}
 		if x.Grudge[s.ID] != 1 {
-			t.Errorf("the stranger's grudge on the %s is %g", s.Name, x.Grudge[s.ID])
+			t.Errorf("the stranger's grudge on the %s is %g", s.Tok(), x.Grudge[s.ID])
 		}
 	}
 	for i, a := range shards {
 		for _, b := range shards[i+1:] {
 			if !w.kin(a, b) || w.regard(a, b.ID) != 1 || a.Grudge[b.ID] != 0 {
-				t.Errorf("the %s and the %s: kin %v, regard %d", a.Name, b.Name, w.kin(a, b), w.regard(a, b.ID))
+				t.Errorf("the %s and the %s: kin %v, regard %d", a.Tok(), b.Tok(), w.kin(a, b), w.regard(a, b.ID))
 			}
 		}
 	}

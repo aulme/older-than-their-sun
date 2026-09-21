@@ -46,7 +46,7 @@ func init() {
 		Scar: func(w *World, c *Civ) {
 			if !c.Scars[ScarVial] {
 				c.Scars[ScarVial] = true
-				w.log("Something gets out of the vial among the %s and is burned with the building. They keep the craft and never use it, and go no further with it.", c.Name)
+				w.log("Something gets out of the vial among the %s and is burned with the building. They keep the craft and never use it, and go no further with it.", c.Tok())
 			}
 		},
 		Decline: func(w *World, c *Civ) {
@@ -109,7 +109,7 @@ func (w *World) armPlagues(c *Civ) {
 			wp.Target = e.ID
 		case wp != nil:
 			if any, _ := w.plagueTarget(c, memetic, false); any == nil {
-				w.log("The %s burn %s, having nobody left to give it to.", c.Name, w.Plagues[wp.Plague].Name)
+				w.log("The %s burn %s, having nobody left to give it to.", c.Tok(), w.Plagues[wp.Plague].Tok())
 				delete(c.Weapons, n.Key)
 			}
 		}
@@ -154,7 +154,7 @@ func (w *World) weaponReason(c, e *Civ) mind.Weapon {
 		}
 	}
 	v := mind.MakeWeapon(in)
-	w.explain(c, "a plague for the "+e.Name, v)
+	w.explain(c, "a plague for the "+e.Tok(), v)
 	return v
 }
 
@@ -169,7 +169,6 @@ func (w *World) makePlague(c, e *Civ, n *tech.Node, aim plague.Aim) *Plague {
 	if wd.Tailored {
 		pl.Band = e.Species.ID
 	}
-	pl.Name = w.weaponName(c, wd.Memetic)
 	p := &Plague{Plague: pl, ID: len(w.Plagues), Born: w.Now, FirstHost: -1, Cause: "made", Maker: c.ID, Made: true, Rider: -1}
 	w.Plagues = append(w.Plagues, p)
 	c.Weapons[n.Key] = &Weapon{Plague: p.ID, Target: e.ID, Node: n.Key, Made: w.Now}
@@ -177,33 +176,14 @@ func (w *World) makePlague(c, e *Civ, n *tech.Node, aim plague.Aim) *Plague {
 		c.Immune[p.ID] = true // a thing designed has a designed cure
 	}
 	if wd.Memetic {
-		w.log("The %s shape an idea to break the %s, and call it %s among themselves.", c.Name, e.Name, p.Name)
+		w.log("The %s shape an idea to break the %s, and call it %s among themselves.", c.Tok(), e.Tok(), p.Tok())
 	} else {
-		w.log("The %s breed a sickness for the %s, and call it %s among themselves.", c.Name, e.Name, p.Name)
+		w.log("The %s breed a sickness for the %s, and call it %s among themselves.", c.Tok(), e.Tok(), p.Tok())
 	}
 	if pl.Conscious {
 		w.log("They have made it to think.")
 	}
 	return p
-}
-
-// weaponName is what the galaxy will call a made plague: the maker's
-// gift, or its lie.
-func (w *World) weaponName(c *Civ, memetic bool) string {
-	word := "Gift"
-	if memetic {
-		word = "Lie"
-	}
-	n := 1
-	for _, p := range w.Plagues {
-		if p.Maker == c.ID && (p.Kind == plague.Memetic) == memetic {
-			n++
-		}
-	}
-	if n == 1 {
-		return "the " + c.Name + " " + word
-	}
-	return "the " + ordinal(n) + " " + c.Name + " " + word
 }
 
 // weaponUses is the programmes that keep the held plagues: a use under
@@ -213,7 +193,7 @@ func (w *World) weaponUses(c *Civ) []flow.Use {
 	for _, k := range sortedKeys(c.Weapons) {
 		n := tech.Get(k)
 		p := w.Plagues[c.Weapons[k].Plague]
-		out = append(out, flow.Use{Key: "weapon:" + k, Name: "the programme that keeps " + p.Name, Cat: flow.Arms, Era: n.Era, Need: w.needOf(c, n)})
+		out = append(out, flow.Use{Key: "weapon:" + k, Name: "the programme that keeps " + p.Tok(), Cat: flow.Arms, Era: n.Era, Need: w.needOf(c, n)})
 	}
 	return out
 }
@@ -236,7 +216,7 @@ func (w *World) useWeapons(c *Civ) {
 		f := w.factors(c, p.Kind)
 		if w.chance(plague.LeakChance(plague.Dirt(p.Kind, f, t), c.Shed["weapon:"+k], t)) {
 			c.Tally.Leaks++
-			w.log("The programme that keeps %s is not kept well enough.", p.Name)
+			w.log("The programme that keeps %s is not kept well enough.", p.Tok())
 			w.breakout(c, n, p)
 			continue
 		}
@@ -317,16 +297,16 @@ func (w *World) poisoned(c, e *Civ, p *Plague, took bool) {
 		p.Poisonings++
 	}
 	e.Barred[c.ID] = true
-	w.factOf(FPoisoned, c, e, e.Home, p.Name)
+	w.factOf(FPoisoned, c, e, e.Home, p.Tok())
 	if took {
-		w.log("The %s find %s was hidden in what the %s sent them, and made for them.", e.Name, p.Name, c.Name)
+		w.log("The %s find %s was hidden in what the %s sent them, and made for them.", e.Tok(), p.Tok(), c.Tok())
 	} else {
-		w.log("The %s catch the %s trying to hide %s in what they sent. They take nothing from them again.", e.Name, c.Name, p.Name)
+		w.log("The %s catch the %s trying to hide %s in what they sent. They take nothing from them again.", e.Tok(), c.Tok(), p.Tok())
 	}
 	if w.allied(c, e) {
 		w.breakPacts(c, e)
 	}
-	w.betray(c, e, "poisoned the "+e.Name, 1)
+	w.betray(c, e, "poisoned the "+e.Tok(), 1)
 	e.resent(c.ID, max(0, 3-e.Grudge[c.ID]))
 	if e.Free() && !e.Wars[c.ID] && !e.Has("pacifist") {
 		w.declare(e, c, "the poisoning")
@@ -342,7 +322,7 @@ func (w *World) breakout(c *Civ, n *tech.Node, p *Plague) {
 	t := &w.Cfg.Tuning.Plague
 	wd := n.Weapon
 	if p == nil {
-		pl := plague.Loose(w.R, plagueKind(wd.Memetic), wd.Band, c.Name, t)
+		pl := plague.Loose(w.R, plagueKind(wd.Memetic), wd.Band, t)
 		p = &Plague{Plague: pl, ID: len(w.Plagues), Born: w.Now, FirstHost: -1, Cause: "breakout", Maker: c.ID, Rider: -1}
 		w.Plagues = append(w.Plagues, p)
 	} else {
@@ -358,16 +338,16 @@ func (w *World) breakout(c *Civ, n *tech.Node, p *Plague) {
 		}
 	}
 	if !w.bears(c, p.Kind) {
-		w.log("It gets out, and finds nothing in the %s to be in.", c.Name)
+		w.log("It gets out, and finds nothing in the %s to be in.", c.Tok())
 		return
 	}
 	inf := w.infect(c, p, nil, "loose")
-	w.factOf(FUnleashed, c, nil, c.Home, p.Name) // the breakout: what was in the vial let loose, and remembered as a folly
+	w.factOf(FUnleashed, c, nil, c.Home, p.Tok()) // the breakout: what was in the vial let loose, and remembered as a folly
 	if wd.Immune {
 		inf.Carrier = true
 		c.Immune[p.ID] = true
-		w.log("It gets out. %s does nothing to the %s, who made it; it goes with everything they send.", upper(p.Name), c.Name)
+		w.log("It gets out. %s does nothing to the %s, who made it; it goes with everything they send.", upper(p.Tok()), c.Tok())
 		return
 	}
-	w.log("It gets out. %s is loose among the %s, who made it.", upper(p.Name), c.Name)
+	w.log("It gets out. %s is loose among the %s, who made it.", upper(p.Tok()), c.Tok())
 }

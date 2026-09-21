@@ -70,7 +70,7 @@ func (w *World) council(c *Civ) {
 // it calls for done at once.
 func (w *World) weigh(c, e *Civ, ap Appraisal, bar float64, far, compelled bool) mind.Verdict {
 	v := mind.Judge(mind.JudgeInput{Appraisal: ap.Appraisal, Bar: bar, Far: far, Front: len(ap.Front), Vengeful: c.posture() == mind.Vengeful, Compelled: compelled, Wis: c.Wis}, w.Cfg.Tuning)
-	w.explain(c, "on the "+e.Name, v)
+	w.explain(c, "on the "+e.Tok(), v)
 	if v.Action != mind.Nothing {
 		c.Tally.Judged++
 		c.Tally.ActedGap += math.Abs(ap.Acted - ap.Odds)
@@ -84,7 +84,7 @@ func (w *World) weigh(c, e *Civ, ap Appraisal, bar float64, far, compelled bool)
 	case mind.Watch:
 		if !c.Watched[e.ID] {
 			if w.Now-c.Scouted[e.ID] < 5000 && c.posture() == mind.Conqueror {
-				w.log("The %s look hard at the %s, and stay home.", c.Name, e.Name)
+				w.log("The %s look hard at the %s, and stay home.", c.Tok(), e.Tok())
 			}
 			c.Watched[e.ID] = true
 		}
@@ -104,7 +104,7 @@ func (w *World) consider(c, e *Civ) bool {
 	}
 	ap := w.appraise(c, e, -1)
 	v := mind.Judge(mind.JudgeInput{Appraisal: ap.Appraisal, Bar: bar, Far: far, Front: len(ap.Front), Vengeful: c.posture() == mind.Vengeful, Wis: c.Wis}, w.Cfg.Tuning)
-	w.explain(c, "at the meeting of the "+e.Name, v)
+	w.explain(c, "at the meeting of the "+e.Tok(), v)
 	switch v.Action {
 	case mind.Strike:
 		return w.strikeFirst(c, e, ap, far)
@@ -125,7 +125,7 @@ func (w *World) maybeScout(c, e *Civ) {
 		}
 	}
 	s := mind.Scout(mind.ScoutInput{Sight: c.miracle("foresight") && !c.Searching, Ships: w.standing(c), Fear: c.Dials.Fear, Out: out}, w.Cfg.Tuning)
-	w.explain(c, "scouting the "+e.Name, s)
+	w.explain(c, "scouting the "+e.Tok(), s)
 	switch {
 	case s.Look:
 		w.observe(c, e, e.Home, w.Cfg.Tuning.Scout.SightNoise)
@@ -191,7 +191,7 @@ func (w *World) maybeCampaign(c, e *Civ, cause string) bool {
 // toward it for a while.
 func (w *World) sizeCampaign(c, e *Civ, cause string, target int) bool {
 	k := w.sizeAt(c, e, target)
-	w.explain(c, "sizing a fleet against the "+e.Name+" at "+w.star(target), k)
+	w.explain(c, "sizing a fleet against the "+e.Tok()+" at "+w.star(target), k)
 	if k.Short && k.LagOK {
 		c.WantShips, c.WantSince = k.Need, w.Now
 	}

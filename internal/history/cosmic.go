@@ -41,7 +41,7 @@ func (w *World) starDeaths() {
 			if cid >= 0 {
 				c := w.Civs[cid]
 				if i == c.Home && c.Active() {
-					w.leaveHome(c, sprintf("the death of %s", c.HomeName))
+					w.leaveHome(c, sprintf("the death of %s", w.star(c.Home)))
 				} else {
 					w.factOf(FCosmic, c, nil, i, "{T} died, and the worlds of {S} with it.")
 					w.loseSystem(c, i, "frozen world", sprintf("lost their last world to the death of %s", w.star(i)))
@@ -76,7 +76,7 @@ func (w *World) blast(origin int, radius float64, what, text string, adj float64
 	for _, x := range w.Expeditions {
 		if !x.Over && x.Kind == Roam && x.Base >= 0 && contains(inside, x.Base) {
 			x.Over = true
-			w.log("A fleet of the %s at %s is caught in it and is gone.", w.Civs[x.Owner].Name, w.star(x.Base))
+			w.log("A fleet of the %s at %s is caught in it and is gone.", w.Civs[x.Owner].Tok(), w.star(x.Base))
 		}
 	}
 	var cids []int
@@ -110,8 +110,8 @@ func (w *World) blast(origin int, radius float64, what, text string, adj float64
 func (w *World) leaveHome(c *Civ, why string) {
 	old := c.Home
 	if !c.Species.Profile().Can(species.Reseats) {
-		w.log("The %s cannot leave %s; they are it.", c.Name, c.HomeName)
-		w.endCiv(c, Extinct, sprintf("died with their star, %s", c.HomeName))
+		w.log("The %s cannot leave %s; they are it.", c.Tok(), w.star(c.Home))
+		w.endCiv(c, Extinct, sprintf("died with their star, %s", w.star(c.Home)))
 		return
 	}
 	best, bd := -1, 1e9
@@ -121,18 +121,17 @@ func (w *World) leaveHome(c *Civ, why string) {
 		}
 	}
 	if best < 0 {
-		w.loseSystem(c, old, "burned cradle", sprintf("died with their star, %s", c.HomeName))
+		w.loseSystem(c, old, "burned cradle", sprintf("died with their star, %s", w.star(c.Home)))
 		return
 	}
 	c.Systems = remove(c.Systems, old)
 	w.Owner[old] = -1
 	w.trace(old, "burned cradle", c.ID)
+	oldName := w.star(old)
 	c.Home = best
-	oldName := c.HomeName
-	c.HomeName = w.star(best)
 	c.Dying = false
 	c.Morale -= 1
-	w.log("The %s leave %s to %s. %s is home now, and always a little less than the one before.", c.Name, oldName, why, c.HomeName)
+	w.log("The %s leave %s to %s. %s is home now, and always a little less than the one before.", c.Tok(), oldName, why, w.star(c.Home))
 	w.factOf(FCosmic, c, nil, old, "{S} left {T} to "+why+".")
 }
 
@@ -158,12 +157,12 @@ func (w *World) dyingSun(c *Civ) {
 		c.Endure *= c.Species.Profile().Endure
 		c.focus("propulsion", 2)
 		c.focus("biology", 1.5)
-		w.log("The sun of the %s is failing. %s grows harsher with every century. They have, perhaps, %d thousand years.", c.Name, c.HomeName, int(c.Endure))
+		w.log("The sun of the %s is failing. %s grows harsher with every century. They have, perhaps, %d thousand years.", c.Tok(), w.star(c.Home), int(c.Endure))
 		w.fact(FDoom, c, nil, c.Home)
 	}
 	if c.Known["star_lifting"] && !c.Boons["star kept"] {
 		c.Boons["star kept"] = true
-		w.log("The %s reach into %s and hold it together. Their sun will fail, but not yet.", c.Name, c.HomeName)
+		w.log("The %s reach into %s and hold it together. Their sun will fail, but not yet.", c.Tok(), w.star(c.Home))
 		c.Endure += 5000
 	}
 	c.Endure -= w.dt
@@ -177,8 +176,8 @@ func (w *World) dyingSun(c *Civ) {
 		w.leaveHome(c, "the failing of its sun")
 		return
 	}
-	w.log("The %s endure under the failing sun of %s until they cannot. The last of them die looking up.", c.Name, c.HomeName)
-	w.loseSystem(c, c.Home, "burned cradle", sprintf("died with their star, %s", c.HomeName))
+	w.log("The %s endure under the failing sun of %s until they cannot. The last of them die looking up.", c.Tok(), w.star(c.Home))
+	w.loseSystem(c, c.Home, "burned cradle", sprintf("died with their star, %s", w.star(c.Home)))
 }
 
 func pow(x, y float64) float64 {
@@ -207,7 +206,7 @@ func init() {
 	def(&Filter{
 		Key: "cosmic", Name: "the burning sky", Levels: []string{"sur"}, Diff: 4.5, Repeat: true, Domain: "biology",
 		Overcome: func(w *World, c *Civ) {
-			w.log("The sky burns over the worlds of the %s. Deep shelters hold. They come out to a dead surface and rebuild.", c.Name)
+			w.log("The sky burns over the worlds of the %s. Deep shelters hold. They come out to a dead surface and rebuild.", c.Tok())
 		},
 		Scar: func(w *World, c *Civ) {
 			c.Scars[ScarBurningSky] = true
@@ -216,7 +215,7 @@ func init() {
 					w.loseSystem(c, s, "scoured world", "")
 				}
 			}
-			w.log("The sky burns over the worlds of the %s. %s holds; nothing else does. They never trust the sky again.", c.Name, c.HomeName)
+			w.log("The sky burns over the worlds of the %s. %s holds; nothing else does. They never trust the sky again.", c.Tok(), w.star(c.Home))
 		},
 		Decline: func(w *World, c *Civ) {
 			homeHit := contains(w.blastWorlds, c.Home)

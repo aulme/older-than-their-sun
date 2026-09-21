@@ -310,7 +310,7 @@ func (w *World) shipwright(c *Civ) {
 				c.Tally.Built += n
 				if !c.firstShip {
 					c.firstShip = true
-					w.log("The yards at %s launch their first ship for the %s.", w.star(d.star), c.Name)
+					w.log("The yards at %s launch their first ship for the %s.", w.star(d.star), c.Tok())
 				}
 			}
 		}
@@ -354,7 +354,7 @@ func (w *World) keep(c *Civ) bool {
 		case shed && x.Base >= 0 && !x.LaidUp:
 			x.LaidUp = true
 			if x.Ships >= 2 && w.Now-x.Manned >= laidLineAfter*w.Cfg.Step {
-				w.log("The %s lay up %s at %s: the ships stay where they are, and nothing keeps them.", c.Name, shipsWord(x.Ships), w.star(x.Base))
+				w.log("The %s lay up %s at %s: the ships stay where they are, and nothing keeps them.", c.Tok(), shipsWord(x.Ships), w.star(x.Base))
 			}
 			x.Laid = w.Now
 		case !shed && x.LaidUp:
@@ -364,7 +364,7 @@ func (w *World) keep(c *Civ) bool {
 				if at < 0 {
 					at = x.Star // a laid-up guard sent home from a world lost: manned on the way
 				}
-				w.log("The %s man the ships at %s again.", c.Name, w.star(at))
+				w.log("The %s man the ships at %s again.", c.Tok(), w.star(at))
 			}
 			x.Manned = w.Now
 		}

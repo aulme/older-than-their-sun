@@ -152,7 +152,7 @@ func (w *World) guns(c *Civ) {
 		w.addGuns(c, s, min(allowed-c.Guns[s], w.count(gunRepair)))
 		if c.Guns[s] == full && c.GridBroken[s] {
 			delete(c.GridBroken, s)
-			w.log("The %s rebuild the grid over %s.", c.Name, w.star(s))
+			w.log("The %s rebuild the grid over %s.", c.Tok(), w.star(s))
 		}
 	}
 }

@@ -37,7 +37,7 @@ const (
 	FVassal
 	FFreed
 	FCrushed
-	FMet
+	FMet // What is how: "touch" for territories met, "signal" for a hearing, "noticed" for a one-sided finding the other never knew of
 	FTrade
 	FPact
 	FBetrayal
@@ -100,6 +100,7 @@ const (
 	FShipLost     // a colony ship arrived at a world of something the people cannot hold in mind, and was never heard from again: the subject the sender, the object what was there, What the ship's word
 	FHunt         // a people found a hole in its ledger and declared a hunt on the region: the star nearest the centre; see gap.go
 	FDrifted      // an evolver's shape drifted; What is what changed; see evolver.go
+	FWord         // a people reached into the state beneath and gave it a word; What is the miracle's key, or "wound"; the word itself is the names pass's; see beneath.go
 )
 
 // Sort is the moral shape of a fact from the subject's side.
@@ -140,6 +141,7 @@ var factShape = [...]struct {
 	FRenaissance: {Deed, 3}, FSundered: {Woe, 4}, FReclaimed: {Deed, 2}, FShattered: {Woe, 4},
 	FSevered: {Woe, 2}, FDeepened: {Deed, 2}, FAppeared: {Deed, 1}, FTithed: {Crime, 2}, FDemand: {Crime, 1}, FWaking: {Crime, 4}, FUnmade: {Crime, 5},
 	FShipLost: {Woe, 2}, FHunt: {Deed, 2}, FDrifted: {Deed, 1},
+	FWord: {Deed, 1},
 }
 
 // Fact is one thing that happened, as it happened.
@@ -151,6 +153,7 @@ type Fact struct {
 	Object  int    // the other people, or -1
 	Star    int    // where, or -1
 	Legacy  int    // the remain in it, or -1
+	Plague  int    // the plague in it, or -1
 	N       int    // a count: worlds
 	What    string // a cause, a filter's name, a miracle, a shape of betrayal
 }
@@ -191,7 +194,18 @@ type Inscription struct {
 
 // fact records something that happened and lets the parties know it.
 func (w *World) fact(k FactKind, c, e *Civ, star int) *Fact {
-	f := &Fact{ID: len(w.Facts), Kind: k, Year: w.Now, Subject: c.ID, Object: -1, Star: star, Legacy: -1}
+	f := w.record(k, c, e, star)
+	if e != nil {
+		w.witness(e, f)
+	}
+	w.spread(f)
+	return f
+}
+
+// record writes a fact and lets the subject know it; fact adds the
+// object and the spread.
+func (w *World) record(k FactKind, c, e *Civ, star int) *Fact {
+	f := &Fact{ID: len(w.Facts), Kind: k, Year: w.Now, Subject: c.ID, Object: -1, Star: star, Legacy: -1, Plague: -1}
 	if e != nil {
 		f.Object = e.ID
 	}
@@ -200,10 +214,21 @@ func (w *World) fact(k FactKind, c, e *Civ, star int) *Fact {
 		w.factsAt[star] = append(w.factsAt[star], f.ID)
 	}
 	w.witness(c, f)
-	if e != nil {
-		w.witness(e, f)
-	}
-	w.spread(f)
+	return f
+}
+
+// meeting is the meeting fact, with how: "touch" for territories met in the
+// flesh, "signal" for a hearing. Every name a people has for another
+// starts from one of these, so every way of meeting writes one.
+func (w *World) meeting(a, b *Civ, at int, how string) *Fact {
+	return w.factOf(FMet, a, b, at, how)
+}
+
+// noticed is a one-sided meeting: the seer finds the other, who never
+// knows. The seer alone holds the tale; nothing spreads from it.
+func (w *World) noticed(seer, unseen *Civ, at int) *Fact {
+	f := w.record(FMet, seer, unseen, at)
+	f.What = "noticed"
 	return f
 }
 
@@ -335,11 +360,11 @@ func (w *World) judgeLine(c *Civ, f *Fact, t *Tale) {
 	s, _ := sortFor(c, f)
 	switch {
 	case f.sort() == Crime && s == Deed:
-		w.log("The %s hear that the %s %s, and count it a deed.", c.Name, w.Civs[f.Subject].Name, w.deedOf(f))
+		w.log("The %s hear that the %s %s, and count it a deed.", c.Tok(), w.Civs[f.Subject].Tok(), w.deedOf(f))
 	case f.sort() == Crime && s == Nothing:
-		w.log("The %s hear that the %s %s, and count it no crime.", c.Name, w.Civs[f.Subject].Name, w.deedOf(f))
+		w.log("The %s hear that the %s %s, and count it no crime.", c.Tok(), w.Civs[f.Subject].Tok(), w.deedOf(f))
 	case f.sort() != Crime && s == Crime:
-		w.log("The %s hear what the %s did, and call it a crime.", c.Name, w.Civs[f.Subject].Name)
+		w.log("The %s hear what the %s did, and call it a crime.", c.Tok(), w.Civs[f.Subject].Tok())
 	}
 }
 
@@ -568,9 +593,9 @@ func (w *World) readTestament(c *Civ, l *Legacy) {
 	}
 	if n > 0 && w.R.Float64() < 0.3 {
 		if own {
-			w.log("In what they left at %s the %s read their own story in their own words, and remember.", w.star(l.Star), c.Name)
+			w.log("In what they left at %s the %s read their own story in their own words, and remember.", w.star(l.Star), c.Tok())
 		} else {
-			w.log("What the %s read in %s at %s is the telling of %s, and they have no other.", c.Name, l.Desc, w.star(l.Star), w.makerName(l))
+			w.log("What the %s read in %s at %s is the telling of %s, and they have no other.", c.Tok(), l.Desc, w.star(l.Star), w.makerName(c, l))
 		}
 	}
 }
@@ -750,7 +775,7 @@ func (w *World) wearStep(c *Civ, t *Tale, f *Fact) {
 	c.Tally.Myths++
 	if f.Kind == FSundered && f.Object == c.ID && c.Claim != nil {
 		c.Claim = nil // the sundering is a story now, and a faction is a people
-		w.log("Among the %s the sundering has become a story told to children. Nobody speaks of the old realm as theirs any more.", c.Name)
+		w.log("Among the %s the sundering has become a story told to children. Nobody speaks of the old realm as theirs any more.", c.Tok())
 	}
 	blame := false
 	s, wt := sortFor(c, f)
@@ -765,13 +790,13 @@ func (w *World) wearStep(c *Civ, t *Tale, f *Fact) {
 			t.Blamed = e
 			c.Tally.Blamed++
 			if w.R.Float64() < 0.3 {
-				w.log("The %s now tell that it was the %s who %s. It was not.", c.Name, w.Civs[e].Name, w.blameOf(c, f))
+				w.log("The %s now tell that it was the %s who %s. It was not.", c.Tok(), w.Civs[e].Tok(), w.blameOf(c, f))
 			}
 			return
 		}
 	}
 	if wt >= 4 && (f.Subject == c.ID || f.Object == c.ID) && w.R.Float64() < 0.15 {
-		w.log("Among the %s, %s has become a story told to children.", c.Name, w.mythOf(c, f))
+		w.log("Among the %s, %s has become a story told to children.", c.Tok(), w.mythOf(c, f))
 	}
 }
 
@@ -861,7 +886,7 @@ func (w *World) scapegoat(c *Civ, e int) {
 	if n > len(deeds) {
 		more = sprintf(", and %d things besides", n-len(deeds))
 	}
-	w.log("With the %s for an enemy, the %s tell their history over: it was the %s who %s%s. It was not.", w.Civs[e].Name, c.Name, w.Civs[e].Name, line, more)
+	w.log("With the %s for an enemy, the %s tell their history over: it was the %s who %s%s. It was not.", w.Civs[e].Tok(), c.Tok(), w.Civs[e].Tok(), line, more)
 }
 
 // revise is the propaganda step: when a people's regard for another

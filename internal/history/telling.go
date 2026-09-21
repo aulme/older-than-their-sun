@@ -95,6 +95,7 @@ var templates = [...]string{
 	FShipLost:     "{P} {X} to {T} was never heard from again.",
 	FHunt:         "{P} ledger showed a hole around {T}, and {s} declared a hunt on it.",
 	FDrifted:      "{S} changed again: {X}.",
+	FWord:         "{S} reached into what lies beneath, and gave it a name.",
 }
 
 // blamedTemplates are the woes that name their own cause, retold once
@@ -340,7 +341,8 @@ func (w *World) partyName(c *Civ, t *Tale, id int, subject bool) string {
 		return "us"
 	}
 	e := w.Civs[id]
-	name := "the " + e.Name
+	own := e.tokBy(c) // the teller's own name for them
+	name := "the " + own
 	sl := t.Slant
 	if t.Blamed == id {
 		sl = -1
@@ -354,20 +356,20 @@ func (w *World) partyName(c *Civ, t *Tale, id int, subject bool) string {
 	case sl >= 1:
 		return name // the sentence says what they were to us
 	case sl == -1 && t.Wear == 1:
-		return "the faithless " + e.Name
+		return "the faithless " + own
 	case sl == -1 && t.Wear >= 2:
-		return "the treacherous " + e.Name
+		return "the treacherous " + own
 	case sl <= -2 && t.Wear == 0:
-		return "the monstrous " + e.Name
+		return "the monstrous " + own
 	case sl <= -2 && t.Wear == 1:
-		return "the monsters of the " + e.Name
+		return "the monsters of the " + own
 	case sl <= -2:
 		if c.Met[id] && e.Active() {
-			return arch + " who call themselves the " + e.Name
+			return arch + " who call themselves the " + e.Tok()
 		}
 		return arch
 	case sl == 0 && t.Wear == 1 && !c.Met[id]:
-		return "a people called the " + e.Name
+		return "a people called the " + own
 	case sl == 0 && t.Wear >= 2 && !(c.Met[id] && e.Living()):
 		return "a people whose name is lost"
 	}
@@ -382,7 +384,7 @@ func (w *World) starName(c *Civ, t *Tale, star int) string {
 	if t.Wear >= 2 && star != c.Home && star != c.Cradle && !contains(c.Systems, star) && w.Owner[star] != c.ID {
 		return "a star whose name is lost"
 	}
-	return w.star(star)
+	return "{star:" + itoa(star) + "@" + itoa(c.ID) + "}"
 }
 
 func (w *World) remainName(f *Fact) string {
@@ -405,7 +407,7 @@ func (w *World) mythOf(c *Civ, f *Fact) string {
 		case w.seen(c, id) < 0:
 			return "something nameless"
 		}
-		return "the " + w.Civs[id].Name
+		return "the " + w.Civs[id].Tok()
 	}
 	switch f.Kind {
 	case FEnd, FFall:
@@ -453,7 +455,7 @@ func (w *World) blameOf(c *Civ, f *Fact) string {
 	if f.sort() != Woe {
 		return w.deedOf(f)
 	}
-	us := "the " + w.Civs[f.Subject].Name
+	us := "the " + w.Civs[f.Subject].Tok()
 	if f.Subject == c.ID {
 		us = "us"
 	}
@@ -467,7 +469,7 @@ func (w *World) blameOf(c *Civ, f *Fact) string {
 	case FFall, FDeclined, FScarred:
 		return "brought " + us + " low"
 	case FEnd:
-		return "ended the " + w.Civs[f.Subject].Name
+		return "ended the " + w.Civs[f.Subject].Tok()
 	case FSundered:
 		return "tore " + us + " apart"
 	case FShattered:
@@ -499,7 +501,7 @@ func (w *World) deedOf(f *Fact) string {
 	case FScoured, FHomeBroken:
 		return "broke " + w.star(f.Star)
 	case FEnslaved:
-		return "took the " + w.Civs[f.Object].Name
+		return "took the " + w.Civs[f.Object].Tok()
 	case FBetrayal:
 		return f.What
 	case FStripped:
@@ -507,17 +509,17 @@ func (w *World) deedOf(f *Fact) string {
 	case FUnleashed:
 		return "let it loose"
 	case FWar:
-		return "made war on the " + w.Civs[f.Object].Name
+		return "made war on the " + w.Civs[f.Object].Tok()
 	case FEmbargo:
-		return "closed their ports to the " + w.Civs[f.Object].Name
+		return "closed their ports to the " + w.Civs[f.Object].Tok()
 	case FBred:
-		return "remade the " + w.Civs[f.Object].Name
+		return "remade the " + w.Civs[f.Object].Tok()
 	case FManna:
 		return "ate what thought"
 	case FTithed:
-		return "took a share of every harvest of the " + w.Civs[f.Object].Name
+		return "took a share of every harvest of the " + w.Civs[f.Object].Tok()
 	case FWaking:
-		return "woke on the worlds of the " + w.Civs[f.Object].Name
+		return "woke on the worlds of the " + w.Civs[f.Object].Tok()
 	case FUnmade:
 		return "unmade " + w.star(f.Star)
 	}

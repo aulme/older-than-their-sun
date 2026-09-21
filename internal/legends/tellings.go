@@ -35,7 +35,7 @@ func tellings(p func(string, ...any), w *history.World, full bool) {
 		if !c.Living() {
 			state = "told it so, at the end"
 		}
-		p("The %s %s (%d things held, %d of them myth, %d forgotten, %d retold):", c.Name, state, held, myth, c.Tally.Forgot, c.Tally.Revised)
+		p("The %s %s (%d things held, %d of them myth, %d forgotten, %d retold):", c.Tok(), state, held, myth, c.Tally.Forgot, c.Tally.Revised)
 		if len(tales) == 0 {
 			p("  nothing; they have no story yet")
 		}
@@ -43,7 +43,7 @@ func tellings(p func(string, ...any), w *history.World, full bool) {
 			src := ""
 			switch t.Source {
 			case history.Told:
-				src = fmt.Sprintf(" [told by the %s]", w.Civs[t.From].Name)
+				src = fmt.Sprintf(" [told by the %s]", w.Civs[t.From].Tok())
 			case history.Read:
 				src = " [read in a ruin]"
 			case history.Inherited:

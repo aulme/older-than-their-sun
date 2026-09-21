@@ -99,7 +99,7 @@ func TestChanceRate(t *testing.T) {
 // TestHarness: a known people raised on a small world lives through a few
 // ticks of the pipeline and the world stays consistent.
 func TestHarness(t *testing.T) {
-	w := newTestWorld(t, 5, 60)
+	w := newTestWorld(t, 6, 60)
 	c := spawnAt(w, 0, species.Fixed("cooperative"))
 	if c.Home != 0 || w.Owner[0] != c.ID || !c.Has("cooperative") {
 		t.Fatalf("spawnAt did not raise the people at star 0: home %d owner %d", c.Home, w.Owner[0])

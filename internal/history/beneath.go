@@ -27,11 +27,6 @@ var causal = map[string]bool{"ftl": true, "ansible": true, "foresight": true, "u
 // wear per thousand years of holding each causal miracle
 var wear = map[string]float64{"ftl": 0.0015, "ansible": 0.001, "foresight": 0.0005, "unmaking": 0.001}
 
-// words a people might coin for the state; each people gets its own
-var beneathWords = []string{"the Grain", "the Quiet", "the Sea Beneath", "the Underneath", "the Blank", "the Between", "the Still",
-	"the Floor", "the Hollow", "the Elsewhere", "the Interval", "the Ground", "the Unplace", "the Undertow", "the Low", "the Deep Water",
-	"the Other Side of the Page", "the Back of the Sky", "the White", "the Absence", "the Long Now", "the Nothing", "the Unlit", "the Lull"}
-
 // naming: what each miracle's holders say about the state when they first
 // reach into it. The people's word is the %s.
 var beneathNames = map[string]string{
@@ -42,27 +37,17 @@ var beneathNames = map[string]string{
 	"wound":     "There is a place in the %s where the wall is not. They call what shows through it %s, and it is the only thing they are afraid of.",
 }
 
-// name gives a people its word for the state, once, on first reaching in.
+// name is a people reaching into the state for the first time: the fact
+// the names pass coins its word from, once. An heir has its line's word
+// already (the pass reads the line), so it writes no fact of its own.
 func (w *World) name(c *Civ, key string) {
-	if c.Word != "" {
+	if c.Named {
 		return
 	}
-	used := map[string]bool{}
-	for _, o := range w.Civs {
-		used[o.Word] = true
-	}
-	var free []string
-	for _, s := range beneathWords {
-		if !used[s] {
-			free = append(free, s)
-		}
-	}
-	if len(free) == 0 {
-		free = beneathWords
-	}
-	c.Word = free[w.R.IntN(len(free))]
+	c.Named = true
+	w.factOf(FWord, c, nil, -1, key)
 	if t, ok := beneathNames[key]; ok {
-		w.log(t, c.Name, c.Word)
+		w.log(t, c.Tok(), c.wordTok())
 	}
 }
 
@@ -154,11 +139,11 @@ func (w *World) leak() {
 		if len(keys) > 0 {
 			filter = tech.Get(keys[w.R.IntN(len(keys))]).Filter
 		}
-		word := c.Word
-		if word == "" {
+		word := c.wordTok()
+		if !c.Named {
 			word = "it"
 		}
-		w.log("Some of the %s begin to see %s as a place, with a shore and a weather. That is never good; it means something is coming through.", c.Name, word)
+		w.log("Some of the %s begin to see %s as a place, with a shore and a weather. That is never good; it means something is coming through.", c.Tok(), word)
 		delete(c.Faced, filter) // a leak is a second facing
 		w.face(c, filter, 1)
 	case x < 0.85:
@@ -170,7 +155,7 @@ func (w *World) leak() {
 		}
 		if len(sleeping) > 0 {
 			c := sleeping[w.R.IntN(len(sleeping))]
-			w.log("The wall is thin near %s now, and something that slept there notices.", c.HomeName)
+			w.log("The wall is thin near %s now, and something that slept there notices.", w.star(c.Home))
 			w.rouse(c, nil)
 			return
 		}

@@ -48,8 +48,8 @@ func (w *World) takeSlight(wr *War, p, a, b *Civ, s float64) {
 	p.Tally.Slights += s
 	if !wr.SlightTold[p.ID] && wr.Slighted[p.ID] >= t.Fact {
 		wr.SlightTold[p.ID] = true
-		w.factOf(FSlight, a, p, -1, b.Name)
-		w.log("The %s trade with the %s, and take the %s's war on them as a wrong done to themselves.", p.Name, b.Name, a.Name)
+		w.factOf(FSlight, a, p, -1, b.Tok())
+		w.log("The %s trade with the %s, and take the %s's war on them as a wrong done to themselves.", p.Tok(), b.Tok(), a.Tok())
 	}
 }
 
@@ -107,7 +107,7 @@ func (w *World) offence(c, e *Civ) []mind.Slighted {
 			continue
 		}
 		stake := 1 + c.From[pid].Total()/max(c.Income.Total(), 1)
-		out = append(out, mind.Slighted{Name: p.Name, Slight: care * s * stake})
+		out = append(out, mind.Slighted{Name: p.Tok(), Slight: care * s * stake})
 	}
 	return out
 }

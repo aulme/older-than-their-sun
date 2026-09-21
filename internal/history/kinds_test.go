@@ -51,7 +51,7 @@ func TestHiveNeverStiffens(t *testing.T) {
 	c := cs[0]
 	for _, x := range w.Civs {
 		if x.Species == c.Species && (x.Stiff > 0 || x.Tally.OssFaced > 0 || x.Ossified) {
-			t.Fatalf("the hive %s: stiffness %g, faced %d", x.Name, x.Stiff, x.Tally.OssFaced)
+			t.Fatalf("the hive %s: stiffness %g, faced %d", x.Tok(), x.Stiff, x.Tally.OssFaced)
 		}
 	}
 }
@@ -79,7 +79,7 @@ func TestUnconsciousHoldsNothing(t *testing.T) {
 			continue
 		}
 		if len(x.Grudge) != 0 || x.Morale != 0 || x.Morality.Kind != Amoral {
-			t.Fatalf("the unconscious %s: grudges %v, morale %g, morality %s", x.Name, x.Grudge, x.Morale, x.Morality.Word())
+			t.Fatalf("the unconscious %s: grudges %v, morale %g, morality %s", x.Tok(), x.Grudge, x.Morale, x.Morality.Word())
 		}
 	}
 }
@@ -95,7 +95,7 @@ func TestPlanetaryStaysHome(t *testing.T) {
 			continue
 		}
 		if len(w.fleetsOf(x)) > 0 || x.Tally.Fleets > 0 || x.Tally.Scouts > 0 || x.Tally.Surveys > 0 {
-			t.Fatalf("the world %s launched: %d fleets, %d/%d/%d", x.Name, len(w.fleetsOf(x)), x.Tally.Fleets, x.Tally.Scouts, x.Tally.Surveys)
+			t.Fatalf("the world %s launched: %d fleets, %d/%d/%d", x.Tok(), len(w.fleetsOf(x)), x.Tally.Fleets, x.Tally.Scouts, x.Tally.Surveys)
 		}
 		if x.Peak > cap {
 			t.Fatalf("the world held %d, the cap is %d", x.Peak, cap)
@@ -177,7 +177,7 @@ func TestEldritchLives(t *testing.T) {
 			continue
 		}
 		if len(x.Voyages) > 0 || x.Tally.Blind > 0 || x.Pursuit != "" || x.Progress > 0 {
-			t.Fatalf("the eldritch %s: voyages %d, pursuit %q, progress %g", x.Name, len(x.Voyages), x.Pursuit, x.Progress)
+			t.Fatalf("the eldritch %s: voyages %d, pursuit %q, progress %g", x.Tok(), len(x.Voyages), x.Pursuit, x.Progress)
 		}
 		for k := range x.Known {
 			if p := powerNode(k); p == "" {

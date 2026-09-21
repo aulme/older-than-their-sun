@@ -1,7 +1,6 @@
 package history
 
 import (
-	"worldgen/internal/names"
 	"worldgen/internal/species"
 )
 
@@ -20,8 +19,7 @@ import (
 // the old people: its tree, its scars and boons, its telling, its line.
 // It holds nothing until the dealing gives it something.
 func (w *World) heir(old *Civ, home int, origin string) *Civ {
-	nc := w.newCiv(home, old.Species, -1, names.Civ(w.R))
-	nc.HomeName, nc.CradleName = w.star(home), w.star(home)
+	nc := w.newCiv(home, old.Species, -1)
 	nc.Origin = origin
 	nc.Line = append(append([]int(nil), old.Line...), old.ID)
 	nc.Systems, nc.Peak = nil, 0
@@ -32,7 +30,7 @@ func (w *World) heir(old *Civ, home int, origin string) *Civ {
 	nc.DarkAges, nc.Renaissances = old.DarkAges, old.Renaissances // the institutions are the old ones', however new the name
 	nc.LastDark = old.LastDark
 	nc.NextDrift = old.NextDrift
-	nc.Word = old.Word
+	nc.Named = old.Named // the line's word for the state beneath is the heir's; see beneath.go
 	for k := range old.Known {
 		nc.Known[k] = true
 	}
@@ -302,9 +300,9 @@ func (w *World) sunder(old *Civ, heirs []*Civ, fate Fate, cause string) {
 	old.Wars, old.Trade = map[int]bool{}, map[int]bool{}
 	old.Stage, old.Fate, old.Cause, old.Ended, old.Fell = Dead, fate, cause, w.Now, w.Now
 	old.FellDependent = len(old.Dependent) > 0
-	old.Into = "the " + heirs[0].Name
+	old.Into = "the " + heirs[0].Tok()
 	for _, h := range heirs[1:] {
-		old.Into += ", the " + h.Name
+		old.Into += ", the " + h.Tok()
 	}
 }
 
@@ -316,7 +314,7 @@ func (w *World) inheritWar(wr *War, old, h *Civ) {
 		return
 	}
 	i := wr.side(old.ID)
-	nw := &War{ID: len(w.Wars), Sides: [2]int{h.ID, e.ID}, Began: wr.Began, Cause: wr.Cause, Nth: 1, Pact: -1, Principal: -1, Hire: -1, Contested: map[int]int{}, Called: map[int]bool{},
+	nw := &War{ID: len(w.Wars), Sides: [2]int{h.ID, e.ID}, Began: wr.Began, Cause: wr.Cause, Nth: 1, Named: -1, Pact: -1, Principal: -1, Hire: -1, Contested: map[int]int{}, Called: map[int]bool{},
 		Slights: map[int]float64{}, Sent: map[int]float64{}, Slighted: map[int]float64{}, SlightTold: map[int]bool{}}
 	nw.Will = [2]float64{wr.Will[i], wr.Will[1-i]}
 	w.Wars = append(w.Wars, nw)
@@ -335,7 +333,7 @@ func (w *World) civilWar(c *Civ) bool {
 		return false
 	}
 	if !c.Species.Profile().Can(species.CivilWars) {
-		w.log("The %s cannot split; a hive has no factions. The pressure goes elsewhere.", c.Name)
+		w.log("The %s cannot split; a hive has no factions. The pressure goes elsewhere.", c.Tok())
 		c.Morale -= 1
 		return false
 	}
@@ -349,9 +347,9 @@ func (w *World) civilWar(c *Civ) bool {
 	}
 	if len(parts) < 2 {
 		if c.Aloft {
-			w.log("Unrest in the fleets of the %s. It passes, this time.", c.Name)
+			w.log("Unrest in the fleets of the %s. It passes, this time.", c.Tok())
 		} else {
-			w.log("Unrest among the %s on %s. It passes, this time.", c.Name, c.HomeName)
+			w.log("Unrest among the %s on %s. It passes, this time.", c.Tok(), w.star(c.Home))
 		}
 		c.Morale -= 0.5
 		return false
@@ -397,7 +395,7 @@ func (w *World) civilWar(c *Civ) bool {
 		} else {
 			d.seat = i
 		}
-		h := w.heir(c, home, "heirs of the "+c.Name)
+		h := w.heir(c, home, "heirs of the "+c.Tok())
 		h.Aloft = c.Aloft
 		d.heirs = append(d.heirs, h)
 	}
@@ -427,6 +425,7 @@ func (w *World) civilWar(c *Civ) bool {
 		for _, b := range d.heirs[i+1:] {
 			a.Met[b.ID], b.Met[a.ID], a.Reached[b.ID], b.Reached[a.ID] = true, true, true, true
 			a.Fathomed[b.ID], b.Fathomed[a.ID] = true, true
+			w.meeting(a, b, -1, "touch") // kin know each other from the first
 			w.declare(a, b, "the sundering")
 			a.resent(b.ID, t.SunderGrudge)
 			b.resent(a.ID, t.SunderGrudge)
@@ -439,17 +438,17 @@ func (w *World) civilWar(c *Civ) bool {
 func (w *World) tearApart(old *Civ, heirs []*Civ, seat *Civ) {
 	for _, h := range heirs {
 		f := w.factN(FSundered, old, h, h.Home, len(heirs))
-		f.What = "the true " + old.Name
+		f.What = "the true " + old.Tok()
 	}
 	var ns []string
 	for _, h := range heirs {
-		ns = append(ns, "the "+h.Name)
+		ns = append(ns, "the "+h.Tok())
 	}
 	seatLine := ""
 	if !old.Aloft {
-		seatLine = sprintf(" The %s hold the old seat.", seat.Name)
+		seatLine = sprintf(" The %s hold the old seat.", seat.Tok())
 	}
-	w.log("The %s tear themselves in %s: %s, each the true %s by its own telling, each holding the others traitors.%s", old.Name, numberWord(len(heirs)), listOf(ns), old.Name, seatLine)
+	w.log("The %s tear themselves in %s: %s, each the true %s by its own telling, each holding the others traitors.%s", old.Tok(), numberWord(len(heirs)), listOf(ns), old.Tok(), seatLine)
 }
 
 // shatter is the dark age that took the stars: every world its own people,
@@ -478,7 +477,7 @@ func (w *World) shatter(c *Civ, why string, forgotten []string) {
 	d := &dealing{world: map[int]int{}, fleet: map[int]int{}, random: func() int { return 0 }}
 	for i, s := range worlds {
 		d.world[s] = i
-		h := w.heir(c, s, "heirs of the "+c.Name)
+		h := w.heir(c, s, "heirs of the "+c.Tok())
 		d.heirs = append(d.heirs, h)
 	}
 	w.deal(c, d, Shattered, "forgot how to reach the stars")
@@ -491,7 +490,7 @@ func (w *World) shatter(c *Civ, why string, forgotten []string) {
 		f := w.factN(FShattered, c, h, h.Home, len(worlds))
 		f.What = why
 	}
-	w.log("The %s forget how to reach the stars. On %s worlds %s peoples wake up alone: %s.", c.Name, numberWord(len(worlds)), numberWord(len(worlds)), w.shardList(d.heirs))
+	w.log("The %s forget how to reach the stars. On %s worlds %s peoples wake up alone: %s.", c.Tok(), numberWord(len(worlds)), numberWord(len(worlds)), w.shardList(d.heirs))
 }
 
 // cutOff is a world cut from signal reach of its seat for long enough: a
@@ -503,7 +502,7 @@ func (w *World) cutOff(c *Civ, star int) *Civ {
 	if !c.Active() || !contains(c.Systems, star) || star == c.Home {
 		return nil
 	}
-	h := w.heir(c, star, "cut from the "+c.Name)
+	h := w.heir(c, star, "cut from the "+c.Tok())
 	c.Systems = remove(c.Systems, star)
 	w.handWorld(c, h, star)
 	for _, x := range w.fleetsOf(c) {
@@ -519,14 +518,14 @@ func (w *World) cutOff(c *Civ, star int) *Civ {
 	w.renew(c, 0.05)
 	f := w.fact(FSevered, c, h, star)
 	f.What = w.star(star)
-	w.log("%s is too far from %s for one mind to hold. What is there is the %s now: of one blood with the %s, and no longer one of them.", w.star(star), c.HomeName, h.Name, c.Name)
+	w.log("%s is too far from %s for one mind to hold. What is there is the %s now: of one blood with the %s, and no longer one of them.", w.star(star), w.star(c.Home), h.Tok(), c.Tok())
 	return h
 }
 
 func (w *World) shardList(hs []*Civ) string {
 	var ns []string
 	for _, h := range hs {
-		ns = append(ns, "the "+h.Name+" on "+h.HomeName)
+		ns = append(ns, "the "+h.Tok()+" on "+w.star(h.Home))
 	}
 	return listOf(ns)
 }
@@ -579,21 +578,21 @@ func (w *World) claims(c, e *Civ) bool {
 // own telling, and the claims gone when the whole old realm is held.
 func (w *World) reclaimed(c, e *Civ, t int) {
 	w.fact(FReclaimed, c, e, t)
-	w.log("The %s call %s restored to the realm.", c.Name, w.star(t))
+	w.log("The %s call %s restored to the realm.", c.Tok(), w.star(t))
 	for s := range c.Claim {
 		if w.Owner[s] != c.ID {
 			return
 		}
 	}
 	c.Claim = nil
-	w.log("The %s hold every world the %s held. There is nothing left to claim, and they are the %s that hold what the %s held.", c.Name, w.Civs[c.Line[len(c.Line)-1]].Name, c.Name, w.Civs[c.Line[len(c.Line)-1]].Name)
+	w.log("The %s hold every world the %s held. There is nothing left to claim, and they are the %s that hold what the %s held.", c.Tok(), w.Civs[c.Line[len(c.Line)-1]].Tok(), c.Tok(), w.Civs[c.Line[len(c.Line)-1]].Tok())
 }
 
 // kinMeet is kin finding each other again with no feud between them: the
 // tales and the trade at once, no council, and a pact of defence offered
 // with the loyalty dial's odds doubled.
 func (w *World) kinMeet(a, b *Civ) {
-	w.log("The %s and the %s, both of the line of the %s, find each other again.", a.Name, b.Name, w.Civs[w.commonLine(a, b)].Name)
+	w.log("The %s and the %s, both of the line of the %s, find each other again.", a.Tok(), b.Tok(), w.Civs[w.commonLine(a, b)].Tok())
 	w.openPair(a, b)
 	if a.Free() && b.Free() && !w.allied(a, b) {
 		w.send(a, b, &Message{Kind: MsgPact, PactKind: Defensive, Target: -1, Pact: -1})

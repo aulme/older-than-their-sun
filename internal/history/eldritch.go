@@ -67,7 +67,7 @@ func (w *World) appear(c *Civ) {
 	w.holdWorld(c, s)
 	c.Tally.Appeared++
 	w.fact(FAppeared, c, nil, s)
-	w.log("Another of the %s is at %s. Nothing was seen to cross.", c.Name, w.star(s))
+	w.log("Another of the %s is at %s. Nothing was seen to cross.", c.Tok(), w.star(s))
 	w.afterHold(c, s)
 }
 
@@ -92,7 +92,7 @@ func (w *World) gainPower(c *Civ, p *species.Power) {
 	w.stir(c)
 	f := w.fact(FDeepened, c, nil, c.Home)
 	f.What = p.Name
-	w.log("%s", capitalise(strings.ReplaceAll(p.Line, "{S}", "the "+c.Name)))
+	w.log("%s", capitalise(strings.ReplaceAll(p.Line, "{S}", "the "+c.Tok())))
 	w.bring(c, p, true)
 }
 
@@ -170,7 +170,7 @@ func (w *World) tithed(c *Civ, in flow.Income) flow.Income {
 			c.tithedBy[e.ID] = true
 			e.Tally.Tithed++
 			w.fact(FTithed, e, c, c.Home)
-			w.log("Something is taken from every harvest of the %s within reach of the %s. Nobody agreed to it, and nothing can be found to refuse.", c.Name, e.Name)
+			w.log("Something is taken from every harvest of the %s within reach of the %s. Nobody agreed to it, and nothing can be found to refuse.", c.Tok(), e.Tok())
 		}
 	}
 	return in
@@ -202,7 +202,7 @@ func (w *World) mirrored(a, b *Civ) {
 		}
 		s.Scars[ScarSignal] = true
 		s.Morale -= 1
-		w.log("The %s speak to the %s, and what answers is their own voice, older than they are. A cult of the signal grows among them and is never quite rooted out.", s.Name, m.Name)
+		w.log("The %s speak to the %s, and what answers is their own voice, older than they are. A cult of the signal grows among them and is never quite rooted out.", s.Tok(), m.Tok())
 		w.recompute(s)
 	}
 }
@@ -218,7 +218,7 @@ func (w *World) sleep(c *Civ) {
 	c.Slept = w.Now
 	c.Tally.Sleeps++
 	c.Voyages = nil
-	w.log("The %s go still. There is nothing left they want, and nothing near them moves. They sleep.", c.Name)
+	w.log("The %s go still. There is nothing left they want, and nothing near them moves. They sleep.", c.Tok())
 }
 
 // rouse is the sleeper disturbed: by whoever settled inside its reach,
@@ -237,12 +237,13 @@ func (w *World) rouse(c, by *Civ) {
 	c.Tally.Wakings++
 	w.recompute(c)
 	if by != nil {
-		w.log("Something came too close, and the %s wake.", c.Name)
+		w.log("Something came too close, and the %s wake.", c.Tok())
 	} else {
-		w.log("The %s wake.", c.Name)
+		w.log("The %s wake.", c.Tok())
 	}
-	if by != nil && by.Active() {
+	if by != nil && by.Active() && !(c.Met[by.ID] && by.Met[c.ID]) {
 		c.Met[by.ID], by.Met[c.ID] = true, true
+		w.meeting(c, by, c.Home, "touch")
 	}
 	if w.canWake(c) {
 		w.wakeOnAll(c, by)
@@ -270,6 +271,9 @@ func (w *World) wakeOnAll(c, first *Civ) {
 			return
 		}
 		if worlds := w.inside(c, e); len(worlds) > 0 && e.Active() {
+			if !(c.Met[e.ID] && e.Met[c.ID]) {
+				w.meeting(c, e, worlds[0], "touch")
+			}
 			c.Met[e.ID], e.Met[c.ID] = true, true
 			w.waking(c, e, worlds)
 		}

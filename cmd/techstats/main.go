@@ -17,6 +17,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -25,6 +26,7 @@ import (
 	"worldgen/internal/history"
 	"worldgen/internal/legends"
 	"worldgen/internal/mind"
+	"worldgen/internal/names"
 	"worldgen/internal/tech"
 )
 
@@ -61,7 +63,9 @@ type Rec struct {
 	Ever      []string           `json:"ever"`    // ever known: learned or inherited
 	Learned   map[string]float64 `json:"learned"` // node -> Myr after birth
 	Miracles  map[string]string  `json:"miracles"`
-	Word      string             `json:"word,omitempty"`
+	Word      string             `json:"word,omitempty"` // for the state beneath
+	Channel   string             `json:"channel"`        // how the people communicates
+	Voice     string             `json:"voice"`          // how the names pass names it: none, transcribed, translated
 	Record    []string           `json:"record"`
 	Scars     []string           `json:"scars"`
 	Boons     []string           `json:"boons"`
@@ -239,6 +243,7 @@ func must(err error) {
 
 func flatten(w *history.World) []Rec {
 	var out []Rec
+	book := names.Of(w)
 	for _, c := range w.Civs {
 		end := c.Fell
 		if c.Active() {
@@ -246,10 +251,10 @@ func flatten(w *history.World) []Rec {
 		}
 		born := max(c.Born, w.Cfg.Dawn) // a sleeper the deep pass left is counted from the dawn, not from the age it slept through
 		r := Rec{
-			Seed: w.Seed, ID: c.ID, Name: c.Name, Species: c.Species.Name, Sub: c.Species.Sub.String(), World: c.Species.World.Key, Made: c.Species.Made,
+			Seed: w.Seed, ID: c.ID, Name: book.Text(c.Tok()), Species: book.Text("{species:" + strconv.Itoa(c.Species.ID) + "}"), Sub: c.Species.Sub.String(), World: c.Species.World.Key, Made: book.Text(c.Species.Made),
 			Born: float64(born-w.Cfg.Dawn) / 1e6, Lived: float64(end-born) / 1e6,
-			Fate: c.Fate.String(), Cause: c.Cause, Into: c.Into, Standing: c.Active(), Origin: c.Origin, Sick: -1, Master: c.Sire >= 0,
-			Peak: c.Peak, Ruled: c.Ruled, Uplifts: c.Uplifts, Word: c.Word,
+			Fate: c.Fate.String(), Cause: book.Text(c.Cause), Into: book.Text(c.Into), Standing: c.Active(), Origin: book.Text(c.Origin), Sick: -1, Master: c.Sire >= 0,
+			Peak: c.Peak, Ruled: c.Ruled, Uplifts: c.Uplifts, Channel: c.Species.Channel, Voice: string(book.Voice(c)),
 			Miracles: map[string]string{}, Learned: map[string]float64{},
 			Record: append([]string(nil), c.Record...), Mil: c.Mil, Sur: c.Sur, Soc: c.Soc,
 			Wis: c.Wis, PeakWis: c.PeakWis, WisFrom: history.WisdomParts(c),
@@ -259,6 +264,12 @@ func flatten(w *history.World) []Rec {
 		}
 		if c.FirstPlague > 0 {
 			r.Sick = float64(c.FirstPlague-c.Born) / 1e6
+		}
+		if c.Named {
+			r.Word = book.Text("{word:" + strconv.Itoa(c.ID) + "}")
+		}
+		for i := range r.Record {
+			r.Record[i] = book.Text(r.Record[i])
 		}
 		for _, d := range c.Species.Mods.Defs() {
 			r.Mods = append(r.Mods, d.Key)
@@ -530,7 +541,7 @@ func effects(n *tech.Node) string {
 	return strings.Join(e, "; ")
 }
 
-func names(keys []string) string {
+func nodeNames(keys []string) string {
 	var out []string
 	for _, k := range keys {
 		out = append(out, tech.Get(k).Name)
@@ -1013,7 +1024,7 @@ func row(recs []Rec, n *tech.Node) string {
 	if len(at) > 0 {
 		learned = fmt.Sprintf("%.2f Myr", median(at))
 	}
-	return fmt.Sprintf("| %s | %s | %s | %s | %d (%s) | %s | %s | %.2f | %s |", n.Name, n.Domain, names(n.Prereqs), price, reached, pct(reached, N), pct(reached, eligible), learned, median(life), effects(n))
+	return fmt.Sprintf("| %s | %s | %s | %s | %d (%s) | %s | %s | %.2f | %s |", n.Name, n.Domain, nodeNames(n.Prereqs), price, reached, pct(reached, N), pct(reached, eligible), learned, median(life), effects(n))
 }
 
 // forMatches says whether a node reserved for some peoples is on this one's tree.

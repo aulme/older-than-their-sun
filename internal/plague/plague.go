@@ -9,8 +9,6 @@ package plague
 import (
 	"math"
 	"math/rand/v2"
-
-	"worldgen/internal/names"
 )
 
 // Kind is where a plague lives.
@@ -23,18 +21,17 @@ const (
 
 func (k Kind) String() string { return [...]string{"biological", "memetic"}[k] }
 
-// Plague is one sickness: a name, a kind, a contagion and a lethality.
+// Plague is one sickness: a kind, a contagion and a lethality. Its name
+// is a row of the names pass, keyed by the history's id for it.
 // Contagion is the chance a channel carries it and how hard it is to
 // shake; lethality is the damage once it is in. The two are drawn apart,
 // so they work against each other by construction: what kills its hosts
 // in three ticks has three ticks to cross a trade link, and what kills
 // nobody has the age.
 type Plague struct {
-	Name       string
 	Kind       Kind
 	Contagion  float64 // c, in (0, 1]
 	Lethality  float64 // l, in (0, 1]
-	Named      bool    // named for its first host, which that host remembers
 	Conscious  bool    // a parasite people waiting to happen: it wakes when its first host's home goes over
 	Engineered bool    // made as a weapon
 	Band       int     // the species it was tailored to catch, with its kin; -1 for any body
@@ -98,11 +95,9 @@ func Default() Tuning {
 }
 
 // New draws a plague of a kind: contagion and lethality uniform in
-// (0, 1] and independent, a name, and whether it thinks. host is what the
-// neighbours might name it for, "" for nothing.
-func New(r *rand.Rand, kind Kind, host string, t *Tuning) Plague {
+// (0, 1] and independent, and whether it thinks.
+func New(r *rand.Rand, kind Kind, t *Tuning) Plague {
 	p := Plague{Kind: kind, Contagion: 1 - r.Float64(), Lethality: 1 - r.Float64(), Band: -1}
-	p.Name, p.Named = names.Plague(r, kind == Memetic, host)
 	p.Conscious = r.Float64() < t.Conscious
 	return p
 }
@@ -204,8 +199,8 @@ func Make(kind Kind, c, l float64, conscious bool) Plague {
 
 // Loose is a plague that got out of the vial before it was shaped: drawn
 // within the band, and it may think.
-func Loose(r *rand.Rand, kind Kind, band float64, host string, t *Tuning) Plague {
-	p := New(r, kind, host, t)
+func Loose(r *rand.Rand, kind Kind, band float64, t *Tuning) Plague {
+	p := New(r, kind, t)
 	p.Contagion, p.Lethality, p.Engineered = p.Contagion*band, p.Lethality*band, true
 	return p
 }

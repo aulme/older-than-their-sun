@@ -34,7 +34,7 @@ func naturalRarities(g *galaxy.Galaxy) []*Source {
 	for i := range g.Stars {
 		st := &g.Stars[i]
 		sys := g.Sys[i]
-		name := st.Name
+		name := "{star:" + itoa(i) + "}"
 		switch {
 		case st.Class == 'N' && (st.Remnant == "black hole" || st.Remnant == "the great hole"):
 			at(i, "horizon", "the horizon at "+name, Source{Grants: []string{"causal_physics", "deep_time"}})
@@ -146,7 +146,7 @@ func (w *World) firstHarness(c *Civ, s *Source) {
 	if !ok || line == "" {
 		return
 	}
-	w.log(line, c.Name, s.Name)
+	w.log(line, c.Tok(), s.Name)
 	w.factOf(FHarness, c, nil, max(s.Star, c.Home), s.Name)
 }
 
@@ -245,10 +245,10 @@ func (w *World) rare(c *Civ) bool {
 		matters := len(s.Grants) > 0 || s.Reach > 0
 		switch {
 		case x.via >= 0 && matters:
-			w.log("The %s have the use of %s, by the grace of the %s.", c.Name, s.Name, w.Civs[x.via].Name)
+			w.log("The %s have the use of %s, by the grace of the %s.", c.Tok(), s.Name, w.Civs[x.via].Tok())
 		case x.via < 0:
 			if line := rarityLines[s.Key]; line != "" && (s.Star != c.Cradle || matters) {
-				w.log(line, c.Name, s.Name)
+				w.log(line, c.Tok(), s.Name)
 			}
 		}
 	}
@@ -302,10 +302,10 @@ func (w *World) carryOff(c, e *Civ, star int, x *Expedition) {
 		w.transfer(s, e, c)
 		if x != nil {
 			s.Carried, s.Star = x.ID, -1
-			w.log("The %s carry off %s with the fleet.", c.Name, s.Name)
+			w.log("The %s carry off %s with the fleet.", c.Tok(), s.Name)
 		} else {
 			s.Star = c.Home
-			w.log("The %s carry off %s to %s.", c.Name, s.Name, c.HomeName)
+			w.log("The %s carry off %s to %s.", c.Tok(), s.Name, w.star(c.Home))
 		}
 	}
 }

@@ -2,8 +2,6 @@ package species
 
 import (
 	"math/rand/v2"
-
-	"worldgen/internal/names"
 )
 
 // The generator rolls a chain: the substrate by weight, then the trait
@@ -78,7 +76,7 @@ func GenerateWith(r *rand.Rand, mult int, arch string, sub Substrate, mods Mod) 
 
 // Roll runs the chain.
 func Roll(r *rand.Rand, mult int, o Options) *Species {
-	s := &Species{Name: names.Civ(r)}
+	s := &Species{}
 	if o.Fix {
 		s.Sub = o.Sub
 	} else {
@@ -181,6 +179,7 @@ func Roll(r *rand.Rand, mult int, o Options) *Species {
 		}
 		s.Add(pick(g.group).Key)
 	}
+	s.Channel = rollChannel(r, s)
 	if !s.Profile().Can(Researches) {
 		// no tree: the pool instead, a few at birth
 		n := bornPowersMin + r.IntN(bornPowersMax-bornPowersMin+1)
@@ -272,4 +271,57 @@ func PickFor(r *rand.Rand, group string, s *Species) *Trait {
 		return nil
 	}
 	return pickWeighted(r, xs, func(t *Trait) float64 { return t.Weight })
+}
+
+// rollChannel is how a people communicates, from what it is: a machine
+// in the field, a hive in scents, a planet or an eldritch thing not at
+// all; a body by sound unless it is deaf, hears light, senses the
+// current, tastes the air or is rooted, each of which tilts it elsewhere.
+func rollChannel(r *rand.Rand, s *Species) string {
+	switch {
+	case s.Is(Planetary), s.Is(Unconscious), s.Sub == Eldritch:
+		return NoChannel
+	case s.Sub == Machine, s.Is(Replicator):
+		return Electromagnetic
+	case s.Is(Hive):
+		if r.Float64() < 0.7 {
+			return Chemical
+		}
+		return Sound
+	case s.Sub == Parasite:
+		return NoChannel // it speaks through its host
+	}
+	w := map[string]float64{Sound: 70, Light: 6, Electromagnetic: 4, Chemical: 6, Touch: 2}
+	if s.Has("deaf") {
+		w[Sound] = 0
+	}
+	if s.Has("eyeless") {
+		w[Light] = 0
+		w[Sound] *= 1.5
+	}
+	if s.Has("lighthearing") {
+		w[Light] *= 6
+	}
+	if s.Has("electric") || s.Has("magnetic") {
+		w[Electromagnetic] *= 6
+	}
+	if s.Has("chemical") {
+		w[Chemical] *= 6
+	}
+	if s.Has("sessile") {
+		w[Touch] *= 8
+		w[Chemical] *= 2
+	}
+	total := 0.0
+	for _, k := range Channels {
+		total += w[k]
+	}
+	x := r.Float64() * total
+	for _, k := range Channels {
+		x -= w[k]
+		if x < 0 {
+			return k
+		}
+	}
+	return Sound
 }

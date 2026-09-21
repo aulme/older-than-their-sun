@@ -172,14 +172,14 @@ func (w *World) renaissance(c *Civ) {
 	c.Morale += 1
 	c.Tally.OssRenewed++
 	w.fact(FRenaissance, c, nil, c.Home)
-	w.log("The %s grow old and tired, and then, unexpectedly, young again. A renaissance.", c.Name)
+	w.log("The %s grow old and tired, and then, unexpectedly, young again. A renaissance.", c.Tok())
 }
 
 // set is the near miss: the people stops changing.
 func (w *World) set(c *Civ) {
 	c.Ossified = true
 	c.Tally.OssSet++
-	w.log("The %s stop changing. Every year is like the last. It works, for a while.", c.Name)
+	w.log("The %s stop changing. Every year is like the last. It works, for a while.", c.Tok())
 }
 
 // breakDown is the bad miss: a civil war where the people has the worlds

@@ -80,7 +80,7 @@ func antimemeticPair(t *testing.T, seed uint64, a, b int) (*World, *Civ, *Civ) {
 // one and the anti-memetic side has; with the node it does, and a dark
 // age that forgets the node forgets the people too.
 func TestUnseen(t *testing.T) {
-	w, c, x := antimemeticPair(t, 61, 1, 2)
+	w, c, x := antimemeticPair(t, 65, 1, 2)
 	if !w.touch(c, x) && !w.hear(c, x) {
 		t.Skip("not in touch")
 	}

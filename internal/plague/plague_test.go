@@ -150,27 +150,21 @@ func TestCatch(t *testing.T) {
 func TestNew(t *testing.T) {
 	tn := Default()
 	r := rand.New(rand.NewPCG(5, 6))
-	named, conscious := 0, 0
+	conscious := 0
 	for range 3000 {
-		p := New(r, Biological, "Qaosh", &tn)
-		if p.Contagion <= 0 || p.Contagion > 1 || p.Lethality <= 0 || p.Lethality > 1 || p.Name == "" || p.Band != -1 {
+		p := New(r, Biological, &tn)
+		if p.Contagion <= 0 || p.Contagion > 1 || p.Lethality <= 0 || p.Lethality > 1 || p.Band != -1 {
 			t.Fatalf("a malformed plague: %+v", p)
-		}
-		if p.Named {
-			named++
 		}
 		if p.Conscious {
 			conscious++
 		}
 	}
-	if named < 900 || named > 1100 {
-		t.Errorf("%d of 3000 named for the host, want about a third", named)
-	}
 	if conscious < 35 || conscious > 90 {
 		t.Errorf("%d of 3000 conscious, want about one in fifty", conscious)
 	}
-	if p := New(r, Memetic, "", &tn); p.Named || p.Kind != Memetic {
-		t.Errorf("a plague with no host to name it for: %+v", p)
+	if p := New(r, Memetic, &tn); p.Kind != Memetic {
+		t.Errorf("a plague of the wrong kind: %+v", p)
 	}
 }
 
@@ -201,7 +195,7 @@ func TestMade(t *testing.T) {
 	}
 	r := rand.New(rand.NewPCG(9, 9))
 	for range 100 {
-		if p := Loose(r, Biological, 0.5, "x", &tn); p.Contagion > 0.5 || p.Lethality > 0.5 || !p.Engineered {
+		if p := Loose(r, Biological, 0.5, &tn); p.Contagion > 0.5 || p.Lethality > 0.5 || !p.Engineered {
 			t.Fatalf("a loose plague outside its band: %+v", p)
 		}
 	}

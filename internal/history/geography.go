@@ -84,9 +84,9 @@ func (w *World) lawDiff(key string) float64 {
 }
 
 // starDetail names a star with its class and what Earth knows of it.
-func (w *World) starDetail(id int, name string) string {
+func (w *World) starDetail(id int) string {
 	s := &w.G.Stars[id]
-	d := fmt.Sprintf("%s (%s", name, s.ClassName())
+	d := fmt.Sprintf("%s (%s", w.star(id), s.ClassName())
 	if s.Real && s.Alt != "" {
 		d += ", " + s.Alt
 	}
@@ -98,9 +98,8 @@ func (w *World) starDetail(id int, name string) string {
 
 // systemLine describes a star's system for the legends.
 func (w *World) systemLine(id int) string {
-	s := &w.G.Stars[id]
 	sys := w.G.Sys[id]
-	name := s.Name
+	name := w.star(id)
 	line := "  " + name + ": " + sys.Describe(name) + "."
 	if sys.Missed {
 		line += " The home world is one Earth's surveys never saw."

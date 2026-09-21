@@ -40,10 +40,10 @@ func TestMachinesDeclineMakesAPeople(t *testing.T) {
 		case !c.Active() && c.Fate == Transformed && len(w.Civs) == before+1:
 			nc := w.Civs[before]
 			if nc.Species.Sub != species.Machine || nc.Species.Made == "" || !nc.Active() || nc.Home != star {
-				t.Fatalf("run %d: what the decline made is %s (%s), made %q, active %v at %d", i, nc.Name, nc.Species.Sub, nc.Species.Made, nc.Active(), nc.Home)
+				t.Fatalf("run %d: what the decline made is %s (%s), made %q, active %v at %d", i, nc.Tok(), nc.Species.Sub, nc.Species.Made, nc.Active(), nc.Home)
 			}
 		default:
-			t.Fatalf("run %d: the decline left %s active %v, fate %v, dark ages %d, civs %d to %d", i, c.Name, c.Active(), c.Fate, c.DarkAges, before, len(w.Civs))
+			t.Fatalf("run %d: the decline left %s active %v, fate %v, dark ages %d, civs %d to %d", i, c.Tok(), c.Active(), c.Fate, c.DarkAges, before, len(w.Civs))
 		}
 	}
 }
@@ -192,7 +192,7 @@ func TestTransmitterPayloads(t *testing.T) {
 	}
 	nc := w.Civs[civs]
 	if nc.Species.Sub != species.Parasite || !nc.Has("mindrider") || !strings.Contains(nc.Origin, "came down the signal") || b.Master != nc.ID {
-		t.Fatalf("what woke: %s, %s, origin %q, rides %v", nc.Name, nc.Species.Describe(), nc.Origin, b.Master == nc.ID)
+		t.Fatalf("what woke: %s, %s, origin %q, rides %v", nc.Tok(), nc.Species.Describe(), nc.Origin, b.Master == nc.ID)
 	}
 	an := spawnAt(w, 3, fixedWith(species.Biological, species.Unconscious, nil, "defensive", "practical"))
 	starfaring(w, an)

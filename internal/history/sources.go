@@ -124,9 +124,8 @@ func naturalSources(g *galaxy.Galaxy) ([]*Source, [][]int) {
 	inside := func(star int, kind galaxy.FeatureKind) bool { return insideFeature(g, star, kind) }
 	metals := g.Law.IndustryMul()
 	for i := range g.Stars {
-		st := &g.Stars[i]
 		sys := g.Sys[i]
-		name := st.Name
+		name := "{star:" + itoa(i) + "}"
 		var here []*Source
 		if sys.Home >= 0 {
 			here = append(here,

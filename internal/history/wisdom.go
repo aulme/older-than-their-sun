@@ -294,23 +294,23 @@ func (w *World) fathomed(c, e *Civ, how string) {
 	wars := c.Fought[e.ID]
 	switch {
 	case how == "kin" && rec.Mutual && !w.kin(c, e):
-		w.log("The %s and the %s, of one blood, understand each other at once.", c.Name, e.Name) // a line's meeting has its own line
+		w.log("The %s and the %s, of one blood, understand each other at once.", c.Tok(), e.Tok()) // a line's meeting has its own line
 	case how == "kin", how == "meeting":
 		// the meeting's own line stands for it
 	case how == "chorus":
-		w.log("The %s, who hold the Chorus, understand the %s at once.", c.Name, e.Name)
+		w.log("The %s, who hold the Chorus, understand the %s at once.", c.Tok(), e.Tok())
 	case how == "taught" && rec.Mutual:
-		w.log("The %s, long spoken to, at last understand the %s.", c.Name, e.Name)
+		w.log("The %s, long spoken to, at last understand the %s.", c.Tok(), e.Tok())
 	case how == "broker":
-		w.log("Within a generation the %s understand the %s.", c.Name, e.Name)
+		w.log("Within a generation the %s understand the %s.", c.Tok(), e.Tok())
 	case rec.Mutual && wars > 0:
-		w.log("After %s of silence and %s, the %s come to understand the %s, and find the %s had been talking the whole time.", ago, warsOf(wars), c.Name, e.Name, e.Name)
+		w.log("After %s of silence and %s, the %s come to understand the %s, and find the %s had been talking the whole time.", ago, warsOf(wars), c.Tok(), e.Tok(), e.Tok())
 	case rec.Mutual:
-		w.log("After %s of silence, the %s come to understand the %s, and find the %s had been talking the whole time.", ago, c.Name, e.Name, e.Name)
+		w.log("After %s of silence, the %s come to understand the %s, and find the %s had been talking the whole time.", ago, c.Tok(), e.Tok(), e.Tok())
 	case wars > 0:
-		w.log("After %s of silence and %s, the %s come to understand the %s. The %s do not understand them.", ago, warsOf(wars), c.Name, e.Name, e.Name)
+		w.log("After %s of silence and %s, the %s come to understand the %s. The %s do not understand them.", ago, warsOf(wars), c.Tok(), e.Tok(), e.Tok())
 	default:
-		w.log("After %s of silence, the %s come to understand the %s. The %s do not understand them.", ago, c.Name, e.Name, e.Name)
+		w.log("After %s of silence, the %s come to understand the %s. The %s do not understand them.", ago, c.Tok(), e.Tok(), e.Tok())
 	}
 	if rec.Mutual {
 		w.openPair(c, e)
@@ -353,7 +353,7 @@ func (w *World) openPair(a, b *Civ) {
 	if !a.Reached[b.ID] {
 		return // heard only: the trade is by signal, and nothing crosses with it
 	}
-	w.log("Slow messages cross the dark between the %s and the %s for generations, and then trade.", a.Name, b.Name)
+	w.log("Slow messages cross the dark between the %s and the %s for generations, and then trade.", a.Tok(), b.Tok())
 }
 
 // fathoming is the per-tick pass for one people: the retries on each
@@ -409,7 +409,7 @@ func (w *World) brokering(z *Civ) {
 			if b.Rate == 0 || !w.chance(b.Rate) {
 				continue
 			}
-			w.explain(z, "speaking for the "+c.Name+" to the "+e.Name, b)
+			w.explain(z, "speaking for the "+c.Tok()+" to the "+e.Tok(), b)
 			w.broker(z, c, e)
 		}
 	}
@@ -419,8 +419,8 @@ func (w *World) brokering(z *Civ) {
 // broker's help.
 func (w *World) broker(z, c, e *Civ) {
 	z.Tally.Brokered++
-	w.log("The %s, who know both, speak for the %s to the %s.", z.Name, c.Name, e.Name)
-	w.factOf(FBrokered, z, c, -1, e.Name)
+	w.log("The %s, who know both, speak for the %s to the %s.", z.Tok(), c.Tok(), e.Tok())
+	w.factOf(FBrokered, z, c, -1, e.Tok())
 	w.tryFathom(c, e, "broker", -fathomBroker)
 }
 
@@ -435,7 +435,7 @@ func (w *World) forgetFathomed(c *Civ) {
 		c.FathomTried[eid] = w.Now
 		c.Tally.Unfathomed++
 		if e := w.Civs[eid]; e.Living() {
-			w.log("The %s forget how to speak to the %s.", c.Name, e.Name)
+			w.log("The %s forget how to speak to the %s.", c.Tok(), e.Tok())
 		}
 	}
 }

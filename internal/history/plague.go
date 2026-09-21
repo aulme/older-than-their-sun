@@ -3,7 +3,6 @@ package history
 import (
 	"worldgen/internal/flow"
 	"worldgen/internal/mind"
-	"worldgen/internal/names"
 	"worldgen/internal/plague"
 	"worldgen/internal/species"
 	"worldgen/internal/tech"
@@ -265,13 +264,9 @@ func (w *World) bearPlague(c *Civ) {
 	}
 }
 
-// newPlague draws one, named for its first host one time in three.
+// newPlague draws one; its name is the names pass's, from its first host.
 func (w *World) newPlague(k plague.Kind, host *Civ, cause string) *Plague {
-	name := host.Name
-	if w.R.IntN(2) == 0 {
-		name = host.HomeName
-	}
-	p := &Plague{Plague: plague.New(w.R, k, name, &w.Cfg.Tuning.Plague), ID: len(w.Plagues), Born: w.Now, FirstHost: host.ID, Cause: cause, Maker: -1, Rider: -1, Transmitter: -1}
+	p := &Plague{Plague: plague.New(w.R, k, &w.Cfg.Tuning.Plague), ID: len(w.Plagues), Born: w.Now, FirstHost: host.ID, Cause: cause, Maker: -1, Rider: -1, Transmitter: -1}
 	w.Plagues = append(w.Plagues, p)
 	return p
 }
@@ -297,23 +292,23 @@ func (w *World) infect(c *Civ, p *Plague, from *Civ, roadKey string) *Infection 
 	if p.FirstHost < 0 {
 		p.FirstHost = c.ID
 	}
-	w.factOf(FPlague, c, from, c.Home, p.Name)
+	w.factOf(FPlague, c, from, c.Home, p.Tok()).Plague = p.ID
 	rd := roads[roadKey]
 	switch {
 	case roadKey == "born" && p.Kind == plague.Memetic:
-		w.log("Something moves through the minds of the %s. They call it %s.", c.Name, p.Name)
+		w.log("Something moves through the minds of the %s. They call it %s.", c.Tok(), p.Tok())
 	case roadKey == "born":
-		w.log("Something moves through the worlds of the %s. They call it %s.", c.Name, p.Name)
+		w.log("Something moves through the worlds of the %s. They call it %s.", c.Tok(), p.Tok())
 	case from != nil && rd.Phrase != "":
-		w.log("%s comes to the %s %s.", upper(p.Name), c.Name, sprintf(rd.Phrase, from.Name))
+		w.log("%s comes to the %s %s.", upper(p.Tok()), c.Tok(), sprintf(rd.Phrase, from.Tok()))
 	}
 	if from != nil && rd.Crime {
-		w.factOf(FPlagueGiven, from, c, c.Home, p.Name)
+		w.factOf(FPlagueGiven, from, c, c.Home, p.Tok())
 	}
 	if p.Hosts >= w.Cfg.Tuning.Plague.Wildfire && !p.Wildfire {
 		p.Wildfire = true
-		w.factOf(FWildfire, c, nil, c.Home, p.Name)
-		w.log("%s is everywhere now.", upper(p.Name))
+		w.factOf(FWildfire, c, nil, c.Home, p.Tok())
+		w.log("%s is everywhere now.", upper(p.Tok()))
 	}
 	return inf
 }
@@ -321,6 +316,9 @@ func (w *World) infect(c *Civ, p *Plague, from *Civ, roadKey string) *Infection 
 func upper(s string) string {
 	if s == "" {
 		return s
+	}
+	if s[0] == '{' {
+		return "{^" + s[1:] // a token: the view raises the name it resolves to
 	}
 	return string(s[0]-'a'+'A') + s[1:]
 }
@@ -381,7 +379,7 @@ func (w *World) fightPlagues(c *Civ) {
 		rider := w.riderOf(p)
 		ridden := rider != nil && c.Master == rider.ID && !c.Vassal
 		if rider == nil && p.Rider >= 0 && c.Master == p.Rider {
-			w.log("The %s, who rode the %s, are gone. There is nothing left in them to fight.", w.Civs[p.Rider].Name, c.Name)
+			w.log("The %s, who rode the %s, are gone. There is nothing left in them to fight.", w.Civs[p.Rider].Tok(), c.Tok())
 			w.freed(c, w.Civs[p.Rider])
 			w.cure(c, p)
 			continue
@@ -413,11 +411,11 @@ func (w *World) fightPlagues(c *Civ) {
 			c.Tally.Contained++
 			if !inf.sealed {
 				inf.sealed = true
-				w.log("The %s seal every door against %s.", c.Name, p.Name)
+				w.log("The %s seal every door against %s.", c.Tok(), p.Tok())
 			}
 			if inf.Held == t.CreedTicks && !c.Scars[ScarQuarantine] {
 				c.Scars[ScarQuarantine] = true
-				w.log("Twenty thousand years behind sealed doors, and the %s no longer remember how to open them. It is a creed now.", c.Name)
+				w.log("Twenty thousand years behind sealed doors, and the %s no longer remember how to open them. It is a creed now.", c.Tok())
 			}
 			if rider != nil && !ridden {
 				w.burn(c, rider) // a contained host burns what the rider took from it
@@ -436,13 +434,13 @@ func (w *World) cure(c *Civ, p *Plague) {
 	p.Hosts--
 	p.Cures++
 	c.Tally.Cured++
-	w.factOf(FCured, c, nil, c.Home, p.Name)
+	w.factOf(FCured, c, nil, c.Home, p.Tok())
 	if p.Conscious && p.FirstHost == c.ID && p.Rider < 0 {
 		p.Conscious = false
-		w.log("The %s are rid of %s, and never know it had begun to think.", c.Name, p.Name)
+		w.log("The %s are rid of %s, and never know it had begun to think.", c.Tok(), p.Tok())
 		return
 	}
-	w.log("The %s are rid of %s.", c.Name, p.Name)
+	w.log("The %s are rid of %s.", c.Tok(), p.Tok())
 }
 
 // toll is what a plague takes each tick: morale, and each held world with
@@ -487,34 +485,34 @@ func (w *World) worldLost(c *Civ, p *Plague, s int) {
 	}
 	if p.Kind == plague.Biological {
 		w.Reservoir[s] = &Reservoir{Plague: p.ID, Until: w.Now + Year(p.Contagion*t.ReservoirMyr*1e6)}
-		w.factOf(FPlagueWorld, c, nil, s, p.Name)
+		w.factOf(FPlagueWorld, c, nil, s, p.Tok())
 		switch {
 		case home && len(c.Systems) == 1:
 			p.Peoples++
-			w.endCiv(c, Extinct, "sickened and died of "+p.Name)
+			w.endCiv(c, Extinct, "sickened and died of "+p.Tok())
 		case home:
 			p.Peoples++
 			w.loseSystem(c, s, "quarantined dead cities", "")
-			w.contract(c, "were hollowed out by "+p.Name)
+			w.contract(c, "were hollowed out by "+p.Tok())
 		default:
 			w.loseSystem(c, s, "quarantined dead cities", "")
-			w.log("%s empties %s, a %s of the %s. The cities are sealed and left.", upper(p.Name), w.star(s), c.Species.Flavour().Colony, c.Name)
+			w.log("%s empties %s, a %s of the %s. The cities are sealed and left.", upper(p.Tok()), w.star(s), c.Species.Flavour().Colony, c.Tok())
 		}
 		return
 	}
 	cult := w.R.Float64() < t.CultChance
-	f := w.factOf(FBelieved, c, nil, s, p.Name)
+	f := w.factOf(FBelieved, c, nil, s, p.Tok())
 	if home {
 		p.Peoples++
-		w.endCiv(c, Transformed, "listened to "+p.Name+" and were changed by it")
+		w.endCiv(c, Transformed, "listened to "+p.Tok()+" and were changed by it")
 		c.Into = "something that believed"
 		if cult {
 			nc := w.cult(c, p, s)
-			c.Into = "the " + nc.Name
+			c.Into = "the " + nc.Tok()
 			f.Object = nc.ID
 			return
 		}
-		w.log("%s takes %s. The %s listen to it and are changed by it, and nobody there answers to anyone now.", upper(p.Name), c.HomeName, c.Name)
+		w.log("%s takes %s. The %s listen to it and are changed by it, and nobody there answers to anyone now.", upper(p.Tok()), w.star(c.Home), c.Tok())
 		return
 	}
 	w.loseSystem(c, s, "world that believes", "")
@@ -523,15 +521,15 @@ func (w *World) worldLost(c *Civ, p *Plague, s int) {
 		f.Object = nc.ID
 		return
 	}
-	w.log("%s takes %s, a %s of the %s. Nobody there answers to them any more.", upper(p.Name), w.star(s), c.Species.Flavour().Colony, c.Name)
+	w.log("%s takes %s, a %s of the %s. Nobody there answers to them any more.", upper(p.Tok()), w.star(s), c.Species.Flavour().Colony, c.Tok())
 }
 
 // cult is a world gone over declaring itself a people carrying the idea:
 // the same blood under a new name, immune to it and a carrier of it, as
 // schism's branch is made.
 func (w *World) cult(c *Civ, p *Plague, s int) *Civ {
-	nc := w.spawnCiv(s, c.Species, -1, names.Civ(w.R))
-	nc.Origin = "the believers in " + p.Name + ", once of the " + c.Name
+	nc := w.spawnCiv(s, c.Species, -1)
+	nc.Origin = "the believers in " + p.Tok() + ", once of the " + c.Tok()
 	nc.Master = -1
 	for k := range c.Known {
 		nc.Known[k] = true
@@ -545,7 +543,7 @@ func (w *World) cult(c *Civ, p *Plague, s int) *Civ {
 	p.Hosts++
 	p.Cults++
 	c.Tally.Cults++
-	w.log("At %s the believers in %s declare themselves a people: the %s.", w.star(s), p.Name, nc.Name)
+	w.log("At %s the believers in %s declare themselves a people: the %s.", w.star(s), p.Tok(), nc.Tok())
 	return nc
 }
 
@@ -656,7 +654,7 @@ func (w *World) shutTo(to, from *Civ) bool {
 // suspected sender is closed out with one roll, ears and ports both,
 // while the suspicion lasts.
 func (w *World) suspicion(c *Civ) {
-	sick := map[int]string{}
+	sick := map[int]int{}   // people -> the plague
 	cured := map[int]Year{} // the newest cure known of each people
 	for _, t := range c.Lore {
 		if t.Forgot {
@@ -671,16 +669,16 @@ func (w *World) suspicion(c *Civ) {
 			continue
 		}
 		f := w.Facts[t.Fact]
-		if f.Kind == FPlague && f.Subject != c.ID && cured[f.Subject] < f.Year {
-			sick[f.Subject] = f.What
+		if f.Kind == FPlague && f.Subject != c.ID && cured[f.Subject] < f.Year && f.Plague >= 0 {
+			sick[f.Subject] = f.Plague
 		}
 	}
 	for _, eid := range sortedInts(c.Intel) {
-		if i := c.Intel[eid]; i.Sick != "" && float64(w.Now-i.Year) <= w.Cfg.Tuning.Plague.TakenYears {
+		if i := c.Intel[eid]; i.Sick >= 0 && float64(w.Now-i.Year) <= w.Cfg.Tuning.Plague.TakenYears {
 			sick[eid] = i.Sick
 		}
 	}
-	suspects := map[int]string{}
+	suspects := map[int]int{}
 	for eid, name := range sick {
 		suspects[eid] = name
 	}
@@ -700,25 +698,24 @@ func (w *World) suspicion(c *Civ) {
 		if c.Suspect[eid] || !e.Living() || !c.Met[eid] {
 			continue // nothing to close against a people never heard from
 		}
-		if p := w.plagueNamed(suspects[eid]); p != nil && (c.Infections[p.ID] != nil || c.Immune[p.ID] || p.Maker == c.ID) {
+		if p := w.Plagues[suspects[eid]]; c.Infections[p.ID] != nil || c.Immune[p.ID] || p.Maker == c.ID {
 			continue // nothing to fear from what one has, or has had, or made
 		}
 		c.Suspect[eid] = true
 		r := mind.Refuse(mind.RefuseInput{Fear: c.Dials.Fear, Creed: c.Scars[ScarQuarantine], Cautious: c.Has("cautious"), Censor: c.Known["censorship"] && c.working("censorship")}, w.Cfg.Tuning)
-		w.explain(c, "suspecting the "+e.Name, r)
+		w.explain(c, "suspecting the "+e.Tok(), r)
 		if !w.chance(r.Chance) {
 			continue
 		}
 		c.Closed[eid] = true
 		c.Tally.Refusals++
-		w.factOf(FRefused, c, e, -1, suspects[eid])
-		if p := w.plagueNamed(suspects[eid]); p != nil {
-			p.Refusals++
-		}
+		p := w.Plagues[suspects[eid]]
+		w.factOf(FRefused, c, e, -1, p.Tok()).Plague = p.ID
+		p.Refusals++
 		if c.Trade[eid] {
-			w.log("The %s stop the trade with the %s for fear of %s, and hear nothing from them.", c.Name, e.Name, suspects[eid])
+			w.log("The %s stop the trade with the %s for fear of %s, and hear nothing from them.", c.Tok(), e.Tok(), p.Tok())
 		} else {
-			w.log("The %s close their ears to the %s for fear of %s.", c.Name, e.Name, suspects[eid])
+			w.log("The %s close their ears to the %s for fear of %s.", c.Tok(), e.Tok(), p.Tok())
 		}
 	}
 	for _, eid := range sortedInts(c.Suspect) {
@@ -727,16 +724,6 @@ func (w *World) suspicion(c *Civ) {
 			delete(c.Closed, eid)
 		}
 	}
-}
-
-// plagueNamed finds a plague by its name, for the books.
-func (w *World) plagueNamed(name string) *Plague {
-	for _, p := range w.Plagues {
-		if p.Name == name {
-			return p
-		}
-	}
-	return nil
 }
 
 // plagueBooks keeps the counts: hosts standing, extinction after a
@@ -809,7 +796,7 @@ func (w *World) wakeReservoir(c *Civ, s int) {
 	}
 	p.Woken++
 	w.infect(c, p, nil, "reservoir")
-	w.log("The %s come to %s and wake %s in its dead cities.", c.Name, w.star(s), p.Name)
+	w.log("The %s come to %s and wake %s in its dead cities.", c.Tok(), w.star(s), p.Tok())
 }
 
 // wallsWritten marks a remain with the sickness of the mind its makers
@@ -844,9 +831,9 @@ func (w *World) readWallsPlague(c *Civ, l *Legacy) {
 	w.infect(c, p, nil, "walls")
 	maker := "someone"
 	if l.Maker >= 0 {
-		maker = "the " + w.Civs[l.Maker].Name
+		maker = "the " + w.Civs[l.Maker].Tok()
 	}
-	w.log("On the walls of %s %s is written, and the %s read it.", maker, p.Name, c.Name)
+	w.log("On the walls of %s %s is written, and the %s read it.", maker, p.Tok(), c.Tok())
 }
 
 // wakeRelic is a relic that does what it was made to do: a plague of its
@@ -857,12 +844,12 @@ func (w *World) wakeRelic(c *Civ, l *Legacy) {
 		k = plague.Memetic
 	}
 	if !w.bears(c, k) {
-		w.log("It does what it was made to do, and finds nothing in the %s to do it to.", c.Name)
+		w.log("It does what it was made to do, and finds nothing in the %s to do it to.", c.Tok())
 		return
 	}
 	p := w.newPlague(k, c, "relic")
 	w.infect(c, p, nil, "born")
-	w.log("It does what it was made to do, to the %s. They call it %s.", c.Name, p.Name)
+	w.log("It does what it was made to do, to the %s. They call it %s.", c.Tok(), p.Tok())
 }
 
 // inheritImmunity gives a people born of another what the parent could
@@ -941,7 +928,7 @@ func (w *World) SickWord(c *Civ) string {
 		case inf.Contained:
 			state = "contained"
 		}
-		parts = append(parts, sprintf("sick with %s these %s, %s", p.Name, span(w.Now-inf.Since), state))
+		parts = append(parts, sprintf("sick with %s these %s, %s", p.Tok(), span(w.Now-inf.Since), state))
 	}
 	return list(parts)
 }
@@ -954,7 +941,7 @@ func (w *World) RideWord(c *Civ) string {
 	var names []string
 	for _, h := range w.hostsOf(c) {
 		if h.Master == c.ID && !h.Vassal {
-			names = append(names, "the "+h.Name)
+			names = append(names, "the "+h.Tok())
 		}
 	}
 	if len(names) == 0 {
@@ -972,15 +959,15 @@ func (w *World) Infected(c *Civ) []*Plague {
 	return out
 }
 
-// sickSeen is what a look at a people reads of its health: the name of a
-// plague raging in it, or nothing.
-func (w *World) sickSeen(e *Civ) string {
+// sickSeen is what a look at a people reads of its health: a plague
+// raging in it, or -1.
+func (w *World) sickSeen(e *Civ) int {
 	for _, pid := range sortedInts(e.Infections) {
 		if inf := e.Infections[pid]; !inf.Carrier && !inf.Contained {
-			return w.Plagues[pid].Name
+			return pid
 		}
 	}
-	return ""
+	return -1
 }
 
 // settledNear is a colony placed within a hop of a sick people's world:

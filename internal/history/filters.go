@@ -140,7 +140,7 @@ func (w *World) face(c *Civ, key string, diffAdj float64) Outcome {
 	master := c.Master
 	w.recompute(c)
 	if c.miracle("foresight") && key != "sight" && w.R.Float64() < 0.5 {
-		w.log("The %s see %s coming and step around it.", c.Name, f.Name)
+		w.log("The %s see %s coming and step around it.", c.Tok(), f.Name)
 		c.Record = append(c.Record, "foresaw "+f.Name)
 		return Overcome
 	}
@@ -242,11 +242,11 @@ func init() {
 		Key: "atomic", Name: "the Atomic Age", Levels: []string{"soc"}, Diff: 3.5, Domain: "society",
 		Overcome: func(w *World, c *Civ) {
 			c.Boons[BoonUnity] = true
-			w.log("The %s put the weapons away. They are stronger for it.", c.Name)
+			w.log("The %s put the weapons away. They are stronger for it.", c.Tok())
 		},
 		Scar: func(w *World, c *Civ) {
 			c.Scars[ScarAtomicTaboo] = true
-			w.log("The %s burn half of %s before they stop. Ever after, the weapon is unspeakable.", c.Name, c.HomeName)
+			w.log("The %s burn half of %s before they stop. Ever after, the weapon is unspeakable.", c.Tok(), w.star(c.Home))
 		},
 		Decline: func(w *World, c *Civ) {
 			x := w.R.Float64()
@@ -263,11 +263,11 @@ func init() {
 	def(&Filter{
 		Key: "overshoot", Name: "Overshoot", Levels: []string{"sur", "soc"}, Diff: 4, Domain: "biology",
 		Overcome: func(w *World, c *Civ) {
-			w.log("The %s strip %s nearly bare, then learn to live within it.", c.Name, c.HomeName)
+			w.log("The %s strip %s nearly bare, then learn to live within it.", c.Tok(), w.star(c.Home))
 		},
 		Scar: func(w *World, c *Civ) {
 			c.Scars[ScarStewardship] = true
-			w.log("The %s nearly kill their world. What they build afterwards is slow, careful, and small.", c.Name)
+			w.log("The %s nearly kill their world. What they build afterwards is slow, careful, and small.", c.Tok())
 		},
 		Decline: func(w *World, c *Civ) {
 			if w.R.Float64() < 0.6 {
@@ -281,12 +281,12 @@ func init() {
 		Key: "machines", Name: "Thinking Machines", Levels: []string{"soc"}, Diff: 4.5, Domain: "computation",
 		Overcome: func(w *World, c *Civ) {
 			c.Boons[BoonAligned] = true
-			w.log("The minds the %s built stay loyal. Everything goes faster now.", c.Name)
+			w.log("The minds the %s built stay loyal. Everything goes faster now.", c.Tok())
 		},
 		Scar: func(w *World, c *Civ) {
 			c.Scars[ScarNoMachines] = true
 			c.Locked["computation"] = true
-			w.log("The mind nearly ends the %s. Thou shalt not make a machine in the likeness of a mind. The law holds for ages.", c.Name)
+			w.log("The mind nearly ends the %s. Thou shalt not make a machine in the likeness of a mind. The law holds for ages.", c.Tok())
 		},
 		Decline: func(w *World, c *Civ) {
 			x := w.R.Float64()
@@ -300,11 +300,11 @@ func init() {
 	def(&Filter{
 		Key: "distance", Name: "the Distance", Levels: []string{"soc"}, Diff: 4.5, Repeat: true, Domain: "society",
 		Overcome: func(w *World, c *Civ) {
-			w.log("Light-years and generations pull at the %s. Somehow they stay one people.", c.Name)
+			w.log("Light-years and generations pull at the %s. Somehow they stay one people.", c.Tok())
 		},
 		Scar: func(w *World, c *Civ) {
 			c.Scars[ScarCentralism] = true
-			w.log("The colonies of the %s begin to drift. %s answers with iron. The drift stops. So does much else.", c.Name, c.HomeName)
+			w.log("The colonies of the %s begin to drift. %s answers with iron. The drift stops. So does much else.", c.Tok(), w.star(c.Home))
 		},
 		Decline: func(w *World, c *Civ) {
 			if !c.Species.Profile().Can(species.CivilWars) && len(c.Systems) > 1 {
@@ -328,11 +328,11 @@ func init() {
 	def(&Filter{
 		Key: "silence", Name: "the Long Silence", Levels: []string{"soc"}, Diff: 4.5, Domain: "society",
 		Overcome: func(w *World, c *Civ) {
-			w.log("The %s learn to live forever and, against the odds, keep wanting things.", c.Name)
+			w.log("The %s learn to live forever and, against the odds, keep wanting things.", c.Tok())
 		},
 		Scar: func(w *World, c *Civ) {
 			c.Scars[ScarMortality] = true
-			w.log("The %s taste immortality and reject it. Death becomes sacred to them. They are never quite at ease again.", c.Name)
+			w.log("The %s taste immortality and reject it. Death becomes sacred to them. They are never quite at ease again.", c.Tok())
 		},
 		Decline: func(w *World, c *Civ) {
 			w.contract(c, "stopped dying, and then stopped being born")
@@ -342,11 +342,11 @@ func init() {
 		Key: "replication", Name: "Self-Replication", Levels: []string{"mil"}, Diff: 5.5, Domain: "weapons",
 		Overcome: func(w *World, c *Civ) {
 			c.Boons[BoonSwarm] = true
-			w.log("The %s keep the leash on their self-building machines. Their fleets multiply.", c.Name)
+			w.log("The %s keep the leash on their self-building machines. Their fleets multiply.", c.Tok())
 		},
 		Scar: func(w *World, c *Civ) {
 			c.Scars[ScarNoSelfCopies] = true
-			w.log("A factory of the %s eats a moon before it is stopped. No machine may make itself. The law is absolute.", c.Name)
+			w.log("A factory of the %s eats a moon before it is stopped. No machine may make itself. The law is absolute.", c.Tok())
 		},
 		Decline: func(w *World, c *Civ) {
 			s := w.aWorld(c)
@@ -356,27 +356,27 @@ func init() {
 				return
 			}
 			// the eaten world is the new people's, and the old people are gone
-			w.log("At %s the machines of the %s begin to copy themselves, and do not stop.", w.star(s), c.Name)
+			w.log("At %s the machines of the %s begin to copy themselves, and do not stop.", w.star(s), c.Tok())
 			w.loseSystem(c, s, "stripped world", "were consumed by their own machines")
 			w.endCiv(c, Extinct, "were consumed by their own machines")
-			if nc := w.replicatorAt(s, species.Machine, "the machines of the "+c.Name+", copying themselves", false); nc != nil {
+			if nc := w.replicatorAt(s, species.Machine, "the machines of the "+c.Tok()+", copying themselves", false); nc != nil {
 				nc.Species.Parent = c.Species
-				w.log("What eats %s calls itself the %s, if it calls itself anything: %s.", w.star(s), nc.Name, nc.Species.Describe())
+				w.log("What eats %s calls itself the %s, if it calls itself anything: %s.", w.star(s), nc.Tok(), nc.Species.Describe())
 			}
 		},
 	})
 	def(&Filter{
 		Key: "stellar", Name: "Stellar Engineering", Levels: []string{"sur"}, Diff: 7, Domain: "exotic",
 		Overcome: func(w *World, c *Civ) {
-			w.log("%s holds. The %s can move stars now, a little.", c.HomeName, c.Name)
+			w.log("%s holds. The %s can move stars now, a little.", w.star(c.Home), c.Tok())
 		},
 		Scar: func(w *World, c *Civ) {
 			c.Scars[ScarStarFear] = true
 			c.Locked["exotic"] = true
-			w.log("%s flares. Millions of the %s die. They never touch a star again.", c.HomeName, c.Name)
+			w.log("%s flares. Millions of the %s die. They never touch a star again.", w.star(c.Home), c.Tok())
 		},
 		Decline: func(w *World, c *Civ) {
-			w.log("The %s reach too deep into %s. The star convulses.", c.Name, c.HomeName)
+			w.log("The %s reach too deep into %s. The star convulses.", c.Tok(), w.star(c.Home))
 			w.loseSystem(c, c.Home, "wounded star", "broke their own star")
 			w.Bio[c.Home] = BioNone
 			if len(c.Systems) == 0 || w.R.Float64() < 0.5 {
@@ -389,11 +389,11 @@ func init() {
 	def(&Filter{
 		Key: "transcend", Name: "Transcendence", Levels: []string{"soc"}, Diff: 7, Domain: "society",
 		Overcome: func(w *World, c *Civ) {
-			w.log("The %s find the door out of the universe, and choose to stay.", c.Name)
+			w.log("The %s find the door out of the universe, and choose to stay.", c.Tok())
 		},
 		Scar: func(w *World, c *Civ) {
 			c.Scars[ScarLeftBehind] = true
-			w.log("Most of the %s go through. The ones who stay keep the lights on and stop inventing things.", c.Name)
+			w.log("Most of the %s go through. The ones who stay keep the lights on and stop inventing things.", c.Tok())
 		},
 		Decline: func(w *World, c *Civ) {
 			if w.R.Float64() < 0.4 {
@@ -405,24 +405,24 @@ func init() {
 			}
 			w.endCiv(c, Transformed, "went elsewhere")
 			c.Into = "something that left"
-			w.log("The %s go quiet all at once. Their machines still run. Nobody is home.", c.Name)
+			w.log("The %s go quiet all at once. Their machines still run. Nobody is home.", c.Tok())
 		},
 	})
 	def(&Filter{
 		Key: "door", Name: "the Door", Levels: []string{"soc"}, Diff: 4.5, Domain: "exotic",
 		Overcome: func(w *World, c *Civ) {
-			w.log("Nothing comes back through the door of the %s that they did not send. This time.", c.Name)
+			w.log("Nothing comes back through the door of the %s that they did not send. This time.", c.Tok())
 		},
 		Scar: func(w *World, c *Civ) {
 			c.Scars[ScarDoor] = true
 			w.tear(0.3)
 			s := w.sleeperStar(c)
 			if s < 0 {
-				w.log("Something on the other side of the door notices the %s. They close it and speak of it seldom.", c.Name)
+				w.log("Something on the other side of the door notices the %s. They close it and speak of it seldom.", c.Tok())
 				return
 			}
-			w.log("Something on the other side of the door notices the %s, and comes through, and settles near %s to sleep. The %s close the door and speak of it seldom.", c.Name, w.star(s), c.Name)
-			w.sleeperAt(s, "what came through the door of the "+c.Name)
+			w.log("Something on the other side of the door notices the %s, and comes through, and settles near %s to sleep. The %s close the door and speak of it seldom.", c.Tok(), w.star(s), c.Tok())
+			w.sleeperAt(s, "what came through the door of the "+c.Tok())
 		},
 		Decline: func(w *World, c *Civ) {
 			w.tear(0.6)
@@ -439,7 +439,7 @@ func init() {
 			c.Morale -= 0.5
 		},
 		Decline: func(w *World, c *Civ) {
-			w.log("Defeat splits the %s.", c.Name)
+			w.log("Defeat splits the %s.", c.Tok())
 			if !w.civilWar(c) {
 				c.Morale -= 1
 			}
@@ -452,22 +452,22 @@ func init() {
 			c.Master = -1
 			c.Vassal = false
 			c.Scars[ScarChains] = true
-			w.log("The %s rise against the %s and are free.", c.Name, m.Name)
+			w.log("The %s rise against the %s and are free.", c.Tok(), m.Tok())
 			if !m.Living() && w.Owner[m.Home] < 0 {
 				w.Owner[m.Home] = c.ID
 				c.Systems = append(c.Systems, m.Home)
-				w.log("The %s take %s, the emptied home of their masters, for their own.", c.Name, m.HomeName)
+				w.log("The %s take %s, the emptied home of their masters, for their own.", c.Tok(), w.star(m.Home))
 			}
 		},
 		Scar: func(w *World, c *Civ) {
-			w.log("The %s rise against their masters and are put down. They stay in chains.", c.Name)
+			w.log("The %s rise against their masters and are put down. They stay in chains.", c.Tok())
 		},
 		Decline: func(w *World, c *Civ) {
 			m := w.Civs[c.Master]
 			if !m.Living() {
-				w.endCiv(c, Extinct, sprintf("fell with their masters the %s", m.Name))
+				w.endCiv(c, Extinct, sprintf("fell with their masters the %s", m.Tok()))
 			} else {
-				w.log("The %s rise and are broken. Half of them are killed as an example.", c.Name)
+				w.log("The %s rise and are broken. Half of them are killed as an example.", c.Tok())
 				c.Morale -= 2
 			}
 		},
@@ -502,7 +502,7 @@ func init() {
 		Overcome: func(w *World, c *Civ) {}, // most peoples manage it; the legends only note the ones that did not
 		Scar: func(w *World, c *Civ) {
 			c.Scars[ScarChurch] = true
-			w.log("A century of burning among the %s, and the church wins. It outranks every state after that.", c.Name)
+			w.log("A century of burning among the %s, and the church wins. It outranks every state after that.", c.Tok())
 			w.churchMorality(c)
 		},
 		Decline: func(w *World, c *Civ) {

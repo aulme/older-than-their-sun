@@ -137,7 +137,7 @@ func (w *World) fight(x *Expedition, t int) {
 	_, lostD := w.payDefender(wr, c, e, t, s, ld)
 	if x.Ships <= 0 {
 		rec.Outcome = "broken"
-		w.log("The fleet of the %s is broken at %s.", c.Name, w.star(t))
+		w.log("The fleet of the %s is broken at %s.", c.Tok(), w.star(t))
 		w.fact(FDefeat, c, e, t)
 		wr.Will[i] -= 0.2
 		wr.Will[1-i] += 0.2
@@ -174,7 +174,7 @@ func (w *World) fight(x *Expedition, t int) {
 	case !fleets && guns == 0:
 		rec.Outcome = "taken"
 		if lostA > 0 && lostA >= x.Ships {
-			w.log("The %s take %s, and lose half their fleet doing it.", c.Name, w.star(t))
+			w.log("The %s take %s, and lose half their fleet doing it.", c.Tok(), w.star(t))
 		}
 		w.take(wr, x, c, e, t, false)
 	case !fleets && s.guard == nil && len(s.relief) == 0:
@@ -187,7 +187,7 @@ func (w *World) fight(x *Expedition, t int) {
 	default:
 		rec.Outcome = "guns"
 		if x.Battles == 1 || w.chance(0.1) {
-			w.log("The ships of the %s hold their ground over %s behind its guns.", e.Name, w.star(t))
+			w.log("The ships of the %s hold their ground over %s behind its guns.", e.Tok(), w.star(t))
 		}
 	}
 }
@@ -263,7 +263,7 @@ func (w *World) fleetBroken(wr *War, c *Civ, f *Expedition, t int) {
 		wr.Glassed[i]++
 		wr.Will[i] += 0.2
 		wr.Will[1-i] -= 0.2
-		w.log("The %s break a fleet of the %s at %s.", c.Name, o.Name, w.star(t))
+		w.log("The %s break a fleet of the %s at %s.", c.Tok(), o.Tok(), w.star(t))
 	}
 }
 
@@ -351,13 +351,13 @@ func (w *World) withdraw(x *Expedition, t int) {
 	need := w.needAt(c, e, t, x.Ships)
 	dest := w.fallback(c, t)
 	if x.Ships < need || dest < 0 {
-		w.log("The fleet of the %s withdraws from %s and turns for home.", c.Name, w.star(t))
+		w.log("The fleet of the %s withdraws from %s and turns for home.", c.Tok(), w.star(t))
 		w.fact(FDefeat, c, e, t)
 		w.goHome(x)
 		return
 	}
 	if x.Sieges == 0 {
-		w.log("The fleet of the %s falls back from %s, and comes again.", c.Name, w.star(t))
+		w.log("The fleet of the %s falls back from %s, and comes again.", c.Tok(), w.star(t))
 	}
 	x.Sieges++
 	w.sail(x, dest)

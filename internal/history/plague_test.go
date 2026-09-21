@@ -270,7 +270,7 @@ func TestPlagueMind(t *testing.T) {
 	if !a.Immune[p.ID] || a.Infections[p.ID] != nil || p.Cures != 1 {
 		t.Error("the cure")
 	}
-	nc := w.spawnCiv(3, a.Species, -1, "Branch")
+	nc := w.spawnCiv(3, a.Species, -1)
 	w.inherit(nc, a, 0)
 	if !nc.Immune[p.ID] {
 		t.Error("a branch did not inherit its parent's immunity")

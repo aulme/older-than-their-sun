@@ -149,7 +149,7 @@ func TestOffenceInTheWorld(t *testing.T) {
 	a.Trade[p.ID], p.Trade[a.ID] = true, true
 	w.observe(a, b, b.Home, 0)
 	ap := w.appraise(a, b, -1)
-	if len(ap.Slights) != 1 || ap.Slights[0].Name != p.Name || ap.Slights[0].Slight < 0.13 {
+	if len(ap.Slights) != 1 || ap.Slights[0].Name != p.Tok() || ap.Slights[0].Slight < 0.13 {
 		t.Fatalf("the offence: %+v", ap.Slights)
 	}
 	delete(a.Trade, p.ID)

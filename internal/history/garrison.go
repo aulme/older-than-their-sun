@@ -57,7 +57,7 @@ func (w *World) garrison(c *Civ) {
 	from, to := hs[g.From], hs[g.To]
 	w.sendGuard(c, w.guardAt(c, from.Star), to.Star, g.Ships)
 	c.Tally.Garrisons++
-	w.log("The %s send %s to hold %s.", c.Name, shipsWord(g.Ships), w.star(to.Star))
+	w.log("The %s send %s to hold %s.", c.Tok(), shipsWord(g.Ships), w.star(to.Star))
 }
 
 // holdingsOf is a people's holdings as the garrison policy sees them, and
@@ -184,7 +184,7 @@ func (w *World) muster(c, e *Civ, world int, cause string, n int) {
 		have = g.Ships
 	}
 	w.gather(c, star, n-have-w.comingTo(c, star))
-	w.log("The %s gather their ships at %s.", c.Name, w.star(star))
+	w.log("The %s gather their ships at %s.", c.Tok(), w.star(star))
 }
 
 // gather sends n ships to a star from the people's other guards, nearest
@@ -237,7 +237,7 @@ func (w *World) musterStep(c *Civ) {
 	case ch.StandDown:
 		c.Muster = nil
 		if w.Cfg.TraceAI {
-			w.log("[the %s stand down at %s]", c.Name, w.star(m.Star))
+			w.log("[the %s stand down at %s]", c.Tok(), w.star(m.Star))
 		}
 	}
 }

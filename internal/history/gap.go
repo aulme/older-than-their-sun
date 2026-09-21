@@ -109,7 +109,7 @@ func (w *World) deduce(c *Civ) {
 	wr.Will[0] = max(wr.Will[0], w.huntWill(g)) // the will is the deduction's: what the losses are worth
 	c.Tally.Hunts++
 	w.fact(FHunt, c, nil, gap.Star)
-	w.log("The ledger of the %s shows a hole around %s: %d losses inside %.0f light years, and nothing in any record to say what took them. The council declares a hunt on the region.", c.Name, w.star(gap.Star), g.Losses, g.Radius)
+	w.log("The ledger of the %s shows a hole around %s: %d losses inside %.0f light years, and nothing in any record to say what took them. The council declares a hunt on the region.", c.Tok(), w.star(gap.Star), g.Losses, g.Radius)
 	w.huntFleet(c, wr)
 }
 
@@ -135,7 +135,7 @@ func (w *World) huntOn(c *Civ, wr *War) {
 	wr.Gap = &Gap{Gap: g, Star: w.nearestStar(g.X, g.Y, stars), Since: w.Now, Struck: map[int]bool{}}
 	wr.Will[0] = max(wr.Will[0], w.huntWill(g))
 	c.Tally.Hunts++
-	w.log("The %s are at war with something they can no longer name. What they have is the ledger, and the ledger says %s.", c.Name, w.star(wr.Gap.Star))
+	w.log("The %s are at war with something they can no longer name. What they have is the ledger, and the ledger says %s.", c.Tok(), w.star(wr.Gap.Star))
 }
 
 // huntWill is what a people brings to a hunt: one, and a quarter per
@@ -267,7 +267,7 @@ func (w *World) huntStep(c *Civ) {
 		case wr.Gap.Empty == 0:
 			wr.Gap.Empty = w.Now
 		case float64(w.Now-wr.Gap.Empty)/1000 >= w.Cfg.Tuning.Kinds.HuntEmpty:
-			w.log("The hunt of the %s finds nothing at %s, and nothing, and nothing. Whatever was there is not, and the ledger is closed.", c.Name, w.star(wr.Gap.Star))
+			w.log("The hunt of the %s finds nothing at %s, and nothing, and nothing. Whatever was there is not, and the ledger is closed.", c.Tok(), w.star(wr.Gap.Star))
 			w.endWar(wr, "the hole closed")
 			continue
 		}

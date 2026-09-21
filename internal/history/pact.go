@@ -271,7 +271,7 @@ func (w *World) answerPact(f, c *Civ, m *Message) {
 	}
 	against := "whoever comes"
 	if e != nil {
-		against = "the " + e.Name
+		against = "the " + e.Tok()
 		in.Believed, _ = w.believe(f, e)
 		in.Grudge = f.Grudge[e.ID] > 0
 		in.AlliedEnemy = w.allied(f, e)
@@ -279,7 +279,7 @@ func (w *World) answerPact(f, c *Civ, m *Message) {
 		in.AtWar = f.Wars[e.ID]
 	}
 	ans := mind.AnswerPact(in, w.Cfg.Tuning)
-	w.explain(f, "asked by the "+c.Name+" for a pact of "+m.PactKind.String()+" against "+against, ans)
+	w.explain(f, "asked by the "+c.Tok()+" for a pact of "+m.PactKind.String()+" against "+against, ans)
 	if ans.Reason != "" {
 		return
 	}
@@ -287,9 +287,9 @@ func (w *World) answerPact(f, c *Civ, m *Message) {
 		c.Tally.Refused++
 		if w.R.Float64() < 0.3 {
 			if e != nil {
-				w.log("The %s ask the %s for a pact against the %s, and are refused.", c.Name, f.Name, e.Name)
+				w.log("The %s ask the %s for a pact against the %s, and are refused.", c.Tok(), f.Tok(), e.Tok())
 			} else {
-				w.log("The %s ask the %s for a pact, and are refused.", c.Name, f.Name)
+				w.log("The %s ask the %s for a pact, and are refused.", c.Tok(), f.Tok())
 			}
 		}
 		return
@@ -317,9 +317,9 @@ func (w *World) formPact(c, f *Civ, kind PactKind, target int, pid int) {
 	}
 	against := "whoever comes"
 	if target >= 0 {
-		against = "the " + w.Civs[target].Name
+		against = "the " + w.Civs[target].Tok()
 	}
-	w.log("The %s and the %s swear a pact of %s against %s.", c.Name, f.Name, kind, against)
+	w.log("The %s and the %s swear a pact of %s against %s.", c.Tok(), f.Tok(), kind, against)
 	w.factOf(FPact, c, f, -1, kind.String())
 	if target >= 0 && c.Wars[target] {
 		w.answerCall(f, c, w.Civs[target])
@@ -357,7 +357,7 @@ func (w *World) joinAllies(c, e *Civ, wr *War) {
 			if mid == c.ID || !m.Active() || m.Wars[e.ID] || len(w.front(m, e)) == 0 || !w.perceives(m, e) {
 				continue
 			}
-			if wr2 := w.declare(m, e, "their pact with the "+c.Name); wr2 != nil {
+			if wr2 := w.declare(m, e, "their pact with the "+c.Tok()); wr2 != nil {
 				wr2.Pact, wr2.Principal = pid, c.ID
 			}
 		}
@@ -372,7 +372,7 @@ func (w *World) answerCall(m, v, a *Civ) {
 	}
 	p := w.pactWith(m, v)
 	if len(w.front(m, a)) > 0 {
-		if wr := w.declare(m, a, "their pact with the "+v.Name); wr != nil && p != nil {
+		if wr := w.declare(m, a, "their pact with the "+v.Tok()); wr != nil && p != nil {
 			wr.Pact, wr.Principal = p.ID, v.ID
 		}
 		return
@@ -380,14 +380,14 @@ func (w *World) answerCall(m, v, a *Civ) {
 	milA, _ := w.believe(m, a)
 	believed := milA + a.warBonus() + mind.ShipLevels(w.believeShips(m, a))
 	k := mind.AnswerCall(mind.CallInput{Ships: w.standing(m), Total: w.ships(m), Q: w.quality(m), Victim: battle.Strength(w.standing(v), w.quality(v)), Believed: believed, Confederate: m.posture() == mind.Confederate, Betrayed: w.betrayed(m, v), Dials: m.Dials}, w.Cfg.Tuning)
-	w.explain(m, "called by the "+v.Name+" against the "+a.Name, k)
+	w.explain(m, "called by the "+v.Tok()+" against the "+a.Tok(), k)
 	if k.Come {
 		w.launch(m, Relief, v, v.Home, k.Share)
 		return
 	}
 	if k.Blame {
 		w.betray(m, v, "did not come when called", 0.5)
-		w.log("The %s call on the %s, who do not come.", v.Name, m.Name)
+		w.log("The %s call on the %s, who do not come.", v.Tok(), m.Tok())
 	}
 }
 
@@ -480,7 +480,7 @@ func (w *World) warEnded(wr *War) {
 	}
 	if pr.Active() && pr.Wars[enemy.ID] {
 		w.betray(ally, pr, "made a separate peace", 0.3)
-		w.log("The %s make their own peace with the %s and leave the %s to fight on.", ally.Name, enemy.Name, pr.Name)
+		w.log("The %s make their own peace with the %s and leave the %s to fight on.", ally.Tok(), enemy.Tok(), pr.Tok())
 	}
 }
 

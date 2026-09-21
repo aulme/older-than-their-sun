@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"worldgen/internal/history"
+	"worldgen/internal/names"
 	"worldgen/internal/plague"
 )
 
@@ -40,9 +41,10 @@ type PlagueRec struct {
 
 func flattenPlagues(w *history.World) []PlagueRec {
 	var out []PlagueRec
+	book := names.Of(w)
 	for _, p := range w.Plagues {
 		out = append(out, PlagueRec{
-			Seed: w.Seed, Name: p.Name, Kind: p.Kind.String(), Contagion: p.Contagion, Lethality: p.Lethality, Cause: p.Cause,
+			Seed: w.Seed, Name: book.Text(p.Tok()), Kind: p.Kind.String(), Contagion: p.Contagion, Lethality: p.Lethality, Cause: p.Cause,
 			Born: float64(p.Born-w.Cfg.Dawn) / 1e6, Peak: p.Peak, Caught: p.Caught, Worlds: p.Worlds, Peoples: p.Peoples,
 			Cults: p.Cults, Cures: p.Cures, Refusals: p.Refusals, Woken: p.Woken, Wildfire: p.Wildfire, Extinct: p.Extinct,
 			Made: p.Made, Maker: p.Maker, Rider: p.Rider, Poisoned: p.Poisonings,
