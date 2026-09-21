@@ -1,6 +1,8 @@
 # Plagues: sickness as an actor
 
-**Status:** Implemented (stages 1 to 4 at step 13, stages 5 and 6 at step 14, 2026-09-19). Tuned at build: base births 0.002 and 0.0005, the toll at `l³`, the conscious chance one in fifty, the leak 0.0002; a weapon is made only for a target the maker has a road to, and burned when nobody gives a reason any more; see the ledgers in `specs/plan.md`.
+*Absorbed into `DESIGN_NOTES.md` § Simulation v2, "Plagues" (plan step 19, 2026-09-21). The Design section below stays the specification where the notes are silent; the notes win where they differ.*
+
+**Status:** Implemented (stages 1 to 4 at step 13, stages 5 and 6 at step 14, 2026-09-19). Tuned at build: base births 0.002 and 0.0005, the toll at `l³`, the conscious chance one in fifty, the leak 0.0002; a weapon is made only for a target the maker has a road to, and burned when nobody gives a reason any more; see the ledgers in `specs/done/plan.md`.
 **Last updated:** 2026-09-17
 
 Assumes [one-tick](one-tick.md): every rate below is per thousand years, and "per tick" means a thousand-year tick, the same thing. Reads [resources-and-trade](resources-and-trade.md) (dormant nodes, trade links, dependence), [ships-and-garrisons](ships-and-garrisons.md) (a world under siege), [wisdom](wisdom.md) (messages need understanding) and [morality](morality.md) (bringing a plague as a crime). None is needed to argue this one; the sanitation modifiers that read dormant nodes and sieges need the first two to build.

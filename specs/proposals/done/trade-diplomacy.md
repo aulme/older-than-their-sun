@@ -1,5 +1,7 @@
 # Trade diplomacy: the slight of a war on a partner's partner
 
+*Absorbed into `DESIGN_NOTES.md` § Simulation v2, "Contracts" (plan step 19, 2026-09-21). The Design section below stays the specification where the notes are silent; the notes win where they differ.*
+
 **Status:** Implemented (plan step 12b, 2026-09-19; see "Trade diplomacy" in `DESIGN_NOTES.md`; the slight, the offence and the bloc reading as proposed, the uses-only rule lifted, the trade caps kept)
 **Last updated:** 2026-09-18
 

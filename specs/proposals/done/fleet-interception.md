@@ -1,5 +1,7 @@
 # Sightings and interception
 
+*Absorbed into `DESIGN_NOTES.md` § Simulation v2, "Sightings" (plan step 19, 2026-09-21). The Design section below stays the specification where the notes are silent; the notes win where they differ.*
+
 **Status:** Implemented (plan step 10, 2026-09-18: seeing, the timetable, the observatory and the works as eyes, meeting in the dark and turning back, wrecks as fields the Find reads, pickets; the sold sighting with plan step 12, 2026-09-19; see "Watching the sky" and "Contracts" in `DESIGN_NOTES.md`)
 **Last updated:** 2026-09-17
 

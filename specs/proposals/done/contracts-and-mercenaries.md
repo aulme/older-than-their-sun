@@ -1,5 +1,7 @@
 # Contracts and mercenaries
 
+*Absorbed into `DESIGN_NOTES.md` § Simulation v2, "Contracts" (plan step 19, 2026-09-21). The Design section below stays the specification where the notes are silent; the notes win where they differ.*
+
 **Status:** Implemented (plan step 12, 2026-09-19; see "Contracts" in `DESIGN_NOTES.md`; a rarity term changes hands at once rather than by a fleet, and a strike is against a world or a gun work)
 **Last updated:** 2026-09-17
 

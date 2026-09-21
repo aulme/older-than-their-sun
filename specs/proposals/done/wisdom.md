@@ -1,5 +1,7 @@
 # Wisdom: understanding others, and judging well
 
+*Absorbed into `DESIGN_NOTES.md` § Simulation v2, "Wisdom" (plan step 19, 2026-09-21). The Design section below stays the specification where the notes are silent; the notes win where they differ.*
+
 **Status:** Implemented (plan step 11, 2026-09-18: the level, fathoming with the unpaid broker, and the judgment rules; the `broker` contract term and the worth noise on contract terms with plan step 12, 2026-09-19; see "Wisdom" and "Contracts" in `DESIGN_NOTES.md`)
 **Last updated:** 2026-09-18
 

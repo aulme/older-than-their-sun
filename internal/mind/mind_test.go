@@ -77,6 +77,8 @@ func TestBar(t *testing.T) {
 	}{
 		{BarInput{Posture: Pacifist}, 0, false, false},
 		{BarInput{Posture: Pacifist, Hates: true}, 0, false, false}, // a pacifist is a pacifist first
+		{BarInput{Posture: Pacifist, Claim: true}, 0, false, false}, // and before a claim
+		{BarInput{Posture: Defensive, Claim: true}, 0.3, true, true},
 		{BarInput{Posture: Defensive, Hates: true}, 0.35, true, true},
 		{BarInput{Posture: Defensive}, 0, false, false},
 		{BarInput{Posture: Opportunist}, 0.75, true, false},

@@ -5,6 +5,7 @@ import (
 
 	"worldgen/internal/battle"
 	"worldgen/internal/mind"
+	"worldgen/internal/species"
 )
 
 // Pacts, messages and reputation. Diplomacy travels at light speed: a
@@ -311,7 +312,9 @@ func (w *World) formPact(c, f *Civ, kind PactKind, target int, pid int) {
 	}
 	c.Tally.Pacts++
 	f.Tally.Pacts++
-	c.Trade[f.ID], f.Trade[c.ID] = true, true
+	if c.Species.Profile().Can(species.Trades) && f.Species.Profile().Can(species.Trades) {
+		c.Trade[f.ID], f.Trade[c.ID] = true, true // a pact opens the road, for two peoples that have anything the sim counts to give
+	}
 	against := "whoever comes"
 	if target >= 0 {
 		against = "the " + w.Civs[target].Name

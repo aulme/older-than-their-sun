@@ -160,7 +160,7 @@ type BarInput struct {
 	Aloft   bool // a horde fights from where it is, never by fleet
 	NoShips bool // not a ship manned: nothing to strike with
 	Wis     float64
-	Claim   bool    // the target holds a world of the old realm this people came out of: wanted whatever the posture; see history's sunder.go
+	Claim   bool    // the target holds a world of the old realm this people came out of: wanted whatever the posture but a pacifist's; see history's sunder.go
 	Kin     bool    // the target is kin with no grudge between them: never wanted on posture alone
 	Stiff   float64 // this people's stiffness; see history's ossify.go
 	Fought  bool    // this people has fought the target before
@@ -171,18 +171,20 @@ type BarInput struct {
 // strike at all, and whether it would send a fleet beyond the front to do
 // it. A grudge lowers the bar less the wiser the people: the grudge is
 // counted at its price, not ignored. A claim on what the target holds is
-// wanted at the vengeful bar whatever the posture; kin with no grudge are
-// never wanted on posture alone. A stiff people prefers the wars it has
+// wanted at the vengeful bar whatever the posture, but a pacifist is a
+// pacifist first: two pacifist heirs with claims on each other fought the
+// same two-thousand-year war five hundred times over (plan step 19); kin
+// with no grudge are never wanted on posture alone. A stiff people prefers the wars it has
 // fought before, and one set past the point of a first fleet sends none.
 func Bar(in BarInput, t *Tuning) (bar float64, wants, far bool) {
 	b := &t.Bar
-	if in.NoShips {
+	if in.NoShips || in.Posture == Pacifist {
 		return 0, false, false
 	}
 	if in.Claim {
 		return b.Vengeful, true, !in.Aloft
 	}
-	if in.Posture == Pacifist || in.Kin {
+	if in.Kin {
 		return 0, false, false
 	}
 	if in.Hates {

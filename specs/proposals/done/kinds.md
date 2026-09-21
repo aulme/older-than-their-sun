@@ -1,5 +1,7 @@
 # Substrates and modifiers: what a people is made of, with the horrors dissolved into it
 
+*Absorbed into `DESIGN_NOTES.md` § Simulation v2, "Substrates and modifiers; What is still there" (plan step 19, 2026-09-21). The Design section below stays the specification where the notes are silent; the notes win where they differ.*
+
 **Status:** Implemented (stage 1 landed at plan step 3, 2026-09-17: the registry, the profile, the chain generator with legacy numbers, every kind switch a profile read; stages 2 and 3 at plan step 16, 2026-09-19: the proposal's numbers switched on, the modifier rules through the profile, the eldritch pool with appearing and deepening, the living world's demand and waking, the hive's cut, the seat rules, the unconscious; stages 4 and 5 at plan step 17, 2026-09-21: the horrors dissolved into peoples and the transmitter, the replicator's eating and dormancy, the deep pass birthing sleepers and dormant replicators; stages 6 and 7 at plan step 18, 2026-09-21: the evolver's drift, the anti-memetic perceived by nobody conscious, the ledger of gaps and the hunt as a war on a region, Antimemetic Resilience; the absorb is plan step 19)
 **Last updated:** 2026-09-21
 

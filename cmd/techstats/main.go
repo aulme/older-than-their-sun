@@ -244,9 +244,10 @@ func flatten(w *history.World) []Rec {
 		if c.Active() {
 			end = w.Present
 		}
+		born := max(c.Born, w.Cfg.Dawn) // a sleeper the deep pass left is counted from the dawn, not from the age it slept through
 		r := Rec{
 			Seed: w.Seed, ID: c.ID, Name: c.Name, Species: c.Species.Name, Sub: c.Species.Sub.String(), World: c.Species.World.Key, Made: c.Species.Made,
-			Born: float64(c.Born-w.Cfg.Dawn) / 1e6, Lived: float64(end-c.Born) / 1e6,
+			Born: float64(born-w.Cfg.Dawn) / 1e6, Lived: float64(end-born) / 1e6,
 			Fate: c.Fate.String(), Cause: c.Cause, Into: c.Into, Standing: c.Active(), Origin: c.Origin, Sick: -1, Master: c.Sire >= 0,
 			Peak: c.Peak, Ruled: c.Ruled, Uplifts: c.Uplifts, Word: c.Word,
 			Miracles: map[string]string{}, Learned: map[string]float64{},

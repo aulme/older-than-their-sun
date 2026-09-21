@@ -1,6 +1,8 @@
 # One tick
 
-**Status:** Implemented (step 1 of specs/plan.md, 2026-09-17)
+*Absorbed into `DESIGN_NOTES.md` § Simulation v2, "One tick and the mind" (plan step 19, 2026-09-21). The Design section below stays the specification where the notes are silent; the notes win where they differ.*
+
+**Status:** Implemented (step 1 of specs/done/plan.md, 2026-09-17)
 **Last updated:** 2026-09-17
 
 Read by every other draft: [ships-and-garrisons](ships-and-garrisons.md), [fleet-interception](fleet-interception.md), [resources-and-trade](resources-and-trade.md), [contracts-and-mercenaries](contracts-and-mercenaries.md), [wisdom](wisdom.md), [morality](morality.md). It is assumed by all of them from now on.

@@ -1,5 +1,7 @@
 # Ships and garrisons
 
+*Absorbed into `DESIGN_NOTES.md` § Simulation v2, "Ships and battles" (plan step 19, 2026-09-21). The Design section below stays the specification where the notes are silent; the notes win where they differ.*
+
 **Status:** Implemented (plan steps 8 and 9, 2026-09-18: levels and ships, docks and building, the keep and laying up, one fleet object with guards; guns and silos, the battle at a world, withdrawal, garrisons and the muster, hordes on the shared rule; see "Ships and docks" and "Battles, guns and garrisons" in `DESIGN_NOTES.md`). Superseded by the canonical spec where they differ.
 **Last updated:** 2026-09-17
 

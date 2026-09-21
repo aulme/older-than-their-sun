@@ -1,5 +1,7 @@
 # Morality: what a people counts as wrong
 
+*Absorbed into `DESIGN_NOTES.md` § Simulation v2, "Morality" (plan step 19, 2026-09-21). The Design section below stays the specification where the notes are silent; the notes win where they differ.*
+
 **Status:** Implemented (plan step 7; see the Morality bullet in `DESIGN_NOTES.md`)
 **Last updated:** 2026-09-18
 
