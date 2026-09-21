@@ -30,7 +30,7 @@ type Gap struct {
 
 // losses is one loss with no doer: the kinds a hunt can be deduced from,
 // each with a place. The victim is c.
-func (w *World) lossOf(c *Civ, f *Fact) bool {
+func (w *World) lossOf(c *Civ, f *Event) bool {
 	if f.Star < 0 || !w.veiled(c, f) {
 		return false
 	}
@@ -52,7 +52,7 @@ func (w *World) ledger(c *Civ) (losses []mind.Loss, stars []int, behind []int) {
 		if t.Forgot {
 			continue
 		}
-		f := w.Facts[t.Fact]
+		f := w.Events[t.Fact]
 		ago := float64(w.Now-f.Year) / 1000
 		if ago > k.HuntWindow || !w.lossOf(c, f) {
 			continue
@@ -108,8 +108,7 @@ func (w *World) deduce(c *Civ) {
 	wr.Gap = gap
 	wr.Will[0] = max(wr.Will[0], w.huntWill(g)) // the will is the deduction's: what the losses are worth
 	c.Tally.Hunts++
-	w.fact(FHunt, c, nil, gap.Star)
-	w.log("The ledger of the %s shows a hole around %s: %d losses inside %.0f light years, and nothing in any record to say what took them. The council declares a hunt on the region.", c.Tok(), w.star(gap.Star), g.Losses, g.Radius)
+	w.told(FHunt, c, nil, gap.Star).with(P{"losses": g.Losses, "radius": g.Radius, "war": wr.ID})
 	w.huntFleet(c, wr)
 }
 
@@ -135,7 +134,7 @@ func (w *World) huntOn(c *Civ, wr *War) {
 	wr.Gap = &Gap{Gap: g, Star: w.nearestStar(g.X, g.Y, stars), Since: w.Now, Struck: map[int]bool{}}
 	wr.Will[0] = max(wr.Will[0], w.huntWill(g))
 	c.Tally.Hunts++
-	w.log("The %s are at war with something they can no longer name. What they have is the ledger, and the ledger says %s.", c.Tok(), w.star(wr.Gap.Star))
+	w.event(KHuntOn, c, e, wr.Gap.Star, P{"war": wr.ID})
 }
 
 // huntWill is what a people brings to a hunt: one, and a quarter per
@@ -267,7 +266,7 @@ func (w *World) huntStep(c *Civ) {
 		case wr.Gap.Empty == 0:
 			wr.Gap.Empty = w.Now
 		case float64(w.Now-wr.Gap.Empty)/1000 >= w.Cfg.Tuning.Kinds.HuntEmpty:
-			w.log("The hunt of the %s finds nothing at %s, and nothing, and nothing. Whatever was there is not, and the ledger is closed.", c.Tok(), w.star(wr.Gap.Star))
+			w.event(KHuntEmpty, c, nil, wr.Gap.Star, P{"war": wr.ID})
 			w.endWar(wr, "the hole closed")
 			continue
 		}

@@ -20,10 +20,35 @@ import (
 // Year is years relative to the present (negative = past).
 type Year int64
 
-// Event is one line of the legends log.
+// Kind is what an event is: a key in data/events.json, where its
+// parameters, its meaning and, for a fact, its sort and weight are
+// declared. The constants are generated from the file (kinds_gen.go):
+// F-kinds are facts, the ones a people can hold a tale of; K-kinds are
+// the rest of the chronicle.
+type Kind string
+
+// P is an event's parameters: the keys its kind declares, each an id, a
+// number, a key or a flag. What is text today is a debt to the lookups
+// step (specs/plan.md step 3).
+type P map[string]any
+
+// Event is one thing that happened, as it happened: a typed record. The
+// chronicle is every event in year order; the view renders a line per
+// kind from the record (lines.go), the simulation writes no prose. A fact
+// is an event whose kind has a shape, a sort and a weight (lore.go).
 type Event struct {
-	Year Year
-	Text string
+	ID      int
+	Year    Year
+	Kind    Kind
+	Subject int          // the people it is about, or -1
+	Object  int          // the other people, or -1
+	Star    int          // where, or -1
+	Legacy  int          // the remain in it, or -1
+	Plague  int          // the plague in it, or -1
+	N       int          // a count: worlds
+	P       P            // the kind's parameters
+	sh      *shape       // the kind's shape, looked up once; see lore.go
+	row     *[8]judgment // the kind's row of the moral table, or nil; see morality.go
 }
 
 // BioState tracks life on a star's worlds.
@@ -547,8 +572,8 @@ type World struct {
 	Fathomings []Fathoming // every understanding reached, for the batch; see wisdom.go
 	Legacies   []*Legacy
 	Traces     []Trace
-	Events     []Event
-	Facts      []*Fact       // what happened, as it happened; see lore.go
+	Events     []*Event      // what happened, as it happened, by id; see lore.go
+	Chronicle  []*Event      // the same in the order it is told, and by year once the run is over
 	factsAt    map[int][]int // facts by star
 	// war and diplomacy
 	Wars        []*War

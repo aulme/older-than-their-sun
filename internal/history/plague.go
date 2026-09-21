@@ -292,23 +292,14 @@ func (w *World) infect(c *Civ, p *Plague, from *Civ, roadKey string) *Infection 
 	if p.FirstHost < 0 {
 		p.FirstHost = c.ID
 	}
-	w.factOf(FPlague, c, from, c.Home, p.Tok()).Plague = p.ID
+	w.told(FPlague, c, from, c.Home).with(P{"road": roadKey}).Plague = p.ID
 	rd := roads[roadKey]
-	switch {
-	case roadKey == "born" && p.Kind == plague.Memetic:
-		w.log("Something moves through the minds of the %s. They call it %s.", c.Tok(), p.Tok())
-	case roadKey == "born":
-		w.log("Something moves through the worlds of the %s. They call it %s.", c.Tok(), p.Tok())
-	case from != nil && rd.Phrase != "":
-		w.log("%s comes to the %s %s.", upper(p.Tok()), c.Tok(), sprintf(rd.Phrase, from.Tok()))
-	}
 	if from != nil && rd.Crime {
-		w.factOf(FPlagueGiven, from, c, c.Home, p.Tok())
+		w.fact(FPlagueGiven, from, c, c.Home).with(P{"road": roadKey}).Plague = p.ID
 	}
 	if p.Hosts >= w.Cfg.Tuning.Plague.Wildfire && !p.Wildfire {
 		p.Wildfire = true
-		w.factOf(FWildfire, c, nil, c.Home, p.Tok())
-		w.log("%s is everywhere now.", upper(p.Tok()))
+		w.told(FWildfire, c, nil, c.Home).Plague = p.ID
 	}
 	return inf
 }
@@ -379,7 +370,7 @@ func (w *World) fightPlagues(c *Civ) {
 		rider := w.riderOf(p)
 		ridden := rider != nil && c.Master == rider.ID && !c.Vassal
 		if rider == nil && p.Rider >= 0 && c.Master == p.Rider {
-			w.log("The %s, who rode the %s, are gone. There is nothing left in them to fight.", w.Civs[p.Rider].Tok(), c.Tok())
+			w.event(KRiderGone, w.Civs[p.Rider], c, -1, P{}).Plague = p.ID
 			w.freed(c, w.Civs[p.Rider])
 			w.cure(c, p)
 			continue
@@ -411,11 +402,11 @@ func (w *World) fightPlagues(c *Civ) {
 			c.Tally.Contained++
 			if !inf.sealed {
 				inf.sealed = true
-				w.log("The %s seal every door against %s.", c.Tok(), p.Tok())
+				w.event(KSealedDoors, c, nil, -1, P{}).Plague = p.ID
 			}
 			if inf.Held == t.CreedTicks && !c.Scars[ScarQuarantine] {
 				c.Scars[ScarQuarantine] = true
-				w.log("Twenty thousand years behind sealed doors, and the %s no longer remember how to open them. It is a creed now.", c.Tok())
+				w.event(KQuarantineCreed, c, nil, -1, P{}).Plague = p.ID
 			}
 			if rider != nil && !ridden {
 				w.burn(c, rider) // a contained host burns what the rider took from it
@@ -434,13 +425,11 @@ func (w *World) cure(c *Civ, p *Plague) {
 	p.Hosts--
 	p.Cures++
 	c.Tally.Cured++
-	w.factOf(FCured, c, nil, c.Home, p.Tok())
-	if p.Conscious && p.FirstHost == c.ID && p.Rider < 0 {
+	unknowing := p.Conscious && p.FirstHost == c.ID && p.Rider < 0
+	w.told(FCured, c, nil, c.Home).with(P{"unknowing": unknowing}).Plague = p.ID
+	if unknowing {
 		p.Conscious = false
-		w.log("The %s are rid of %s, and never know it had begun to think.", c.Tok(), p.Tok())
-		return
 	}
-	w.log("The %s are rid of %s.", c.Tok(), p.Tok())
 }
 
 // toll is what a plague takes each tick: morale, and each held world with
@@ -485,43 +474,49 @@ func (w *World) worldLost(c *Civ, p *Plague, s int) {
 	}
 	if p.Kind == plague.Biological {
 		w.Reservoir[s] = &Reservoir{Plague: p.ID, Until: w.Now + Year(p.Contagion*t.ReservoirMyr*1e6)}
-		w.factOf(FPlagueWorld, c, nil, s, p.Tok())
+		f := w.unplaced(FPlagueWorld, c, nil, s).with(P{"home": home, "colony": c.Species.Flavour().Colony})
+		f.Plague = p.ID
 		switch {
 		case home && len(c.Systems) == 1:
 			p.Peoples++
+			w.place(f)
 			w.endCiv(c, Extinct, "sickened and died of "+p.Tok())
 		case home:
 			p.Peoples++
+			w.place(f)
 			w.loseSystem(c, s, "quarantined dead cities", "")
 			w.contract(c, "were hollowed out by "+p.Tok())
 		default:
 			w.loseSystem(c, s, "quarantined dead cities", "")
-			w.log("%s empties %s, a %s of the %s. The cities are sealed and left.", upper(p.Tok()), w.star(s), c.Species.Flavour().Colony, c.Tok())
+			w.place(f)
 		}
 		return
 	}
 	cult := w.R.Float64() < t.CultChance
-	f := w.factOf(FBelieved, c, nil, s, p.Tok())
+	f := w.unplaced(FBelieved, c, nil, s).with(P{"home": home, "cult": cult, "colony": c.Species.Flavour().Colony})
+	f.Plague = p.ID
 	if home {
 		p.Peoples++
 		w.endCiv(c, Transformed, "listened to "+p.Tok()+" and were changed by it")
 		c.Into = "something that believed"
 		if cult {
+			w.place(f)
 			nc := w.cult(c, p, s)
 			c.Into = "the " + nc.Tok()
 			f.Object = nc.ID
 			return
 		}
-		w.log("%s takes %s. The %s listen to it and are changed by it, and nobody there answers to anyone now.", upper(p.Tok()), w.star(c.Home), c.Tok())
+		w.place(f)
 		return
 	}
 	w.loseSystem(c, s, "world that believes", "")
 	if cult {
+		w.place(f)
 		nc := w.cult(c, p, s)
 		f.Object = nc.ID
 		return
 	}
-	w.log("%s takes %s, a %s of the %s. Nobody there answers to them any more.", upper(p.Tok()), w.star(s), c.Species.Flavour().Colony, c.Tok())
+	w.place(f)
 }
 
 // cult is a world gone over declaring itself a people carrying the idea:
@@ -543,7 +538,7 @@ func (w *World) cult(c *Civ, p *Plague, s int) *Civ {
 	p.Hosts++
 	p.Cults++
 	c.Tally.Cults++
-	w.log("At %s the believers in %s declare themselves a people: the %s.", w.star(s), p.Tok(), nc.Tok())
+	w.event(KCult, c, nc, s, P{}).Plague = p.ID
 	return nc
 }
 
@@ -660,7 +655,7 @@ func (w *World) suspicion(c *Civ) {
 		if t.Forgot {
 			continue
 		}
-		if f := w.Facts[t.Fact]; f.Kind == FCured && f.Year > cured[f.Subject] {
+		if f := w.Events[t.Fact]; f.Kind == FCured && f.Year > cured[f.Subject] {
 			cured[f.Subject] = f.Year
 		}
 	}
@@ -668,7 +663,7 @@ func (w *World) suspicion(c *Civ) {
 		if t.Forgot {
 			continue
 		}
-		f := w.Facts[t.Fact]
+		f := w.Events[t.Fact]
 		if f.Kind == FPlague && f.Subject != c.ID && cured[f.Subject] < f.Year && f.Plague >= 0 {
 			sick[f.Subject] = f.Plague
 		}
@@ -710,13 +705,8 @@ func (w *World) suspicion(c *Civ) {
 		c.Closed[eid] = true
 		c.Tally.Refusals++
 		p := w.Plagues[suspects[eid]]
-		w.factOf(FRefused, c, e, -1, p.Tok()).Plague = p.ID
+		w.told(FRefused, c, e, -1).with(P{"traded": c.Trade[eid]}).Plague = p.ID
 		p.Refusals++
-		if c.Trade[eid] {
-			w.log("The %s stop the trade with the %s for fear of %s, and hear nothing from them.", c.Tok(), e.Tok(), p.Tok())
-		} else {
-			w.log("The %s close their ears to the %s for fear of %s.", c.Tok(), e.Tok(), p.Tok())
-		}
 	}
 	for _, eid := range sortedInts(c.Suspect) {
 		if _, ok := suspects[eid]; !ok {
@@ -796,7 +786,7 @@ func (w *World) wakeReservoir(c *Civ, s int) {
 	}
 	p.Woken++
 	w.infect(c, p, nil, "reservoir")
-	w.log("The %s come to %s and wake %s in its dead cities.", c.Tok(), w.star(s), p.Tok())
+	w.event(KReservoirWoke, c, nil, s, P{}).Plague = p.ID
 }
 
 // wallsWritten marks a remain with the sickness of the mind its makers
@@ -829,11 +819,8 @@ func (w *World) readWallsPlague(c *Civ, l *Legacy) {
 	}
 	p.Woken++
 	w.infect(c, p, nil, "walls")
-	maker := "someone"
-	if l.Maker >= 0 {
-		maker = "the " + w.Civs[l.Maker].Tok()
-	}
-	w.log("On the walls of %s %s is written, and the %s read it.", maker, p.Tok(), c.Tok())
+	ev := w.event(KWallsPlague, c, nil, l.Star, P{"maker": l.Maker})
+	ev.Legacy, ev.Plague = l.ID, p.ID
 }
 
 // wakeRelic is a relic that does what it was made to do: a plague of its
@@ -844,12 +831,13 @@ func (w *World) wakeRelic(c *Civ, l *Legacy) {
 		k = plague.Memetic
 	}
 	if !w.bears(c, k) {
-		w.log("It does what it was made to do, and finds nothing in the %s to do it to.", c.Tok())
+		w.event(KRelicWoke, c, nil, l.Star, P{"took": false}).Legacy = l.ID
 		return
 	}
 	p := w.newPlague(k, c, "relic")
 	w.infect(c, p, nil, "born")
-	w.log("It does what it was made to do, to the %s. They call it %s.", c.Tok(), p.Tok())
+	ev := w.event(KRelicWoke, c, nil, l.Star, P{"took": true})
+	ev.Legacy, ev.Plague = l.ID, p.ID
 }
 
 // inheritImmunity gives a people born of another what the parent could

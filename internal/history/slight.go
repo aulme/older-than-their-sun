@@ -48,8 +48,7 @@ func (w *World) takeSlight(wr *War, p, a, b *Civ, s float64) {
 	p.Tally.Slights += s
 	if !wr.SlightTold[p.ID] && wr.Slighted[p.ID] >= t.Fact {
 		wr.SlightTold[p.ID] = true
-		w.factOf(FSlight, a, p, -1, b.Tok())
-		w.log("The %s trade with the %s, and take the %s's war on them as a wrong done to themselves.", p.Tok(), b.Tok(), a.Tok())
+		w.told(FSlight, a, p, -1).with(P{"partner": b.ID})
 	}
 }
 

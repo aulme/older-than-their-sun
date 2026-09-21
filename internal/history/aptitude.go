@@ -196,16 +196,7 @@ func (w *World) lifted(c *Civ, need string) bool {
 		}
 		if offers(w.G.Sys[s].Arch, need) {
 			c.Lifted[need] = true
-			var did string
-			switch need {
-			case "sea":
-				did = "put to sea"
-			case "sky":
-				did = "look up, and see stars"
-			case "fire":
-				did = "make fire"
-			}
-			w.log("The %s of %s %s, to the bafflement of home. It never comes naturally to them.", c.Tok(), w.star(s), did)
+			w.event(KLifted, c, nil, s, P{"need": need})
 			return true
 		}
 	}
@@ -311,7 +302,7 @@ func (w *World) birthright(c *Civ) {
 	}
 	var blocks, cheap, costly []string
 	type ranked struct {
-		name string
+		key  string
 		mult float64
 	}
 	var rs []ranked
@@ -327,7 +318,7 @@ func (w *World) birthright(c *Civ) {
 			}
 		case aptDear:
 			if !n.Miracle && (mult <= 0.5 || mult >= 2) {
-				rs = append(rs, ranked{n.Name, mult})
+				rs = append(rs, ranked{n.Key, mult})
 			}
 		}
 	}
@@ -351,22 +342,14 @@ func (w *World) birthright(c *Civ) {
 	})
 	for _, r := range rs {
 		if r.mult < 1 && len(cheap) < 3 {
-			cheap = append(cheap, r.name)
+			cheap = append(cheap, r.key)
 		}
 		if r.mult > 1 && len(costly) < 3 {
-			costly = append(costly, r.name)
+			costly = append(costly, r.key)
 		}
 	}
-	var parts []string
-	parts = append(parts, blocks...)
-	if len(cheap) > 0 {
-		parts = append(parts, "They take to "+list(cheap)+" as if born to it.")
-	}
-	if len(costly) > 0 {
-		parts = append(parts, strings.ToUpper(list(costly)[:1])+list(costly)[1:]+" will come hard to them.")
-	}
-	if len(parts) > 0 {
-		w.log("%s", strings.Join(parts, " "))
+	if len(blocks)+len(cheap)+len(costly) > 0 {
+		w.event(KBirthright, c, nil, -1, P{"blocks": blocks, "cheap": cheap, "costly": costly})
 	}
 }
 

@@ -119,21 +119,21 @@ func flattenKinds(w *history.World) KindRec {
 			r.Speaking++
 		}
 	}
-	gained := map[string]int{} // by the power's name
-	for _, f := range w.Facts {
+	gained := map[string]int{} // by the power's key
+	for _, f := range w.Events {
 		switch f.Kind {
 		case history.FDemand:
-			if f.What == "left" {
+			if f.P["outcome"] == "left" {
 				r.Left++
 			}
 		case history.FSevered:
 			r.Severed++
 		case history.FDeepened:
-			gained[f.What]++
+			gained[f.P["power"].(string)]++
 		}
 	}
 	for _, pw := range species.Pool {
-		r.Born[pw.Key] = r.Powers[pw.Key] - gained[pw.Name] // what is held and was not gained was there from birth
+		r.Born[pw.Key] = r.Powers[pw.Key] - gained[pw.Key] // what is held and was not gained was there from birth
 	}
 	return r
 }

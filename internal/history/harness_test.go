@@ -48,3 +48,17 @@ func testGalaxy(seed uint64, stars int) *galaxy.Galaxy {
 	rg, _ := galaxy.RegionByName("sol")
 	return galaxy.GenerateAt(r, rg, stars, DefaultConfig().Radius, DefaultConfig().Thickness)
 }
+
+// lastFacts is the last n facts recorded, oldest first; nil where there
+// are fewer.
+func lastFacts(w *World, n int) []*Event {
+	out := make([]*Event, n)
+	i := n - 1
+	for j := len(w.Events) - 1; j >= 0 && i >= 0; j-- {
+		if w.Events[j].IsFact() {
+			out[i] = w.Events[j]
+			i--
+		}
+	}
+	return out
+}

@@ -44,46 +44,38 @@ func (w *World) spawn(home int, sp *species.Species, maker int, host *Civ) *Civ 
 	if host == nil {
 		w.Owner[home] = c.ID
 	}
-	prior := ""
+	prior := -1
 	for _, o := range w.Civs {
 		if o != c && o.Home == home {
-			prior = sprintf(", among the ruins of the %s", o.Tok())
+			prior = o.ID
 		}
 	}
 	w.recompute(c)
-	w.fact(FArise, c, nil, home)
+	arose := w.told(FArise, c, nil, home).with(P{"made": maker >= 0, "shared": shared, "prior": prior, "species": sp.ID, "class": string(st.Class), "desc": sp.Describe()})
 	if host != nil {
-		w.log("The %s %s the %s, at %s. They are %s.", c.Tok(), sp.Arising(), host.Tok(), sys.HomeName(w.star(c.Home)), sp.Describe())
+		arose.P["host"] = host.ID
 	} else if maker < 0 {
-		they := "They are " + sp.Describe() + "."
-		if shared {
-			they = "They are a people of the " + speciesTok(sp) + "."
-		}
-		w.log("The %s %s %s, %s, around %s%s, %.0f ly from %s. %s",
-			c.Tok(), sp.Arising(), sys.HomeName(w.star(c.Home)), sp.World.Desc, w.starDetail(home), prior, w.G.FromCentre(home), w.G.Anchor(), they)
-		w.log("%s", w.systemLine(home))
+		w.event(KSystem, c, nil, home, P{})
 	}
 	if !shared {
-		for _, line := range sp.Portrait() {
-			w.log("%s", line)
-		}
+		w.event(KPortrait, c, nil, -1, P{"lines": sp.Portrait()})
 	}
 	w.bornMorality(c)
 	w.birthright(c)
 	w.innate(c)
 	w.bornPowers(c)
 	if sp.Has("kinfed") {
-		w.fact(FManna, c, nil, home) // a fact every other people judges by its own lights, once known
+		w.fact(FManna, c, nil, home).with(P{"way": "kinfed"}) // a fact every other people judges by its own lights, once known
 	}
 	if m := sp.Miracle(); m != "" {
 		c.Miracles[m] = "born" // the surge begins when they can first use it: see tickCivs
 		if f := tech.Get(m).Filter; f != "" {
 			c.Faced[f] = true // what is evolved is not a leap; nothing to fall from
 		}
-		w.log("They are born to a miracle: %s. What others will spend ages reaching for, they have from the first.", miracleNames[m])
+		w.event(KBornMiracle, c, nil, -1, P{"miracle": m})
 	}
 	if st.Failing {
-		w.log("Their sun is already failing. They were born under a dying star.")
+		w.event(KBornFailing, c, nil, home, P{})
 	}
 	if natural {
 		w.bornRider(c)
@@ -258,22 +250,21 @@ func (w *World) arrivals(c *Civ) {
 			// a world of something the people cannot hold in mind: the ship is a loss with no doer on its ledger
 			o := w.Civs[w.Owner[t]]
 			w.trace(t, "derelict "+ship, c.ID)
-			w.log("A %s of the %s arrives at %s, which every reading said was empty, and is never heard from again. The %s were there.", ship, c.Tok(), w.star(t), o.Tok())
-			w.factOf(FShipLost, c, o, t, ship)
+			w.fact(FShipLost, c, o, t).with(P{"ship": ship})
 			c.Morale -= 0.2
 			w.chart(c, t, "ship")
 		case w.Owner[t] >= 0 && w.Civs[w.Owner[t]].Active():
 			w.trace(t, "derelict "+ship, c.ID)
-			w.log("A %s of the %s arrives at %s to find the %s already there.", ship, c.Tok(), w.star(t), w.Civs[w.Owner[t]].Tok())
+			w.event(KArrivalLost, c, w.Civs[w.Owner[t]], t, P{"ship": ship, "why": "held"})
 			w.chart(c, t, "ship")
 		case w.Owner[t] >= 0:
 			w.trace(t, "derelict "+ship, c.ID)
-			w.log("A %s of the %s arrives at %s to find it already taken. It is never heard from again.", ship, c.Tok(), w.star(t))
+			w.event(KArrivalLost, c, nil, t, P{"ship": ship, "why": "taken"})
 			w.chart(c, t, "ship")
 		case !w.canLive(c, t):
 			c.Tally.BlindLost++
 			w.trace(t, "derelict "+ship, c.ID)
-			w.log("A %s of the %s reaches %s on a guess and finds nothing there it can live on. What it learned is sent home. The ship is not.", ship, c.Tok(), w.star(t))
+			w.event(KArrivalLost, c, nil, t, P{"ship": ship, "why": "barren"})
 			w.chart(c, t, "ship")
 		default:
 			w.settle(c, t)
@@ -289,11 +280,9 @@ func (w *World) settle(c *Civ, t int) {
 	w.holdWorld(c, t)
 	switch n := len(c.Systems); {
 	case c.colonies == 1:
-		w.log("The %s settle %s, their first %s beyond %s.", c.Tok(), w.star(t), c.Species.Flavour().Colony, w.star(c.Home))
-		w.fact(FSettle, c, nil, t)
+		w.factN(FSettle, c, nil, t, n).with(P{"first": true, "colony": c.Species.Flavour().Colony, "home": c.Home})
 	case n == 5 || n == 10 || n == 20 || n == 40:
-		w.log("The %s now hold %d systems.", c.Tok(), n)
-		w.fact(FSettle, c, nil, t)
+		w.factN(FSettle, c, nil, t, n).with(P{"first": false, "colony": c.Species.Flavour().Colony, "home": c.Home})
 	}
 	w.afterHold(c, t)
 }
@@ -316,7 +305,6 @@ func (w *World) holdWorld(c *Civ, t int) {
 func (w *World) afterHold(c *Civ, t int) {
 	if len(c.Systems) >= 6 && c.Era >= 3 && c.Stage == Interstellar {
 		c.Stage = Zenith
-		w.log("The %s enter their zenith: %d systems, and no rival in sight.", c.Tok(), len(c.Systems))
 		w.factN(FZenith, c, nil, -1, len(c.Systems))
 	}
 	w.chart(c, t, "settle")
@@ -407,7 +395,7 @@ func (w *World) expand(c *Civ) {
 		need := w.shipReservation(c)
 		if !w.afford(c, need) {
 			if w.Cfg.TraceAI {
-				w.log("[the %s cannot spare a ship for %s: %v short]", c.Tok(), w.star(target), need.Less(c.Surplus.Less(c.Reserved)))
+				w.event(KDebug, c, nil, target, P{"text": sprintf("[the %s cannot spare a ship for %s: %v short]", c.Tok(), w.star(target), need.Less(c.Surplus.Less(c.Reserved)))})
 			}
 			return
 		}
@@ -554,11 +542,7 @@ func (w *World) raise(c *Civ, key, node string, s int) {
 	}
 	c.Built[key]++
 	if c.Structures[key] == 1 || key == "dyson" {
-		if key == "shipyard" {
-			w.log(st.Text, w.star(s), c.Tok())
-		} else {
-			w.log(st.Text, c.Tok(), w.star(s))
-		}
+		w.event(KBuilt, c, nil, s, P{"work": key})
 	}
 	if st.Yields() {
 		if c.Harnessed == nil {
@@ -566,7 +550,7 @@ func (w *World) raise(c *Civ, key, node string, s int) {
 		}
 		if !c.Harnessed[key] {
 			c.Harnessed[key] = true
-			w.factOf(FHarness, c, nil, s, "the "+st.Name+" at "+w.star(s))
+			w.fact(FHarness, c, nil, s).with(P{"work": key})
 		}
 	}
 }
@@ -642,13 +626,13 @@ func (w *World) seatLost(c *Civ, cause string) {
 	}
 	switch {
 	case !c.Species.Profile().Can(species.Reseats):
-		w.log("The %s were %s, and %s is gone. What they held elsewhere dies with it.", c.Tok(), w.star(c.Home), w.star(c.Home))
+		w.event(KHomeLost, c, nil, c.Home, P{"way": "was"})
 		w.endCiv(c, Extinct, cause)
 	case c.Has("onequeen"):
-		w.log("The queen of the %s dies with %s. A hive without its queen is only bodies, and the bodies stop.", c.Tok(), w.star(c.Home))
+		w.event(KHomeLost, c, nil, c.Home, P{"way": "queen"})
 		w.endCiv(c, Extinct, cause+", and their queen with it")
 	case c.Has("noqueen") && len(c.Systems) > 1:
-		w.log("The %s have no queen to gather to when %s is lost, and no seat. Every world of theirs is on its own.", c.Tok(), w.star(c.Home))
+		w.event(KHomeLost, c, nil, c.Home, P{"way": "noqueen"})
 		c.Home = c.Systems[0]
 		w.shatter(c, cause, nil)
 	default:
@@ -670,7 +654,7 @@ func (w *World) reseat(c *Civ) {
 	}
 	c.Home = best
 	c.Dying = false
-	w.log("What is left of the %s gathers on %s. It is home now.", c.Tok(), w.star(c.Home))
+	w.event(KReseated, c, nil, c.Home, P{})
 }
 
 // contract shrinks a civilisation to its home (or one world) as a remnant.
@@ -694,7 +678,7 @@ func (w *World) contract(c *Civ, cause string) {
 			w.loseSystem(c, s, "abandoned "+c.Species.Flavour().Colony, "")
 		}
 	}
-	w.factOf(FFall, c, nil, keep, cause)
+	fell := w.unplaced(FFall, c, nil, keep).with(P{"cause": cause, "peak": c.Peak})
 	c.Stage, c.Fate, c.Cause, c.Ended = Remnant, Contracted, cause, w.Now
 	c.Fell = w.Now
 	c.FellDependent = len(c.Dependent) > 0
@@ -702,7 +686,7 @@ func (w *World) contract(c *Civ, cause string) {
 	w.endWars(c, "the fall of a side")
 	c.Wars = map[int]bool{}
 	w.dropWielded(c, 0.5)
-	w.log("The %s %s. What remains of them lives on %s under %s. Once they held %s.", c.Tok(), cause, w.star(keep), c.titleTok(), systems(c.Peak))
+	w.place(fell)
 }
 
 // endCiv finishes a civilisation as extinct or transformed. Systems become traces.
@@ -734,12 +718,7 @@ func (w *World) endCiv(c *Civ, f Fate, cause string) {
 	w.endWars(c, "the fall of a side")
 	c.Wars = map[int]bool{}
 	w.dropWielded(c, 1)
-	w.factOf(FEnd, c, nil, c.Home, cause)
-	if f == Extinct && wasRemnant {
-		w.log("The last of the %s are gone from %s. They %s.", c.Tok(), w.star(c.Home), cause)
-	} else if f == Extinct {
-		w.log("The %s %s. They held %s at their height.", c.Tok(), cause, systems(c.Peak))
-	}
+	w.told(FEnd, c, nil, c.Home).with(P{"cause": cause, "fate": f.String(), "remnant": wasRemnant, "peak": c.Peak})
 }
 
 // darkAge is the one dark age, whoever calls it: a share of the tree
@@ -781,7 +760,7 @@ func (w *World) darkAge(c *Civ, why string) {
 	if slices.Contains(forgotten, resilience) {
 		w.veil(c) // the records that checked themselves are gone, and what they held with them
 	}
-	f := w.factOf(FDarkAge, c, nil, c.Home, why)
+	f := w.unplaced(FDarkAge, c, nil, c.Home).with(P{"cause": why, "depth": depth, "colony": c.Species.Flavour().Colony})
 	f.N = int(depth*10 + 0.5)
 	lost := 0
 	for _, s := range append([]int(nil), c.Systems...) {
@@ -797,11 +776,8 @@ func (w *World) darkAge(c *Civ, why string) {
 	} else if c.Stage == Zenith {
 		c.Stage = Interstellar
 	}
-	if lost > 0 {
-		w.log("The %s %s. A dark age follows, and %s of what they knew is forgotten. %d %ss go silent.", c.Tok(), why, depthWord(depth), lost, c.Species.Flavour().Colony)
-	} else {
-		w.log("The %s %s. A dark age follows, and %s of what they knew is forgotten.", c.Tok(), why, depthWord(depth))
-	}
+	f.P["lost"] = lost
+	w.place(f)
 	if c.Active() && c.Reach < 10 && len(c.Systems) > 1 {
 		w.shatter(c, why, forgotten)
 	}
@@ -942,7 +918,7 @@ func (w *World) machinePeople(c *Civ) *Civ {
 	}
 	w.recompute(nc)
 	c.Into = "the " + nc.Tok()
-	w.log("The %s are gone. What they built at %s thinks on without them, and calls itself the %s: %s.", c.Tok(), w.star(c.Home), nc.Tok(), sp.Describe())
+	w.event(KOutgrown, c, nc, c.Home, P{"desc": sp.Describe()})
 	w.machineMorality(nc, c)
 	w.inherit(nc, c, 0)
 	return nc

@@ -1,6 +1,6 @@
 # Execution plan: the open proposals, in order
 
-**Status:** In progress, 2026-09-21. Step 1 done.
+**Status:** In progress, 2026-09-22. Steps 1 and 2 done.
 **Source proposals:** `names.md` (2 stages), `structured-output.md` (4 stages), `decline.md` (unstaged, not yet sharpened), `galaxy-in-motion.md` (5 stages, not scheduled). Each proposal's Design section is the specification; its Stages section is the unit of work here. Where this plan and a proposal differ on order, this plan wins.
 
 The previous plan, which built Simulation v2, is `specs/done/plan.md`; its protocol for running a step in a fresh session applies here unchanged (read this file, then the step's proposal sections and code; check the ledger and `git log`; build; write the ledger entry).
@@ -64,7 +64,7 @@ The v2 rules stand (`specs/done/plan.md`, "Architecture rules": the mind decides
 | step | state | notes |
 |---|---|---|
 | 1 names-ids | done 2026-09-21 | `internal/names` rewritten as the pass; `data/` package with `families.json`; every seed shifted once (`TestSameHistory` re-pinned, `reports/tech` regenerated). Four seed-pinned harness tests moved to new seeds (`TestHarness` 6, `TestMuster` 57, `TestUnseen` 65, `TestAlienPairStaysDark` 12). Choices made without asking: `FMet.how` is the fact's `What`; `Fact.Plague` added so the sickness suspicion keys on ids; word rows for the state beneath are coined for voiceless peoples too until stage 4 (a stub); the view prints a never-named people as `unnamed #id`. |
-| 2 events | not started | |
+| 2 events | done 2026-09-22 | `Event` is the typed record, `Fact` merged into it; `data/events.json` (232 kinds, 84 of them facts) with generated constants; `w.log` gone; the chronicle rendered by `lines.go` from the record. Legends byte-identical on ten seeds but for the archetype word in myth-wear tellings, which hashes the event id (296 lines of 214k); `TestSameHistory` re-pinned to the typed record's digest, and the legends digest of seed 5 pinned in `internal/legends`. Choices made without asking: a fact's chronicle line is the fact's own, chosen by a `way` parameter, and the outcome lines of filters are a `faced` chatter kind beside the silent fact, since the fact is written only the first time; the record and the chronicle are two orders over one list (`fact` places before its spread, `told` after); `node_learned` is written for every node, so the record is two fifths larger than the old log (16.5k events for 11.6k lines on seed 5); text parameters stay words until step 3. |
 | 3 lookups | not started | |
 | 4 names-translated | not started | |
 | 5 writer and view | not started | |

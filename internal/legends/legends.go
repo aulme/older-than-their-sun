@@ -119,9 +119,14 @@ func Write(out io.Writer, w *history.World, full bool) {
 
 func write(p func(string, ...any), w *history.World, book *names.Book, full bool) {
 	events := func(from, to history.Year) {
-		for _, e := range w.Events {
-			if e.Year >= from && e.Year < to {
-				p("  %-16s %s", year(e.Year), e.Text)
+		for _, e := range w.Chronicle {
+			if e.Year < from || e.Year >= to {
+				continue
+			}
+			for _, line := range strings.Split(w.Line(e), "\n") {
+				if line != "" {
+					p("  %-16s %s", year(e.Year), line)
+				}
 			}
 		}
 	}

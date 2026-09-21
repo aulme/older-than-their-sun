@@ -214,7 +214,12 @@ func (g *Galaxy) Near(a int, maxDist float64) []int {
 
 // Describe gives a short human-readable location for a star.
 func (g *Galaxy) Describe(id int) string {
-	s := &g.Stars[id]
+	return g.DescribeStar(&g.Stars[id], id)
+}
+
+// DescribeStar is Describe of a star as given, for a star as it was at
+// some earlier time.
+func (g *Galaxy) DescribeStar(s *Star, id int) string {
 	if id == g.Sol {
 		return "Sol"
 	}

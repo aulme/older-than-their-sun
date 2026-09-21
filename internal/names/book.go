@@ -224,7 +224,7 @@ func (b *Book) designations() {
 // adopts the other's endonym.
 func (b *Book) factRows() {
 	w := b.w
-	for _, f := range w.Facts {
+	for _, f := range w.Events {
 		switch f.Kind {
 		case history.FArise:
 			b.starRow(f.Subject, f.Star, f.Year)
@@ -233,7 +233,7 @@ func (b *Book) factRows() {
 		case history.FMet:
 			if f.Object >= 0 {
 				b.adopt(f.Subject, f.Object, f.Year)
-				if f.What != "noticed" { // a one-sided finding: the other never knew
+				if f.P["how"] != "noticed" { // a one-sided finding: the other never knew
 					b.adopt(f.Object, f.Subject, f.Year)
 				}
 			}
@@ -305,7 +305,7 @@ func (b *Book) stubs() {
 			b.add(Row{Object: Object{"title", c.ID}, By: c.ID, Name: title(r), Mode: "translated", Tone: "self", Coined: c.Ended, From: -1, Stub: true})
 		}
 	}
-	for _, f := range w.Facts {
+	for _, f := range w.Events {
 		switch f.Kind {
 		case history.FWord:
 			c := w.Civs[f.Subject]
@@ -327,7 +327,7 @@ func (b *Book) stubs() {
 			if l.Elder != nil {
 				r := stream(w.Seed, itoa(f.Subject), "elder", itoa(l.Elder.ID), "stranger")
 				b.add(Row{Object: Object{"elder", l.Elder.ID}, By: f.Subject, Name: pick(r, finderNames[l.Kind]), Mode: "translated", Tone: "stranger", Coined: f.Year, From: -1, Stub: true})
-			} else if f.What == "unknown" {
+			} else if !f.P["known"].(bool) {
 				r := stream(w.Seed, itoa(f.Subject), "makers", itoa(l.ID), "stranger")
 				b.add(Row{Object: Object{"makers", l.ID}, By: f.Subject, Name: pick(r, ruinNames), Mode: "translated", Tone: "stranger", Coined: f.Year, From: -1, Stub: true})
 			}
@@ -347,7 +347,7 @@ func (b *Book) stubs() {
 }
 
 func (b *Book) hasWord(id int) bool {
-	for _, f := range b.w.Facts {
+	for _, f := range b.w.Events {
 		if f.Kind == history.FWord && f.Subject == id {
 			return true
 		}

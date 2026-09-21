@@ -35,7 +35,7 @@ var miracleNames = map[string]string{
 func (w *World) gain(c *Civ, key, how string) {
 	if c.Miracles[key] == "" {
 		c.Miracles[key] = how
-		w.factOf(FMiracle, c, nil, -1, miracleNames[key])
+		w.fact(FMiracle, c, nil, -1).with(P{"miracle": key, "how": how})
 	}
 	if causal[key] {
 		w.name(c, key)
@@ -256,7 +256,7 @@ func (w *World) remake(c *Civ, why string) *Civ {
 	}
 	w.recompute(nc)
 	c.Into = "the " + nc.Tok()
-	w.log("The %s are gone. What they made of themselves holds their worlds and calls itself the %s: %s.", c.Tok(), nc.Tok(), sp.Describe())
+	w.event(KRemade, c, nc, -1, P{"desc": sp.Describe()})
 	return nc
 }
 
@@ -264,13 +264,13 @@ func init() {
 	def(&Filter{
 		Key: "openline", Name: "the Open Line", Levels: []string{"soc"}, Diff: 6, Domain: "society",
 		Overcome: func(w *World, c *Civ) {
-			w.log("The line carries only the voices of the %s. They keep it that way.", c.Tok())
+			w.faced(c, "openline", "overcome", "", -1)
 		},
 		Scar: func(w *World, c *Civ) {
 			c.Scars[ScarOtherVoices] = true
 			c.Morale -= 1
 			w.tear(0.3)
-			w.log("There are other voices on the line, older, and some of the %s listen. They never quite stop.", c.Tok())
+			w.faced(c, "openline", "scarred", "", -1)
 		},
 		Decline: func(w *World, c *Civ) {
 			w.tear(0.6)
@@ -283,13 +283,13 @@ func init() {
 			w.endCiv(c, Transformed, "became one voice")
 			c.Into = "one voice"
 			w.makeTransmitter(home, c.ID, true)
-			w.log("The %s stop being many. From %s one voice goes out that used to be all of theirs.", c.Tok(), w.star(home))
+			w.faced(c, "openline", "declined", "", home)
 		},
 	})
 	def(&Filter{
 		Key: "brood", Name: "the Brood", Levels: []string{"soc"}, Diff: 6, Domain: "biology",
 		Overcome: func(w *World, c *Civ) {
-			w.log("The %s change, and stay themselves. It is a matter of law with them what may not be altered.", c.Tok())
+			w.faced(c, "brood", "overcome", "", -1)
 		},
 		Scar: func(w *World, c *Civ) {
 			sp := c.Species.Branch() // the same people, no longer quite the same blood
@@ -298,7 +298,7 @@ func init() {
 			t := species.Pick(w.R, "bio")
 			sp.Add(t.Key)
 			c.Scars[ScarChanged] = true
-			w.log("The %s come out the other side of the change %s. They did not mean to.", c.Tok(), t.Name)
+			w.faced(c, "brood", "scarred", "", -1).P["trait"] = t.Key
 		},
 		Decline: func(w *World, c *Civ) {
 			if w.R.Float64() < 0.5 {
@@ -307,19 +307,19 @@ func init() {
 			}
 			// what they bred eats them: a swarm of flesh that makes more of itself, at one of their worlds, and the old people gone
 			s := w.aWorld(c)
-			w.log("What the %s bred at %s does not stop breeding, and does not stop at what it was bred from.", c.Tok(), w.star(s))
+			w.faced(c, "brood", "declined", "", s)
 			w.loseSystem(c, s, "stripped world", "were eaten by what they bred")
 			w.endCiv(c, Extinct, "were eaten by what they bred")
 			if nc := w.replicatorAt(s, species.Biological, "what the "+c.Tok()+" bred", false); nc != nil {
 				nc.Species.Parent = c.Species
-				w.log("It calls itself the %s, if it calls itself anything: %s.", nc.Tok(), nc.Species.Describe())
+				w.event(KNamedItself, nc, nil, s, P{"way": "", "desc": nc.Species.Describe()})
 			}
 		},
 	})
 	def(&Filter{
 		Key: "unmaking", Name: "the Unmaking", Levels: []string{"soc"}, Diff: 6.5, Domain: "society",
 		Overcome: func(w *World, c *Civ) {
-			w.log("The %s build it and do not use it. Everyone within reach knows they have it. That is enough.", c.Tok())
+			w.faced(c, "unmaking", "overcome", "", -1)
 		},
 		Scar: func(w *World, c *Civ) {
 			s := c.Home
@@ -333,13 +333,13 @@ func init() {
 			}
 			c.Scars[ScarBurningSky] = true
 			w.tear(0.3)
-			w.blast(s, 4, "a test of the Unmaking", "The first test of the %s' Unmaking takes a world with it.", 1)
+			w.blast(s, 4, "a test of the Unmaking", "unmaking_test", c, 1)
 		},
 		Decline: func(w *World, c *Civ) {
 			home := c.Home
 			w.tear(0.6)
-			w.log("The %s turn the Unmaking on something too close.", c.Tok())
-			w.blast(home, 6, "the Unmaking turned inward", "Everything around %s stops being matter for a while.", 2)
+			w.faced(c, "unmaking", "declined", "", -1)
+			w.blast(home, 6, "the Unmaking turned inward", "unmaking_inward", nil, 2)
 			if c.Active() && contains(c.Systems, home) {
 				w.loseSystem(c, home, "unmade world", "unmade their own world")
 			}
@@ -351,11 +351,11 @@ func init() {
 	def(&Filter{
 		Key: "chorus", Name: "the Chorus", Levels: []string{"soc"}, Diff: 6, Domain: "society",
 		Overcome: func(w *World, c *Civ) {
-			w.log("The %s think one thought and remain many people. It can be done.", c.Tok())
+			w.faced(c, "chorus", "overcome", "", -1)
 		},
 		Scar: func(w *World, c *Civ) {
 			c.Ossified, c.Stiff = true, max(c.Stiff, 1) // set, and the filter will come for it
-			w.log("The %s think one thought, and it is the same thought every year after. Nothing new is ever said.", c.Tok())
+			w.faced(c, "chorus", "scarred", "", -1)
 		},
 		Decline: func(w *World, c *Civ) {
 			if w.R.Float64() < 0.65 {
@@ -367,19 +367,19 @@ func init() {
 			w.endCiv(c, Transformed, "became the thought they were thinking")
 			c.Into = "a chorus"
 			w.makeTransmitter(home, c.ID, true)
-			w.log("The thought of the %s gets loose. From %s it goes out to whoever will hear it.", c.Tok(), w.star(home))
+			w.faced(c, "chorus", "declined", "", home)
 		},
 	})
 	def(&Filter{
 		Key: "sight", Name: "the Sight", Levels: []string{"soc"}, Diff: 6, Domain: "society",
 		Overcome: func(w *World, c *Civ) {
-			w.log("The %s see how it ends, and go on anyway.", c.Tok())
+			w.faced(c, "sight", "overcome", "", -1)
 		},
 		Scar: func(w *World, c *Civ) {
 			c.Scars[ScarFatalism] = true
 			c.Morale -= 1
 			w.tear(0.3)
-			w.log("The %s see how it ends. A fatalism settles on them that never lifts.", c.Tok())
+			w.faced(c, "sight", "scarred", "", -1)
 		},
 		Decline: func(w *World, c *Civ) {
 			w.tear(1)

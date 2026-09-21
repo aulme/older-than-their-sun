@@ -60,7 +60,7 @@ func TestSlightSized(t *testing.T) {
 	if !w2.Wars[0].SlightTold[p2.ID] {
 		t.Error("a slight past the bar wrote no fact")
 	}
-	if n := len(w2.Facts); n == 0 || w2.Facts[n-1].Kind != FSlight {
+	if f := lastFacts(w2, 1); f[0] == nil || f[0].Kind != FSlight {
 		t.Error("the last fact is not the slight")
 	}
 }
@@ -93,7 +93,7 @@ func TestSlightRepeats(t *testing.T) {
 		t.Errorf("the slight of one war passed the cap: %.2f", got)
 	}
 	told := 0
-	for _, f := range w.Facts {
+	for _, f := range w.Events {
 		if f.Kind == FSlight {
 			told++
 		}

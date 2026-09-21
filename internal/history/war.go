@@ -177,18 +177,9 @@ func (w *World) declare(c, e *Civ, cause string) *War {
 	e.Focus[tech.Weapons] = max(e.Focus[tech.Weapons], 2)
 	w.observe(c, e, e.Home, 0.5)
 	w.observe(e, c, c.Home, 0.5)
-	w.factOf(FWar, c, e, -1, cause)
+	declared := w.unplaced(FWar, c, e, -1).with(P{"cause": cause, "war": wr.ID, "nth": wr.Nth, "hunt": !w.perceives(c, e), "unseen": !w.perceives(e, c)})
 	w.slighted(c, e, wr)
-	switch {
-	case !w.perceives(c, e):
-		// a hunt: the ledger's line stands for it; see gap.go
-	case !w.perceives(e, c):
-		w.log("The %s declare war on the %s, over %s. The %s will never know by whom.", c.Tok(), e.Tok(), cause, e.Tok())
-	case wr.Nth > 1:
-		w.log("The %s go to war with the %s again, the %s time, over %s.", c.Tok(), e.Tok(), ordinal(wr.Nth), cause)
-	default:
-		w.log("The %s declare war on the %s, over %s.", c.Tok(), e.Tok(), cause)
-	}
+	w.place(declared) // told after the slight it gives
 	w.callAllies(e, c, wr)
 	w.joinAllies(c, e, wr)
 	return wr
@@ -294,26 +285,21 @@ func (w *World) takeWorld(wr *War, c, e *Civ, t int) {
 		w.Bio[t] = BioNone
 		w.loseSystem(e, t, "unmade world", "")
 		wr.Glassed[i]++
-		w.log("The %s unmake %s, a %s of the %s. There is nothing left to glass.", c.Tok(), w.star(t), colony, e.Tok())
-		w.fact(FBurned, c, e, t)
+		w.fact(FBurned, c, e, t).with(P{"way": "unmade", "colony": colony, "told": true})
 	case c.Own >= 0:
 		w.loseSystem(e, t, "host-world", "")
 		w.Owner[t] = c.ID
 		c.Systems = append(c.Systems, t)
 		wr.Taken[i]++
 		converted = true
-		w.fact(FTaken, c, e, t)
-		w.log("The %s of %s are riders now. The %s wear them.", e.Tok(), w.star(t), c.Tok())
+		w.told(FTaken, c, e, t).with(P{"way": "host_war", "told": true})
 	case c.Has("swarming"):
 		w.loseSystem(e, t, "overrun "+colony, "")
 		w.Owner[t] = c.ID
 		c.Systems = append(c.Systems, t)
 		wr.Taken[i]++
 		converted = true
-		w.fact(FTaken, c, e, t)
-		if first {
-			w.log("The %s overrun %s. Where the %s were there is a nest.", c.Tok(), w.star(t), e.Tok())
-		}
+		w.told(FTaken, c, e, t).with(P{"way": "overrun", "told": first})
 	case c.Claim[t]:
 		w.loseSystem(e, t, "reclaimed "+colony, "")
 		w.Owner[t] = c.ID
@@ -324,21 +310,19 @@ func (w *World) takeWorld(wr *War, c, e *Civ, t int) {
 		w.Bio[t] = BioSimple
 		w.loseSystem(e, t, "glassed world", "")
 		wr.Glassed[i]++
-		w.fact(FBurned, c, e, t)
-		if first || w.R.Float64() < 0.3 {
-			w.log("The %s glass %s, a %s of the %s.", c.Tok(), w.star(t), colony, e.Tok())
-		}
+		f := w.told(FBurned, c, e, t).with(P{"way": "glassed", "colony": colony})
+		f.P["told"] = first || w.R.Float64() < 0.3
 	default:
 		w.loseSystem(e, t, "conquered "+colony, "")
 		w.Owner[t] = c.ID
 		c.Systems = append(c.Systems, t)
 		wr.Taken[i]++
-		w.fact(FTaken, c, e, t)
+		f := w.told(FTaken, c, e, t).with(P{"way": "war", "empty_sky": w.emptySky, "told": false})
 		switch {
 		case w.emptySky && (first || w.R.Float64() < 0.5):
-			w.log("The %s take %s from the %s. There was nothing in its sky.", c.Tok(), w.star(t), e.Tok())
+			f.P["told"] = true
 		case first || w.R.Float64() < 0.3:
-			w.log("The %s take %s from the %s.", c.Tok(), w.star(t), e.Tok())
+			f.P["told"] = true
 		}
 	}
 	_ = converted
@@ -397,14 +381,12 @@ func (w *World) homeFalls(wr *War, c, e *Civ) {
 	switch {
 	case c.miracle("unmaking") && !c.Has("pacifist") && (e.Has("unyielding") || w.R.Float64() < 0.5):
 		w.Bio[e.Home] = BioNone
-		w.log("The %s unmake %s, homeworld of the %s. It is not there any more.", c.Tok(), w.star(e.Home), e.Tok())
-		w.fact(FHomeBroken, c, e, e.Home)
+		w.fact(FHomeBroken, c, e, e.Home).with(P{"way": "unmade"})
 		w.endCiv(e, Extinct, sprintf("were unmade by the %s", c.Tok()))
 		w.endWar(wr, "extinction")
 	case c.hates(e):
 		w.Bio[e.Home] = BioNone
-		w.log("The %s scour %s clean of the %s. They were too different to be let live.", c.Tok(), w.star(e.Home), e.Tok())
-		w.fact(FScoured, c, e, e.Home)
+		w.fact(FScoured, c, e, e.Home).with(P{"way": "hated"})
 		if e.Reach >= 1 && len(e.Systems) == 1 && w.R.Float64() < 0.5 {
 			w.loseSystem(e, e.Home, "scoured world", sprintf("were scoured from %s by the %s", w.star(e.Home), c.Tok()))
 		} else {
@@ -413,47 +395,41 @@ func (w *World) homeFalls(wr *War, c, e *Civ) {
 		w.endWar(wr, "extinction")
 	case e.Has("unyielding"):
 		w.Bio[e.Home] = BioNone
-		w.log("A relativistic strike from the %s shatters %s, homeworld of the %s. They never surrendered.", c.Tok(), w.star(e.Home), e.Tok())
-		w.fact(FHomeBroken, c, e, e.Home)
+		w.fact(FHomeBroken, c, e, e.Home).with(P{"way": "shattered"})
 		w.endCiv(e, Extinct, sprintf("were annihilated in war with the %s", c.Tok()))
 		w.endWar(wr, "extinction")
 	case !e.treats():
 		w.Bio[e.Home] = BioSimple
-		w.log("The %s burn %s clean of the %s. There was nothing there to rule; what there was ate the world, and it can only be ended.", c.Tok(), w.star(e.Home), e.Tok())
-		w.fact(FScoured, c, e, e.Home)
+		w.fact(FScoured, c, e, e.Home).with(P{"way": "eater"})
 		w.endCiv(e, Extinct, sprintf("were burned out of %s by the %s", w.star(e.Home), c.Tok()))
 		w.endWar(wr, "extinction")
 	case e.Has("swarming"):
 		w.Bio[e.Home] = BioSimple
-		w.log("The %s burn out the last nest of the %s. A swarm cannot be held; it can only be ended.", c.Tok(), e.Tok())
-		w.fact(FScoured, c, e, e.Home)
+		w.fact(FScoured, c, e, e.Home).with(P{"way": "nest"})
 		w.endCiv(e, Extinct, sprintf("were burned out nest by nest by the %s", c.Tok()))
 		w.endWar(wr, "extinction")
 	case !e.Species.Profile().Can(species.Reseats):
 		w.Bio[e.Home] = BioSimple
-		w.log("The %s take %s, and there is nothing to rule. The %s were the world, and the world is dead.", c.Tok(), w.star(e.Home), e.Tok())
-		w.fact(FHomeBroken, c, e, e.Home)
+		w.fact(FHomeBroken, c, e, e.Home).with(P{"way": "world"})
 		w.endCiv(e, Extinct, sprintf("died when %s was taken by the %s", w.star(e.Home), c.Tok()))
 		w.endWar(wr, "extinction")
 	case e.Has("onequeen"):
-		w.log("The %s take %s, and the queen of the %s with it. A hive without its queen is only bodies, and the bodies stop.", c.Tok(), w.star(e.Home), e.Tok())
-		w.fact(FHomeBroken, c, e, e.Home)
+		w.fact(FHomeBroken, c, e, e.Home).with(P{"way": "queen"})
 		w.endCiv(e, Extinct, sprintf("died with their queen when %s was taken by the %s", w.star(e.Home), c.Tok()))
 		w.endWar(wr, "extinction")
 	case c.Has("pacifist"):
-		w.log("The %s defeat the %s and, having no use for a conquest, leave them be.", c.Tok(), e.Tok())
-		w.fact(FYield, c, e, e.Home)
+		w.fact(FYield, c, e, e.Home).with(P{"way": "spared"}).with(w.warSpanP(wr))
 		w.endWar(wr, "peace")
 	case c.Own >= 0:
-		w.log("The %s break the last defences of %s.", c.Tok(), w.star(e.Home))
+		w.event(KDefencesBroken, c, e, e.Home, P{"outcome": "ridden"})
 		w.ride(c, e)
 		w.endWar(wr, "enslaved")
 	case e.Has("submissive") || c.Dials.Greed < 0.3:
-		w.log("The %s break the last defences of %s, and the %s bend the knee. They are vassals now.", c.Tok(), w.star(e.Home), e.Tok())
+		w.event(KDefencesBroken, c, e, e.Home, P{"outcome": "vassal"})
 		w.vassal(c, e)
 		w.endWar(wr, "vassal")
 	default:
-		w.log("The %s break the last defences of %s.", c.Tok(), w.star(e.Home))
+		w.event(KDefencesBroken, c, e, e.Home, P{"outcome": "enslaved"})
 		w.enslave(c, e)
 		w.endWar(wr, "enslaved")
 	}
@@ -485,7 +461,7 @@ func (w *World) ride(p, h *Civ) {
 		}
 	}
 	w.recompute(p)
-	w.log("The %s are still there, and still themselves, mostly. They do what the %s want now, and what they knew, the %s know.", h.Tok(), p.Tok(), p.Tok())
+	w.event(KRiddenWar, h, p, -1, P{})
 }
 
 // judge decides whether a war goes on. While a fleet is in flight nothing
@@ -501,12 +477,12 @@ func (w *World) judge(wr *War) {
 	}
 	switch {
 	case wr.Gap != nil && wr.Will[0] <= 0:
-		w.log("The hunt of the %s ends, the will for it spent, after %s. Nothing was found that could be named, and the %s go on being there.", a.Tok(), w.warSpan(wr), b.Tok())
+		w.event(KWarEnded, a, b, -1, P{"way": "hunt"}).with(w.warSpanP(wr))
 		w.endWar(wr, "exhaustion")
 	case wr.Gap != nil:
 		// a hunt has nobody to treat with: it runs until the hunter's will is spent or the region is empty; the hunted side's will is nothing to it, since no offer of its can be received; see gap.go
 	case w.noTerms(wr) && wr.Will[0] <= 0 && wr.Will[1] <= 0:
-		w.log("The %s and the %s stop fighting, both sides spent, after %s. Nothing is signed; there is nobody on one side to sign it.", a.Tok(), b.Tok(), w.warSpan(wr))
+		w.event(KWarEnded, a, b, -1, P{"way": "spent"}).with(w.warSpanP(wr))
 		w.endWar(wr, "exhaustion")
 	case w.noTerms(wr):
 		// no offer of terms is heard: the war goes on until the other side tires too
@@ -541,7 +517,7 @@ func (w *World) exhausted(wr *War) {
 	default:
 		a.Tally.Misunderstood++
 		b.Tally.Misunderstood++
-		w.log("The %s and the %s stop fighting, both sides tired of it, after %s. Neither ever understood what the other wanted, and nothing is signed.", a.Tok(), b.Tok(), w.warSpan(wr))
+		w.event(KWarEnded, a, b, -1, P{"way": "misunderstood"}).with(w.warSpanP(wr))
 		w.endWar(wr, "exhaustion")
 	}
 }
@@ -552,8 +528,7 @@ func (w *World) exhausted(wr *War) {
 func (w *World) truce(wr *War, l, v *Civ) {
 	l.Tally.Misunderstood++
 	v.Tally.Misunderstood++
-	w.log("The %s sue the %s for a truce, which is all they know how to ask for, after %s. The fighting stops; nothing is settled.", l.Tok(), v.Tok(), w.warSpan(wr))
-	w.factOf(FPeace, l, v, -1, "truce")
+	w.fact(FPeace, l, v, -1).with(P{"way": "truce", "why": "", "net": 0}).with(w.warSpanP(wr))
 	w.endWar(wr, "truce")
 }
 
@@ -625,32 +600,29 @@ func (w *World) capitulate(wr *War, l, v *Civ) {
 		return
 	}
 	if !w.canStrikeHome(v, l) {
-		w.log("The %s yield to the %s and cede %s, after %s.", l.Tok(), v.Tok(), worlds(ceded), w.warSpan(wr))
-		w.factN(FYield, v, l, -1, ceded)
+		w.factN(FYield, v, l, -1, ceded).with(P{"way": "ceded"}).with(w.warSpanP(wr))
 		w.endWar(wr, "capitulation")
 		return
 	}
 	switch {
 	case v.hates(l):
-		w.log("The %s yield to the %s, who want no terms. %s is scoured clean of them; they were too different to be let live.", l.Tok(), v.Tok(), w.star(l.Home))
-		w.fact(FScoured, v, l, l.Home)
+		w.fact(FScoured, v, l, l.Home).with(P{"way": "yielded"})
 		w.Bio[l.Home] = BioNone
 		w.endCiv(l, Extinct, sprintf("were scoured from %s by the %s", w.star(l.Home), v.Tok()))
 		w.endWar(wr, "extinction")
 	case v.Has("pacifist"):
-		w.log("The %s yield to the %s, who take %s and want nothing more, after %s.", l.Tok(), v.Tok(), worlds(ceded), w.warSpan(wr))
-		w.factN(FYield, v, l, -1, ceded)
+		w.factN(FYield, v, l, -1, ceded).with(P{"way": "took"}).with(w.warSpanP(wr))
 		w.endWar(wr, "capitulation")
 	case v.Own >= 0:
-		w.log("The %s yield to the %s, after %s.", l.Tok(), v.Tok(), w.warSpan(wr))
+		w.event(KYielded, l, v, -1, P{"outcome": "ridden"}).with(w.warSpanP(wr))
 		w.ride(v, l)
 		w.endWar(wr, "enslaved")
 	case l.Has("submissive") || v.Dials.Greed < 0.3 || l.Has("swarming") || !l.Species.Profile().Can(species.Reseats):
-		w.log("The %s yield to the %s and bend the knee, after %s. They are vassals now.", l.Tok(), v.Tok(), w.warSpan(wr))
+		w.event(KYielded, l, v, -1, P{"outcome": "vassal"}).with(w.warSpanP(wr))
 		w.vassal(v, l)
 		w.endWar(wr, "vassal")
 	default:
-		w.log("The %s yield to the %s, after %s.", l.Tok(), v.Tok(), w.warSpan(wr))
+		w.event(KYielded, l, v, -1, P{"outcome": "enslaved"}).with(w.warSpanP(wr))
 		w.enslave(v, l)
 		w.endWar(wr, "enslaved")
 	}
@@ -659,25 +631,24 @@ func (w *World) capitulate(wr *War, l, v *Civ) {
 // peace ends a war with nobody yielding.
 func (w *World) peace(wr *War, why string) {
 	a, b := w.Civs[wr.Sides[0]], w.Civs[wr.Sides[1]]
-	terms := "Neither side is sure who won."
-	switch net := (wr.Taken[0] + wr.Glassed[0]) - (wr.Taken[1] + wr.Glassed[1]); {
-	case net > 0:
-		terms = sprintf("The %s keep what they took.", a.Tok())
-	case net < 0:
-		terms = sprintf("The %s keep what they took.", b.Tok())
-	}
-	w.log("The %s and the %s make peace, %s, after %s. %s", a.Tok(), b.Tok(), why, w.warSpan(wr), terms)
-	w.fact(FPeace, a, b, -1)
+	net := (wr.Taken[0] + wr.Glassed[0]) - (wr.Taken[1] + wr.Glassed[1])
+	w.fact(FPeace, a, b, -1).with(P{"way": "peace", "why": why, "net": net}).with(w.warSpanP(wr))
 	w.endWar(wr, "peace")
 }
 
-// warSpan says how long a war ran and what it cost.
-func (w *World) warSpan(wr *War) string {
-	worldsGone := wr.Taken[0] + wr.Taken[1] + wr.Glassed[0] + wr.Glassed[1]
-	if w.Now-wr.Began < Year(w.dt*1000) {
-		return sprintf("a short war; %s changed hands or burned", worlds(worldsGone))
+// warSpanP is how long a war ran and what it cost, as an event's
+// parameters: the years, the worlds gone, and whether it was over within
+// a tick.
+func (w *World) warSpanP(wr *War) P {
+	return P{"war": wr.ID, "years": w.Now - wr.Began, "gone": wr.Taken[0] + wr.Taken[1] + wr.Glassed[0] + wr.Glassed[1], "short": w.Now-wr.Began < Year(w.dt*1000)}
+}
+
+// warSpan says how long a war ran and what it cost, from those.
+func warSpan(e *Event) string {
+	if e.P["short"].(bool) {
+		return sprintf("a short war; %s changed hands or burned", worlds(e.P["gone"].(int)))
 	}
-	return sprintf("%s of war; %s changed hands or burned", span(w.Now-wr.Began), worlds(worldsGone))
+	return sprintf("%s of war; %s changed hands or burned", span(e.P["years"].(Year)), worlds(e.P["gone"].(int)))
 }
 
 func span(y Year) string {

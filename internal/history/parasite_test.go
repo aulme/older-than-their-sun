@@ -41,7 +41,7 @@ func TestWake(t *testing.T) {
 		t.Error("the rider has no host to be in")
 	}
 	written := false
-	for _, f := range w.Facts {
+	for _, f := range w.Events {
 		written = written || (f.Kind == FEnslaved && f.Subject == rider.ID && f.Object == a.ID)
 	}
 	if !written {
@@ -178,7 +178,7 @@ func TestRiderChooses(t *testing.T) {
 	if rider.Tally.Attempts != 0 || other.Infections[p.ID] != nil {
 		t.Fatal("a rider tried a pact partner")
 	}
-	for _, f := range w.Facts {
+	for _, f := range w.Events {
 		if f.Kind == FPoisoned {
 			t.Fatal("a rider that never tried wrote FPoisoned")
 		}
@@ -189,8 +189,8 @@ func TestRiderChooses(t *testing.T) {
 	if rider.Tally.Attempts != 1 || other.Infections[p.ID] == nil || !other.Barred[rider.ID] {
 		t.Fatalf("the attempt at contagion 1 did not take: attempts %d", rider.Tally.Attempts)
 	}
-	if n := len(w.Facts); w.Facts[n-1].Kind != FWar || w.Facts[n-2].Kind != FBetrayal || w.Facts[n-3].Kind != FPoisoned {
-		t.Errorf("the crime was not written as it should be: %v %v %v", w.Facts[len(w.Facts)-3].Kind, w.Facts[len(w.Facts)-2].Kind, w.Facts[len(w.Facts)-1].Kind)
+	if f := lastFacts(w, 3); f[2].Kind != FWar || f[1].Kind != FBetrayal || f[0].Kind != FPoisoned {
+		t.Errorf("the crime was not written as it should be: %v %v %v", f[0].Kind, f[1].Kind, f[2].Kind)
 	}
 	if len(w.hostsOf(rider)) != 2 {
 		t.Error("the new host is not counted")
@@ -213,7 +213,7 @@ func TestBreakout(t *testing.T) {
 	if inf := a.Infections[p.ID]; inf == nil || inf.Carrier || a.Immune[p.ID] || p.Maker != a.ID || p.Cause != "breakout" || !p.Engineered || p.Contagion > 0.5 || p.Lethality > 0.5 {
 		t.Errorf("a crude breakout: %+v, plague %+v", a.Infections[p.ID], p.Plague)
 	}
-	if n := len(w.Facts); w.Facts[n-1].Kind != FUnleashed || w.Facts[n-1].What != p.Tok() {
+	if f := lastFacts(w, 1); f[0].Kind != FUnleashed || f[0].Plague != p.ID {
 		t.Error("the breakout is not FUnleashed with the plague's name")
 	}
 	b := spawnAt(w, 2, species.Fixed("cooperative"))

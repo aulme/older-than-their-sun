@@ -61,7 +61,7 @@ func tellings(p func(string, ...any), w *history.World, full bool) {
 // believed is the year a people puts on a tale: exact while it is fresh,
 // rough once worn, none at all once it is myth.
 func believed(w *history.World, t *history.Tale) string {
-	f := w.Facts[t.Fact]
+	f := w.Events[t.Fact]
 	switch t.Wear {
 	case 0:
 		return year(f.Year)

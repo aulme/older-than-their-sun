@@ -3,7 +3,6 @@ package history
 import (
 	"math"
 	"math/rand/v2"
-	"strings"
 	"testing"
 
 	"worldgen/internal/species"
@@ -15,7 +14,7 @@ import (
 func TestDeterminism(t *testing.T) {
 	cfg := DefaultConfig()
 	cfg.Stars = 200
-	var first []Event
+	var first []*Event
 	for i := range 3 {
 		w := Generate(7, cfg)
 		if i == 0 {
@@ -26,8 +25,8 @@ func TestDeterminism(t *testing.T) {
 			t.Fatalf("run %d: %d events, first run %d", i, len(w.Events), len(first))
 		}
 		for j := range first {
-			if first[j] != w.Events[j] {
-				t.Fatalf("run %d: event %d differs:\n  %d %s\n  %d %s", i, j, first[j].Year, first[j].Text, w.Events[j].Year, w.Events[j].Text)
+			if first[j].String() != w.Events[j].String() {
+				t.Fatalf("run %d: event %d differs:\n  %s\n  %s", i, j, first[j], w.Events[j])
 			}
 		}
 	}
@@ -51,7 +50,7 @@ func TestOneStep(t *testing.T) {
 	}
 	n := 0
 	for _, e := range w.Events {
-		if strings.HasPrefix(e.Text, "The age is waning.") {
+		if e.Kind == KWaning {
 			n++
 			if e.Year != w.Waning {
 				t.Errorf("waning logged at %d, set at %d", e.Year, w.Waning)

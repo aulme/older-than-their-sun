@@ -106,7 +106,7 @@ func TestDeterministic(t *testing.T) {
 	if x == nil {
 		t.Skip("every pair has met")
 	}
-	w.Facts = append(w.Facts, &history.Fact{ID: len(w.Facts), Kind: history.FMet, Year: w.Present, Subject: x.ID, Object: y.ID, Star: -1, Legacy: -1, Plague: -1, What: "touch"})
+	w.Events = append(w.Events, &history.Event{ID: len(w.Events), Kind: history.FMet, Year: w.Present, Subject: x.ID, Object: y.ID, Star: -1, Legacy: -1, Plague: -1, P: history.P{"how": "touch"}})
 	c := Of(w)
 	before := map[Row]bool{}
 	for _, r := range c.All() {

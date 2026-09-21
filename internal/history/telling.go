@@ -4,6 +4,10 @@ import (
 	"sort"
 	"strings"
 	"unicode"
+
+	"worldgen/internal/flow"
+	"worldgen/internal/species"
+	"worldgen/internal/tech"
 )
 
 // Telling a tale: the fact's plain line with the teller's names for the
@@ -12,8 +16,8 @@ import (
 // differently as the ages pass.
 
 // templates are the plain lines. S and O are the parties, T the star, L
-// the remain, X the word, N the count.
-var templates = [...]string{
+// the remain, X the word (what, below, by kind), N the count.
+var templates = map[Kind]string{
 	FArise:        "{S} arose on {T}.",
 	FStars:        "{S} reached the stars.",
 	FSettle:       "{S} settled {T}.",
@@ -50,7 +54,9 @@ var templates = [...]string{
 	FMiracle:      "{S} gained {X}.",
 	FUplift:       "{S} raised {O} from the beasts of {T}.",
 	FBred:         "{S} remade {O} into something else.",
-	FCosmic:       "{X}",
+	FStarDied:     "{T} died, and the worlds of {S} with it.",
+	FLeftStar:     "{S} left {T} to {X}.",
+	FVacuumHole:   "{S} opened a hole in the vacuum at {T}, and the star went out.",
 	FDoom:         "{P} sun began to fail.",
 	FExodus:       "{S} left {T} and took to the sky.",
 	FRest:         "{S} came to rest at {T}.",
@@ -100,7 +106,7 @@ var templates = [...]string{
 
 // blamedTemplates are the woes that name their own cause, retold once
 // somebody else is blamed for them.
-var blamedTemplates = map[FactKind]string{
+var blamedTemplates = map[Kind]string{
 	FDarkAge:  "{S} were brought low, and a dark age followed.",
 	FFall:     "{S} were brought low, and were a remnant after.",
 	FEnd:      "{S} were ended.",
@@ -117,15 +123,12 @@ var archetypes = []string{"the ones from the dark", "the eaters of worlds", "the
 func (w *World) Tell(c *Civ, t *Tale) string { return w.tell(c, t) }
 
 func (w *World) tell(c *Civ, t *Tale) string {
-	f := w.Facts[t.Fact]
+	f := w.Events[t.Fact]
 	subj, obj := w.seen(c, f.Subject), w.seen(c, f.Object) // a party that cannot be held in mind has no name in the telling
 	if t.Blamed >= 0 && f.sort() != Woe {
 		subj = t.Blamed
 	}
 	line := templates[f.Kind]
-	if strings.Contains(f.What, "{S}") {
-		line = f.What
-	}
 	if t.Blamed >= 0 {
 		if bl, ok := blamedTemplates[f.Kind]; ok {
 			line = bl // the cause it gave itself is gone; the blame sentence carries it
@@ -146,7 +149,7 @@ func (w *World) tell(c *Civ, t *Tale) string {
 	if f.Kind == FArise && we == 1 && t.Wear >= 2 {
 		return "In the beginning we were on " + w.star(f.Star) + ", and there was nothing else."
 	}
-	what := f.What
+	what := w.what(f)
 	if we == 1 {
 		what = ours(what)
 	}
@@ -218,8 +221,59 @@ func pronoun(us bool) string {
 	return "them"
 }
 
+// what is the word in a fact, X in its template: a cause, a filter's
+// name, a miracle, a shape of betrayal, from the event's parameters.
+func (w *World) what(e *Event) string {
+	switch e.Kind {
+	case FDarkAge, FFall, FEnd, FWar:
+		return e.P["cause"].(string)
+	case FBetrayal:
+		return e.P["shape"].(string)
+	case FCutOff, FLeftStar, FShattered:
+		return e.P["why"].(string)
+	case FPact:
+		return e.P["pact"].(string)
+	case FOvercome, FScarred, FDeclined:
+		return filters[e.P["filter"].(string)].Name
+	case FMiracle:
+		return miracleNames[e.P["miracle"].(string)]
+	case FHarness:
+		if id, ok := e.P["source"]; ok {
+			return w.Sources[id.(int)].Name
+		}
+		return "the " + tech.Structures[e.P["work"].(string)].Name + " at " + w.star(e.Star)
+	case FBrokered:
+		return w.Civs[e.P["to"].(int)].Tok()
+	case FHire:
+		return w.termName(e.P["pay"].(Term))
+	case FTaught:
+		return tech.Get(e.P["node"].(string)).Name + ", for " + w.termName(e.P["pay"].(Term))
+	case FStrikeBought:
+		return w.Civs[e.P["seller"].(int)].Tok()
+	case FBoughtOff:
+		return w.Civs[e.P["buyer"].(int)].Tok()
+	case FTribute:
+		return flowWord(e.P["res"].(flow.Kind))
+	case FSlight:
+		return w.Civs[e.P["partner"].(int)].Tok()
+	case FPlague, FPlagueGiven, FPlagueWorld, FCured, FRefused, FBelieved, FWildfire, FPoisoned, FWoke:
+		return w.Plagues[e.Plague].Tok()
+	case FSundered:
+		return "the true " + w.Civs[e.Subject].Tok()
+	case FDeepened:
+		return species.PowerByKey(e.P["power"].(string)).Name
+	case FDemand:
+		return e.P["outcome"].(string)
+	case FShipLost:
+		return e.P["ship"].(string)
+	case FDrifted:
+		return e.P["what"].(string)
+	}
+	return ""
+}
+
 // achievement says whether a deed is the kind an enemy would belittle.
-func achievement(k FactKind) bool {
+func achievement(k Kind) bool {
 	switch k {
 	case FArise, FSettle, FRest, FVassal, FRelief:
 		return false
@@ -245,7 +299,7 @@ func sentences(s string) string {
 }
 
 // frame adds what the teller thinks of it.
-func (w *World) frame(c *Civ, t *Tale, f *Fact, s string, we int, sort Sort, sl int8) string {
+func (w *World) frame(c *Civ, t *Tale, f *Event, s string, we int, sort Sort, sl int8) string {
 	wear := t.Wear
 	switch sort {
 	case Deed:
@@ -328,7 +382,7 @@ func (w *World) frame(c *Civ, t *Tale, f *Fact, s string, we int, sort Sort, sl 
 // partyName is what the teller calls a people, by regard and by wear.
 func (w *World) partyName(c *Civ, t *Tale, id int, subject bool) string {
 	if id < 0 {
-		f := w.Facts[t.Fact]
+		f := w.Events[t.Fact]
 		if was := f.Object; (subject && f.Subject >= 0) || (!subject && was >= 0) {
 			return "something nameless" // a party the fact has and the teller cannot hold in mind
 		}
@@ -387,9 +441,9 @@ func (w *World) starName(c *Civ, t *Tale, star int) string {
 	return "{star:" + itoa(star) + "@" + itoa(c.ID) + "}"
 }
 
-func (w *World) remainName(f *Fact) string {
-	if f.Legacy < 0 && f.What != "" {
-		return f.What // a plague that got out of the vial
+func (w *World) remainName(f *Event) string {
+	if f.Legacy < 0 && f.Plague >= 0 {
+		return w.Plagues[f.Plague].Tok() // a plague that got out of the vial
 	}
 	if f.Legacy < 0 {
 		return "something"
@@ -397,14 +451,32 @@ func (w *World) remainName(f *Fact) string {
 	return w.Legacies[f.Legacy].Desc
 }
 
+// mythParty is the party mythOf names, if it names one: -1 when the
+// fact has none or the line needs none.
+func mythParty(f *Event) int {
+	switch f.Kind {
+	case FEnd, FFall, FBetrayal, FCutOff, FWaking:
+		return f.Subject
+	case FEnslaved, FFreed, FBred:
+		return f.Object
+	case FHomeBroken, FScoured, FUnleashed, FDarkAge, FWant, FSundered, FShattered, FSevered, FUnmade, FExodus:
+		return -1
+	}
+	if f.Star >= 0 {
+		return -1
+	}
+	return f.Object
+}
+
 // mythOf is a short name for a fact, for the chronicle's note that it has
-// become a story.
-func (w *World) mythOf(c *Civ, f *Fact) string {
+// become a story; nameless says whether the party in it could be held in
+// mind when the note was made.
+func (w *World) mythOf(c *Civ, f *Event, nameless bool) string {
 	name := func(id int) string {
 		switch {
 		case id < 0:
 			return "someone"
-		case w.seen(c, id) < 0:
+		case nameless:
 			return "something nameless"
 		}
 		return "the " + w.Civs[id].Tok()
@@ -451,7 +523,7 @@ func (w *World) mythOf(c *Civ, f *Fact) string {
 
 // deedOf is a fact as a verb phrase, for the note that blame has moved.
 // blameOf is a wrong as a teller hangs it on somebody: "who <did this>".
-func (w *World) blameOf(c *Civ, f *Fact) string {
+func (w *World) blameOf(c *Civ, f *Event) string {
 	if f.sort() != Woe {
 		return w.deedOf(f)
 	}
@@ -479,12 +551,12 @@ func (w *World) blameOf(c *Civ, f *Fact) string {
 	case FSurveyLost:
 		return "took the surveyors at " + w.star(f.Star)
 	case FShipLost:
-		return "took the " + f.What + " at " + w.star(f.Star)
+		return "took the " + f.P["ship"].(string) + " at " + w.star(f.Star)
 	case FDefeat:
 		return "broke the fleet at " + w.star(f.Star)
 	case FCaught:
 		return "caught the fleet in the dark near " + w.star(f.Star)
-	case FCosmic, FDoom:
+	case FStarDied, FVacuumHole, FDoom:
 		return "killed the sun"
 	case FExodus:
 		return "drove " + us + " from " + w.star(f.Star)
@@ -492,7 +564,7 @@ func (w *World) blameOf(c *Civ, f *Fact) string {
 	return "did it"
 }
 
-func (w *World) deedOf(f *Fact) string {
+func (w *World) deedOf(f *Event) string {
 	switch f.Kind {
 	case FBurned:
 		return "burned " + w.star(f.Star)
@@ -503,7 +575,7 @@ func (w *World) deedOf(f *Fact) string {
 	case FEnslaved:
 		return "took the " + w.Civs[f.Object].Tok()
 	case FBetrayal:
-		return f.What
+		return f.P["shape"].(string)
 	case FStripped:
 		return "stripped " + w.star(f.Star)
 	case FUnleashed:
@@ -536,7 +608,7 @@ func (w *World) Telling(c *Civ, limit int) []*Tale {
 		}
 	}
 	sort.SliceStable(out, func(i, j int) bool {
-		fi, fj := w.Facts[out[i].Fact], w.Facts[out[j].Fact]
+		fi, fj := w.Events[out[i].Fact], w.Events[out[j].Fact]
 		di, dj := w.dearness(c, fi, out[i]), w.dearness(c, fj, out[j])
 		if di != dj {
 			return di > dj
@@ -546,7 +618,7 @@ func (w *World) Telling(c *Civ, limit int) []*Tale {
 	if len(out) > limit {
 		out = out[:limit]
 	}
-	sort.SliceStable(out, func(i, j int) bool { return w.Facts[out[i].Fact].Year < w.Facts[out[j].Fact].Year })
+	sort.SliceStable(out, func(i, j int) bool { return w.Events[out[i].Fact].Year < w.Events[out[j].Fact].Year })
 	return out
 }
 

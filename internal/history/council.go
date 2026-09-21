@@ -84,7 +84,7 @@ func (w *World) weigh(c, e *Civ, ap Appraisal, bar float64, far, compelled bool)
 	case mind.Watch:
 		if !c.Watched[e.ID] {
 			if w.Now-c.Scouted[e.ID] < 5000 && c.posture() == mind.Conqueror {
-				w.log("The %s look hard at the %s, and stay home.", c.Tok(), e.Tok())
+				w.event(KStayedHome, c, e, -1, P{})
 			}
 			c.Watched[e.ID] = true
 		}

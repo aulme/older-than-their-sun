@@ -112,7 +112,7 @@ func (w *World) runAges() {
 	for i, s := range surges[:len(surges)-1] {
 		age := &AgeRecord{Index: i, Start: s, End: w.ageEnd(s)}
 		w.Ages = append(w.Ages, age)
-		w.logAt(age.Start, "The dawn of an age. Everywhere at once, things start to think.")
+		w.eventAt(age.Start, KAgeDawn, nil, nil, -1, P{"age": i})
 		nElders := 3 + w.R.IntN(4)
 		for j := 0; j < nElders; j++ {
 			e := &Elder{ID: elders, Age: i, Portrait: elderPortraits[w.R.IntN(len(elderPortraits))]}
@@ -122,9 +122,9 @@ func (w *World) runAges() {
 			e.Rose = age.Start + Year(span*w.R.Float64()*w.R.Float64()*0.8)
 			e.Fell = e.Rose + Year(w.R.Float64()*float64(age.End-e.Rose)*1.3)
 			age.Elders = append(age.Elders, e)
-			w.logAt(e.Rose, "Somewhere, %s rises.", e.Portrait)
+			w.eventAt(e.Rose, KElderRose, nil, nil, -1, P{"elder": e.ID})
 			if w.R.Float64() < 0.2 {
-				w.logAt(e.Rose+Year(float64(e.Fell-e.Rose)*0.6), "%s", ageKnowers[w.R.IntN(len(ageKnowers))])
+				w.eventAt(e.Rose+Year(float64(e.Fell-e.Rose)*0.6), KAgeKnower, nil, nil, -1, P{"elder": e.ID, "line": w.R.IntN(len(ageKnowers))})
 			}
 			nLeg := 2 + w.R.IntN(5)
 			for k := 0; k < nLeg; k++ {
@@ -134,16 +134,11 @@ func (w *World) runAges() {
 					w.leaveLegacy(e, at)
 				}
 			}
-			if e.Fell > age.End {
-				w.logAt(e.Fell, "It ends, the last of its age, long after the others.")
-			} else if w.R.Float64() < 0.35 {
-				w.logAt(e.Fell, "It is gone. Its works remain.")
-			} else {
-				w.logAt(e.Fell, "It ends.")
-			}
+			late := e.Fell > age.End
+			w.eventAt(e.Fell, KElderFell, nil, nil, -1, P{"elder": e.ID, "late": late, "remembered": !late && w.R.Float64() < 0.35})
 		}
 		age.Ender = ageEnders[w.R.IntN(len(ageEnders))]
-		w.logAt(age.End, "The age wanes. Nothing new rises, and what remains dwindles. What is left is swept up by %s.", age.Ender)
+		w.eventAt(age.End, KAgeWaned, nil, nil, -1, P{"age": i})
 	}
 }
 
@@ -227,7 +222,7 @@ func (w *World) leaveLegacy(e *Elder, at Year) {
 	}
 	w.Legacies = append(w.Legacies, l)
 	e.Legacies = append(e.Legacies, l)
-	w.logAt(at, "It leaves %s.", l.Desc)
+	w.eventAt(at, KElderLeft, nil, nil, l.Star, P{"elder": e.ID}).Legacy = l.ID
 }
 
 // legacyNode returns the tech node an artifact or structure stands for.
@@ -252,12 +247,12 @@ func (w *World) deepLife() {
 		case BioNone:
 			if s.Hab > 0 && w.R.Float64() < s.Hab*0.0015 {
 				w.Bio[i] = BioSimple
-				w.log("Life arises on the worlds of %s.", w.G.Describe(i))
+				w.event(KLifeArose, nil, nil, i, P{"class": string(s.Class)})
 			}
 		case BioSimple:
 			if w.R.Float64() < 0.012 {
 				w.Bio[i] = BioComplex
-				w.log("Complex life flourishes at %s.", w.star(i))
+				w.event(KLifeComplex, nil, nil, i, P{})
 			}
 		}
 	}
@@ -272,7 +267,7 @@ func (w *World) deepBurst() {
 	radius := 20.0 + w.R.Float64()*30
 	killed := w.sterilise(origin, radius)
 	if killed > 0 {
-		w.log("A gamma-ray burst near %s sterilises %d living worlds within %.0f ly.", w.star(origin), killed, radius)
+		w.event(KBurst, nil, nil, origin, P{"killed": killed, "radius": radius})
 	}
 }
 
@@ -298,12 +293,12 @@ func (w *World) deepStars(from, to Year) {
 			killed := w.sterilise(i, 30)
 			s.Kill()
 			if killed > 0 {
-				w.log("%s goes supernova. %d living worlds within 30 ly are sterilised.", w.star(i), killed)
+				w.event(KSupernova, nil, nil, i, P{"killed": killed})
 			}
 			continue
 		}
 		if w.Bio[i] != BioNone {
-			w.log("%s swells and dies, and the life on its worlds with it.", w.star(i))
+			w.event(KStarSwelled, nil, nil, i, P{})
 			w.Bio[i] = BioNone
 		}
 		s.Kill()

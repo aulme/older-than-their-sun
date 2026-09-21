@@ -87,7 +87,13 @@ func TestSortFor(t *testing.T) {
 	if s, wt := judge(o, Morality{Kind: Herd}); s != Crime || wt != 1 {
 		t.Errorf("herd: %v %g", s, wt)
 	}
-	arise := w.Facts[0]
+	var arise *Event
+	for _, e := range w.Events {
+		if e.Kind == FArise {
+			arise = e
+			break
+		}
+	}
 	if s, wt := judge(o, Morality{Kind: Amoral}); s != Nothing {
 		t.Errorf("amoral on the enslavement again: %v %g", s, wt)
 	}
@@ -117,9 +123,9 @@ func TestAmoralHoldsNoMonsters(t *testing.T) {
 	if !a.monsters[e.ID] {
 		t.Errorf("an individual people burned four times holds no monster")
 	}
-	if !judges(a, w.Facts[len(w.Facts)-1]) {
+	if !judges(a, lastFacts(w, 1)[0]) {
 		a.Morality = Morality{Kind: Amoral}
-		if !judges(a, w.Facts[len(w.Facts)-1]) {
+		if !judges(a, lastFacts(w, 1)[0]) {
 			t.Error("an amoral people's judgment of a burning is the fact's own")
 		}
 	}

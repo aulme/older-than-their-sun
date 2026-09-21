@@ -1,8 +1,6 @@
 package history
 
 import (
-	"strings"
-
 	"worldgen/internal/flow"
 	"worldgen/internal/species"
 	"worldgen/internal/tech"
@@ -66,8 +64,7 @@ func (w *World) appear(c *Civ) {
 	s := w.pick(cands)
 	w.holdWorld(c, s)
 	c.Tally.Appeared++
-	w.fact(FAppeared, c, nil, s)
-	w.log("Another of the %s is at %s. Nothing was seen to cross.", c.Tok(), w.star(s))
+	w.told(FAppeared, c, nil, s)
 	w.afterHold(c, s)
 }
 
@@ -90,9 +87,7 @@ func (w *World) gainPower(c *Civ, p *species.Power) {
 	}
 	c.Tally.Deepened++
 	w.stir(c)
-	f := w.fact(FDeepened, c, nil, c.Home)
-	f.What = p.Name
-	w.log("%s", capitalise(strings.ReplaceAll(p.Line, "{S}", "the "+c.Tok())))
+	w.told(FDeepened, c, nil, c.Home).with(P{"power": p.Key})
 	w.bring(c, p, true)
 }
 
@@ -169,8 +164,7 @@ func (w *World) tithed(c *Civ, in flow.Income) flow.Income {
 		if !c.tithedBy[e.ID] {
 			c.tithedBy[e.ID] = true
 			e.Tally.Tithed++
-			w.fact(FTithed, e, c, c.Home)
-			w.log("Something is taken from every harvest of the %s within reach of the %s. Nobody agreed to it, and nothing can be found to refuse.", c.Tok(), e.Tok())
+			w.told(FTithed, e, c, c.Home)
 		}
 	}
 	return in
@@ -202,7 +196,7 @@ func (w *World) mirrored(a, b *Civ) {
 		}
 		s.Scars[ScarSignal] = true
 		s.Morale -= 1
-		w.log("The %s speak to the %s, and what answers is their own voice, older than they are. A cult of the signal grows among them and is never quite rooted out.", s.Tok(), m.Tok())
+		w.event(KMirrored, s, m, -1, P{})
 		w.recompute(s)
 	}
 }
@@ -218,7 +212,7 @@ func (w *World) sleep(c *Civ) {
 	c.Slept = w.Now
 	c.Tally.Sleeps++
 	c.Voyages = nil
-	w.log("The %s go still. There is nothing left they want, and nothing near them moves. They sleep.", c.Tok())
+	w.event(KSlept, c, nil, -1, P{})
 }
 
 // rouse is the sleeper disturbed: by whoever settled inside its reach,
@@ -236,11 +230,7 @@ func (w *World) rouse(c, by *Civ) {
 	c.Asleep = false
 	c.Tally.Wakings++
 	w.recompute(c)
-	if by != nil {
-		w.log("Something came too close, and the %s wake.", c.Tok())
-	} else {
-		w.log("The %s wake.", c.Tok())
-	}
+	w.event(KRoused, c, by, -1, P{})
 	if by != nil && by.Active() && !(c.Met[by.ID] && by.Met[c.ID]) {
 		c.Met[by.ID], by.Met[c.ID] = true, true
 		w.meeting(c, by, c.Home, "touch")

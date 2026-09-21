@@ -286,11 +286,11 @@ func (w *World) answerPact(f, c *Civ, m *Message) {
 	if !ans.Accept {
 		c.Tally.Refused++
 		if w.R.Float64() < 0.3 {
+			against := -1
 			if e != nil {
-				w.log("The %s ask the %s for a pact against the %s, and are refused.", c.Tok(), f.Tok(), e.Tok())
-			} else {
-				w.log("The %s ask the %s for a pact, and are refused.", c.Tok(), f.Tok())
+				against = e.ID
 			}
+			w.event(KPactRefused, c, f, -1, P{"against": against})
 		}
 		return
 	}
@@ -315,12 +315,7 @@ func (w *World) formPact(c, f *Civ, kind PactKind, target int, pid int) {
 	if c.Species.Profile().Can(species.Trades) && f.Species.Profile().Can(species.Trades) {
 		c.Trade[f.ID], f.Trade[c.ID] = true, true // a pact opens the road, for two peoples that have anything the sim counts to give
 	}
-	against := "whoever comes"
-	if target >= 0 {
-		against = "the " + w.Civs[target].Tok()
-	}
-	w.log("The %s and the %s swear a pact of %s against %s.", c.Tok(), f.Tok(), kind, against)
-	w.factOf(FPact, c, f, -1, kind.String())
+	w.fact(FPact, c, f, -1).with(P{"pact": kind.String(), "against": target})
 	if target >= 0 && c.Wars[target] {
 		w.answerCall(f, c, w.Civs[target])
 	}
@@ -386,17 +381,19 @@ func (w *World) answerCall(m, v, a *Civ) {
 		return
 	}
 	if k.Blame {
-		w.betray(m, v, "did not come when called", 0.5)
-		w.log("The %s call on the %s, who do not come.", v.Tok(), m.Tok())
+		w.betray(m, v, "did not come when called", "absent", 0.5)
 	}
 }
 
 // betray records a promise broken.
-func (w *World) betray(by, against *Civ, shape string, weight float64) {
+// Way is the line's key: how the chronicle tells it, where the betrayal
+// is not told by another fact's line.
+func (w *World) betray(by, against *Civ, shape, way string, weight float64) *Event {
 	w.Betrayals = append(w.Betrayals, Betrayal{By: by.ID, Against: against.ID, Year: w.Now, Shape: shape, Weight: weight})
-	w.factOf(FBetrayal, by, against, -1, shape)
+	f := w.told(FBetrayal, by, against, -1).with(P{"shape": shape, "way": way})
 	by.Tally.Betrayals++
 	against.resent(by.ID, 2*weight)
+	return f
 }
 
 // faith records a promise kept at a cost.
@@ -479,8 +476,7 @@ func (w *World) warEnded(wr *War) {
 		ally, enemy = b, a
 	}
 	if pr.Active() && pr.Wars[enemy.ID] {
-		w.betray(ally, pr, "made a separate peace", 0.3)
-		w.log("The %s make their own peace with the %s and leave the %s to fight on.", ally.Tok(), enemy.Tok(), pr.Tok())
+		w.betray(ally, pr, "made a separate peace", "separate", 0.3).P["enemy"] = enemy.ID
 	}
 }
 

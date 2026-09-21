@@ -45,10 +45,7 @@ func (w *World) name(c *Civ, key string) {
 		return
 	}
 	c.Named = true
-	w.factOf(FWord, c, nil, -1, key)
-	if t, ok := beneathNames[key]; ok {
-		w.log(t, c.Tok(), c.wordTok())
-	}
+	w.told(FWord, c, nil, -1).with(P{"route": key})
 }
 
 // tickBeneath wears the wall and lets things through.
@@ -71,14 +68,7 @@ func (w *World) tickBeneath() {
 	w.Thin *= math.Max(0, 1-0.002*w.dt) // it heals; half-life about 350 kyr
 	if st := w.thinStage(); st > w.ThinStage {
 		w.ThinStage = st
-		switch st {
-		case 1:
-			w.log("Something has changed in the field, and nobody in it can say what. Doors are used a little less carefully than they were.")
-		case 2:
-			w.log("The wall between this and what is under it has worn thin. Things come through more easily now, for everyone, and no one knows to blame anyone.")
-		case 3:
-			w.log("The wall is torn. What leaks through no longer needs a door.")
-		}
+		w.event(KWallStage, nil, nil, -1, P{"stage": st})
 	} else if st < w.ThinStage {
 		w.ThinStage = st
 	}
@@ -139,11 +129,7 @@ func (w *World) leak() {
 		if len(keys) > 0 {
 			filter = tech.Get(keys[w.R.IntN(len(keys))]).Filter
 		}
-		word := c.wordTok()
-		if !c.Named {
-			word = "it"
-		}
-		w.log("Some of the %s begin to see %s as a place, with a shore and a weather. That is never good; it means something is coming through.", c.Tok(), word)
+		w.event(KLeak, c, nil, -1, P{"mechanism": "shore", "named": c.Named})
 		delete(c.Faced, filter) // a leak is a second facing
 		w.face(c, filter, 1)
 	case x < 0.85:
@@ -155,7 +141,7 @@ func (w *World) leak() {
 		}
 		if len(sleeping) > 0 {
 			c := sleeping[w.R.IntN(len(sleeping))]
-			w.log("The wall is thin near %s now, and something that slept there notices.", w.star(c.Home))
+			w.event(KLeak, c, nil, c.Home, P{"mechanism": "sleeper"})
 			w.rouse(c, nil)
 			return
 		}
@@ -172,7 +158,7 @@ func (w *World) leak() {
 		}
 		s := free[w.R.IntN(len(free))]
 		w.makeTransmitter(s, -1, true)
-		w.log("Something speaks from %s in no language, in a voice that did not cross space to get there. It came through.", w.star(s))
+		w.event(KLeak, nil, nil, s, P{"mechanism": "voice"})
 	}
 }
 

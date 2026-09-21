@@ -16,7 +16,7 @@ func Generate(seed uint64, cfg Config) *World {
 	w.runAges()
 	w.runAge()
 	w.skyEvents()
-	sort.SliceStable(w.Events, func(i, j int) bool { return w.Events[i].Year < w.Events[j].Year })
+	sort.SliceStable(w.Chronicle, func(i, j int) bool { return w.Chronicle[i].Year < w.Chronicle[j].Year })
 	return w
 }
 
@@ -111,7 +111,7 @@ func (w *World) profileLine() {
 		line += sprintf(" %s %dms", p.Name, w.phaseTime[p.Name].Milliseconds())
 		w.phaseTime[p.Name] = 0
 	}
-	w.log("%s]", line)
+	w.event(KDebug, nil, nil, -1, P{"text": line + "]"})
 }
 
 // runAge is the civilisation engine. It runs from the dawn at one tick to
@@ -137,7 +137,7 @@ func (w *World) runAge() {
 		if (y-cfg.Dawn)%1_000_000 == 0 {
 			if w.Cfg.Debug {
 				all := w.activeCount()
-				w.log("[debug: %d active, %d of them rising, %d remnants, fertility %.2f, hazard %.2f, wall %.2f]", all, active, len(w.Civs)-all-w.deadCount(), f, w.Hazard, w.Thin)
+				w.event(KDebug, nil, nil, -1, P{"text": sprintf("[debug: %d active, %d of them rising, %d remnants, fertility %.2f, hazard %.2f, wall %.2f]", all, active, len(w.Civs)-all-w.deadCount(), f, w.Hazard, w.Thin)})
 			}
 			if w.Cfg.Profile {
 				w.profileLine()
@@ -145,7 +145,7 @@ func (w *World) runAge() {
 		}
 		if w.Waning == 0 && (cfg.FineActive == 0 || active <= cfg.FineActive) && f < cfg.FineFertility {
 			w.Waning = y
-			w.log("The age is waning. Few still rise, and those that stand are old.")
+			w.event(KWaning, nil, nil, -1, P{})
 		}
 		if !ended && (cfg.EndActive == 0 || active <= cfg.EndActive) && f < w.Cycle.Ends {
 			ended = true

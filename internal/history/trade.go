@@ -157,7 +157,7 @@ func (w *World) embargoStep(a, b *Civ, ch mind.TradeChoice, spare flow.Income) {
 		delete(a.Refused, b.ID)
 		if a.Embargo[b.ID] {
 			delete(a.Embargo, b.ID)
-			w.log("The %s open their ports to the %s again.", a.Tok(), b.Tok())
+			w.event(KPortsOpened, a, b, -1, P{})
 		}
 		return
 	}
@@ -189,8 +189,7 @@ func (w *World) embargoStep(a, b *Civ, ch mind.TradeChoice, spare flow.Income) {
 		a.Embargo = map[int]bool{}
 	}
 	a.Embargo[b.ID] = true
-	w.fact(FEmbargo, a, b, -1)
-	w.log("The %s have what the %s want, and will not send it. The %s call it an embargo.", a.Tok(), b.Tok(), b.Tok())
+	w.told(FEmbargo, a, b, -1)
 	w.cutTrade(b, a, "the embargo")
 }
 
@@ -202,7 +201,7 @@ func (w *World) tire(b, a *Civ) {
 	delete(a.Trade, b.ID)
 	delete(b.Trade, a.ID)
 	w.cutTrade(a, b, "the "+b.Tok()+" tiring of them")
-	w.log("The %s tire of the %s, who take and send nothing back, and the trade between them ends.", b.Tok(), a.Tok())
+	w.event(KTired, b, a, -1, P{})
 }
 
 // depend is a people learning what it hangs on: when its own income does
@@ -240,8 +239,7 @@ func (w *World) cutTrade(c, from *Civ, why string) {
 	if c.Active() && lost != (flow.Income{}) {
 		w.redirect(c, lost)
 	}
-	w.fact(FCutOff, c, from, c.Home)
-	w.log("The %s go dark when the %s stop sending, with %s.", c.Tok(), from.Tok(), why)
+	w.told(FCutOff, c, from, c.Home).with(P{"why": why})
 }
 
 // tradeLoss is what a people would lose in a war on a partner: what the

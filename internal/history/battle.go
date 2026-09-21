@@ -137,8 +137,7 @@ func (w *World) fight(x *Expedition, t int) {
 	_, lostD := w.payDefender(wr, c, e, t, s, ld)
 	if x.Ships <= 0 {
 		rec.Outcome = "broken"
-		w.log("The fleet of the %s is broken at %s.", c.Tok(), w.star(t))
-		w.fact(FDefeat, c, e, t)
+		w.fact(FDefeat, c, e, t).with(P{"way": "broken"})
 		wr.Will[i] -= 0.2
 		wr.Will[1-i] += 0.2
 		w.resolve(x)
@@ -174,7 +173,7 @@ func (w *World) fight(x *Expedition, t int) {
 	case !fleets && guns == 0:
 		rec.Outcome = "taken"
 		if lostA > 0 && lostA >= x.Ships {
-			w.log("The %s take %s, and lose half their fleet doing it.", c.Tok(), w.star(t))
+			w.event(KTakenDear, c, e, t, P{})
 		}
 		w.take(wr, x, c, e, t, false)
 	case !fleets && s.guard == nil && len(s.relief) == 0:
@@ -182,12 +181,12 @@ func (w *World) fight(x *Expedition, t int) {
 	case !fleets:
 		rec.Outcome = "withdrew"
 		if w.chance(0.3) {
-			w.log("The ships over %s withdraw and leave it to its guns.", w.star(t))
+			w.event(KLeftToGuns, e, c, t, P{})
 		}
 	default:
 		rec.Outcome = "guns"
 		if x.Battles == 1 || w.chance(0.1) {
-			w.log("The ships of the %s hold their ground over %s behind its guns.", e.Tok(), w.star(t))
+			w.event(KHeldBehindGuns, e, c, t, P{})
 		}
 	}
 }
@@ -219,7 +218,7 @@ func (w *World) payDefender(wr *War, c, e *Civ, t int, s sky, loss float64) (gun
 				e.GridBroken = map[int]bool{}
 			}
 			e.GridBroken[t] = true
-			w.log("The guns over %s fall silent.", w.star(t))
+			w.event(KGunsSilent, e, c, t, P{})
 		}
 	}
 	if loss <= 0 {
@@ -263,7 +262,7 @@ func (w *World) fleetBroken(wr *War, c *Civ, f *Expedition, t int) {
 		wr.Glassed[i]++
 		wr.Will[i] += 0.2
 		wr.Will[1-i] -= 0.2
-		w.log("The %s break a fleet of the %s at %s.", c.Tok(), o.Tok(), w.star(t))
+		w.event(KFleetBroken, c, o, t, P{})
 	}
 }
 
@@ -351,13 +350,12 @@ func (w *World) withdraw(x *Expedition, t int) {
 	need := w.needAt(c, e, t, x.Ships)
 	dest := w.fallback(c, t)
 	if x.Ships < need || dest < 0 {
-		w.log("The fleet of the %s withdraws from %s and turns for home.", c.Tok(), w.star(t))
-		w.fact(FDefeat, c, e, t)
+		w.fact(FDefeat, c, e, t).with(P{"way": "withdrew"})
 		w.goHome(x)
 		return
 	}
 	if x.Sieges == 0 {
-		w.log("The fleet of the %s falls back from %s, and comes again.", c.Tok(), w.star(t))
+		w.event(KFellBack, c, e, t, P{})
 	}
 	x.Sieges++
 	w.sail(x, dest)

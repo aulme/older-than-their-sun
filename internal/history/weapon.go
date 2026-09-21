@@ -46,7 +46,7 @@ func init() {
 		Scar: func(w *World, c *Civ) {
 			if !c.Scars[ScarVial] {
 				c.Scars[ScarVial] = true
-				w.log("Something gets out of the vial among the %s and is burned with the building. They keep the craft and never use it, and go no further with it.", c.Tok())
+				w.faced(c, "vial", "scarred", "", -1)
 			}
 		},
 		Decline: func(w *World, c *Civ) {
@@ -109,7 +109,7 @@ func (w *World) armPlagues(c *Civ) {
 			wp.Target = e.ID
 		case wp != nil:
 			if any, _ := w.plagueTarget(c, memetic, false); any == nil {
-				w.log("The %s burn %s, having nobody left to give it to.", c.Tok(), w.Plagues[wp.Plague].Tok())
+				w.event(KWeaponBurned, c, nil, -1, P{}).Plague = wp.Plague
 				delete(c.Weapons, n.Key)
 			}
 		}
@@ -175,14 +175,7 @@ func (w *World) makePlague(c, e *Civ, n *tech.Node, aim plague.Aim) *Plague {
 	if wd.Immune {
 		c.Immune[p.ID] = true // a thing designed has a designed cure
 	}
-	if wd.Memetic {
-		w.log("The %s shape an idea to break the %s, and call it %s among themselves.", c.Tok(), e.Tok(), p.Tok())
-	} else {
-		w.log("The %s breed a sickness for the %s, and call it %s among themselves.", c.Tok(), e.Tok(), p.Tok())
-	}
-	if pl.Conscious {
-		w.log("They have made it to think.")
-	}
+	w.event(KWeaponMade, c, e, -1, P{"memetic": wd.Memetic, "conscious": pl.Conscious, "node": n.Key}).Plague = p.ID
 	return p
 }
 
@@ -216,7 +209,7 @@ func (w *World) useWeapons(c *Civ) {
 		f := w.factors(c, p.Kind)
 		if w.chance(plague.LeakChance(plague.Dirt(p.Kind, f, t), c.Shed["weapon:"+k], t)) {
 			c.Tally.Leaks++
-			w.log("The programme that keeps %s is not kept well enough.", p.Tok())
+			w.event(KWeaponLeaked, c, nil, -1, P{"node": n.Key}).Plague = p.ID
 			w.breakout(c, n, p)
 			continue
 		}
@@ -297,16 +290,11 @@ func (w *World) poisoned(c, e *Civ, p *Plague, took bool) {
 		p.Poisonings++
 	}
 	e.Barred[c.ID] = true
-	w.factOf(FPoisoned, c, e, e.Home, p.Tok())
-	if took {
-		w.log("The %s find %s was hidden in what the %s sent them, and made for them.", e.Tok(), p.Tok(), c.Tok())
-	} else {
-		w.log("The %s catch the %s trying to hide %s in what they sent. They take nothing from them again.", e.Tok(), c.Tok(), p.Tok())
-	}
+	w.told(FPoisoned, c, e, e.Home).with(P{"took": took}).Plague = p.ID
 	if w.allied(c, e) {
 		w.breakPacts(c, e)
 	}
-	w.betray(c, e, "poisoned the "+e.Tok(), 1)
+	w.betray(c, e, "poisoned the "+e.Tok(), "poisoned", 1)
 	e.resent(c.ID, max(0, 3-e.Grudge[c.ID]))
 	if e.Free() && !e.Wars[c.ID] && !e.Has("pacifist") {
 		w.declare(e, c, "the poisoning")
@@ -338,16 +326,17 @@ func (w *World) breakout(c *Civ, n *tech.Node, p *Plague) {
 		}
 	}
 	if !w.bears(c, p.Kind) {
-		w.log("It gets out, and finds nothing in the %s to be in.", c.Tok())
+		w.event(KBreakout, c, nil, -1, P{"way": "nothing"}).Plague = p.ID
 		return
 	}
 	inf := w.infect(c, p, nil, "loose")
-	w.factOf(FUnleashed, c, nil, c.Home, p.Tok()) // the breakout: what was in the vial let loose, and remembered as a folly
+	f := w.told(FUnleashed, c, nil, c.Home).with(P{"way": "plague"}) // the breakout: what was in the vial let loose, and remembered as a folly
+	f.Plague = p.ID
 	if wd.Immune {
 		inf.Carrier = true
 		c.Immune[p.ID] = true
-		w.log("It gets out. %s does nothing to the %s, who made it; it goes with everything they send.", upper(p.Tok()), c.Tok())
+		w.event(KBreakout, c, nil, -1, P{"way": "carrier"}).Plague = p.ID
 		return
 	}
-	w.log("It gets out. %s is loose among the %s, who made it.", upper(p.Tok()), c.Tok())
+	w.event(KBreakout, c, nil, -1, P{"way": "loose"}).Plague = p.ID
 }

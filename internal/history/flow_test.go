@@ -118,7 +118,7 @@ func TestLeanYearsOnce(t *testing.T) {
 	w.ticks(99)
 	wants := func() int {
 		n := 0
-		for _, f := range w.Facts {
+		for _, f := range w.Events {
 			if f.Kind == FWant && f.Subject == c.ID {
 				n++
 			}
@@ -135,20 +135,11 @@ func TestLeanYearsOnce(t *testing.T) {
 	// a first shed is one line, and only one for the stretch
 	n := 0
 	for _, e := range w.Events {
-		if len(e.Text) > 4 && e.Text[:4] == "The " && contains2(e.Text, "go dark") {
+		if e.Kind == KWentDark {
 			n++
 		}
 	}
 	if n != 1 {
 		t.Errorf("%d lines of going dark over one stretch, want 1", n)
 	}
-}
-
-func contains2(s, sub string) bool {
-	for i := 0; i+len(sub) <= len(s); i++ {
-		if s[i:i+len(sub)] == sub {
-			return true
-		}
-	}
-	return false
 }

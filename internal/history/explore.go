@@ -86,7 +86,7 @@ func (w *World) chart(c *Civ, t int, how string) {
 			if !c.Marked[t] {
 				c.Marked[t] = true
 				if w.R.Float64() < 0.3 {
-					w.log("The Sight shows the %s something at %s that nobody made in this age. They mean to go and see.", c.Tok(), w.star(t))
+					w.event(KSightMarked, c, nil, t, P{})
 				}
 			}
 			continue
@@ -100,7 +100,7 @@ func (w *World) chart(c *Civ, t int, how string) {
 		return
 	}
 	if w.lurks(t) && how == "survey" && w.R.Float64() < 0.3 {
-		w.log("Surveyors of the %s find %s held by something that is not a people as they know one, and do not go closer.", c.Tok(), w.star(t))
+		w.event(KLurkerSeen, c, nil, t, P{})
 	}
 	if o := w.Owner[t]; o >= 0 && o != c.ID {
 		e := w.Civs[o]
@@ -175,9 +175,9 @@ func (w *World) sightMode(c *Civ) {
 	c.Searching = m.Outward
 	switch {
 	case m.Outward && c.Tally.Searched == 0:
-		w.log("The %s turn the Sight outward, to the stars nobody has visited.", c.Tok())
+		w.event(KSightTurned, c, nil, -1, P{"outward": true})
 	case !m.Outward && m.Threat:
-		w.log("The %s turn the Sight back to their own borders.", c.Tok())
+		w.event(KSightTurned, c, nil, -1, P{"outward": false})
 	}
 }
 
@@ -236,9 +236,9 @@ func (w *World) survey(c *Civ) {
 	}
 	c.Tally.Surveys++
 	if c.Tally.Surveys == 1 {
-		w.log("The %s send their first surveyors out: a ship of a few, bound for %s, to see what the stars hold.", c.Tok(), w.star(t))
+		w.event(KFirstSurvey, c, nil, t, P{})
 	} else if w.Cfg.TraceAI {
-		w.log("[the %s send surveyors to %s, %s away]", c.Tok(), w.star(t), span(x.Arrive-w.Now))
+		w.event(KDebug, c, nil, t, P{"text": sprintf("[the %s send surveyors to %s, %s away]", c.Tok(), w.star(t), span(x.Arrive-w.Now))})
 	}
 }
 
@@ -294,8 +294,7 @@ func (w *World) surveyArrive(x *Expedition) {
 	}
 	if w.lurks(t) && w.R.Float64() < 0.5 {
 		o := w.Civs[w.Owner[t]]
-		w.log("The surveyors of the %s do not come back from %s. What they sent before the end says enough: the %s are there.", c.Tok(), w.star(t), o.Tok())
-		w.fact(FSurveyLost, c, o, t)
+		w.fact(FSurveyLost, c, o, t).with(P{"unseen": false})
 		c.Morale -= 0.3
 		x.Over = true
 		w.fleetLost(x, t)
@@ -303,8 +302,7 @@ func (w *World) surveyArrive(x *Expedition) {
 	}
 	if o := w.Owner[t]; o >= 0 && o != c.ID && w.Civs[o].Active() && !w.perceives(c, w.Civs[o]) && w.R.Float64() < 0.5 {
 		// a world of what cannot be held in mind: the surveyors read it as empty, or do not come back, and either way the record has nothing in it
-		w.log("The surveyors of the %s do not come back from %s. What they sent before the end says the star is empty. The %s are there.", c.Tok(), w.star(t), w.Civs[o].Tok())
-		w.fact(FSurveyLost, c, w.Civs[o], t)
+		w.fact(FSurveyLost, c, w.Civs[o], t).with(P{"unseen": true})
 		c.Morale -= 0.3
 		x.Over = true
 		w.fleetLost(x, t)
@@ -365,7 +363,7 @@ func (w *World) picket(c *Civ) {
 		x.Picket = true
 		c.Tally.Pickets++
 		if c.Tally.Pickets == 1 || w.Cfg.TraceAI {
-			w.log("The %s send a ship to %s to sit and watch the sky toward the %s.", c.Tok(), w.star(t), e.Tok())
+			w.event(KPicket, c, e, t, P{})
 		}
 		return
 	}

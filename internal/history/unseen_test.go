@@ -45,7 +45,7 @@ func TestEvolverDrifts(t *testing.T) {
 		}
 	}
 	found := false
-	for _, f := range w.Facts {
+	for _, f := range w.Events {
 		if f.Kind == FDrifted && f.Subject == c.ID {
 			found = true
 		}
@@ -190,7 +190,7 @@ func TestHunt(t *testing.T) {
 		t.Fatal("the hunt met them")
 	}
 	for _, tl := range c.Lore {
-		f := w.Facts[tl.Fact]
+		f := w.Events[tl.Fact]
 		if f.Kind == FTaken && f.Subject == c.ID && f.Object == x.ID {
 			if line := w.tell(c, tl); !strings.Contains(line, "nameless") {
 				t.Fatalf("the taking names them: %q", line)

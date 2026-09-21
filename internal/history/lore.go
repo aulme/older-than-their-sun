@@ -1,9 +1,7 @@
 package history
 
 import (
-	"slices"
 	"sort"
-	"strings"
 )
 
 // Tellings. The chronicle is what happened. What a people knows of it is a
@@ -14,94 +12,6 @@ import (
 // A people slants what it tells: its own deeds grow, its enemies' deeds
 // shrink and their crimes swell, and a friend that turns is retold. What a
 // people leaves in a relic is its telling at that time.
-
-// FactKind is what happened.
-type FactKind uint8
-
-const (
-	FArise FactKind = iota
-	FStars
-	FSettle
-	FZenith
-	FDarkAge
-	FFall
-	FEnd
-	FWar
-	FTaken
-	FBurned
-	FHomeBroken
-	FScoured
-	FYield
-	FPeace
-	FEnslaved
-	FVassal
-	FFreed
-	FCrushed
-	FMet // What is how: "touch" for territories met, "signal" for a hearing, "noticed" for a one-sided finding the other never knew of
-	FTrade
-	FPact
-	FBetrayal
-	FRelief
-	FDefeat
-	FFind
-	FMastered
-	FSealed
-	FUnleashed
-	FOvercome
-	FScarred
-	FDeclined
-	FMiracle
-	FUplift
-	FBred
-	FCosmic
-	FDoom
-	FExodus
-	FRest
-	FStripped
-	FCycle
-	FSurveyLost
-	FWant         // the lean years: a stretch of shedding past a hundred thousand years
-	FHarness      // a first source of a kind put to use: mines in a belt, a tap on a dead star
-	FEmbargo      // a people closed its ports to a partner in want
-	FCutOff       // a people's uses went dark when a partner stopped sending
-	FManna        // a people eats something that thinks
-	FRise         // what was grown for the table rose as a people
-	FLoose        // what was grown for the table got out
-	FIntercept    // a fleet met in the dark and beaten: the winner's
-	FCaught       // the loser's
-	FFathomed     // a people came to understand another
-	FBrokered     // a people spoke for another to a third
-	FHire         // a people took another's pay to hold a star; see contract.go
-	FTaught       // a people taught another a node, for pay
-	FStrikeBought // a people paid a third to send a fleet against another
-	FBoughtOff    // a hired people sold what it was paid to hold
-	FTribute      // a people paid tribute after a war
-	FSlight       // a people made war on the partner of another; see slight.go
-	FPlague       // a people caught a plague; see plague.go
-	FPlagueGiven  // and it came from another, by goods, occupation or a fleet
-	FPlagueWorld  // a world emptied by a plague
-	FCured        // a people rid of one
-	FRefused      // a people closed its ears and its ports to another for fear of one
-	FBelieved     // a world went over to an idea; the object is the cult, if one formed
-	FWildfire     // a plague in ten peoples at once
-	FPoisoned     // a people put a plague in another by stealth, or was caught trying; see weapon.go
-	FWoke         // a plague became a people: the subject is the rider, the object its first host; see parasite.go
-	FRenaissance  // a people grew young again; see ossify.go
-	FSundered     // a people tore itself into heirs: the subject is the old people, the object one heir; see sunder.go
-	FReclaimed    // an heir took a world of the old realm from whoever held it
-	FShattered    // a people forgot the stars and became one people per world: the subject the old people, the object one shard
-	FSevered      // a world of a people with no factions was cut from its seat as a people of its own: the subject the old, the object the new; see sunder.go
-	FDeepened     // an eldritch people drew another power; What is the power's name; see eldritch.go
-	FAppeared     // another of an eldritch people is simply there, at the star
-	FTithed       // an eldritch people takes a share of another's harvest: the subject the taker, the object the tithed
-	FDemand       // a living world told a people to leave a world of its neighbourhood: the subject the world, the object the told; What "left" or "refused"; see waking.go
-	FWaking       // a living world woke on a people's worlds: the subject the world, the object the people
-	FUnmade       // a people ended a world by the unmaking: the subject the unmaker, the object the holder
-	FShipLost     // a colony ship arrived at a world of something the people cannot hold in mind, and was never heard from again: the subject the sender, the object what was there, What the ship's word
-	FHunt         // a people found a hole in its ledger and declared a hunt on the region: the star nearest the centre; see gap.go
-	FDrifted      // an evolver's shape drifted; What is what changed; see evolver.go
-	FWord         // a people reached into the state beneath and gave it a word; What is the miracle's key, or "wound"; the word itself is the names pass's; see beneath.go
-)
 
 // Sort is the moral shape of a fact from the subject's side.
 type Sort uint8
@@ -115,51 +25,36 @@ const (
 	Nothing             // no judgment: what a morality passes over; never a fact's own sort
 )
 
-// factShape is the sort and weight of each kind. Weight is how much a
-// tale resists wear and how far news of it travels.
-var factShape = [...]struct {
-	Sort   Sort
-	Weight float64
-}{
-	FArise: {Deed, 3}, FStars: {Deed, 2}, FSettle: {Deed, 1}, FZenith: {Deed, 2},
-	FDarkAge: {Woe, 3}, FFall: {Woe, 4}, FEnd: {Woe, 5},
-	FWar: {Crime, 2}, FTaken: {Crime, 2}, FBurned: {Crime, 3}, FHomeBroken: {Crime, 5}, FScoured: {Crime, 5},
-	FYield: {Deed, 3}, FPeace: {Bond, 1}, FEnslaved: {Crime, 4}, FVassal: {Deed, 3}, FFreed: {Deed, 4}, FCrushed: {Crime, 3},
-	FMet: {Bond, 1}, FTrade: {Bond, 1}, FPact: {Bond, 2}, FBetrayal: {Crime, 3}, FRelief: {Deed, 2}, FDefeat: {Woe, 2},
-	FFind: {Deed, 2}, FMastered: {Deed, 3}, FSealed: {Deed, 2}, FUnleashed: {Folly, 4},
-	FOvercome: {Deed, 2}, FScarred: {Woe, 2}, FDeclined: {Woe, 3},
-	FMiracle: {Deed, 3}, FUplift: {Deed, 3}, FBred: {Crime, 4},
-	FCosmic: {Woe, 3}, FDoom: {Woe, 3}, FExodus: {Woe, 3}, FRest: {Deed, 2}, FStripped: {Crime, 3}, FCycle: {Deed, 3}, FSurveyLost: {Woe, 2},
-	FWant: {Woe, 1}, FHarness: {Deed, 1},
-	FEmbargo: {Crime, 1}, FCutOff: {Woe, 2}, FManna: {Crime, 2}, FRise: {Deed, 3}, FLoose: {Folly, 4},
-	FIntercept: {Deed, 1}, FCaught: {Woe, 1},
-	FFathomed: {Bond, 1}, FBrokered: {Deed, 1},
-	FHire: {Deed, 1}, FTaught: {Deed, 1}, FStrikeBought: {Crime, 1}, FBoughtOff: {Crime, 2}, FTribute: {Woe, 1},
-	FSlight: {Crime, 1},
-	FPlague: {Woe, 4}, FPlagueGiven: {Crime, 2}, FPlagueWorld: {Woe, 3}, FCured: {Deed, 2}, FRefused: {Crime, 1}, FBelieved: {Woe, 3}, FWildfire: {Woe, 3},
-	FPoisoned: {Crime, 4}, FWoke: {Deed, 3},
-	FRenaissance: {Deed, 3}, FSundered: {Woe, 4}, FReclaimed: {Deed, 2}, FShattered: {Woe, 4},
-	FSevered: {Woe, 2}, FDeepened: {Deed, 2}, FAppeared: {Deed, 1}, FTithed: {Crime, 2}, FDemand: {Crime, 1}, FWaking: {Crime, 4}, FUnmade: {Crime, 5},
-	FShipLost: {Woe, 2}, FHunt: {Deed, 2}, FDrifted: {Deed, 1},
-	FWord: {Deed, 1},
+var sortNames = [...]string{"deed", "crime", "woe", "bond", "folly", "nothing"}
+
+func (s Sort) String() string { return sortNames[s] }
+
+// shape is what data/events.json declares of a kind: the parameters an
+// event of it carries, and for a fact its sort and its weight. Weight is
+// how much a tale resists wear and how far news of it travels; a kind
+// with none is not a fact, and no people holds a tale of it.
+type shape struct {
+	Params  []string
+	Sort    Sort
+	Weight  float64
+	Meaning string
 }
 
-// Fact is one thing that happened, as it happened.
-type Fact struct {
-	ID      int
-	Kind    FactKind
-	Year    Year
-	Subject int    // the people it is about
-	Object  int    // the other people, or -1
-	Star    int    // where, or -1
-	Legacy  int    // the remain in it, or -1
-	Plague  int    // the plague in it, or -1
-	N       int    // a count: worlds
-	What    string // a cause, a filter's name, a miracle, a shape of betrayal
+// shapeOf is the kind's shape, found once per event: the tellings read
+// it per tale per people per tick.
+func (e *Event) shapeOf() *shape {
+	if e.sh == nil {
+		sh := shapes[e.Kind]
+		e.sh = &sh
+	}
+	return e.sh
 }
 
-func (f *Fact) sort() Sort      { return factShape[f.Kind].Sort }
-func (f *Fact) weight() float64 { return factShape[f.Kind].Weight }
+func (e *Event) sort() Sort      { return e.shapeOf().Sort }
+func (e *Event) weight() float64 { return e.shapeOf().Weight }
+
+// IsFact says whether an event is one a people can hold a tale of.
+func (e *Event) IsFact() bool { return e.shapeOf().Weight > 0 }
 
 // Provenance is how a people came to know a tale.
 type Provenance uint8
@@ -192,8 +87,89 @@ type Inscription struct {
 	Text string
 }
 
-// fact records something that happened and lets the parties know it.
-func (w *World) fact(k FactKind, c, e *Civ, star int) *Fact {
+// event writes a happening the chronicle keeps and no people holds a
+// tale of: the kind has no weight. The subject and the object may be
+// nil; the parameters are the kind's declared ones.
+func (w *World) event(k Kind, c, e *Civ, star int, p P) *Event {
+	return w.eventAt(w.Now, k, c, e, star, p)
+}
+
+// eventAt is an event at a year other than now: the deep past, or a year
+// inside the tick.
+func (w *World) eventAt(y Year, k Kind, c, e *Civ, star int, p P) *Event {
+	ev := w.recordAt(y, k, c, e, star, p)
+	w.Chronicle = append(w.Chronicle, ev)
+	return ev
+}
+
+// recordAt writes an event and gives it its id, without placing it in
+// the chronicle: the record's order is when things happened, the
+// chronicle's is when they are told, and a fact recorded in the middle
+// of something is told where the something is. Every event is placed
+// once; fill and the event helpers do it.
+func (w *World) recordAt(y Year, k Kind, c, e *Civ, star int, p P) *Event {
+	if p == nil {
+		p = P{}
+	}
+	ev := &Event{ID: len(w.Events), Year: y, Kind: k, Subject: -1, Object: -1, Star: star, Legacy: -1, Plague: -1, P: p}
+	if sh, ok := shapes[k]; ok {
+		ev.sh = &sh
+	}
+	if row, ok := moralTable[k]; ok {
+		ev.row = &row
+	}
+	if c != nil {
+		ev.Subject = c.ID
+	}
+	if e != nil {
+		ev.Object = e.ID
+	}
+	w.Events = append(w.Events, ev)
+	return ev
+}
+
+// slot reserves the next place in the chronicle, for a fact that will be
+// recorded once what it is told before has been.
+func (w *World) slot() int {
+	w.Chronicle = append(w.Chronicle, nil)
+	return len(w.Chronicle) - 1
+}
+
+// place puts an unplaced event at the end of the chronicle: told after
+// what it caused.
+func (w *World) place(e *Event) *Event {
+	w.Chronicle = append(w.Chronicle, e)
+	return e
+}
+
+// fill places an unplaced event in a reserved slot.
+func (w *World) fill(slot int, e *Event) *Event {
+	w.Chronicle[slot] = e
+	return e
+}
+
+// fact records something that happened, places it, and lets the parties
+// know it: what anyone makes of it is told after it.
+func (w *World) fact(k Kind, c, e *Civ, star int) *Event {
+	f := w.record(k, c, e, star)
+	w.Chronicle = append(w.Chronicle, f)
+	if e != nil {
+		w.witness(e, f)
+	}
+	w.spread(f)
+	return f
+}
+
+// told is a fact placed after the parties know it: what anyone makes of
+// it at once is told before it. The chronicle kept both orders, and
+// keeps them.
+func (w *World) told(k Kind, c, e *Civ, star int) *Event {
+	return w.place(w.unplaced(k, c, e, star))
+}
+
+// unplaced is a fact recorded, witnessed and spread but not yet placed in
+// the chronicle; place or fill places it.
+func (w *World) unplaced(k Kind, c, e *Civ, star int) *Event {
 	f := w.record(k, c, e, star)
 	if e != nil {
 		w.witness(e, f)
@@ -202,14 +178,11 @@ func (w *World) fact(k FactKind, c, e *Civ, star int) *Fact {
 	return f
 }
 
-// record writes a fact and lets the subject know it; fact adds the
-// object and the spread.
-func (w *World) record(k FactKind, c, e *Civ, star int) *Fact {
-	f := &Fact{ID: len(w.Facts), Kind: k, Year: w.Now, Subject: c.ID, Object: -1, Star: star, Legacy: -1, Plague: -1}
-	if e != nil {
-		f.Object = e.ID
-	}
-	w.Facts = append(w.Facts, f)
+// record writes a fact and lets the subject know it, unplaced; fact adds
+// the object and the spread. The parameters the line wants are the
+// caller's to add, before the tick is out; nothing in between reads them.
+func (w *World) record(k Kind, c, e *Civ, star int) *Event {
+	f := w.recordAt(w.Now, k, c, e, star, nil)
 	if star >= 0 {
 		w.factsAt[star] = append(w.factsAt[star], f.ID)
 	}
@@ -217,44 +190,46 @@ func (w *World) record(k FactKind, c, e *Civ, star int) *Fact {
 	return f
 }
 
+// with adds parameters to an event, and is the event.
+func (e *Event) with(p P) *Event {
+	for k, v := range p {
+		e.P[k] = v
+	}
+	return e
+}
+
 // meeting is the meeting fact, with how: "touch" for territories met in the
 // flesh, "signal" for a hearing. Every name a people has for another
-// starts from one of these, so every way of meeting writes one.
-func (w *World) meeting(a, b *Civ, at int, how string) *Fact {
-	return w.factOf(FMet, a, b, at, how)
+// starts from one of these, so every way of meeting writes one. The
+// parameters the line wants are the caller's to add.
+func (w *World) meeting(a, b *Civ, at int, how string) *Event {
+	return w.told(FMet, a, b, at).with(P{"how": how})
 }
 
 // noticed is a one-sided meeting: the seer finds the other, who never
 // knows. The seer alone holds the tale; nothing spreads from it.
-func (w *World) noticed(seer, unseen *Civ, at int) *Fact {
-	f := w.record(FMet, seer, unseen, at)
-	f.What = "noticed"
+func (w *World) noticed(seer, unseen *Civ, at int) *Event {
+	f := w.record(FMet, seer, unseen, at).with(P{"how": "noticed"})
+	w.Chronicle = append(w.Chronicle, f)
 	return f
 }
 
 // factAt is a fact at a year inside the tick.
-func (w *World) factAt(y Year, k FactKind, c, e *Civ, star int) *Fact {
+func (w *World) factAt(y Year, k Kind, c, e *Civ, star int) *Event {
 	f := w.fact(k, c, e, star)
 	f.Year = y
 	return f
 }
 
 // factN is a fact with a count.
-func (w *World) factN(k FactKind, c, e *Civ, star, n int) *Fact {
+func (w *World) factN(k Kind, c, e *Civ, star, n int) *Event {
 	f := w.fact(k, c, e, star)
 	f.N = n
 	return f
 }
 
-// factOf is a fact with a word in it: a cause, a name.
-func (w *World) factOf(k FactKind, c, e *Civ, star int, what string) *Fact {
-	f := w.fact(k, c, e, star)
-	f.What = what
-	return f
-}
-
-// factL is a fact with a remain in it.
-func (w *World) factL(k FactKind, c *Civ, l *Legacy) *Fact {
+// factL is a fact with a remain in it, placed first.
+func (w *World) factL(k Kind, c *Civ, l *Legacy) *Event {
 	var m *Civ
 	if l.Maker >= 0 && l.Maker != c.ID {
 		m = w.Civs[l.Maker]
@@ -264,8 +239,19 @@ func (w *World) factL(k FactKind, c *Civ, l *Legacy) *Fact {
 	return f
 }
 
+// toldL is a fact with a remain in it, told after.
+func (w *World) toldL(k Kind, c *Civ, l *Legacy) *Event {
+	var m *Civ
+	if l.Maker >= 0 && l.Maker != c.ID {
+		m = w.Civs[l.Maker]
+	}
+	f := w.told(k, c, m, l.Star)
+	f.Legacy = l.ID
+	return f
+}
+
 // witness is a party to a fact learning it as it happened.
-func (w *World) witness(c *Civ, f *Fact) {
+func (w *World) witness(c *Civ, f *Event) {
 	if !c.Living() || c.knows(f.ID) {
 		return
 	}
@@ -298,7 +284,7 @@ func (w *World) regard(c *Civ, id int) int8 {
 }
 
 // other is the party in a fact that is not this people, or -1.
-func (c *Civ) other(f *Fact) int {
+func (c *Civ) other(f *Event) int {
 	if f.Subject != c.ID {
 		return f.Subject
 	}
@@ -308,7 +294,7 @@ func (c *Civ) other(f *Fact) int {
 // learn adds a tale. A tale told by another people carries the teller's
 // regard for the other party when the learner has none of its own; that
 // is how a stranger comes to be a monster to peoples it never met.
-func (w *World) hold(c *Civ, f *Fact, src Provenance, from int, slant int8, wear int8) *Tale {
+func (w *World) hold(c *Civ, f *Event, src Provenance, from int, slant int8, wear int8) *Tale {
 	if !w.keeps(c, f) {
 		return nil // nothing about what cannot be held in mind, unless it is our own loss; see antimemetic.go
 	}
@@ -339,7 +325,7 @@ func (w *World) hold(c *Civ, f *Fact, src Provenance, from int, slant int8, wear
 // takeToHeart is what learning a tale does at once: a crime against a
 // friend is held against the doer, and a crime by a stranger against
 // anyone is a thing to be feared.
-func (w *World) takeToHeart(c *Civ, f *Fact, t *Tale) {
+func (w *World) takeToHeart(c *Civ, f *Event, t *Tale) {
 	w.judgeLine(c, f, t)
 	s, wt := sortFor(c, f)
 	if s != Crime || f.Subject == c.ID || t.Source == Witnessed && f.Object == c.ID {
@@ -353,18 +339,18 @@ func (w *World) takeToHeart(c *Civ, f *Fact, t *Tale) {
 // judgeLine is the note, now and then, that a people's judgment of a
 // thing it has just learned is not the fact's own: a crime it counts no
 // crime, a deed it calls one.
-func (w *World) judgeLine(c *Civ, f *Fact, t *Tale) {
+func (w *World) judgeLine(c *Civ, f *Event, t *Tale) {
 	if t.Source == Inherited || f.Subject == c.ID || f.Object == c.ID || !judges(c, f) || w.R.Float64() >= 0.05 {
 		return
 	}
 	s, _ := sortFor(c, f)
 	switch {
 	case f.sort() == Crime && s == Deed:
-		w.log("The %s hear that the %s %s, and count it a deed.", c.Tok(), w.Civs[f.Subject].Tok(), w.deedOf(f))
+		w.event(KJudged, c, w.Civs[f.Subject], -1, P{"about": f.ID, "verdict": "deed"})
 	case f.sort() == Crime && s == Nothing:
-		w.log("The %s hear that the %s %s, and count it no crime.", c.Tok(), w.Civs[f.Subject].Tok(), w.deedOf(f))
+		w.event(KJudged, c, w.Civs[f.Subject], -1, P{"about": f.ID, "verdict": "nothing"})
 	case f.sort() != Crime && s == Crime:
-		w.log("The %s hear what the %s did, and call it a crime.", c.Tok(), w.Civs[f.Subject].Tok())
+		w.event(KJudged, c, w.Civs[f.Subject], -1, P{"about": f.ID, "verdict": "crime"})
 	}
 }
 
@@ -386,7 +372,7 @@ func (w *World) reckon(c *Civ) {
 		if t.Forgot {
 			continue
 		}
-		f := w.Facts[t.Fact]
+		f := w.Events[t.Fact]
 		s, wt := sortFor(c, f)
 		if s == Woe {
 			if t.Blamed < 0 || t.Blamed == c.ID {
@@ -429,7 +415,7 @@ func (w *World) reckon(c *Civ) {
 // spread carries news: each party tells the peoples it trades with or is
 // sworn to, and anyone who can hear its signals learns of the heavier
 // things; whoever had a holding within sight of the star saw it happen.
-func (w *World) spread(f *Fact) {
+func (w *World) spread(f *Event) {
 	parties := []int{f.Subject}
 	if f.Object >= 0 {
 		parties = append(parties, f.Object)
@@ -478,7 +464,7 @@ func (w *World) news(to, from *Civ, m *Message) {
 	if to.knows(m.Fact) {
 		return
 	}
-	f := w.Facts[m.Fact]
+	f := w.Events[m.Fact]
 	wear := int8(0)
 	if w.regard(to, from.ID) < 0 {
 		wear = 1 // an enemy's word is a rumour
@@ -495,14 +481,14 @@ func (w *World) readRuins(c *Civ, star int) {
 	if len(ids) == 0 {
 		return
 	}
-	var pick []*Fact
+	var pick []*Event
 	for _, id := range ids {
-		f := w.Facts[id]
+		f := w.Events[id]
 		if c.knows(id) || f.weight() < 2 || f.sort() == Bond {
 			continue
 		}
 		switch f.Kind {
-		case FSettle, FTaken, FBurned, FHomeBroken, FScoured, FEnd, FFall, FUnleashed, FWaking, FUnmade, FArise, FExodus, FCosmic:
+		case FSettle, FTaken, FBurned, FHomeBroken, FScoured, FEnd, FFall, FUnleashed, FWaking, FUnmade, FArise, FExodus, FStarDied, FLeftStar, FVacuumHole:
 			pick = append(pick, f)
 		}
 	}
@@ -529,7 +515,7 @@ func (w *World) testament(c *Civ, l *Legacy) {
 		}
 	}
 	sort.SliceStable(keep, func(i, j int) bool {
-		fi, fj := w.Facts[keep[i].Fact], w.Facts[keep[j].Fact]
+		fi, fj := w.Events[keep[i].Fact], w.Events[keep[j].Fact]
 		wi, wj := w.dearness(c, fi, keep[i]), w.dearness(c, fj, keep[j])
 		if wi != wj {
 			return wi > wj
@@ -539,7 +525,7 @@ func (w *World) testament(c *Civ, l *Legacy) {
 	if len(keep) > 8 {
 		keep = keep[:8]
 	}
-	sort.SliceStable(keep, func(i, j int) bool { return w.Facts[keep[i].Fact].Year < w.Facts[keep[j].Fact].Year })
+	sort.SliceStable(keep, func(i, j int) bool { return w.Events[keep[i].Fact].Year < w.Events[keep[j].Fact].Year })
 	for _, t := range keep {
 		l.Testament = append(l.Testament, Inscription{Tale: *t, Text: w.tell(c, t)})
 	}
@@ -549,7 +535,7 @@ func (w *World) testament(c *Civ, l *Legacy) {
 
 // dearness is how much a tale matters to its teller: the fact's weight,
 // more for its own part in it, less for strangers' business.
-func (w *World) dearness(c *Civ, f *Fact, t *Tale) float64 {
+func (w *World) dearness(c *Civ, f *Event, t *Tale) float64 {
 	_, x := sortFor(c, f)
 	switch {
 	case f.Subject == c.ID || f.Object == c.ID:
@@ -575,7 +561,7 @@ func (w *World) readTestament(c *Civ, l *Legacy) {
 	own := w.kinship(c, l) == 2
 	n := 0
 	for _, td := range l.Testament {
-		f := w.Facts[td.Tale.Fact]
+		f := w.Events[td.Tale.Fact]
 		if own {
 			if restored := w.restore(c, f.ID, td.Tale); restored {
 				n++
@@ -592,11 +578,7 @@ func (w *World) readTestament(c *Civ, l *Legacy) {
 		n++
 	}
 	if n > 0 && w.R.Float64() < 0.3 {
-		if own {
-			w.log("In what they left at %s the %s read their own story in their own words, and remember.", w.star(l.Star), c.Tok())
-		} else {
-			w.log("What the %s read in %s at %s is the telling of %s, and they have no other.", c.Tok(), l.Desc, w.star(l.Star), w.makerName(c, l))
-		}
+		w.event(KReadWalls, c, nil, l.Star, P{"own": own, "maker": w.makerName(c, l)}).Legacy = l.ID
 	}
 }
 
@@ -619,7 +601,7 @@ func (w *World) restore(c *Civ, fact int, was Tale) bool {
 		c.Tally.Restored++
 		return true
 	}
-	f := w.Facts[fact]
+	f := w.Events[fact]
 	t := w.hold(c, f, Inherited, c.ID, 0, was.Wear)
 	if t == nil {
 		return false // what the wall says is about something that cannot be held in mind
@@ -650,7 +632,7 @@ func (w *World) inherit(nc, parent *Civ, wear int8) {
 		if t.Forgot || nc.knows(t.Fact) {
 			continue
 		}
-		nt := w.hold(nc, w.Facts[t.Fact], Inherited, parent.ID, t.Slant, min(2, t.Wear+wear))
+		nt := w.hold(nc, w.Events[t.Fact], Inherited, parent.ID, t.Slant, min(2, t.Wear+wear))
 		if nt == nil {
 			continue
 		}
@@ -669,7 +651,7 @@ func (w *World) exchange(a, b *Civ) {
 func (w *World) tellOf(from, to *Civ) {
 	var pick []*Tale
 	for _, t := range from.Lore {
-		f := w.Facts[t.Fact]
+		f := w.Events[t.Fact]
 		if t.Forgot || t.Wear >= 2 || f.weight() < 2 || to.knows(f.ID) {
 			continue
 		}
@@ -679,14 +661,14 @@ func (w *World) tellOf(from, to *Civ) {
 		pick = append(pick, t)
 	}
 	sort.SliceStable(pick, func(i, j int) bool {
-		return w.Facts[pick[i].Fact].weight() > w.Facts[pick[j].Fact].weight()
+		return w.Events[pick[i].Fact].weight() > w.Events[pick[j].Fact].weight()
 	})
 	for i, t := range pick {
 		if i >= 5 {
 			break
 		}
 		to.Tally.Told++
-		w.hold(to, w.Facts[t.Fact], Told, from.ID, t.Slant, t.Wear)
+		w.hold(to, w.Events[t.Fact], Told, from.ID, t.Slant, t.Wear)
 	}
 }
 
@@ -734,7 +716,7 @@ func (w *World) wear(c *Civ) {
 		if t.Forgot {
 			continue
 		}
-		f := w.Facts[t.Fact]
+		f := w.Events[t.Fact]
 		age := float64(w.Now-f.Year) / 1e6
 		if age < 0.05 {
 			continue
@@ -762,7 +744,7 @@ func (w *World) wear(c *Civ) {
 
 // wearStep takes one tale one step toward myth, and at the myth step may
 // hang the blame on whoever is the enemy now.
-func (w *World) wearStep(c *Civ, t *Tale, f *Fact) {
+func (w *World) wearStep(c *Civ, t *Tale, f *Event) {
 	if t.Wear >= 2 {
 		t.Forgot = true
 		c.Tally.Forgot++
@@ -775,7 +757,7 @@ func (w *World) wearStep(c *Civ, t *Tale, f *Fact) {
 	c.Tally.Myths++
 	if f.Kind == FSundered && f.Object == c.ID && c.Claim != nil {
 		c.Claim = nil // the sundering is a story now, and a faction is a people
-		w.log("Among the %s the sundering has become a story told to children. Nobody speaks of the old realm as theirs any more.", c.Tok())
+		w.event(KClaimForgot, c, nil, -1, P{"about": f.ID})
 	}
 	blame := false
 	s, wt := sortFor(c, f)
@@ -790,13 +772,14 @@ func (w *World) wearStep(c *Civ, t *Tale, f *Fact) {
 			t.Blamed = e
 			c.Tally.Blamed++
 			if w.R.Float64() < 0.3 {
-				w.log("The %s now tell that it was the %s who %s. It was not.", c.Tok(), w.Civs[e].Tok(), w.blameOf(c, f))
+				w.event(KBlamed, c, w.Civs[e], -1, P{"about": f.ID})
 			}
 			return
 		}
 	}
 	if wt >= 4 && (f.Subject == c.ID || f.Object == c.ID) && w.R.Float64() < 0.15 {
-		w.log("Among the %s, %s has become a story told to children.", c.Tok(), w.mythOf(c, f))
+		who := mythParty(f)
+		w.event(KMyth, c, nil, -1, P{"about": f.ID, "nameless": who >= 0 && w.seen(c, who) < 0})
 	}
 }
 
@@ -831,13 +814,13 @@ func (w *World) foe(c *Civ) int {
 // foe, and is ourselves, a stranger, a people dead or never met, or nobody
 // at all, is hung on the foe: a quarter of them at worn, half at myth.
 func (w *World) scapegoat(c *Civ, e int) {
-	var deeds []string
+	var blamed []int
 	n := 0
 	for _, t := range c.Lore {
 		if t.Forgot || t.Wear < 1 || t.Blamed >= 0 {
 			continue
 		}
-		f := w.Facts[t.Fact]
+		f := w.Events[t.Fact]
 		s, _ := sortFor(c, f)
 		if s != Crime && s != Folly && s != Woe {
 			continue
@@ -871,22 +854,12 @@ func (w *World) scapegoat(c *Civ, e int) {
 		t.Blamed = e
 		c.Tally.Blamed++
 		n++
-		if d := w.blameOf(c, f); len(deeds) < 3 && !slices.Contains(deeds, d) {
-			deeds = append(deeds, d)
-		}
+		blamed = append(blamed, f.ID)
 	}
 	if n == 0 {
 		return
 	}
-	line := deeds[0]
-	if len(deeds) > 1 {
-		line = strings.Join(deeds[:len(deeds)-1], ", ") + ", and " + deeds[len(deeds)-1]
-	}
-	more := ""
-	if n > len(deeds) {
-		more = sprintf(", and %d things besides", n-len(deeds))
-	}
-	w.log("With the %s for an enemy, the %s tell their history over: it was the %s who %s%s. It was not.", w.Civs[e].Tok(), c.Tok(), w.Civs[e].Tok(), line, more)
+	w.event(KScapegoat, c, w.Civs[e], -1, P{"facts": blamed})
 }
 
 // revise is the propaganda step: when a people's regard for another
@@ -906,7 +879,7 @@ func (w *World) revise(c *Civ) {
 		if t.Forgot {
 			continue
 		}
-		f := w.Facts[t.Fact]
+		f := w.Events[t.Fact]
 		o := c.other(f)
 		if o < 0 {
 			continue
@@ -935,7 +908,7 @@ func (w *World) forgetting(c *Civ) {
 		if t.Forgot {
 			continue
 		}
-		f := w.Facts[t.Fact]
+		f := w.Events[t.Fact]
 		p := 0.6 * w.memory(c)
 		if f.weight() >= 4 {
 			p *= 0.5
@@ -960,7 +933,7 @@ func (w *World) prune(c *Civ) {
 		return
 	}
 	sort.SliceStable(c.Lore, func(i, j int) bool {
-		fi, fj := w.Facts[c.Lore[i].Fact], w.Facts[c.Lore[j].Fact]
+		fi, fj := w.Events[c.Lore[i].Fact], w.Events[c.Lore[j].Fact]
 		return w.dearness(c, fi, c.Lore[i]) > w.dearness(c, fj, c.Lore[j])
 	})
 	for _, t := range c.Lore[500:] {
@@ -981,7 +954,7 @@ func (w *World) dread(c *Civ, star int) bool {
 		if t.Forgot || t.Wear >= 2 {
 			continue
 		}
-		f := w.Facts[t.Fact]
+		f := w.Events[t.Fact]
 		if f.Star != star {
 			continue
 		}
@@ -1011,7 +984,7 @@ func (w *World) loreDials(c *Civ) Dials {
 		if t.Forgot {
 			continue
 		}
-		f := w.Facts[t.Fact]
+		f := w.Events[t.Fact]
 		s, _ := sortFor(c, f)
 		k := 1 + 0.5*float64(t.Wear)
 		self := f.Subject == c.ID

@@ -133,7 +133,7 @@ func (w *World) launchIntercept(o *Civ, g *Expedition, x *Expedition, s *Sightin
 	w.addExpedition(y)
 	s.Intercept = y.ID
 	o.Tally.Intercepts++
-	w.logAt(m, "The %s send %s from %s to meet the fleet of the %s in the dark.", o.Tok(), shipsWord(n), w.star(g.Base), c.Tok())
+	w.eventAt(m, KInterceptSent, o, c, g.Base, P{"fleet": y.ID, "quarry": x.ID, "ships": n})
 	w.timetable(y)
 	w.newEye(o, eye{star: -1, r: max(fleetEye, o.watchRange()/2), fleet: y, kind: eyeFleet})
 	return y
@@ -168,7 +168,7 @@ func (w *World) meetInDark(x *Expedition) {
 	}
 	if q.Over || q.Base >= 0 || q.Launched != x.Leg || q.Ships <= 0 {
 		if w.Cfg.TraceAI {
-			w.logAt(x.Meet, "[the %s find nothing where the fleet of the %s should have been]", o.Tok(), c.Tok())
+			w.eventAt(x.Meet, KDebug, o, c, -1, P{"text": sprintf("[the %s find nothing where the fleet of the %s should have been]", o.Tok(), c.Tok())})
 		}
 		w.homeFrom(x, at, x.Meet)
 		return
@@ -183,7 +183,6 @@ func (w *World) meetInDark(x *Expedition) {
 	if near == far {
 		near = q.From
 	}
-	between := "between " + w.star(near) + " and " + w.star(far)
 	atk, def := battle.Strength(x.Ships, w.quality(o)), battle.Strength(q.Ships, w.quality(c))
 	won, la, ld := battle.Fight(w.R, atk, def)
 	rec := &Meeting{Year: x.Meet, Quarry: q.ID, Interceptor: x.ID, Owner: c.ID, Seer: o.ID, Ships: q.Ships, Sent: x.Ships, Won: won}
@@ -206,30 +205,27 @@ func (w *World) meetInDark(x *Expedition) {
 	if !won {
 		winner, loser = c, o
 	}
-	w.factAt(x.Meet, FIntercept, winner, loser, near)
-	w.factAt(x.Meet, FCaught, loser, winner, near)
+	met := w.told(FIntercept, winner, loser, near).with(P{"far": far, "fleet": x.ID, "quarry": q.ID, "lost": lc, "left": q.Ships})
+	met.Year = x.Meet
+	w.factAt(x.Meet, FCaught, loser, winner, near).with(P{"far": far, "fleet": x.ID, "quarry": q.ID})
 	switch {
 	case q.Ships <= 0:
 		rec.Broken = true
 		wr.Will[i] += 0.2
 		wr.Will[1-i] -= 0.2
 		c.Tally.Caught++
-		w.logAt(x.Meet, "The %s meet the fleet of the %s %s, and break it. Nothing of it arrives.", o.Tok(), c.Tok(), between)
+		met.P["way"] = "broken"
 		w.resolve(q)
 	case won:
 		wr.Will[i] += 0.2
 		wr.Will[1-i] -= 0.2
 		c.Tally.Caught++
-		w.logAt(x.Meet, "The %s meet the fleet of the %s %s, and turn it back.", o.Tok(), c.Tok(), between)
+		met.P["way"] = "turned"
 		w.turnBack(q, at, x.Meet)
 	default:
 		wr.Will[i] -= 0.2
 		wr.Will[1-i] += 0.2
-		weaker := ""
-		if lc > 0 {
-			weaker = ", " + shareWord(lc, lc+q.Ships) + " weaker"
-		}
-		w.logAt(x.Meet, "The fleet of the %s, met in the dark %s by the %s, goes on%s.", c.Tok(), between, o.Tok(), weaker)
+		met.P["way"] = "went_on"
 	}
 	if x.Ships <= 0 {
 		x.Over = true

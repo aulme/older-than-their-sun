@@ -1,14 +1,24 @@
 package legends
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"strings"
 	"testing"
 
 	"worldgen/internal/history"
 )
 
+// sameLegendsDigest is the digest of the full legends of seed 5 at 200
+// stars, pinned at the events step (specs/plan.md step 2), where the
+// view began rendering the chronicle from the record. A step that must
+// not change what the view prints keeps it green; one that changes the
+// view or the history on purpose re-pins it and says so in its commit.
+const sameLegendsDigest = "653b6b319d1d2632b2451cfa31ac8cbf22940652a3c3e05a9763837d6ee53b70"
+
 // TestResolved: the legends of a seed carry no unresolved name token;
-// every {kind:id} the history printed went through the names pass.
+// every {kind:id} the history printed went through the names pass. And
+// the legends are what they were.
 func TestResolved(t *testing.T) {
 	cfg := history.DefaultConfig()
 	cfg.Stars = 200
@@ -20,5 +30,9 @@ func TestResolved(t *testing.T) {
 		if i := strings.Index(out, k); i >= 0 {
 			t.Errorf("an unresolved token: %q", out[max(0, i-40):min(i+60, len(out))])
 		}
+	}
+	sum := sha256.Sum256([]byte(out))
+	if got := hex.EncodeToString(sum[:]); got != sameLegendsDigest {
+		t.Errorf("the legends of seed 5 changed: digest %s, pinned %s", got, sameLegendsDigest)
 	}
 }

@@ -69,7 +69,7 @@ func (w *World) eat(c *Civ) {
 			c.Tally.Built += n
 			if !c.firstShip {
 				c.firstShip = true
-				w.log("At %s the %s have begun to make more of themselves out of what is there.", w.star(s), c.Tok())
+				w.event(KReplicating, c, nil, s, P{})
 			}
 		}
 	}
@@ -101,8 +101,7 @@ func (w *World) consume(wr *War, c, e *Civ, t int) {
 	e.Tally.Lost++
 	wr.Will[i] += 0.3
 	wr.Will[1-i] -= 0.3
-	w.fact(FTaken, c, e, t)
-	w.log("The %s take %s from the %s and strip it. Nothing that was there is left; what is there now is more of the %s.", c.Tok(), w.star(t), e.Tok(), c.Tok())
+	w.fact(FTaken, c, e, t).with(P{"way": "stripped", "told": true})
 	if wr.Named < 0 {
 		wr.Named = t
 	}

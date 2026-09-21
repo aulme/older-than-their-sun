@@ -158,10 +158,8 @@ func (w *World) hearing(a, b *Civ) {
 	w.observe(a, b, b.Home, 0.8)
 	w.observe(b, a, a.Home, 0.8)
 	_, d := w.nearest(a, b.Home)
-	if len(a.Met) == 1 || len(b.Met) == 1 || w.R.Float64() < 0.15 {
-		w.log("The %s hear the %s across %.0f light years: a signal, then a conversation %.0f years to the answer. Neither can reach the other yet.", a.Tok(), b.Tok(), d, 2*d)
-	}
-	w.meeting(a, b, -1, "signal")
+	told := len(a.Met) == 1 || len(b.Met) == 1 || w.R.Float64() < 0.15
+	w.meeting(a, b, -1, "signal").with(P{"distance": d, "told": told})
 	w.renew(a, 0.1) // a stranger is something new
 	w.renew(b, 0.1)
 	w.mirrored(a, b)
@@ -184,16 +182,14 @@ func (w *World) primitives(old, young *Civ) bool {
 	switch {
 	case old.hates(young) && w.R.Float64() < 0.3:
 		old.Met[young.ID], young.Met[old.ID] = true, true
-		w.meeting(old, young, young.Home, "touch")
-		w.log("The %s find the %s on %s before they have looked up, and scour the world clean. They are thorough.", old.Tok(), young.Tok(), w.star(young.Home))
-		w.fact(FScoured, old, young, young.Home)
+		w.meeting(old, young, young.Home, "touch").with(P{"way": "scoured"})
+		w.fact(FScoured, old, young, young.Home).with(P{"way": "primitives"})
 		w.Bio[young.Home] = BioSimple
 		w.endCiv(young, Extinct, sprintf("were scoured from %s by the %s before they had looked up", w.star(young.Home), old.Tok()))
 		return true
 	case old.hostile() && !young.Has("swarming") && !young.Species.Is(species.Planetary) && young.treats() && w.R.Float64() < 0.3*(0.5+old.Dials.Greed):
 		old.Met[young.ID], young.Met[old.ID] = true, true
-		w.meeting(old, young, young.Home, "touch")
-		w.log("The %s find the %s on %s, still at the plough, and take them. There is no war to speak of.", old.Tok(), young.Tok(), w.star(young.Home))
+		w.meeting(old, young, young.Home, "touch").with(P{"way": "taken"})
 		if old.Own >= 0 {
 			w.ride(old, young)
 		} else {
@@ -203,9 +199,8 @@ func (w *World) primitives(old, young *Civ) bool {
 	}
 	if !old.Met[young.ID] {
 		old.Met[young.ID] = true // one-sided: the old know, the young do not
-		w.noticed(old, young, young.Home)
+		w.noticed(old, young, young.Home).with(P{"way": "watched"})
 		w.observe(old, young, young.Home, 0.2)
-		w.log("The %s find the %s on %s, still young, and watch from orbit.", old.Tok(), young.Tok(), w.star(young.Home))
 	}
 	return false
 }
@@ -221,46 +216,36 @@ func (w *World) encounter(a, b *Civ, watched, heard bool, at int) {
 	w.expose(a, b, "landing")
 	w.expose(b, a, "landing")
 	finder, found := a, b
-	w.meeting(finder, found, at, "touch") // whatever follows, they have met
+	met := w.meeting(finder, found, at, "touch") // whatever follows, they have met
 	// the stronger side is the one with the initiative
 	if b.Mil > a.Mil {
 		a, b = b, a
 	}
+	met.with(P{"strong": a.ID, "heard": heard, "watched": watched})
 	gap := a.Mil - b.Mil
 	switch {
 	case a.miracle("chorus") && !b.miracle("chorus") && !b.Species.Is(species.Hive) && !b.Species.Is(species.Unconscious) && b.treats() && w.R.Float64() < 0.6:
-		w.log("The %s find the %s, and speak. Within a generation the %s ask to be ruled.", a.Tok(), b.Tok(), b.Tok())
+		met.P["way"] = "chorus"
 		w.vassal(a, b)
 		return
 	case b.miracle("chorus") && !a.miracle("chorus") && !a.Species.Is(species.Hive) && !a.Species.Is(species.Unconscious) && a.treats() && w.R.Float64() < 0.6:
-		w.log("The %s find the %s, and the %s speak. Within a generation the %s ask to be ruled.", a.Tok(), b.Tok(), b.Tok(), a.Tok())
+		met.P["way"] = "chorus_weak"
 		w.vassal(b, a)
 		return
 	case a.miracle("unmaking") && b.hostile() && !b.miracle("unmaking") && b.treats():
-		w.log("The %s meet the %s and learn what they hold. There is no war. The %s bend the knee.", b.Tok(), a.Tok(), b.Tok())
+		met.P["way"] = "unmaking"
 		w.vassal(a, b)
 		return
 	case b.Has("pacifist") && a.hostile() && gap >= 1 && !a.Has("pacifist") && w.inReach(a, b.Home):
-		w.log("The %s find the %s, who will not fight. They are taken without a war.", a.Tok(), b.Tok())
+		met.P["way"] = "pacifist"
 		w.enslave(a, b)
 		return
 	case b.Has("submissive") && a.hostile() && gap >= 2 && w.inReach(a, b.Home):
-		w.log("The %s meet the %s, and seeing what they face, bend the knee. They are vassals now.", b.Tok(), a.Tok())
+		met.P["way"] = "submissive"
 		w.vassal(a, b)
 		return
 	}
-	switch {
-	case at >= 0 && heard:
-		w.log("Ships of the %s come upon the %s at %s, and the long conversation across the dark has a face at last.", finder.Tok(), found.Tok(), w.star(at))
-	case at >= 0:
-		w.log("Ships of the %s come upon the %s at %s.", finder.Tok(), found.Tok(), w.star(at))
-	case heard:
-		w.log("The %s and the %s, who have heard each other for a long time, at last meet in the flesh.", a.Tok(), b.Tok())
-	case watched:
-		w.log("The %s, long watched from orbit, look up and find the %s.", b.Tok(), a.Tok())
-	default:
-		w.log("The %s and the %s find each other.", a.Tok(), b.Tok())
-	}
+	met.P["way"] = "equals"
 	w.renew(a, 0.1) // a stranger is something new
 	w.renew(b, 0.1)
 	if !heard {
@@ -305,7 +290,6 @@ func (w *World) enslave(m, s *Civ) {
 		}
 	}
 	s.Morale -= 1
-	w.log("The %s are enslaved by the %s. They keep %s and little else.", s.Tok(), m.Tok(), w.star(s.Home))
 	w.fact(FEnslaved, m, s, s.Home)
 }
 
@@ -335,7 +319,7 @@ func (w *World) revolt(c *Civ) {
 	}
 	if !m.Living() {
 		adj -= 1
-		w.log("The %s, who held the %s, are gone. The question of freedom answers itself, one way or the other.", m.Tok(), c.Tok())
+		w.event(KMasterGone, m, c, -1, P{})
 	}
 	w.face(c, "revolt", adj+w.holdDiff(c))
 }
@@ -370,9 +354,9 @@ func (w *World) uplift(c *Civ) {
 			}
 			w.forget(nc, 0.3)
 			w.recompute(nc)
-			w.log("The %s raise the %s from the beasts of %s. They are %s, and grateful, for now.", c.Tok(), nc.Tok(), w.star(t), sp.Describe())
+			at := w.slot() // the raising is told before the morality it gives, and recorded after
 			w.upliftMorality(nc, c)
-			w.fact(FUplift, c, nc, t)
+			w.fill(at, w.unplaced(FUplift, c, nc, t).with(P{"desc": sp.Describe()}))
 			w.inherit(nc, c, 1)
 			return
 		}
@@ -389,7 +373,6 @@ func (w *World) breed(m, s *Civ) {
 	s.Into = "the " + speciesTok(sp)
 	nc := w.spawnCiv(home, sp, m.ID)
 	nc.Seen = m.Declines
-	w.log("The %s remake the %s into the %s: %s.", m.Tok(), s.Tok(), nc.Tok(), sp.Describe())
-	w.fact(FBred, m, s, home)
+	w.fact(FBred, m, s, home).with(P{"into": nc.ID, "desc": sp.Describe()})
 	w.inherit(nc, s, 1)
 }

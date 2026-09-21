@@ -1,7 +1,7 @@
 # Structured output: the state, the chronicle and the tellings as records, the words in lookups, a codex for whoever narrates
 
-**Status:** Draft, sharpened and staged (2026-09-21). Four stages, scheduled in `specs/plan.md`; independent of `decline.md` and `galaxy-in-motion.md`; **follows `names.md` stage 1**, whose record shape this proposal serialises (the adjustments are marked "names:" below).
-**Last updated:** 2026-09-21
+**Status:** In Progress (2026-09-22). Stage 1 (events) implemented; stages 2 to 4 as `specs/plan.md` orders them (steps 3, 5 and 8). Independent of `decline.md` and `galaxy-in-motion.md`; **follows `names.md` stage 1**, whose record shape this proposal serialises (the adjustments are marked "names:" below).
+**Last updated:** 2026-09-22
 
 ## Problem
 
@@ -216,10 +216,11 @@ What is borrowed is its guarantee. **The fold test**: a reducer in the test suit
 
 Four stages on one design; each leaves the legends byte-identical on the reference batch (the one regenerated at `names.md` stage 1) and each is a working generator on its own.
 
-**Stage 1: events.** The chronicle as typed records inside the sim.
+**Stage 1: events.** The chronicle as typed records inside the sim. **Done 2026-09-22.**
 - *Delivers*: `Event{Year, Kind, Subject, Object, Star, Legacy, N, P}`; the event vocabulary (every `w.log` site a kind, merged where only the wording differed) with a template per kind in the `kinds` table; `Fact` merged into `Event`; the `What` templates as kinds of their own; `data/events.json` with the declared params; the view rendering from the templates.
 - *Testable*: byte-identical legends; the param test (no undeclared or missing key); `TestDeterminism`.
 - *Depends on*: `names.md` stage 1 (typed tokens).
+- *As built*: `Event{ID, Year, Kind, Subject, Object, Star, Legacy, Plague, N, P}` with `Kind` a string key and `P` a `map[string]any`; `data/events.json` holds 232 kinds (84 facts with sort and weight, the rest the chronicle's chatter) with their declared parameters (`?` marks an optional one) and a one-line meaning, and `kinds_gen.go` is generated from it (`go generate`, checked by a test). The sim reads the shapes from the file; `w.log` is gone and `w.event`/`w.fact` are the only writers. The record (`w.Events`, by id) and the chronicle (`w.Chronicle`, the order things are told, sorted by year at the end) are two lists over the same events, because a fact is recorded where it happens and told where the old line was: `fact` places before its spread, `told` after, and `unplaced`/`place`/`slot`/`fill` cover the dozen sites where other lines fall between. The chronicle's templates are `internal/history/lines.go`, the view's file inside the history package until step 5 moves the view out; `tell()` reads the old `What` from the parameters through `what()`. The legends of ten seeds at 200 stars are byte-identical to the reference but for one thing: the archetype an enemy's lost name becomes ("the ones from the dark", "the old enemy", ...) hashes the tale's event id, and the ids shifted when the chatter joined the record; 296 lines of 214k, all in myth-wear tellings. Deferred to the lookups step: parameters that are still words (`cause`, `desc`, `why`, `what`, `shape`, `portrait` lines, a use's `name`); `Civ.Cause` as text; `Legacy.Desc`.
 
 **Stage 2: lookups.** The Go string tables to `data/`.
 - *Delivers*: `traits`, `kinds`, `tech`, `filters`, `scars`, `boons`, `miracles`, `conditions`, `works`, `portraits`, `features`, `worlds`, `levels`, `laws` as JSON, embedded and read for their mechanics; keys stored where text was (`Legacy.Portrait`, a made people's origin); the law `variant` key replacing `civ.go:356`'s text match; the coverage test; the no-text-comparison source test; the `term` rule written into every file's header.

@@ -333,7 +333,7 @@ func (w *World) civilWar(c *Civ) bool {
 		return false
 	}
 	if !c.Species.Profile().Can(species.CivilWars) {
-		w.log("The %s cannot split; a hive has no factions. The pressure goes elsewhere.", c.Tok())
+		w.event(KUnrest, c, nil, -1, P{"way": "hive"})
 		c.Morale -= 1
 		return false
 	}
@@ -347,9 +347,9 @@ func (w *World) civilWar(c *Civ) bool {
 	}
 	if len(parts) < 2 {
 		if c.Aloft {
-			w.log("Unrest in the fleets of the %s. It passes, this time.", c.Tok())
+			w.event(KUnrest, c, nil, -1, P{"way": "fleets"})
 		} else {
-			w.log("Unrest among the %s on %s. It passes, this time.", c.Tok(), w.star(c.Home))
+			w.event(KUnrest, c, nil, c.Home, P{"way": "home"})
 		}
 		c.Morale -= 0.5
 		return false
@@ -436,19 +436,25 @@ func (w *World) civilWar(c *Civ) bool {
 
 // tearApart is the record of a civil war: the facts and the line.
 func (w *World) tearApart(old *Civ, heirs []*Civ, seat *Civ) {
+	var ids []int
 	for _, h := range heirs {
-		f := w.factN(FSundered, old, h, h.Home, len(heirs))
-		f.What = "the true " + old.Tok()
+		ids = append(ids, h.ID)
 	}
-	var ns []string
-	for _, h := range heirs {
-		ns = append(ns, "the "+h.Tok())
-	}
-	seatLine := ""
+	seatID := -1
 	if !old.Aloft {
-		seatLine = sprintf(" The %s hold the old seat.", seat.Tok())
+		seatID = seat.ID
 	}
-	w.log("The %s tear themselves in %s: %s, each the true %s by its own telling, each holding the others traitors.%s", old.Tok(), numberWord(len(heirs)), listOf(ns), old.Tok(), seatLine)
+	var first *Event
+	for i, h := range heirs {
+		p := P{"heirs": ids, "seat": seatID, "first": i == 0}
+		if i == 0 {
+			first = w.unplaced(FSundered, old, h, h.Home).with(p)
+			first.N = len(heirs)
+		} else {
+			w.factN(FSundered, old, h, h.Home, len(heirs)).with(p)
+		}
+	}
+	w.place(first) // one line for the sundering, told once the heirs are all recorded
 }
 
 // shatter is the dark age that took the stars: every world its own people,
@@ -481,16 +487,23 @@ func (w *World) shatter(c *Civ, why string, forgotten []string) {
 		d.heirs = append(d.heirs, h)
 	}
 	w.deal(c, d, Shattered, "forgot how to reach the stars")
+	var first *Event
 	for _, h := range d.heirs {
 		for _, tl := range h.Lore {
 			tl.Wear = min(2, tl.Wear+1) // a step more worn than the old people held it
 		}
 		h.Stage = Emergent
 		w.recompute(h)
-		f := w.factN(FShattered, c, h, h.Home, len(worlds))
-		f.What = why
+		ids, stars := shardIDs(d.heirs)
+		p := P{"why": why, "shards": ids, "stars": stars, "first": first == nil}
+		if first == nil {
+			first = w.unplaced(FShattered, c, h, h.Home).with(p)
+			first.N = len(worlds)
+		} else {
+			w.factN(FShattered, c, h, h.Home, len(worlds)).with(p)
+		}
 	}
-	w.log("The %s forget how to reach the stars. On %s worlds %s peoples wake up alone: %s.", c.Tok(), numberWord(len(worlds)), numberWord(len(worlds)), w.shardList(d.heirs))
+	w.place(first)
 }
 
 // cutOff is a world cut from signal reach of its seat for long enough: a
@@ -516,18 +529,17 @@ func (w *World) cutOff(c *Civ, star int) *Civ {
 	w.recompute(c)
 	w.recompute(h)
 	w.renew(c, 0.05)
-	f := w.fact(FSevered, c, h, star)
-	f.What = w.star(star)
-	w.log("%s is too far from %s for one mind to hold. What is there is the %s now: of one blood with the %s, and no longer one of them.", w.star(star), w.star(c.Home), h.Tok(), c.Tok())
+	w.told(FSevered, c, h, star).with(P{"seat": c.Home})
 	return h
 }
 
-func (w *World) shardList(hs []*Civ) string {
-	var ns []string
+// shardIDs lists the shards and the worlds they woke on.
+func shardIDs(hs []*Civ) (ids, stars []int) {
 	for _, h := range hs {
-		ns = append(ns, "the "+h.Tok()+" on "+w.star(h.Home))
+		ids = append(ids, h.ID)
+		stars = append(stars, h.Home)
 	}
-	return listOf(ns)
+	return ids, stars
 }
 
 // kin says whether two peoples share a line: one in the other's line, or
@@ -577,22 +589,21 @@ func (w *World) claims(c, e *Civ) bool {
 // reclaimed is a claimed world taken: restored to the realm in the taker's
 // own telling, and the claims gone when the whole old realm is held.
 func (w *World) reclaimed(c, e *Civ, t int) {
-	w.fact(FReclaimed, c, e, t)
-	w.log("The %s call %s restored to the realm.", c.Tok(), w.star(t))
+	w.told(FReclaimed, c, e, t)
 	for s := range c.Claim {
 		if w.Owner[s] != c.ID {
 			return
 		}
 	}
 	c.Claim = nil
-	w.log("The %s hold every world the %s held. There is nothing left to claim, and they are the %s that hold what the %s held.", c.Tok(), w.Civs[c.Line[len(c.Line)-1]].Tok(), c.Tok(), w.Civs[c.Line[len(c.Line)-1]].Tok())
+	w.event(KRealmWhole, c, w.Civs[c.Line[len(c.Line)-1]], -1, P{})
 }
 
 // kinMeet is kin finding each other again with no feud between them: the
 // tales and the trade at once, no council, and a pact of defence offered
 // with the loyalty dial's odds doubled.
 func (w *World) kinMeet(a, b *Civ) {
-	w.log("The %s and the %s, both of the line of the %s, find each other again.", a.Tok(), b.Tok(), w.Civs[w.commonLine(a, b)].Tok())
+	w.event(KKinMet, a, b, -1, P{"line": w.commonLine(a, b)})
 	w.openPair(a, b)
 	if a.Free() && b.Free() && !w.allied(a, b) {
 		w.send(a, b, &Message{Kind: MsgPact, PactKind: Defensive, Target: -1, Pact: -1})

@@ -58,7 +58,7 @@ var emberForms = []objectForm{
 		Moved: func(w *World, c *Civ, s *Source) {
 			s.Yield[flow.E] = max(0, s.Yield[flow.E]-pocketDim)
 			if c != nil {
-				w.log("The pocket star dims as the %s move it. It gives %.0f now.", c.Tok(), s.Yield[flow.E])
+				w.event(KPocketDimmed, c, nil, -1, P{"source": s.ID, "gives": s.Yield[flow.E]})
 			}
 		}},
 	{Key: "singularity", Desc: "a captive singularity", Weight: 1, Yield: flow.Income{flow.E: emberYield},
@@ -68,7 +68,7 @@ var emberForms = []objectForm{
 			}
 			w.lose(s, e, "loose")
 			w.loose = append(w.loose, star)
-			w.log("The captive singularity at %s gets loose in the taking.", w.star(star))
+			w.event(KSingularityLoose, nil, nil, star, P{"source": s.ID})
 			return true
 		}},
 	{Key: "hot_tap", Desc: "a tap into a hotter place", Weight: 1, Yield: flow.Income{flow.E: emberYield}, Levels: [3]float64{0, tapGlare, 0},
@@ -151,7 +151,7 @@ func (w *World) objects(c *Civ) {
 // this tick does its harm now, once the taking is done.
 func (w *World) tickObjects() {
 	for _, star := range w.loose {
-		w.blast(star, singularityBurn, "a singularity let loose", "The singularity at %s is not captive any more, and takes the star with it.", 1)
+		w.blast(star, singularityBurn, "a singularity let loose", "singularity", nil, 1)
 	}
 	w.loose = nil
 }
@@ -230,20 +230,11 @@ func (w *World) makeObject(c *Civ, key string, l *Legacy, parent *Source, how st
 	switch how {
 	case "cutting":
 		// the giver's line says it
-	case "found":
-		w.log("The %s put it to use. It is %s: %s, and it feeds them a swarm's worth.", c.Tok(), objectNames[key], f.Desc)
-	case "born":
-		w.log("The %s have kept %s since before they had a name for it: %s. It feeds them, and it is theirs to carry.", c.Tok(), objectNames[key], f.Desc)
 	default:
-		if key == "ember" {
-			w.log("The %s kindle the Ember: %s. It gives what a swarm gives, and it is theirs to carry.", c.Tok(), f.Desc)
-		} else {
-			w.log("The %s grow the Manna: %s. It feeds them, and it does not stop.", c.Tok(), f.Desc)
-		}
+		w.event(KObjectMade, c, nil, -1, P{"object": key, "how": how, "form": f.Key, "source": s.ID})
 	}
 	if sentient && key == "manna" {
-		w.log("It thinks. The %s eat it anyway.", c.Tok())
-		w.fact(FManna, c, nil, c.Home)
+		w.fact(FManna, c, nil, c.Home).with(P{"way": "eat"})
 	}
 	w.recompute(c)
 	return s
@@ -262,9 +253,9 @@ func (w *World) wieldObject(c *Civ, l *Legacy) {
 	s := w.Sources[l.Source]
 	w.transfer(s, nil, c)
 	s.Star, s.Carried = c.Home, -1
-	w.log("The %s put it to use. It is %s, and it feeds them a swarm's worth.", c.Tok(), objectNames[l.Node])
+	w.event(KObjectMade, c, nil, -1, P{"object": l.Node, "how": "wield", "form": s.Form, "source": s.ID})
 	if s.Sentient {
-		w.fact(FManna, c, nil, c.Home)
+		w.fact(FManna, c, nil, c.Home).with(P{"way": "wield"})
 	}
 }
 
@@ -276,10 +267,10 @@ func (w *World) unleashObject(c *Civ, l *Legacy) {
 		w.lose(w.Sources[l.Source], nil, "loose")
 	}
 	if l.Node == "ember" {
-		w.blast(l.Star, singularityBurn, "an Ember let loose", "The Ember at %s burns, once, and takes the star with it.", 1)
+		w.blast(l.Star, singularityBurn, "an Ember let loose", "ember", nil, 1)
 		return
 	}
-	w.blast(l.Star, looseRadius, "the Manna loose", "The Manna at %s gets out, and eats.", 1)
+	w.blast(l.Star, looseRadius, "the Manna loose", "manna", nil, 1)
 }
 
 // moved is an object changing hands or ships: its form's price.
@@ -313,10 +304,10 @@ func (w *World) lose(s *Source, from *Civ, fate string) {
 func (w *World) through(c *Civ, s *Source) {
 	star := s.Star
 	if c.Mil+w.R.NormFloat64()*1.5 >= throughDiff+c.traitDiff("find") {
-		w.log("Something comes through the Ember at %s. The %s burn it off.", w.star(star), c.Tok())
+		w.event(KThrough, c, nil, star, P{"burned": true, "source": s.ID})
 		return
 	}
-	w.log("Something comes through the Ember at %s, and what lived there is lost to it.", w.star(star))
+	w.event(KThrough, c, nil, star, P{"burned": false, "source": s.ID})
 	w.bury(s, c, star)
 	s.Fate = "through"
 	if contains(c.Systems, star) {
@@ -329,8 +320,7 @@ func (w *World) through(c *Civ, s *Source) {
 // lost now. The tellings say who opened it.
 func (w *World) doom(c *Civ, s *Source) {
 	star := s.Star
-	w.log("The hole in the vacuum at %s has grown past holding. The star begins to go out.", w.star(star))
-	w.factOf(FCosmic, c, nil, star, "{S} opened a hole in the vacuum at {T}, and the star went out.")
+	w.fact(FVacuumHole, c, nil, star).with(P{"source": s.ID})
 	w.lose(s, c, "doom")
 	w.G.Stars[star].Failing = true
 	if star != c.Home && contains(c.Systems, star) {
@@ -378,8 +368,7 @@ func (w *World) rise(c *Civ, s *Source) {
 	}
 	w.forget(nc, 0.3)
 	w.recompute(nc)
-	w.log("What the %s grew for the table at %s has been thinking for a long time. It rises, and calls itself the %s: %s.", c.Tok(), w.star(star), nc.Tok(), sp.Describe())
-	w.fact(FRise, nc, c, star)
+	w.fact(FRise, nc, c, star).with(P{"desc": sp.Describe()})
 	w.inherit(nc, c, 1)
 }
 
@@ -391,10 +380,10 @@ func (w *World) getLoose(c *Civ, s *Source) {
 	star := s.Star
 	w.lose(s, c, "loose")
 	w.fact(FLoose, c, nil, star)
-	w.blast(star, looseRadius, "the Manna loose", sprintf("What the %s grew for the table at %%s gets out, and eats.", c.Tok()), 1)
+	w.blast(star, looseRadius, "the Manna loose", "manna_grown", c, 1)
 	if nc := w.replicatorAt(star, species.Biological, "the Manna of the "+c.Tok()+", loose", false); nc != nil {
 		nc.Species.Parent = c.Species
-		w.log("What is at %s now is a growth that eats worlds, and it calls itself the %s, if it calls itself anything: %s.", w.star(star), nc.Tok(), nc.Species.Describe())
+		w.event(KNamedItself, nc, nil, star, P{"way": "growth", "desc": nc.Species.Describe()})
 	}
 }
 
@@ -414,7 +403,7 @@ func (w *World) cutting(a, b *Civ) {
 			return
 		}
 		s.Given++
-		w.log("The %s give the %s a cutting of %s. It takes.", a.Tok(), b.Tok(), s.Name)
+		w.event(KCutting, a, b, -1, P{"source": s.ID})
 		w.makeObject(b, "manna", nil, s, "cutting")
 		return
 	}

@@ -44,14 +44,6 @@ func sortedInts[V any](m map[int]V) []int {
 
 func sprintf(format string, args ...any) string { return fmt.Sprintf(format, args...) }
 
-func (w *World) log(format string, args ...any) {
-	w.Events = append(w.Events, Event{Year: w.Now, Text: sprintf(format, args...)})
-}
-
-func (w *World) logAt(y Year, format string, args ...any) {
-	w.Events = append(w.Events, Event{Year: y, Text: sprintf(format, args...)})
-}
-
 func (w *World) trace(star int, kind string, civ int) {
 	w.Traces = append(w.Traces, Trace{Star: star, Kind: kind, Civ: civ, Year: w.Now})
 }

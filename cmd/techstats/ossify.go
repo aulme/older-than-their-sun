@@ -51,7 +51,7 @@ func flattenOss(w *history.World) OssRec {
 		}
 	}
 	seen := map[int]bool{}
-	for _, f := range w.Facts {
+	for _, f := range w.Events {
 		switch f.Kind {
 		case history.FSundered:
 			if !seen[f.Subject] {
@@ -70,7 +70,7 @@ func flattenOss(w *history.World) OssRec {
 		}
 	}
 	for _, e := range w.Events {
-		if strings.Contains(e.Text, "find each other again") {
+		if e.Kind == history.KKinMet {
 			r.KinMeets++
 		}
 	}

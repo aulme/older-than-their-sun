@@ -187,7 +187,7 @@ func rarityStart(w *World, k *Contract, giver, receiver *Civ, t Term) {
 	}
 	w.transfer(s, giver, receiver)
 	s.Star = receiver.Home
-	w.log("%s passes from the %s to the %s, as agreed.", capital(s.Name), giver.Tok(), receiver.Tok())
+	w.event(KRarityPassed, giver, receiver, -1, P{"source": s.ID})
 }
 
 func accessTick(w *World, _ *Contract, giver, _ *Civ, t Term) bool {
@@ -362,7 +362,7 @@ func sightingStart(w *World, k *Contract, giver, receiver *Civ, t Term) {
 	x.SoldBy = giver.ID
 	giver.Tally.SoldSightings++
 	w.send(giver, receiver, &Message{Kind: MsgSighting, About: x.Owner, Target: x.ID, Sighting: s})
-	w.log("The %s sell the coming of the %s's fleet to the %s, for %s of %s.", giver.Tok(), w.Civs[x.Owner].Tok(), receiver.Tok(), span(Year(k.Length*1000)), k.Pay.Res)
+	w.event(KSightingSold, giver, receiver, -1, P{"owner": x.Owner, "years": Year(k.Length * 1000), "res": k.Pay.Res})
 }
 
 func brokerWorthTo(w *World, c *Civ, _ *Contract, t Term, _ *Civ) float64 {
@@ -473,7 +473,7 @@ func (w *World) contracting(c *Civ) {
 		spareShare := float64(w.idleShips(c)) / float64(standing)
 		if w.chance(mind.MercenaryRate(wantShare, spareShare, w.Cfg.Tuning)) {
 			if w.Cfg.TraceAI {
-				w.log("[the %s, in want with %s idle, look for someone to hold a gate for pay]", c.Tok(), shipsWord(w.idleShips(c)))
+				w.event(KDebug, c, nil, -1, P{"text": sprintf("[the %s, in want with %s idle, look for someone to hold a gate for pay]", c.Tok(), shipsWord(w.idleShips(c)))})
 			}
 			w.offerGuard(c)
 		}
@@ -873,7 +873,7 @@ func (w *World) offerGuard(c *Civ) {
 	pay, ok := w.payFor(best, c)
 	if !ok {
 		if w.Cfg.TraceAI {
-			w.log("[the %s would hold %s for the %s, who have nothing they want]", c.Tok(), w.star(bestStar), best.Tok())
+			w.event(KDebug, c, best, bestStar, P{"text": sprintf("[the %s would hold %s for the %s, who have nothing they want]", c.Tok(), w.star(bestStar), best.Tok())})
 		}
 		return
 	}
@@ -989,7 +989,7 @@ func (w *World) answerOffer(to, from *Civ, m *Message) {
 	if why := w.refuses(to, gives, from); why != "" {
 		k.State, k.Why = Refused, why
 		if w.Cfg.TraceAI {
-			w.log("[the %s, %s: %s]", to.Tok(), what, why)
+			w.event(KReason, to, nil, -1, P{"what": what, "why": why})
 		}
 		return
 	}
@@ -1006,7 +1006,7 @@ func (w *World) answerOffer(to, from *Civ, m *Message) {
 		k.State, k.Why = Refused, d.Reason
 		from.Tally.Refused++
 		if w.R.Float64() < 0.3 {
-			w.log("The %s ask the %s for %s, and are refused.", from.Tok(), to.Tok(), w.termName(gets))
+			w.event(KOfferRefused, from, to, -1, P{"ask": gets})
 		}
 		return
 	}
@@ -1072,30 +1072,23 @@ func (w *World) form(k *Contract) {
 	}
 	b.Tally.Hired++
 	s.Tally.Sold++
-	pay := w.termName(k.Pay)
 	switch k.Ask.Kind {
 	case mind.TermGuard:
-		against := ""
-		if k.Ask.Target >= 0 {
-			against = " against the " + w.Civs[k.Ask.Target].Tok()
-		}
-		w.log("The %s take the %s's %s to hold %s%s.", s.Tok(), b.Tok(), pay, w.star(k.Ask.Star), against)
-		w.factOf(FHire, s, b, k.Ask.Star, pay)
+		w.fact(FHire, s, b, k.Ask.Star).with(P{"pay": k.Pay, "against": k.Ask.Target})
 	case mind.TermStrike, mind.TermDeliver:
-		w.log("The %s pay the %s %s to send %s.", b.Tok(), s.Tok(), pay, w.termName(k.Ask))
-		w.factOf(FStrikeBought, b, w.Civs[k.Ask.Target], k.Ask.Star, s.Tok())
+		w.fact(FStrikeBought, b, w.Civs[k.Ask.Target], k.Ask.Star).with(P{"seller": s.ID, "pay": k.Pay, "ask": k.Ask})
 	case mind.TermTeach:
-		w.log("The %s agree to teach the %s %s, for %s.", s.Tok(), b.Tok(), tech.Get(k.Ask.Node).Name, pay)
+		w.event(KTeachAgreed, s, b, -1, P{"node": k.Ask.Node, "pay": k.Pay})
 	case mind.TermBroker:
-		w.log("The %s, who know both, will speak for the %s to the %s, for %s.", s.Tok(), b.Tok(), w.Civs[k.Ask.Target].Tok(), pay)
+		w.event(KBrokerAgreed, s, b, -1, P{"target": k.Ask.Target, "pay": k.Pay})
 	case mind.TermSighting:
 		// the sale's own line
 	case mind.TermFlow:
 		if !b.dealt[s.ID] {
-			w.log("The %s and the %s strike a bargain: %s for %s. It is the first of many.", b.Tok(), s.Tok(), w.termName(k.Ask), pay)
+			w.event(KBargain, b, s, -1, P{"ask": k.Ask, "pay": k.Pay, "first": true})
 		}
 	default:
-		w.log("The %s and the %s strike a bargain: %s for %s.", b.Tok(), s.Tok(), w.termName(k.Ask), pay)
+		w.event(KBargain, b, s, -1, P{"ask": k.Ask, "pay": k.Pay, "first": false})
 	}
 	if b.dealt == nil {
 		b.dealt = map[int]bool{}
@@ -1189,7 +1182,7 @@ func (w *World) runContract(k *Contract) {
 			k.AskDone = true
 			if x := w.contractFleet(k); x != nil {
 				// a strike done is a fleet released, whatever the pay has left to run
-				w.log("The %s's work for the %s is done.", w.Civs[k.Seller].Tok(), w.Civs[k.Buyer].Tok())
+				w.event(KWorkDone, w.Civs[k.Seller], w.Civs[k.Buyer], -1, P{})
 				w.releaseFleet(k, false)
 			}
 		}
@@ -1256,7 +1249,7 @@ func (w *World) finish(k *Contract) {
 	k.State, k.Ended = Done, w.Now
 	b, s := w.Civs[k.Buyer], w.Civs[k.Seller]
 	if k.Ask.Kind == mind.TermGuard && w.contractFleet(k) != nil {
-		w.log("The %s's term at %s is done, and the %s's fleet goes home.", b.Tok(), w.star(k.Ask.Star), s.Tok())
+		w.event(KTermDone, b, s, k.Ask.Star, P{})
 	}
 	w.releaseFleet(k, false)
 }
@@ -1294,8 +1287,7 @@ func (w *World) breakContract(k *Contract, giver, receiver *Civ, t Term) {
 		}
 	}
 	k.Why = shape
-	w.betray(giver, receiver, shape, 1)
-	w.log("The %s %s, and the %s remember it.", giver.Tok(), shape, receiver.Tok())
+	w.betray(giver, receiver, shape, "broke", 1)
 	w.releaseFleet(k, true)
 }
 
@@ -1313,7 +1305,7 @@ func (w *World) releaseFleet(k *Contract, broken bool) {
 	for _, wr := range w.Wars {
 		if !wr.Over && wr.Hire == k.ID {
 			s := w.Civs[k.Seller]
-			w.log("The %s, their hire ended, leave the war.", s.Tok())
+			w.event(KHireEnded, s, nil, -1, P{})
 			w.endWar(wr, "the hire ended")
 		}
 	}
@@ -1369,9 +1361,8 @@ func (w *World) buyOff(k, offer *Contract, p, s, b *Civ) {
 	k.State, k.Ended, k.Broke, k.Why = Broken, w.Now, s.ID, "sold what they were paid to hold"
 	s.Tally.Broke++
 	s.Tally.BoughtOff++
-	w.betray(s, b, "sold what they were paid to hold", 1)
-	w.factOf(FBoughtOff, s, b, k.Ask.Star, p.Tok())
-	w.log("The %s, paid by the %s to hold %s, are paid more by the %s, and sell it.", s.Tok(), b.Tok(), w.star(k.Ask.Star), p.Tok())
+	w.betray(s, b, "sold what they were paid to hold", "bought_off", 1)
+	w.told(FBoughtOff, s, b, k.Ask.Star).with(P{"buyer": p.ID})
 	for _, wr := range w.Wars {
 		if !wr.Over && wr.Hire == k.ID {
 			w.endWar(wr, "the hire sold")
@@ -1410,7 +1401,7 @@ func (w *World) sellsword(c *Civ) {
 	c.hiredRun++
 	if c.hiredRun >= t.SellswordTicks && !c.Sellsword {
 		c.Sellsword = true
-		w.log("The %s live by their fleet now. Others call them sellswords.", c.Tok())
+		w.event(KSellsword, c, nil, -1, P{})
 	}
 }
 
@@ -1434,8 +1425,7 @@ func (w *World) taughtNode(to, from *Civ, m *Message) {
 	to.Taught[n.Key] = from.ID
 	k.Taught = true
 	w.learn(to, n, false)
-	w.log("The %s teach the %s %s, for %s.", from.Tok(), to.Tok(), n.Name, w.termName(k.Pay))
-	w.factOf(FTaught, from, to, -1, n.Name+", for "+w.termName(k.Pay))
+	w.fact(FTaught, from, to, -1).with(P{"node": n.Key, "pay": k.Pay})
 }
 
 // Tribute.
@@ -1466,8 +1456,7 @@ func (w *World) tribute(wr *War, l, v *Civ) bool {
 	k.Length = t.TributeLength
 	k.State, k.Formed, k.Until, k.Tribute = Running, w.Now, w.Now+Year(t.TributeLength*1000), true
 	l.Tally.Tributes++
-	w.log("The %s yield to the %s and pay tribute in %s for %s, after %s.", l.Tok(), v.Tok(), flowWord(best), span(k.Until-w.Now), w.warSpan(wr))
-	w.factOf(FTribute, l, v, -1, flowWord(best))
+	w.fact(FTribute, l, v, -1).with(P{"res": best, "for": k.Until - w.Now}).with(w.warSpanP(wr))
 	w.endWar(wr, "tribute")
 	peaceStart(w, k, v, l, k.Ask)
 	return true
@@ -1506,7 +1495,7 @@ func (w *World) handOver(from, to *Civ, s int) {
 		}
 		to.Guns[s] = g
 	}
-	w.log("The %s hand %s to the %s, as agreed.", from.Tok(), w.star(s), to.Tok())
+	w.event(KHanded, from, to, s, P{})
 	w.recompute(from)
 	w.recompute(to)
 }
@@ -1535,7 +1524,7 @@ func (w *World) strikeBurns(x *Expedition, e *Civ, t int) bool {
 	k.Burned = true
 	if burned {
 		delete(e.Guns, t)
-		w.log("The %s burn the %s at %s, as they were paid to, and go.", c.Tok(), tech.Structures[k.Ask.Work].Name, w.star(t))
+		w.event(KBurnedForPay, c, e, t, P{"work": k.Ask.Work})
 		w.recompute(e)
 	}
 	return true
@@ -1553,8 +1542,7 @@ func (w *World) sold(q *Expedition) {
 	if !z.Active() || !c.Active() || w.R.Float64() >= w.Cfg.Tuning.Contract.SoldTold {
 		return
 	}
-	w.betray(z, c, "sold the coming of their fleet", 1)
-	w.log("The %s learn who sold the coming of their fleet: the %s.", c.Tok(), z.Tok())
+	w.betray(z, c, "sold the coming of their fleet", "sold", 1)
 }
 
 // Contracts lists a people's contracts, for the reports.

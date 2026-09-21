@@ -23,7 +23,7 @@ func (w *World) flares() {
 	if !w.chance(0.00002 * w.Law.Glare) {
 		return
 	}
-	w.log("The heart of the galaxy flares. For a century the sky is white, and every world in the field turns its face away.")
+	w.event(KCentreFlared, nil, nil, -1, P{})
 	origin := 0
 	w.blastAll("the flaring of the centre", -1.5)
 	_ = origin
@@ -70,7 +70,7 @@ func (w *World) skyEvents() {
 		if y < w.Cfg.Dawn {
 			continue
 		}
-		w.Events = append(w.Events, Event{Year: y, Text: f.Event})
+		w.eventAt(y, KSkyFeature, nil, nil, -1, P{"feature": f.Name})
 	}
 }
 
@@ -84,8 +84,7 @@ func (w *World) lawDiff(key string) float64 {
 }
 
 // starDetail names a star with its class and what Earth knows of it.
-func (w *World) starDetail(id int) string {
-	s := &w.G.Stars[id]
+func (w *World) starDetail(s *galaxy.Star, id int) string {
 	d := fmt.Sprintf("%s (%s", w.star(id), s.ClassName())
 	if s.Real && s.Alt != "" {
 		d += ", " + s.Alt

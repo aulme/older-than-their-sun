@@ -104,13 +104,13 @@ func TestReclaim(t *testing.T) {
 			t2 = s
 		}
 	}
-	facts := len(w.Facts)
+	facts := len(w.Events)
 	w.takeWorld(wr, a, b, t2)
 	if w.Owner[t2] != a.ID {
 		t.Fatalf("the world was not taken")
 	}
 	found := false
-	for _, f := range w.Facts[facts:] {
+	for _, f := range w.Events[facts:] {
 		found = found || f.Kind == FReclaimed
 	}
 	if !found || a.Claim == nil {
@@ -221,7 +221,7 @@ func TestClaimsFade(t *testing.T) {
 	}
 	a := w.Civs[1]
 	for _, tl := range a.Lore {
-		f := w.Facts[tl.Fact]
+		f := w.Events[tl.Fact]
 		if f.Kind == FSundered && f.Object == a.ID {
 			tl.Wear = 1
 			w.wearStep(a, tl, f)

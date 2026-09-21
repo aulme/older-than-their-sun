@@ -78,10 +78,9 @@ func (w *World) wake(p *Plague, host *Civ) *Civ {
 		m := w.Civs[p.Maker]
 		nc.Master, nc.Vassal, nc.Seen = m.ID, true, m.Declines
 		m.Ruled++
-		w.log("The %s made %s to think, and it does. It answers to them, for now.", m.Tok(), p.Tok())
+		w.event(KMadeToThink, m, nc, -1, P{}).Plague = p.ID
 	}
-	w.factOf(FWoke, nc, host, host.Home, p.Tok())
-	w.log("Something in %s has begun to think. At %s it takes the %s for its own, and calls itself the %s.", p.Tok(), w.star(host.Home), host.Tok(), nc.Tok())
+	w.told(FWoke, nc, host, host.Home).Plague = p.ID
 	w.ride(nc, host)
 	if wr := w.warBetween(nc.ID, host.ID); wr != nil {
 		w.endWar(wr, "enslaved")
@@ -101,7 +100,7 @@ func (w *World) bornRider(c *Civ) {
 	w.infect(c, p, nil, "born")
 	nc := w.wake(p, c)
 	nc.Origin = "a rider born with the " + c.Tok()
-	w.log("The %s have never known a time before %s. They grew up ridden.", c.Tok(), p.Tok())
+	w.event(KBornRidden, c, nc, -1, P{}).Plague = p.ID
 }
 
 // freed is a ridden people winning the contest: free, immune, and never
@@ -110,12 +109,11 @@ func (w *World) freed(h, rider *Civ) {
 	h.Master, h.Vassal = -1, false
 	h.Scars[ScarChains] = true
 	rider.Tally.Risen++
-	w.fact(FFreed, h, rider, h.Home)
+	way := "drug"
 	if rider.Has("mindrider") {
-		w.log("The %s learn to unthink the %s. What was in their heads is gone, and they are free, and never again quite trust a new idea.", h.Tok(), rider.Tok())
-	} else {
-		w.log("The %s find a drug that kills what rides them. They are free, and careful about their blood ever after.", h.Tok())
+		way = "unthink"
 	}
+	w.told(FFreed, h, rider, h.Home).with(P{"way": way})
 }
 
 // tryRide is a parasite on a channel event: its council on the people at
@@ -189,7 +187,7 @@ func (w *World) rideAll(c *Civ) {
 // parasite: the home ridden, a colony a host-world.
 func (w *World) converted(rider, c *Civ, p *Plague, s int) {
 	if s == c.Home {
-		w.log("%s takes %s. World by world, the %s were ridden, and now they are.", upper(p.Tok()), w.star(c.Home), c.Tok())
+		w.event(KRidden, rider, c, c.Home, P{}).Plague = p.ID
 		w.ride(rider, c)
 		if wr := w.warBetween(rider.ID, c.ID); wr != nil {
 			w.endWar(wr, "enslaved")
@@ -200,8 +198,8 @@ func (w *World) converted(rider, c *Civ, p *Plague, s int) {
 	w.Owner[s] = rider.ID
 	rider.Systems = append(rider.Systems, s)
 	rider.Peak = max(rider.Peak, len(rider.Systems))
-	w.fact(FTaken, rider, c, s)
-	w.log("%s takes %s, a %s of the %s. It is a host-world of the %s now.", upper(p.Tok()), w.star(s), c.Species.Flavour().Colony, c.Tok(), rider.Tok())
+	f := w.told(FTaken, rider, c, s).with(P{"way": "host", "told": true, "colony": c.Species.Flavour().Colony})
+	f.Plague = p.ID
 }
 
 // burn is a contained host at war with its rider burning one host-world
@@ -217,8 +215,7 @@ func (w *World) burn(c, rider *Civ) {
 		}
 		w.Bio[s] = BioSimple
 		w.loseSystem(rider, s, "burned host-world", "")
-		w.log("The %s burn %s to be rid of what the %s put there.", c.Tok(), w.star(s), rider.Tok())
-		w.fact(FBurned, c, rider, s)
+		w.fact(FBurned, c, rider, s).with(P{"way": "host", "told": true})
 		if wr := w.warBetween(c.ID, rider.ID); wr != nil {
 			wr.Glassed[wr.side(c.ID)]++
 			wr.Will[1-wr.side(c.ID)] -= 0.4

@@ -142,12 +142,10 @@ func (w *World) firstHarness(c *Civ, s *Source) {
 		return
 	}
 	c.Harnessed[s.Key] = true
-	line, ok := harnessLines[s.Key]
-	if !ok || line == "" {
+	if line, ok := harnessLines[s.Key]; !ok || line == "" {
 		return
 	}
-	w.log(line, c.Tok(), s.Name)
-	w.factOf(FHarness, c, nil, max(s.Star, c.Home), s.Name)
+	w.fact(FHarness, c, nil, max(s.Star, c.Home)).with(P{"source": s.ID})
 }
 
 // had is one rarity a people has, and the partner it has it through, or -1.
@@ -245,10 +243,10 @@ func (w *World) rare(c *Civ) bool {
 		matters := len(s.Grants) > 0 || s.Reach > 0
 		switch {
 		case x.via >= 0 && matters:
-			w.log("The %s have the use of %s, by the grace of the %s.", c.Tok(), s.Name, w.Civs[x.via].Tok())
+			w.event(KRarityHad, c, w.Civs[x.via], -1, P{"source": s.ID, "via": true})
 		case x.via < 0:
 			if line := rarityLines[s.Key]; line != "" && (s.Star != c.Cradle || matters) {
-				w.log(line, c.Tok(), s.Name)
+				w.event(KRarityHad, c, nil, -1, P{"source": s.ID, "via": false})
 			}
 		}
 	}
@@ -302,10 +300,10 @@ func (w *World) carryOff(c, e *Civ, star int, x *Expedition) {
 		w.transfer(s, e, c)
 		if x != nil {
 			s.Carried, s.Star = x.ID, -1
-			w.log("The %s carry off %s with the fleet.", c.Tok(), s.Name)
+			w.event(KCarriedOff, c, e, -1, P{"source": s.ID, "fleet": x.ID})
 		} else {
 			s.Star = c.Home
-			w.log("The %s carry off %s to %s.", c.Tok(), s.Name, w.star(c.Home))
+			w.event(KCarriedOff, c, e, c.Home, P{"source": s.ID, "fleet": -1})
 		}
 	}
 }
@@ -367,7 +365,7 @@ func (w *World) bury(s *Source, from *Civ, star int) {
 func (w *World) dropRarities(c *Civ, star int) {
 	for _, s := range w.mobileHeld(c, star) {
 		w.bury(s, c, star)
-		w.log("%s is left behind at %s.", capital(s.Name), w.star(star))
+		w.event(KLeftBehind, c, nil, star, P{"source": s.ID})
 	}
 }
 
@@ -394,7 +392,7 @@ func (w *World) fleetLost(x *Expedition, star int) {
 	c := w.Civs[x.Owner]
 	for _, s := range w.carriedBy(x) {
 		w.bury(s, c, star)
-		w.log("%s went down with the fleet, and lies at %s for whoever finds it.", capital(s.Name), w.star(star))
+		w.event(KWentDown, c, nil, star, P{"source": s.ID, "fleet": x.ID})
 	}
 }
 

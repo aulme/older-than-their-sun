@@ -65,7 +65,7 @@ func TestEmbargo(t *testing.T) {
 	a.monsters = map[int]bool{b.ID: true}
 	facts := func() int {
 		n := 0
-		for _, f := range w.Facts {
+		for _, f := range w.Events {
 			if f.Kind == FEmbargo {
 				n++
 			}
@@ -124,7 +124,7 @@ func TestCutOffDarkens(t *testing.T) {
 		t.Error("the war came and b's firearms stayed fed")
 	}
 	n := 0
-	for _, f := range w.Facts {
+	for _, f := range w.Events {
 		if f.Kind == FCutOff && f.Subject == b.ID && f.Object == a.ID {
 			n++
 		}

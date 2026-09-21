@@ -283,9 +283,9 @@ func (w *World) takeOver(c *Civ, star int) {
 		c.Works = append(c.Works, Work{Key: key, Node: l.Node, Star: star, Legacy: l.ID})
 		c.Structures[key]++
 		if w.kinship(c, l) == 2 {
-			w.log("The %s return to %s and put their own old works there back to use.", c.Tok(), w.star(star))
+			w.event(KTakenOver, c, nil, star, P{"own": true, "desc": l.Describe()}).Legacy = l.ID
 		} else if w.R.Float64() < 0.2 {
-			w.log("The %s find %s at %s, and put it back to work.", c.Tok(), l.Describe(), w.star(star))
+			w.event(KTakenOver, c, nil, star, P{"own": false, "desc": l.Describe()}).Legacy = l.ID
 		}
 	}
 }

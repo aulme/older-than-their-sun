@@ -41,7 +41,7 @@ func (w *World) makeTransmitter(star, maker int, live bool) *Legacy {
 	}
 	w.Legacies = append(w.Legacies, l)
 	if maker >= 0 {
-		w.factL(FUnleashed, w.Civs[maker], l)
+		w.factL(FUnleashed, w.Civs[maker], l).with(P{"way": "made"})
 	}
 	return l
 }
@@ -124,7 +124,8 @@ func (w *World) seeded(c *Civ, l *Legacy) {
 	p.Transmitter = l.ID
 	l.Listeners++
 	w.infect(c, p, nil, "signal")
-	w.log("The %s hear the transmitter at %s. Something comes down the signal with it and begins to move through their minds. They call it %s.", c.Tok(), w.star(l.Star), p.Tok())
+	ev := w.event(KSignalPlague, c, nil, l.Star, P{})
+	ev.Legacy, ev.Plague = l.ID, p.ID
 }
 
 // corrupted is the Signal's scar seeding a memetic plague in the
@@ -146,14 +147,14 @@ func init() {
 	def(&Filter{
 		Key: "beacon", Name: "the Signal", Levels: []string{"soc"}, Diff: 5.5, Repeat: true, Domain: "society",
 		Overcome: func(w *World, c *Civ) {
-			w.log("The %s hear the transmitter at %s, and do not answer, and forbid anyone to listen again.", c.Tok(), w.star(w.transmitter.Star))
+			w.faced(c, "beacon", "overcome", "", w.transmitter.Star)
 		},
 		Scar: func(w *World, c *Civ) {
 			l := w.transmitter
 			c.Scars[ScarSignal] = true
 			c.Morale -= 1
 			l.Listeners++
-			w.log("Some of the %s hear the transmitter at %s and are changed. A cult of the signal grows among them and is never quite rooted out.", c.Tok(), w.star(l.Star))
+			w.faced(c, "beacon", "scarred", "", l.Star)
 			w.corrupted(c, l)
 		},
 		Decline: func(w *World, c *Civ) {
@@ -164,7 +165,7 @@ func init() {
 				w.endCiv(c, Transformed, sprintf("heard the transmitter at %s and were changed by it", w.star(l.Star)))
 				c.Into = "a cult of the signal"
 				w.makeTransmitter(home, c.ID, true)
-				w.log("From %s a new signal goes out, in the voice of the %s.", w.star(home), c.Tok())
+				w.event(KNewSignal, c, nil, home, P{})
 				return
 			}
 			w.endCiv(c, Extinct, sprintf("listened to the transmitter at %s", w.star(l.Star)))

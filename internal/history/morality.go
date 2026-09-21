@@ -218,7 +218,7 @@ func folly(w float64) judgment { return judgment{Sort: Folly, Weight: w} }
 
 var none = judgment{None: true}
 
-var moralTable = map[FactKind][8]judgment{
+var moralTable = map[Kind][8]judgment{
 	FEnslaved:     {crime(4), crime(1), none, deed(2), crime(2), none, none, deed(1)},
 	FBred:         {crime(4), none, none, none, deed(2), deed(1), none, none},
 	FScoured:      {crime(5), crime(5), none, deed(2), crime(5), crime(3), crime(2), crime(3)},
@@ -247,35 +247,16 @@ var moralTable = map[FactKind][8]judgment{
 	FPoisoned:     {crime(4), crime(4), none, deed(1), crime(4), crime(3), crime(2), crime(4)},
 }
 
-// moralRows is the table as an array by fact kind, since sortFor runs
-// per tale per people per tick.
-var moralRows []struct {
-	has bool
-	row [8]judgment
-}
-
-func init() {
-	for k, row := range moralTable {
-		for int(k) >= len(moralRows) {
-			moralRows = append(moralRows, struct {
-				has bool
-				row [8]judgment
-			}{})
-		}
-		moralRows[k].has, moralRows[k].row = true, row
-	}
-}
-
 // sortFor is a fact as one people judges it: the table's cell for its
 // morality, else the fact's own sort. A cell of none is a woe of the
 // fact's weight to the sufferer and nothing to anyone else. A woe is a woe
 // under every morality: a morality decides what is done to others, not
 // what hurts.
-func sortFor(c *Civ, f *Fact) (Sort, float64) {
-	if int(f.Kind) >= len(moralRows) || !moralRows[f.Kind].has {
+func sortFor(c *Civ, f *Event) (Sort, float64) {
+	if f.row == nil {
 		return f.sort(), f.weight()
 	}
-	j := moralRows[f.Kind].row[c.Morality.column()]
+	j := f.row[c.Morality.column()]
 	if !j.None {
 		return j.Sort, j.Weight
 	}
@@ -287,7 +268,7 @@ func sortFor(c *Civ, f *Fact) (Sort, float64) {
 
 // judges says whether a people's judgment of a fact differs from the
 // fact's own sort.
-func judges(c *Civ, f *Fact) bool {
+func judges(c *Civ, f *Event) bool {
 	s, _ := sortFor(c, f)
 	return s != f.sort()
 }
@@ -348,7 +329,7 @@ func (w *World) bornMorality(c *Civ) {
 	h := noHints
 	h.Sight = c.Species.Miracle() == "foresight"
 	c.Morality = rollMorality(w.R, c.Species, h)
-	w.log("%s", c.Morality.Portrait())
+	w.event(KMorality, c, nil, -1, P{"way": "born", "morality": c.Morality})
 }
 
 // branchMorality is a schism's branch: it keeps the parent's judgment, or
@@ -365,7 +346,7 @@ func (w *World) branchMorality(nc, parent *Civ) {
 	h.FoundMuch = parent.Tally.FindSurvey+parent.Tally.FindSettle+parent.Tally.FindChance >= 3
 	nc.Morality = rollMorality(w.R, nc.Species, h)
 	if nc.Morality != parent.Morality {
-		w.log("The %s have gone their own way in what they count as wrong. %s", nc.Tok(), nc.Morality.Portrait())
+		w.event(KMorality, nc, parent, -1, P{"way": "branch", "morality": nc.Morality})
 	}
 }
 
@@ -380,7 +361,7 @@ func (w *World) churchMorality(c *Civ) {
 		return
 	}
 	c.Morality = m
-	w.log("The church of the %s teaches what is good, and it is one thing. %s", c.Tok(), m.Portrait())
+	w.event(KMorality, c, nil, -1, P{"way": "church", "morality": m})
 }
 
 // upliftMorality is an uplifted people taught its uplifter's judgment,
@@ -390,7 +371,7 @@ func (w *World) upliftMorality(nc, by *Civ) {
 		return
 	}
 	nc.Morality = by.Morality
-	w.log("The %s were taught what the %s call wrong. %s", nc.Tok(), by.Tok(), nc.Morality.Portrait())
+	w.event(KMorality, nc, by, -1, P{"way": "taught", "morality": nc.Morality})
 }
 
 // machineMorality is a machine successor: it leans hard to a fixation, on
@@ -401,9 +382,9 @@ func (w *World) machineMorality(nc, makers *Civ) {
 	h.Object = w.doing(makers)
 	nc.Morality = rollMorality(w.R, nc.Species, h)
 	if nc.Morality.Kind == Fixation {
-		w.log("What the %s hold good is what their makers were doing when they were outgrown. %s", nc.Tok(), nc.Morality.Portrait())
+		w.event(KMorality, nc, makers, -1, P{"way": "machine", "morality": nc.Morality})
 	} else {
-		w.log("%s", nc.Morality.Portrait())
+		w.event(KMorality, nc, makers, -1, P{"way": "born", "morality": nc.Morality})
 	}
 }
 
@@ -431,7 +412,7 @@ func Judged(w *World, c *Civ) (excused, condemned int) {
 		if t.Forgot {
 			continue
 		}
-		f := w.Facts[t.Fact]
+		f := w.Events[t.Fact]
 		s, _ := sortFor(c, f)
 		switch {
 		case f.sort() == Crime && s != Crime && s != Woe:
@@ -455,7 +436,7 @@ func SplitFacts(w *World) (split, shared int) {
 			}
 		}
 	}
-	for _, f := range w.Facts {
+	for _, f := range w.Events {
 		hs := holders[f.ID]
 		if f.sort() != Crime || len(hs) < 2 {
 			continue

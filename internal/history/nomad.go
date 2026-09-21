@@ -85,12 +85,7 @@ func (w *World) takeSky(c *Civ, why string) bool {
 		w.loseSystem(c, s, "empty cradle of the "+c.Tok(), "")
 	}
 	c.Record = append(c.Record, "took to the sky")
-	w.fact(FExodus, c, nil, c.Home)
-	if why == "" {
-		w.log("The %s take to the sky. %s is left empty behind them, and everything they are is in the fleets now.", c.Tok(), w.star(c.Home))
-	} else {
-		w.log("The %s take to the sky rather than %s. %s is left empty behind them.", c.Tok(), why, w.star(c.Home))
-	}
+	w.told(FExodus, c, nil, c.Home).with(P{"way": "sky", "why": why})
 	w.seat(c)
 	w.recompute(c)
 	return true
@@ -134,8 +129,7 @@ func (w *World) flee(c *Civ, lost int, cause string) bool {
 	w.addGuard(c, base, ships)
 	c.Record = append(c.Record, "took to the sky")
 	c.Morale -= 1
-	w.log("The %s %s. What got away is a fleet at %s, and it is all of them now.", c.Tok(), cause, w.star(base))
-	w.fact(FExodus, c, nil, lost)
+	w.fact(FExodus, c, nil, lost).with(P{"way": "fled", "why": cause, "base": base})
 	w.seat(c)
 	w.recompute(c)
 	return true
@@ -246,7 +240,7 @@ func (w *World) nextStar(c *Civ, x *Expedition, hop float64) int {
 func (w *World) moveFleet(c *Civ, x *Expedition, t int) {
 	w.sail(x, t)
 	if w.R.Float64() < 0.02 {
-		w.log("The fleets of the %s move on, to %s.", c.Tok(), w.star(t))
+		w.event(KMovedOn, c, nil, t, P{"fleet": x.ID})
 	}
 }
 
@@ -285,9 +279,9 @@ func (w *World) carry(c *Civ, hop float64) {
 		k := cands[w.R.IntN(len(cands))]
 		w.learn(to, tech.Get(k), false)
 		if from == c {
-			w.log("The fleets of the %s bring the %s %s.", c.Tok(), e.Tok(), tech.Get(k).Name)
+			w.event(KCarried, c, e, -1, P{"node": k, "way": "brought"})
 		} else {
-			w.log("The %s learn %s from the %s, and carry it on.", c.Tok(), tech.Get(k).Name, e.Tok())
+			w.event(KCarried, c, e, -1, P{"node": k, "way": "learned"})
 		}
 	}
 }
@@ -313,12 +307,7 @@ func (w *World) strip(wr *War, c, e *Civ, t int) {
 	e.Morale -= 0.5
 	wr.Will[i] += 0.3
 	wr.Will[1-i] -= 0.3
-	w.fact(FStripped, c, e, t)
-	if home {
-		w.log("The horde of the %s strips %s, the home of the %s, of its ships and its people.", c.Tok(), w.star(t), e.Tok())
-	} else {
-		w.log("The %s strip %s of its ships and its people. The horde grows.", c.Tok(), w.star(t))
-	}
+	w.told(FStripped, c, e, t).with(P{"home": home})
 	if wr.Named < 0 {
 		wr.Named = t
 	}
@@ -372,11 +361,7 @@ func (w *World) rest(c *Civ, why string) {
 	c.Record = append(c.Record, "came to rest")
 	w.takeOver(c, t)
 	w.recompute(c)
-	w.fact(FRest, c, nil, t)
+	rest := w.unplaced(FRest, c, nil, t).with(P{"nomad": c.Has("nomadic"), "why": why})
 	w.wakeReservoir(c, t)
-	if c.Has("nomadic") {
-		w.log("The %s come to rest at %s, and are nomads no longer. It was %s that did it.", c.Tok(), w.star(c.Home), why)
-	} else {
-		w.log("The %s, refugees no longer, settle %s. It is home now.", c.Tok(), w.star(c.Home))
-	}
+	w.place(rest)
 }

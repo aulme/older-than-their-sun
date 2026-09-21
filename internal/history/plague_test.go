@@ -49,7 +49,7 @@ func TestContainedOffersNothing(t *testing.T) {
 	if b.Infections[p.ID].From != a.ID || b.Infections[p.ID].Road != "occupation" {
 		t.Errorf("the infection remembers %+v", b.Infections[p.ID])
 	}
-	if n := len(w.Facts); w.Facts[n-1].Kind != FPlagueGiven || w.Facts[n-2].Kind != FPlague {
+	if f := lastFacts(w, 2); f[1].Kind != FPlagueGiven || f[0].Kind != FPlague {
 		t.Error("the catch and the blame were not written")
 	}
 	if w.Plagues[p.ID].Hosts != 2 || p.Caught != 2 {
@@ -80,7 +80,7 @@ func TestRefusedCarriesNothing(t *testing.T) {
 		t.Fatalf("a read message did not carry the plague: %+v", inf)
 	}
 	// the message road is no crime: the catch is written, the blame is not
-	if n := len(w.Facts); w.Facts[n-1].Kind != FPlague {
+	if f := lastFacts(w, 1); f[0].Kind != FPlague {
 		t.Error("the catch was not the last fact")
 	}
 }

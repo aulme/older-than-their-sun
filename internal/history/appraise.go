@@ -131,6 +131,6 @@ func (w *World) bar(c, e *Civ) (bar float64, wants, far bool) {
 // explain logs a decision's reason under -ai.
 func (w *World) explain(c *Civ, what string, d interface{ Why() string }) {
 	if w.Cfg.TraceAI {
-		w.log("[the %s, %s: %s]", c.Tok(), what, d.Why())
+		w.event(KReason, c, nil, -1, P{"what": what, "why": d.Why()})
 	}
 }

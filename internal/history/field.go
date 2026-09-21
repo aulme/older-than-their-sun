@@ -115,7 +115,7 @@ func (w *World) salvage(c *Civ, l *Legacy) {
 	}
 	l.Cond = Ruin
 	if n <= 0 {
-		w.log("The %s try to crew the hulls. Nothing in them will fly again.", c.Tok())
+		w.event(KWieldFailed, c, nil, l.Star, P{"way": "hulls_ruin"}).Legacy = l.ID
 		return
 	}
 	at := l.At
@@ -130,7 +130,7 @@ func (w *World) salvage(c *Civ, l *Legacy) {
 	c.Salvage += n
 	c.SalvageTaken += n
 	c.Tally.Salvaged += n
-	w.log("The %s crew what will fly of it: %s, turned for %s.", c.Tok(), shipsWord(n), w.star(to))
+	w.event(KSalvaged, c, nil, to, P{"ships": n, "fleet": x.ID}).Legacy = l.ID
 }
 
 // salvageWorn is the tick's loss of salvaged ships: a tenth of what was

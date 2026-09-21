@@ -88,7 +88,7 @@ func (w *World) launch(c *Civ, kind ExpKind, target *Civ, star int, n int) *Expe
 	g := w.guardWith(c, star, n)
 	if g == nil || n <= 0 {
 		if w.Cfg.TraceAI {
-			w.log("[the %s cannot man a %s of %s for %s]", c.Tok(), kind, shipsWord(n), w.star(star))
+			w.event(KDebug, c, nil, star, P{"text": sprintf("[the %s cannot man a %s of %s for %s]", c.Tok(), kind, shipsWord(n), w.star(star))})
 		}
 		return nil
 	}
@@ -112,18 +112,18 @@ func (w *World) launch(c *Civ, kind ExpKind, target *Civ, star int, n int) *Expe
 	case Campaign:
 		c.Tally.Fleets++
 		c.WantShips = 0
+		p := P{"fleet": x.ID, "ships": n, "total": total, "away": x.Arrive - w.Now, "hunt": -1}
 		if wr := w.warBetween(c.ID, target.ID); wr != nil && wr.Gap != nil && wr.Sides[0] == c.ID {
-			w.log("The %s send %s of their ships into the hole around %s, where the ledger says something is: a fleet of %s bound for %s, %s away.", c.Tok(), shareWord(n, total), w.star(wr.Gap.Star), shipsWord(n), w.star(star), span(x.Arrive-w.Now))
-		} else {
-			w.log("The %s send %s of their ships against the %s: a fleet of %s bound for %s, %s away.", c.Tok(), shareWord(n, total), target.Tok(), shipsWord(n), w.star(star), span(x.Arrive-w.Now))
+			p["hunt"] = wr.Gap.Star
 		}
+		w.event(KFleetSent, c, target, star, p)
 	case Relief:
 		c.Tally.Relief++
-		w.log("The %s send %s to stand with the %s at %s, %s away.", c.Tok(), shipsWord(n), target.Tok(), w.star(star), span(x.Arrive-w.Now))
+		w.event(KReliefSent, c, target, star, P{"fleet": x.ID, "ships": n, "away": x.Arrive - w.Now})
 	case Scout:
 		c.Tally.Scouts++
 		if w.Cfg.TraceAI {
-			w.log("[the %s send a scout to %s, %s away]", c.Tok(), w.star(star), span(x.Arrive-w.Now))
+			w.event(KDebug, c, nil, star, P{"text": sprintf("[the %s send a scout to %s, %s away]", c.Tok(), w.star(star), span(x.Arrive-w.Now))})
 		}
 	case Survey:
 		// logged by survey, which knows whether it is the first
@@ -257,7 +257,7 @@ func (w *World) arrive(x *Expedition) {
 	case Campaign:
 		e := w.Civs[x.Target]
 		if !e.Active() || w.warBetween(c.ID, e.ID) == nil {
-			w.log("The fleet of the %s arrives at %s to find the war over.", c.Tok(), w.star(x.Star))
+			w.event(KArrivedLate, c, e, x.Star, P{"fleet": x.ID})
 			w.resolve(x)
 			return
 		}
@@ -271,9 +271,9 @@ func (w *World) arrive(x *Expedition) {
 			return
 		}
 		if w.holds(e, x.Base) {
-			w.log("The fleet of the %s arrives at %s, %s after it set out.", c.Tok(), w.star(x.Base), span(w.Now-x.Out))
+			w.event(KFleetArrived, c, e, x.Base, P{"fleet": x.ID, "way": "campaign", "out": w.Now - x.Out})
 		} else if wr := w.warBetween(c.ID, e.ID); wr.Gap != nil && w.R.Float64() < 0.3 {
-			w.log("The hunting fleet of the %s arrives at %s and finds nothing there, which is what it was told it would find.", c.Tok(), w.star(x.Base))
+			w.event(KFleetArrived, c, e, x.Base, P{"fleet": x.ID, "way": "hunt", "out": w.Now - x.Out})
 		}
 	case Relief:
 		h := w.Civs[x.Target]
@@ -285,12 +285,12 @@ func (w *World) arrive(x *Expedition) {
 			}
 			x.Base = x.Star
 			k.Until = w.Now + Year(k.Length*1000)
-			w.log("A fleet of the %s arrives at %s to hold it for the %s, as paid.", c.Tok(), w.star(x.Base), h.Tok())
+			w.event(KFleetArrived, c, h, x.Base, P{"fleet": x.ID, "way": "hired", "out": w.Now - x.Out})
 			w.landed(c, h)
 			return
 		}
 		if !h.Active() || len(h.Wars) == 0 {
-			w.log("The fleet of the %s arrives at %s to find the war over.", c.Tok(), w.star(x.Star))
+			w.event(KArrivedLate, c, h, x.Star, P{"fleet": x.ID})
 			w.resolve(x)
 			return
 		}
@@ -308,8 +308,7 @@ func (w *World) arrive(x *Expedition) {
 			}
 		}
 		w.faith(c, h, 0.5)
-		w.log("A fleet of the %s arrives at %s to stand with the %s.", c.Tok(), w.star(x.Base), h.Tok())
-		w.fact(FRelief, c, h, x.Base)
+		w.fact(FRelief, c, h, x.Base).with(P{"fleet": x.ID})
 	}
 }
 
@@ -326,7 +325,7 @@ func (w *World) campaign(x *Expedition) {
 		x.Ships -= w.count(0.03 * float64(x.Ships))
 	}
 	if x.Ships <= 0 {
-		w.log("The fleet of the %s wastes away at %s, far from anything it could live on.", c.Tok(), w.star(x.Base))
+		w.event(KFleetWasted, c, e, x.Base, P{"fleet": x.ID})
 		w.resolve(x)
 		return
 	}
@@ -427,7 +426,7 @@ func (w *World) goNative(x *Expedition) {
 		c.Systems = remove(c.Systems, s)
 		w.Owner[s] = -1
 	}
-	w.log("The fleet of the %s never comes home. At %s its captains rule as their own people.", c.Tok(), w.star(home))
+	w.event(KFleetStayed, c, nil, home, P{})
 	nc := w.spawnCiv(home, c.Species, -1)
 	nc.Origin = "the fleet of the " + c.Tok() + " that never came home"
 	nc.Master = -1
@@ -513,8 +512,7 @@ func (w *World) wouldTurn(x *Expedition) bool {
 // host with nothing else in the sky loses it at once.
 func (w *World) turn(x *Expedition) {
 	c, h := w.Civs[x.Owner], w.Civs[x.Target]
-	w.log("The fleet of the %s, sent to keep %s for the %s, takes it for themselves.", c.Tok(), w.star(x.Base), h.Tok())
-	w.betray(c, h, "turned on the world they were sent to keep", 1)
+	w.betray(c, h, "turned on the world they were sent to keep", "turned", 1).P["star"] = x.Base
 	w.breakPacts(c, h)
 	h.resent(c.ID, 3)
 	x.Kind, x.Turned = Campaign, true
