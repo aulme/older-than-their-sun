@@ -242,7 +242,7 @@ func Write(out io.Writer, w *history.World, full bool) {
 	any = false
 	for _, c := range w.Civs {
 		pr := c.Species.Profile()
-		if !c.Active() || !(pr.Eats || pr.Monster || c.Asleep || !pr.Can(species.Researches)) {
+		if !c.Active() || !(pr.Eats || pr.Monster || c.Asleep || !pr.Can(species.Researches) || c.Species.Is(species.Antimemetic)) {
 			continue
 		}
 		any = true
@@ -252,6 +252,8 @@ func Write(out io.Writer, w *history.World, full bool) {
 			state = fmt.Sprintf("asleep at %s since %s, woke %d times", c.HomeName, year(c.Slept), c.Tally.Wakings)
 		case pr.Eats:
 			state += fmt.Sprintf(", %d ships grown of what it ate, %d worlds stripped", c.Tally.Eaten, c.Tally.Consumed)
+		case c.Species.Is(species.Antimemetic):
+			state += fmt.Sprintf(", which nobody who met them remembers; hunted %d times", hunted(w, c))
 		}
 		made := ""
 		if c.Origin != "" {
@@ -731,6 +733,17 @@ func Stats(out io.Writer, w *history.World) {
 		w.Seed, float64(w.Present-w.Cfg.Dawn)/1e6, float64(w.Cycle.Fade)/1e6, 100*w.FertilityNow(), len(w.Civs), b[0], b[1], b[2], b[3], b[4], standing, remnants, knowers, whole, miracles["born"], miracles["leap"], miracles["found"], miracles["wielded"], speaking(w),
 		nRuins, ruins[history.Mastered], ruins[history.Wielded], ruins[history.Sealed], ruins[history.Unleashed], ruins[history.Lost],
 		conds[history.Abandoned], conds[history.Derelict], conds[history.Wreck], conds[history.Ruin], w.Thin, w.Capped)
+}
+
+// hunted counts the hunts declared on a people by the shape of the hole.
+func hunted(w *history.World, c *history.Civ) int {
+	n := 0
+	for _, wr := range w.Wars {
+		if wr.Gap != nil && wr.Sides[1] == c.ID {
+			n++
+		}
+	}
+	return n
 }
 
 // speaking counts the transmitters that are live.

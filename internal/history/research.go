@@ -192,6 +192,9 @@ func (w *World) choose(c *Civ) string {
 func (w *World) learn(c *Civ, n *tech.Node, fire bool) {
 	c.Known[n.Key] = true
 	w.stir(c)
+	if n.Key == resilience {
+		w.unveil(c)
+	}
 	if _, ok := c.Learned[n.Key]; !ok {
 		c.Learned[n.Key] = w.Now
 	}

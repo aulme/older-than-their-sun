@@ -294,8 +294,8 @@ func (w *World) sightingsDue() {
 func (w *World) sighted(s *Sighting) {
 	x := w.Expeditions[s.Fleet]
 	o, c := w.Civs[s.Seer], w.Civs[x.Owner]
-	if x.Over || x.Base >= 0 || x.Launched != s.Leg || !o.Active() || !c.Living() {
-		return
+	if x.Over || x.Base >= 0 || x.Launched != s.Leg || !o.Active() || !c.Living() || !w.perceives(o, c) {
+		return // a fleet of what cannot be held in mind crosses every eye unseen
 	}
 	s.Ships = x.Ships
 	s.Mil = c.Mil + w.R.NormFloat64()*sightNoise

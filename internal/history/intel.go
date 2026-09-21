@@ -42,7 +42,9 @@ func (w *World) look(c, e *Civ, star int, noise float64) *Intel {
 // observe stores a fresh observation of e by c.
 func (w *World) observe(c, e *Civ, star int, noise float64) *Intel {
 	i := w.look(c, e, star, noise)
-	c.Intel[e.ID] = i
+	if w.perceives(c, e) {
+		c.Intel[e.ID] = i // an observation of what cannot be held in mind is not kept
+	}
 	return i
 }
 
@@ -51,7 +53,9 @@ func (w *World) observe(c, e *Civ, star int, noise float64) *Intel {
 // everywhere as far as the fight could tell.
 func (w *World) observeDark(c, e *Civ) *Intel {
 	i := &Intel{Mil: e.Mil + w.R.NormFloat64()*0.3, Total: w.standing(e), Star: -1, Year: w.Now}
-	c.Intel[e.ID] = i
+	if w.perceives(c, e) {
+		c.Intel[e.ID] = i
+	}
 	return i
 }
 

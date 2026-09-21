@@ -334,6 +334,27 @@ func (s *Species) Replace(old, key string) {
 	}
 }
 
+// Remove takes a trait away by key; nothing if it is not there.
+func (s *Species) Remove(key string) {
+	for i, x := range s.Traits {
+		if x.Key == key {
+			s.Traits = append(s.Traits[:i:i], s.Traits[i+1:]...)
+			return
+		}
+	}
+}
+
+// Of lists the species' traits of a group, in the order they were gained.
+func (s *Species) Of(group string) []*Trait {
+	var out []*Trait
+	for _, t := range s.Traits {
+		if t.Group == group {
+			out = append(out, t)
+		}
+	}
+	return out
+}
+
 // Has reports whether the species has a trait.
 func (s *Species) Has(key string) bool {
 	for _, t := range s.Traits {

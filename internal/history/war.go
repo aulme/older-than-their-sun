@@ -36,6 +36,7 @@ type War struct {
 	Contested map[int]int
 	Called    map[int]bool // allies already called to this war
 	Hire      int          // the contract this war was declared for, or -1; see contract.go
+	Gap       *Gap         // set for a hunt: the first side fights a region, not a people it can name; see gap.go
 	// the slights of the war: see slight.go
 	Slights    map[int]float64 // the slight each partner of the target took at the declaration
 	Sent       map[int]float64 // what the target was sending each the tick before
@@ -179,6 +180,10 @@ func (w *World) declare(c, e *Civ, cause string) *War {
 	w.factOf(FWar, c, e, -1, cause)
 	w.slighted(c, e, wr)
 	switch {
+	case !w.perceives(c, e):
+		// a hunt: the ledger's line stands for it; see gap.go
+	case !w.perceives(e, c):
+		w.log("The %s declare war on the %s, over %s. The %s will never know by whom.", c.Name, e.Name, cause, e.Name)
 	case wr.Nth > 1:
 		w.log("The %s go to war with the %s again, the %s time, over %s.", c.Name, e.Name, ordinal(wr.Nth), cause)
 	default:
@@ -494,6 +499,11 @@ func (w *World) judge(wr *War) {
 		return
 	}
 	switch {
+	case wr.Gap != nil && wr.Will[0] <= 0:
+		w.log("The hunt of the %s ends, the will for it spent, after %s. Nothing was found that could be named, and the %s go on being there.", a.Name, w.warSpan(wr), b.Name)
+		w.endWar(wr, "exhaustion")
+	case wr.Gap != nil:
+		// a hunt has nobody to treat with: it runs until the hunter's will is spent or the region is empty; the hunted side's will is nothing to it, since no offer of its can be received; see gap.go
 	case w.noTerms(wr) && wr.Will[0] <= 0 && wr.Will[1] <= 0:
 		w.log("The %s and the %s stop fighting, both sides spent, after %s. Nothing is signed; there is nobody on one side to sign it.", a.Name, b.Name, w.warSpan(wr))
 		w.endWar(wr, "exhaustion")

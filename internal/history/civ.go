@@ -1,6 +1,8 @@
 package history
 
 import (
+	"slices"
+
 	"worldgen/internal/flow"
 	"worldgen/internal/mind"
 	"worldgen/internal/names"
@@ -159,6 +161,7 @@ var civSteps = []civStep{
 	{"guns", (*World).guns},
 	{"objects", (*World).objects},
 	{"research", (*World).research},
+	{"drift", (*World).drift},
 	{"eldritch", (*World).eldritchStep},
 	{"wander", (*World).wander},
 	{"expand", (*World).expand},
@@ -171,6 +174,7 @@ var civSteps = []civStep{
 	{"fathoming", (*World).fathoming},
 	{"intel", (*World).intelStep},
 	{"council", (*World).council},
+	{"hunts", (*World).huntStep},
 	{"contracting", (*World).contracting},
 	{"garrison", (*World).garrison},
 	{"wartime", (*World).wartime},
@@ -263,6 +267,14 @@ func (w *World) arrivals(c *Civ) {
 		switch {
 		case w.Owner[t] == c.ID:
 			// settled already by another ship
+		case w.Owner[t] >= 0 && w.Civs[w.Owner[t]].Active() && !w.perceives(c, w.Civs[w.Owner[t]]):
+			// a world of something the people cannot hold in mind: the ship is a loss with no doer on its ledger
+			o := w.Civs[w.Owner[t]]
+			w.trace(t, "derelict "+ship, c.ID)
+			w.log("A %s of the %s arrives at %s, which every reading said was empty, and is never heard from again. The %s were there.", ship, c.Name, w.star(t), o.Name)
+			w.factOf(FShipLost, c, o, t, ship)
+			c.Morale -= 0.2
+			w.chart(c, t, "ship")
 		case w.Owner[t] >= 0 && w.Civs[w.Owner[t]].Active():
 			w.trace(t, "derelict "+ship, c.ID)
 			w.log("A %s of the %s arrives at %s to find the %s already there.", ship, c.Name, w.star(t), w.Civs[w.Owner[t]].Name)
@@ -781,6 +793,9 @@ func (w *World) darkAge(c *Civ, why string) {
 	}
 	w.forgetting(c)
 	w.forgetFathomed(c)
+	if slices.Contains(forgotten, resilience) {
+		w.veil(c) // the records that checked themselves are gone, and what they held with them
+	}
 	f := w.factOf(FDarkAge, c, nil, c.Home, why)
 	f.N = int(depth*10 + 0.5)
 	lost := 0

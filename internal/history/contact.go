@@ -19,6 +19,17 @@ func (w *World) contacts() {
 			if !b.Active() || b.Asleep || (a.Reached[b.ID] && b.Reached[a.ID]) {
 				continue // a sleeper is all but impossible to contact
 			}
+			if pa, pb := w.perceives(a, b), w.perceives(b, a); !pa || !pb {
+				// one side cannot hold the other in mind: the other finds it, and that is all the meeting there is
+				if (w.touch(a, b) && (w.knowsOf(a, b) || w.knowsOf(b, a))) || w.hear(a, b) {
+					if pa {
+						w.notice(a, b)
+					} else if pb {
+						w.notice(b, a)
+					}
+				}
+				continue
+			}
 			if !w.touch(a, b) {
 				if !(a.Met[b.ID] && b.Met[a.ID]) && w.hear(a, b) {
 					a.Met[b.ID], b.Met[a.ID] = true, true
@@ -56,6 +67,14 @@ func (w *World) knowsOf(a, b *Civ) bool {
 // where one came upon the other, or -1 for a border met by touch.
 func (w *World) meet(a, b *Civ, at int) {
 	if !a.Active() || !b.Active() || (a.Reached[b.ID] && b.Reached[a.ID]) {
+		return
+	}
+	if pa, pb := w.perceives(a, b), w.perceives(b, a); !pa || !pb {
+		if pa {
+			w.notice(a, b)
+		} else if pb {
+			w.notice(b, a)
+		}
 		return
 	}
 	// a young species found by an old one is not a contact between equals

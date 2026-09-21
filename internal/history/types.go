@@ -212,11 +212,14 @@ type Civ struct {
 	Claim    map[int]bool // the worlds of the old realm an heir holds itself owed
 
 	// kinds: see eldritch.go and waking.go
-	Asleep     bool         // the long sleep: it sits every tick out but its guns until disturbed
-	Slept      Year         // when it last went to sleep
-	LastUnmade Year         // when the unmaking was last turned on a world
-	demanded   map[int]Year // when a living world last told each people to leave its neighbourhood
-	tithedBy   map[int]bool // the peoples whose tithe this one has paid, for the first line
+	Asleep     bool               // the long sleep: it sits every tick out but its guns until disturbed
+	Slept      Year               // when it last went to sleep
+	LastUnmade Year               // when the unmaking was last turned on a world
+	demanded   map[int]Year       // when a living world last told each people to leave its neighbourhood
+	tithedBy   map[int]bool       // the peoples whose tithe this one has paid, for the first line
+	Drifts     int                // for an evolver: how many times its shape has drifted; see evolver.go
+	FathomedAt map[int]int        // the drift count of each people fathomed, at the fathoming: the people understood is that one
+	heldKyr    map[string]float64 // thousand years of holding worlds of each type, for the drift
 
 	// sightings and salvage: see sighting.go, field.go
 	Sightings    map[int]*Sighting // what this people has seen of fleets in flight, by fleet
@@ -329,6 +332,7 @@ type Tally struct {
 	// kinds: see eldritch.go and waking.go
 	Appeared, Deepened, Tithed, Sleeps, Wakings, Demands, Unmade int
 	Eaten, Consumed                                              int // ships grown by eating; worlds stripped and held empty
+	Hunts, Drifts                                                int // hunts declared on a hole in the ledger; times the shape drifted
 }
 
 // Living is true for active and remnant civilisations.

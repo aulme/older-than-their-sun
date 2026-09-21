@@ -113,7 +113,11 @@ func (w *World) launch(c *Civ, kind ExpKind, target *Civ, star int, n int) *Expe
 	case Campaign:
 		c.Tally.Fleets++
 		c.WantShips = 0
-		w.log("The %s send %s of their ships against the %s: a fleet of %s bound for %s, %s away.", c.Name, shareWord(n, total), target.Name, shipsWord(n), w.star(star), span(x.Arrive-w.Now))
+		if wr := w.warBetween(c.ID, target.ID); wr != nil && wr.Gap != nil && wr.Sides[0] == c.ID {
+			w.log("The %s send %s of their ships into the hole around %s, where the ledger says something is: a fleet of %s bound for %s, %s away.", c.Name, shareWord(n, total), w.star(wr.Gap.Star), shipsWord(n), w.star(star), span(x.Arrive-w.Now))
+		} else {
+			w.log("The %s send %s of their ships against the %s: a fleet of %s bound for %s, %s away.", c.Name, shareWord(n, total), target.Name, shipsWord(n), w.star(star), span(x.Arrive-w.Now))
+		}
 	case Relief:
 		c.Tally.Relief++
 		w.log("The %s send %s to stand with the %s at %s, %s away.", c.Name, shipsWord(n), target.Name, w.star(star), span(x.Arrive-w.Now))
@@ -269,6 +273,8 @@ func (w *World) arrive(x *Expedition) {
 		}
 		if w.holds(e, x.Base) {
 			w.log("The fleet of the %s arrives at %s, %s after it set out.", c.Name, w.star(x.Base), span(w.Now-x.Out))
+		} else if wr := w.warBetween(c.ID, e.ID); wr.Gap != nil && w.R.Float64() < 0.3 {
+			w.log("The hunting fleet of the %s arrives at %s and finds nothing there, which is what it was told it would find.", c.Name, w.star(x.Base))
 		}
 	case Relief:
 		h := w.Civs[x.Target]
@@ -329,7 +335,12 @@ func (w *World) campaign(x *Expedition) {
 		w.fight(x, x.Base)
 		return
 	}
-	t := w.nearestOf(e, x.Base, fleetHop, x.Base)
+	t := -1
+	if wr := w.warBetween(c.ID, e.ID); wr.Gap != nil && wr.Sides[0] == c.ID {
+		t = w.huntNext(c, wr, x.Base) // a hunt goes where the hole is, not where the enemy is
+	} else {
+		t = w.nearestOf(e, x.Base, fleetHop, x.Base)
+	}
 	if t < 0 {
 		w.resolve(x)
 		return

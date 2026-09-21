@@ -1,7 +1,12 @@
 package species
 
-// evolver: a people whose shape does not stay put. Under the legacy numbers
-// it is the old evolver kind; the drift lands with the evolver step.
+// evolver: a people whose shape does not stay put: it breeds what it needs,
+// and what it is drifts. Under the legacy numbers it is the old evolver
+// kind; the drift is history's evolver.go: at a slow rate a bio, sense or
+// world trait is gained, lost or replaced, every world type held long
+// enough adds that world's trait, each drift raises the difference those
+// who fathomed it feel, and a drift while a biological plague rages is a
+// cure roll.
 var evolver = &ModDef{Mod: Evolver, Entry: Entry{
 	Key:      "evolver",
 	Portrait: "They shape their own flesh, and breed what they need instead of building it.",

@@ -42,6 +42,17 @@ type KindRec struct {
 	// what eats
 	Eaten    int // ships grown of what was eaten
 	Consumed int // worlds stripped and held empty
+	// what cannot be seen, and what does not stay put
+	Hunts      int // hunts declared on a hole in the ledger
+	HuntWorlds int // worlds a hunt took
+	HuntFound  int // hunts that fought at least one battle
+	HuntEmpty  int // hunts that ended with the hole closed
+	Antimem    int // anti-memetic peoples in the age
+	AntimemEnd int // of them ended
+	Drifts     int // drifts, over every evolver
+	Evolvers   int // evolvers that lived long enough to drift or not
+	DriftKyr   float64 // thousand years lived by evolvers, for the rate
+	DriftCures int
 }
 
 func flattenKinds(w *history.World) KindRec {
@@ -62,6 +73,33 @@ func flattenKinds(w *history.World) KindRec {
 		}
 		r.Eaten += c.Tally.Eaten
 		r.Consumed += c.Tally.Consumed
+		r.Hunts += c.Tally.Hunts
+		if c.Species.Is(species.Antimemetic) {
+			r.Antimem++
+			if !c.Active() {
+				r.AntimemEnd++
+			}
+		}
+		if c.Species.Is(species.Evolver) {
+			r.Evolvers++
+			r.Drifts += c.Tally.Drifts
+			r.DriftKyr += float64(c.Tally.Ticks) * float64(w.Cfg.Step) / 1000
+		}
+	}
+	for _, wr := range w.Wars {
+		if wr.Gap == nil {
+			continue
+		}
+		r.HuntWorlds += wr.Taken[0]
+		if wr.Result == "the hole closed" {
+			r.HuntEmpty++
+		}
+		for _, b := range w.Battles {
+			if b.Attacker == wr.Sides[0] && b.Defender == wr.Sides[1] && b.Year >= wr.Began && (b.Year <= wr.Ended || !wr.Over) {
+				r.HuntFound++
+				break
+			}
+		}
 	}
 	for _, l := range w.Legacies {
 		if !l.Transmitter() {
@@ -221,6 +259,34 @@ func kindsReport(out io.Writer, ks []KindRec, recs []Rec, seeds int) {
 		}
 		p("What ended them: %s.", strings.Join(parts, "; "))
 	}
+	// what cannot be seen, and what does not stay put
+	hunts, huntWorlds, huntFound, huntEmpty, antimem, antimemEnd, drifts, evolvers, driftKyr := 0, 0, 0, 0, 0, 0, 0, 0, 0.0
+	for _, k := range ks {
+		hunts += k.Hunts
+		huntWorlds += k.HuntWorlds
+		huntFound += k.HuntFound
+		huntEmpty += k.HuntEmpty
+		antimem += k.Antimem
+		antimemEnd += k.AntimemEnd
+		drifts += k.Drifts
+		evolvers += k.Evolvers
+		driftKyr += k.DriftKyr
+	}
+	worldsWith, hunting := 0, 0
+	for _, k := range ks {
+		if k.Antimem > 0 {
+			worldsWith++
+		}
+		if k.Hunts > 0 {
+			hunting++
+		}
+	}
+	p("What cannot be seen: %d anti-memetic peoples in %d of %d worlds, %d of them ended; %d hunts declared on a hole in the ledger in %d worlds, %d of them found something to fight and took %d worlds between them, %d ended with the hole closed.", antimem, worldsWith, len(ks), antimemEnd, hunts, hunting, huntFound, huntWorlds, huntEmpty)
+	rate := 0.0
+	if driftKyr > 0 {
+		rate = float64(drifts) / driftKyr * 1000
+	}
+	p("What does not stay put: %d evolvers, %d drifts, %.1f per million years of evolver life.", evolvers, drifts, rate)
 	p("")
 	// the natures in war
 	p("| Nature | Peoples | Wars fought | Won per war | Lost per war | Ended by war | Median life (Myr) |")

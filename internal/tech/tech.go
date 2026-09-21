@@ -150,6 +150,7 @@ var Nodes = []*Node{
 	{Key: "defence_grid", Name: "Planetary Defence", Domain: Weapons, Era: 3, Prereqs: []string{"orbital_weapons", "computers"}, Mil: 0.5, Structures: []string{"defences"}},
 	{Key: "memetics", Name: "Memetic Engineering", Wis: 0.5, Domain: Society, Era: 3, Prereqs: []string{"networks", "neuroscience"}, Soc: 1, Ladder: Mind},
 	{Key: "cognitive_immunity", Name: "Cognitive Immunity", Domain: Computation, Era: 3, Prereqs: []string{"memetics", "neuroscience"}, Soc: 0.5, Ladder: Mind, Cure: 1},
+	{Key: "antimemetic_resilience", Name: "Antimemetic Resilience", Domain: Computation, Era: 3, Prereqs: []string{"doubt", "computers"}, Wis: 0.5, Weight: 0.5}, // while a conscious people holds it, it perceives the anti-memetic; see history's antimemetic.go
 	{Key: "relativistic", Name: "Relativistic Travel", Domain: Propulsion, Era: 3, Prereqs: []string{"antimatter", "slow_interstellar"}, Reach: 25, Speed: 4, Milestone: true,
 		Text: "The ships of the %s now cross the dark at a good fraction of the speed of light."},
 	{Key: "relativistic_weapons", Name: "Relativistic Weapons", Domain: Weapons, Era: 3, Prereqs: []string{"relativistic"}, Mil: 1.5, Milestone: true,

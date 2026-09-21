@@ -42,6 +42,9 @@ func (w *World) knownTaken(c *Civ, t int) bool {
 	if o == c.ID {
 		return true
 	}
+	if !w.perceives(c, w.Civs[o]) {
+		return false // its holdings read as empty
+	}
 	if _, ok := c.Charted[t]; ok {
 		return true
 	}
@@ -293,6 +296,15 @@ func (w *World) surveyArrive(x *Expedition) {
 		o := w.Civs[w.Owner[t]]
 		w.log("The surveyors of the %s do not come back from %s. What they sent before the end says enough: the %s are there.", c.Name, w.star(t), o.Name)
 		w.fact(FSurveyLost, c, o, t)
+		c.Morale -= 0.3
+		x.Over = true
+		w.fleetLost(x, t)
+		return
+	}
+	if o := w.Owner[t]; o >= 0 && o != c.ID && w.Civs[o].Active() && !w.perceives(c, w.Civs[o]) && w.R.Float64() < 0.5 {
+		// a world of what cannot be held in mind: the surveyors read it as empty, or do not come back, and either way the record has nothing in it
+		w.log("The surveyors of the %s do not come back from %s. What they sent before the end says the star is empty. The %s are there.", c.Name, w.star(t), w.Civs[o].Name)
+		w.fact(FSurveyLost, c, w.Civs[o], t)
 		c.Morale -= 0.3
 		x.Over = true
 		w.fleetLost(x, t)

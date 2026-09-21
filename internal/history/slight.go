@@ -22,8 +22,8 @@ func (w *World) slightOf(p, b *Civ) float64 {
 func (w *World) slighted(a, b *Civ, wr *War) {
 	for _, pid := range sortedInts(b.Trade) {
 		p := w.Civs[pid]
-		if p == a || !p.Active() {
-			continue
+		if p == a || !p.Active() || !w.perceives(p, a) {
+			continue // no wrong can be taken from what cannot be held in mind
 		}
 		s := w.slightOf(p, b)
 		if s <= 0 {

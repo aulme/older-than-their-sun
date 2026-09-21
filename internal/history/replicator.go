@@ -121,7 +121,8 @@ func (c *Civ) treats() bool { return !c.Species.Profile().NoTerms }
 // noTerms says whether a war can end only by exhaustion: a side cannot
 // treat, and no offer of terms from the other is heard.
 func (w *World) noTerms(wr *War) bool {
-	return !w.Civs[wr.Sides[0]].treats() || !w.Civs[wr.Sides[1]].treats()
+	a, b := w.Civs[wr.Sides[0]], w.Civs[wr.Sides[1]]
+	return !a.treats() || !b.treats() || !w.perceives(a, b) || !w.perceives(b, a) // an offer to what cannot be held in mind is not received either
 }
 
 // innate is what a people has from birth by its nature: the nodes its

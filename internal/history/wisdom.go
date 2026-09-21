@@ -157,7 +157,7 @@ func WisdomParts(c *Civ) [5]float64 {
 }
 
 // Difference is how alien two peoples are to each other, for the batch.
-func Difference(a, b *Civ) float64 { return difference(a.Species, b.Species) }
+func Difference(a, b *Civ) float64 { return difference(a.Species, b.Species) + driftGap(a, b) }
 
 // WisdomWord is the portrait's word for a people's Wisdom, at the ends
 // only: nothing between.
@@ -262,6 +262,8 @@ func (w *World) tryFathom(c, e *Civ, how string, extra float64) bool {
 		c.FathomTried[e.ID] = w.Now
 	}
 	switch {
+	case !w.perceives(c, e):
+		return false // nothing to understand: the difference is infinite from the side that cannot hold it in mind
 	case c.miracle("chorus"):
 		how = "chorus"
 	case e.Species.Profile().Monster:
@@ -279,6 +281,10 @@ func (w *World) tryFathom(c, e *Civ, how string, extra float64) bool {
 // and what opens when the pair is mutual.
 func (w *World) fathomed(c, e *Civ, how string) {
 	c.Fathomed[e.ID] = true
+	if c.FathomedAt == nil {
+		c.FathomedAt = map[int]int{}
+	}
+	c.FathomedAt[e.ID] = e.Drifts // the people understood is the one of this shape; see evolver.go
 	c.Tally.Fathomed++
 	since := c.FathomTried[e.ID]
 	rec := Fathoming{Year: w.Now, Who: c.ID, Whom: e.ID, How: how, Since: since, Diff: difference(c.Species, e.Species), Mutual: e.Fathomed[c.ID], Reversed: e.Fathomed[c.ID]}

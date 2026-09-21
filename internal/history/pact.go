@@ -332,8 +332,8 @@ func (w *World) callAllies(v, a *Civ, wr *War) {
 		}
 		for _, mid := range p.Members {
 			m := w.Civs[mid]
-			if mid == v.ID || !m.Active() || m.Wars[a.ID] || wr.Called[mid] {
-				continue
+			if mid == v.ID || !m.Active() || m.Wars[a.ID] || wr.Called[mid] || !w.perceives(m, a) {
+				continue // an ally cannot be told about what it cannot hold in mind
 			}
 			wr.Called[mid] = true
 			w.send(v, m, &Message{Kind: MsgCall, Target: a.ID, Pact: pid})
@@ -351,7 +351,7 @@ func (w *World) joinAllies(c, e *Civ, wr *War) {
 		}
 		for _, mid := range p.Members {
 			m := w.Civs[mid]
-			if mid == c.ID || !m.Active() || m.Wars[e.ID] || len(w.front(m, e)) == 0 {
+			if mid == c.ID || !m.Active() || m.Wars[e.ID] || len(w.front(m, e)) == 0 || !w.perceives(m, e) {
 				continue
 			}
 			if wr2 := w.declare(m, e, "their pact with the "+c.Name); wr2 != nil {

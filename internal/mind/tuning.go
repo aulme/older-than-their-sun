@@ -449,6 +449,13 @@ type KindsTuning struct {
 	EatOut      float64 // years from the first bite until a world's sources are eaten to nothing
 	Listen      float64 // chance per thousand years a people within a live transmitter's range hears it
 	SeedShare   float64 // the share of transmitters made carrying a seed rather than a corruption
+	Drift       float64 // chance per thousand years an evolver's shape drifts: a bio, sense or world trait gained, lost or replaced
+	DriftWorld  float64 // thousand years an evolver must have held worlds of a type before the drift can take that world's trait
+	DriftCure   float64 // what a drift adds to the cure roll against a biological plague raging at the time
+	HuntLosses  int     // doerless losses inside the radius and the window that make a hole in the ledger
+	HuntRadius  float64 // light years: the losses that are one hole
+	HuntWindow  float64 // thousand years: how far back the ledger is read
+	HuntEmpty   float64 // thousand years a hunted region must have held nothing before the hunt gives up
 }
 
 // HeedInput is a people told to leave a world by a living world that
@@ -545,6 +552,7 @@ func Default() *Tuning {
 			Appear: 0.0005, Deepen: 0.0005, Tithe: 0.1, TitheGrudge: 0.01, TitheHazard: 0.01, WoundWear: 0.001, Mirror: 0.5, MirrorWis: 2,
 			WakingBase: -1, WakingMil: 0.5, WakingYoung: 1, Demand: 3, UnmakeRest: 3000, HeedGap: 0.1, HeedMeek: 0.5, HeedProud: 0.5, HeedGrudge: 0.2,
 			Eat: 0.005, EatOut: 1_000_000, Listen: 0.001, SeedShare: 0.1,
+			Drift: 0.003, DriftWorld: 200, DriftCure: 3, HuntLosses: 3, HuntRadius: 20, HuntWindow: 50, HuntEmpty: 20,
 		},
 		Plague: plague.Default(),
 		Wisdom: WisdomTuning{Tail: 0.08, GrudgeFade: 10, VengefulBelow: 7, Compulsion: 0.08, Folly: 0.04, ThreatSeal: 0.3, AboveEras: 2, AboveWield: 0.07, AboveSeal: 0.2, LeapMargin: -1.5, LeapBar: 6, LeapNoise: 1.5, TeachWeaker: 0, BrokerRate: 0.02},

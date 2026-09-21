@@ -43,7 +43,7 @@ func (w *World) council(c *Civ) {
 		if !e.Active() || !e.Free() || c.Wars[eid] || w.allied(c, e) || c.Truce[eid] > w.Now {
 			continue
 		}
-		if !e.Met[c.ID] {
+		if !e.Met[c.ID] && w.perceives(e, c) {
 			continue // still only watched from orbit; that is the primitives' matter
 		}
 		bar, wants, far := w.bar(c, e)
@@ -63,6 +63,7 @@ func (w *World) council(c *Civ) {
 	}
 	w.armPlagues(c)
 	w.proposePact(c)
+	w.deduce(c) // the ledger read for a hole; see gap.go
 }
 
 // weigh is the council's view of one enemy, with the scout or the watch

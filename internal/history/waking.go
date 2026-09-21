@@ -185,7 +185,7 @@ func (w *World) waking(c, e *Civ, worlds []int) {
 	}
 	delete(c.demanded, e.ID)
 	c.Tally.Wakings++
-	w.fact(FWaking, c, e, worlds[0])
+	w.factN(FWaking, c, e, worlds[0], len(worlds))
 	w.log("The %s wake. %s and everything near it is theirs, and the %s are on it.", c.Name, c.HomeName, e.Name)
 	w.blastWorlds = append([]int(nil), worlds...)
 	w.blastWhat = "the " + c.Name

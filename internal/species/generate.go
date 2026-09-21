@@ -258,3 +258,18 @@ func pickWeighted[T any](r *rand.Rand, xs []T, weight func(T) float64) T {
 func Pick(r *rand.Rand, group string) *Trait {
 	return pickWeighted(r, pool(group), func(t *Trait) float64 { return t.Weight })
 }
+
+// PickFor draws a trait of a group that a species could roll and does not
+// have, with no tilts; nil when there is none left to draw.
+func PickFor(r *rand.Rand, group string, s *Species) *Trait {
+	var xs []*Trait
+	for _, t := range poolFor(group, s) {
+		if !s.Has(t.Key) {
+			xs = append(xs, t)
+		}
+	}
+	if len(xs) == 0 {
+		return nil
+	}
+	return pickWeighted(r, xs, func(t *Trait) float64 { return t.Weight })
+}

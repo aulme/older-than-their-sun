@@ -97,6 +97,9 @@ const (
 	FDemand       // a living world told a people to leave a world of its neighbourhood: the subject the world, the object the told; What "left" or "refused"; see waking.go
 	FWaking       // a living world woke on a people's worlds: the subject the world, the object the people
 	FUnmade       // a people ended a world by the unmaking: the subject the unmaker, the object the holder
+	FShipLost     // a colony ship arrived at a world of something the people cannot hold in mind, and was never heard from again: the subject the sender, the object what was there, What the ship's word
+	FHunt         // a people found a hole in its ledger and declared a hunt on the region: the star nearest the centre; see gap.go
+	FDrifted      // an evolver's shape drifted; What is what changed; see evolver.go
 )
 
 // Sort is the moral shape of a fact from the subject's side.
@@ -136,6 +139,7 @@ var factShape = [...]struct {
 	FPoisoned: {Crime, 4}, FWoke: {Deed, 3},
 	FRenaissance: {Deed, 3}, FSundered: {Woe, 4}, FReclaimed: {Deed, 2}, FShattered: {Woe, 4},
 	FSevered: {Woe, 2}, FDeepened: {Deed, 2}, FAppeared: {Deed, 1}, FTithed: {Crime, 2}, FDemand: {Crime, 1}, FWaking: {Crime, 4}, FUnmade: {Crime, 5},
+	FShipLost: {Woe, 2}, FHunt: {Deed, 2}, FDrifted: {Deed, 1},
 }
 
 // Fact is one thing that happened, as it happened.
@@ -250,8 +254,8 @@ func (c *Civ) knows(fact int) bool { return c.lore[fact] }
 // regard is how a people sees another right now: -2 a monster, -1 an
 // enemy, 0 a stranger, 1 a friend. Itself is 2.
 func (w *World) regard(c *Civ, id int) int8 {
-	if id < 0 {
-		return 0
+	if id < 0 || !w.perceives(c, w.Civs[id]) {
+		return 0 // nothing can be felt toward what cannot be held in mind
 	}
 	if c.ofLine(id) {
 		return 2 // the line's deeds are ours
@@ -280,6 +284,9 @@ func (c *Civ) other(f *Fact) int {
 // regard for the other party when the learner has none of its own; that
 // is how a stranger comes to be a monster to peoples it never met.
 func (w *World) hold(c *Civ, f *Fact, src Provenance, from int, slant int8, wear int8) *Tale {
+	if !w.keeps(c, f) {
+		return nil // nothing about what cannot be held in mind, unless it is our own loss; see antimemetic.go
+	}
 	if c.lore == nil {
 		c.lore = map[int]bool{}
 	}
@@ -313,7 +320,7 @@ func (w *World) takeToHeart(c *Civ, f *Fact, t *Tale) {
 	if s != Crime || f.Subject == c.ID || t.Source == Witnessed && f.Object == c.ID {
 		return
 	}
-	if f.Object >= 0 && f.Object != c.ID && w.regard(c, f.Object) > 0 {
+	if f.Object >= 0 && f.Object != c.ID && w.regard(c, f.Object) > 0 && w.seen(c, f.Subject) >= 0 {
 		c.resent(f.Subject, 0.1*wt/3)
 	}
 }
@@ -377,9 +384,12 @@ func (w *World) reckon(c *Civ) {
 		case f.Object >= 0 && (c.Trade[f.Object] || w.allied(c, w.Civs[f.Object])):
 			v = 1
 		}
-		who := f.Subject
+		who := w.seen(c, f.Subject)
 		if t.Blamed >= 0 {
 			who = t.Blamed
+		}
+		if who < 0 {
+			continue // a crime with no doer is held against nobody, until somebody is blamed for it
 		}
 		x[who] += v * wt / 3 * (1 + 0.5*float64(t.Wear))
 	}
@@ -586,6 +596,9 @@ func (w *World) restore(c *Civ, fact int, was Tale) bool {
 	}
 	f := w.Facts[fact]
 	t := w.hold(c, f, Inherited, c.ID, 0, was.Wear)
+	if t == nil {
+		return false // what the wall says is about something that cannot be held in mind
+	}
 	t.Blamed = was.Blamed
 	c.Tally.Restored++
 	return true
@@ -613,6 +626,9 @@ func (w *World) inherit(nc, parent *Civ, wear int8) {
 			continue
 		}
 		nt := w.hold(nc, w.Facts[t.Fact], Inherited, parent.ID, t.Slant, min(2, t.Wear+wear))
+		if nt == nil {
+			continue
+		}
 		nc.Tally.Inherited++
 		nt.Blamed = t.Blamed
 	}
@@ -765,7 +781,7 @@ func (w *World) wearStep(c *Civ, t *Tale, f *Fact) {
 func (w *World) foe(c *Civ) int {
 	best, bg := -1, 0.3
 	for _, id := range sortedInts(c.Met) {
-		if g := c.Grudge[id]; g > bg {
+		if g := c.Grudge[id]; g > bg && w.perceives(c, w.Civs[id]) {
 			best, bg = id, g
 		}
 	}
@@ -773,8 +789,8 @@ func (w *World) foe(c *Civ) int {
 		return best
 	}
 	for _, id := range sortedInts(c.Wars) {
-		if c.Wars[id] {
-			return id
+		if c.Wars[id] && w.perceives(c, w.Civs[id]) {
+			return id // a war with what cannot be named has no enemy of the day in it
 		}
 	}
 	for _, id := range sortedInts(c.monsters) {
@@ -801,9 +817,9 @@ func (w *World) scapegoat(c *Civ, e int) {
 		if s != Crime && s != Folly && s != Woe {
 			continue
 		}
-		doer := f.Subject
+		doer := w.seen(c, f.Subject)
 		if s == Woe {
-			doer = f.Object
+			doer = w.seen(c, f.Object)
 		}
 		if doer == e || f.Subject == e || f.Object == e {
 			continue

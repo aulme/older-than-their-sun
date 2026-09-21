@@ -92,6 +92,9 @@ var templates = [...]string{
 	FDemand:       "{S} told {O} to leave {T}, and they {X}.",
 	FWaking:       "{S} woke, and the worlds of {O} near {T} were unmade.",
 	FUnmade:       "{S} unmade {T}, a world of {O}, without touching it.",
+	FShipLost:     "{P} {X} to {T} was never heard from again.",
+	FHunt:         "{P} ledger showed a hole around {T}, and {s} declared a hunt on it.",
+	FDrifted:      "{S} changed again: {X}.",
 }
 
 // blamedTemplates are the woes that name their own cause, retold once
@@ -114,7 +117,7 @@ func (w *World) Tell(c *Civ, t *Tale) string { return w.tell(c, t) }
 
 func (w *World) tell(c *Civ, t *Tale) string {
 	f := w.Facts[t.Fact]
-	subj, obj := f.Subject, f.Object
+	subj, obj := w.seen(c, f.Subject), w.seen(c, f.Object) // a party that cannot be held in mind has no name in the telling
 	if t.Blamed >= 0 && f.sort() != Woe {
 		subj = t.Blamed
 	}
@@ -160,8 +163,11 @@ func (w *World) tell(c *Civ, t *Tale) string {
 	}
 	sName := w.partyName(c, t, subj, true)
 	poss := sName + "'s"
-	if we == 1 {
+	switch {
+	case we == 1:
 		poss = "our"
+	case subj < 0:
+		poss = "its"
 	}
 	r := strings.NewReplacer(
 		"{S}", sName,
@@ -321,6 +327,10 @@ func (w *World) frame(c *Civ, t *Tale, f *Fact, s string, we int, sort Sort, sl 
 // partyName is what the teller calls a people, by regard and by wear.
 func (w *World) partyName(c *Civ, t *Tale, id int, subject bool) string {
 	if id < 0 {
+		f := w.Facts[t.Fact]
+		if was := f.Object; (subject && f.Subject >= 0) || (!subject && was >= 0) {
+			return "something nameless" // a party the fact has and the teller cannot hold in mind
+		}
 		return "someone"
 	}
 	if id == c.ID {
@@ -389,8 +399,11 @@ func (w *World) remainName(f *Fact) string {
 // become a story.
 func (w *World) mythOf(c *Civ, f *Fact) string {
 	name := func(id int) string {
-		if id < 0 {
+		switch {
+		case id < 0:
 			return "someone"
+		case w.seen(c, id) < 0:
+			return "something nameless"
 		}
 		return "the " + w.Civs[id].Name
 	}
@@ -463,6 +476,8 @@ func (w *World) blameOf(c *Civ, f *Fact) string {
 		return "cut " + w.star(f.Star) + " from " + us
 	case FSurveyLost:
 		return "took the surveyors at " + w.star(f.Star)
+	case FShipLost:
+		return "took the " + f.What + " at " + w.star(f.Star)
 	case FDefeat:
 		return "broke the fleet at " + w.star(f.Star)
 	case FCaught:

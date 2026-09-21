@@ -311,7 +311,7 @@ func moralityDiff(a, b Morality) float64 {
 
 // differs is how alien two peoples are: the blood, then the morality.
 func (c *Civ) differs(e *Civ) float64 {
-	d := difference(c.Species, e.Species) + moralityDiff(c.Morality, e.Morality)
+	d := difference(c.Species, e.Species) + moralityDiff(c.Morality, e.Morality) + driftGap(c, e)
 	if e.Species.HasPower("mirror") {
 		d = max(0, d-mirrorWis) // it answers in one's own voice; see eldritch.go
 	}
