@@ -43,14 +43,14 @@ type KindRec struct {
 	Eaten    int // ships grown of what was eaten
 	Consumed int // worlds stripped and held empty
 	// what cannot be seen, and what does not stay put
-	Hunts      int // hunts declared on a hole in the ledger
-	HuntWorlds int // worlds a hunt took
-	HuntFound  int // hunts that fought at least one battle
-	HuntEmpty  int // hunts that ended with the hole closed
-	Antimem    int // anti-memetic peoples in the age
-	AntimemEnd int // of them ended
-	Drifts     int // drifts, over every evolver
-	Evolvers   int // evolvers that lived long enough to drift or not
+	Hunts      int     // hunts declared on a hole in the ledger
+	HuntWorlds int     // worlds a hunt took
+	HuntFound  int     // hunts that fought at least one battle
+	HuntEmpty  int     // hunts that ended with the hole closed
+	Antimem    int     // anti-memetic peoples in the age
+	AntimemEnd int     // of them ended
+	Drifts     int     // drifts, over every evolver
+	Evolvers   int     // evolvers that lived long enough to drift or not
 	DriftKyr   float64 // thousand years lived by evolvers, for the rate
 	DriftCures int
 }
