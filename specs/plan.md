@@ -1,7 +1,7 @@
 # Execution plan: the open proposals, in order
 
 **Status:** In progress, 2026-09-22. Steps 1 to 6 done, and the first optimisation pass after step 5. Replanned at step 6's end, when the sharpening's measurements and a design round on the arc of the age added three proposals and moved decline's force into one of them; `art.md` added the same day and placed last of the mechanisms, immediately before the codex that renders it.
-**Source proposals:** `names.md` (2 stages, done), `structured-output.md` (4 stages, one left), `decline.md` (3 stages, sharpened at step 6; its stage 3 moved to `empires.md`), `continuity.md`, `leaders.md`, `empires.md` and `art.md` (drafts, not yet sharpened), `galaxy-in-motion.md` (5 stages, not scheduled). Each proposal's Design section is the specification; its Stages section is the unit of work here. Where this plan and a proposal differ on order, this plan wins.
+**Source proposals:** `names.md` (2 stages, done), `structured-output.md` (4 stages, one left), `decline.md` (3 stages, sharpened at step 6; its stage 3 moved to `empires.md`), `continuity.md`, `leaders.md`, `empires.md`, `art.md` and `miracles.md` (drafts, not yet sharpened), `galaxy-in-motion.md` (5 stages, not scheduled). Each proposal's Design section is the specification; its Stages section is the unit of work here. Where this plan and a proposal differ on order, this plan wins.
 
 The previous plan, which built Simulation v2, is `specs/done/plan.md`; its protocol for running a step in a fresh session applies here unchanged (read this file, then the step's proposal sections and code; check the ledger and `git log`; build; write the ledger entry).
 
@@ -19,8 +19,9 @@ flowchart TD
   C --> L[9 leaders and succession]
   L --> E[10 the cycle of empires, and decline's force]
   E --> R[11 art and contentment]
-  R --> S4[12 codex]
-  S4 --> A[13 absorb]
+  R --> M[12 miracles]
+  M --> S4[13 codex]
+  S4 --> A[14 absorb]
   S3 -.-> G2[galaxy stage 2: cell index, unscheduled]
 ```
 
@@ -37,8 +38,9 @@ flowchart TD
 | 9 | **leaders and succession**: a leader as a rare, conditional, named state; where they physically are and what that does; temperament and the dials term that can invert a people's bent; their death; the succession filter; the crazed immortal | `leaders.md` | **yes** | named figures in the legends and in every telling; the succession filter's three outcomes all observed; a leader's loss costing what its realm's continuity says it should |
 | 10 | **the cycle of empires, and decline's force**: separatism and the quiet going; coalitions against a hegemon; war spending what it is fought over; plagues on connectivity; the conquest wave; later filters; and `decline.md`'s stage 3, whose gate this inherits. The war-shaped tuning candidates below fold into this step's tuning pass | `empires.md`; `decline.md` stage 3 | **yes** | the concentration curve showing the arc; `decline.md`'s stage-3 gate (the present under two thirds of the height in every seed and under half in the median, no height in the last third, the still span under a third of the age, ages inside 20 to 80 Myr, nothing capped); the fertility floor removed with no seed in twenty falling through |
 | 11 | **art and contentment**: `Civ.Morale` promoted to a dial with a rising side, more readers than Social and Aggression, and a bound; population as the organic capacity of the holdings; a `Hearth` category in the flow the council feeds in advance, moved up the order by discontent and shed when it cannot be paid; art as a made tale with references, circumstance tags and potency; the fit bonus; cultural art spreading on contact and physical art as a work, a find and loot; the continuity term | `art.md` | **yes** | the dial observed rising as well as falling; the hearth observed both fed and shed, with the direction naming discontent as its reason; the fit distribution not degenerate; an art outliving its maker in the hands of the people that ended it; the civil-war and separatism rates moved in the claimed direction and by no more than step 10's tuning tolerates |
-| 12 | **codex**: the hand-written fiction, `tellings.md`, `knowing.md`, tone and vocabulary; `CLAUDE.md` links it | `structured-output.md` stage 4 | no | every emitted kind and key covered; the reader's checklist |
-| 13 | **absorb**: `DESIGN_NOTES.md` describes the output directory, the names, the decline, continuity, leaders, the cycle and art; the proposals to `done/`; this plan to `specs/done/` | all | no | — |
+| 12 | **miracles**: the eight new rows and their filters, stage by stage — the evil eye (a decorator on step 7's streams), skip, echoes, empathy; then the leviathans, the lure, the mirror and the elder fleet as a legacy form; then Gehenna and Eden as worlds; the barrier last, after a design pass of its own. The wall budget decided by measurement | `miracles.md` | **yes** | each row observed held, used and failed at; the wall at the present measured before and after, and paid for one of the three ways the proposal names; step 10's arc measures not degraded |
+| 13 | **codex**: the hand-written fiction, `tellings.md`, `knowing.md`, tone and vocabulary; `CLAUDE.md` links it | `structured-output.md` stage 4 | no | every emitted kind and key covered; the reader's checklist |
+| 14 | **absorb**: `DESIGN_NOTES.md` describes the output directory, the names, the decline, continuity, leaders, the cycle, art and the new miracles; the proposals to `done/`; this plan to `specs/done/` | all | no | — |
 
 ## Why this order
 
@@ -52,13 +54,15 @@ flowchart TD
 
 **Art last of the mechanisms, and immediately before the codex.** It is the one step whose value is mostly legible rather than structural, and it wants the structural arc already settled: an art is about its maker's circumstances, and separatism, coalitions, waves, leaders and their deaths are most of the circumstances worth making anything about. It also reads `continuity.md` (an art is a memory that does not wear) and modulates step 10's break, which is a reason to come after that tuning rather than during it. Its first stage carries a contraction lever that is not military and that step 10 may want: the hearth's upkeep scales with population, so a large realm pays more to keep itself content out of the same income that buys its expansion, and a core fed by its provinces' tribute carries a population its own land cannot. The honest cost is that it is a sixth regeneration and a seventh step on a plan whose steps 7 to 10 are all unbuilt; its first two stages are separable if that cost has to come down, since stage 1 is contentment alone and touches no new object.
 
-**The codex moved behind the cycle.** It describes the fiction, and leaders, continuity, the deathless, the cycle and art all change what the fiction is; written at step 8 it would be written twice. Art in particular gives the tellings a shape they do not have, so the codex is cheaper written once, after it. This is the reason the plan already gave for putting it after decline, with more weight behind it now.
+**Miracles after art and before the codex.** They are mostly content — rows in `data/miracles.json` and a filter each — but two of them are not schedulable earlier: the evil eye is a decorator on the per-people streams and a rewrite of every call site without them, so it waits for step 7; and Gehenna is a world whose holder acquires a programme, which is step 10's kind of thing and wants step 10's arc already measured before it is added to. Kept as one step rather than folded into the steps that already regenerate, because the gate is about rarity and the wall budget across the whole set, and that measurement cannot be read through step 10's tuning.
+
+**The codex moved behind the cycle.** It describes the fiction, and leaders, continuity, the deathless, the cycle, art and the new miracles all change what the fiction is; written at step 8 it would be written twice. Art in particular gives the tellings a shape they do not have, so the codex is cheaper written once, after it. This is the reason the plan already gave for putting it after decline, with more weight behind it now.
 
 **Galaxy in motion** is not scheduled: its own notes say stage 4 waits on a decision that the whole galaxy is what the game wants, and stages 1, 3 and 5 change the histories. Its stage 2 (the cell index replacing `Near`'s scan, no behaviour change, "pays now") can be taken any time after step 5 as an optimisation step, alongside the optimisation notes in `specs/done/plan.md`; it is drawn dotted above.
 
-**Six regenerations of the reference batch**, at steps 1, 7, 8, 9, 10 and 11, and none in between any pair. Each of the last five is one proposal's worth of behaviour change landing at once; a step that finds it needs a second has found a change it did not mean to make. Within a step, the intermediate tuning is measured against itself and not against the batch, which is what the streams are for — the batch is re-pinned once, when the step lands.
+**Seven regenerations of the reference batch**, at steps 1, 7, 8, 9, 10, 11 and 12, and none in between any pair. Each of the last six is one proposal's worth of behaviour change landing at once; a step that finds it needs a second has found a change it did not mean to make. Within a step, the intermediate tuning is measured against itself and not against the batch, which is what the streams are for — the batch is re-pinned once, when the step lands.
 
-**Why the new work is four proposals and not one.** Continuity, leaders, the cycle and art are each a coherent unit with its own gate, and each is large; bundled they would be a single step nobody could review or roll back. Split the other way — a proposal per mechanism — and the count of regenerations goes up with it, since every one of them shifts the histories. Four is the smallest split where each step is gateable and each regeneration pays for a whole design rather than a mechanism.
+**Why the new work is five proposals and not one.** Continuity, leaders, the cycle, art and the miracles are each a coherent unit with its own gate, and each is large; bundled they would be a single step nobody could review or roll back. Split the other way — a proposal per mechanism — and the count of regenerations goes up with it, since every one of them shifts the histories. Five is the smallest split where each step is gateable and each regeneration pays for a whole design rather than a mechanism.
 
 ## What is not a proposal
 
@@ -104,5 +108,6 @@ The v2 rules stand (`specs/done/plan.md`, "Architecture rules": the mind decides
 | 9 leaders and succession | not started | |
 | 10 the cycle of empires | not started | |
 | 11 art and contentment | not started | |
-| 12 codex | not started | |
-| 13 absorb | not started | |
+| 12 miracles | not started | |
+| 13 codex | not started | |
+| 14 absorb | not started | |
