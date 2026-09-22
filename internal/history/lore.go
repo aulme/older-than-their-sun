@@ -1,6 +1,7 @@
 package history
 
 import (
+	"math"
 	"sort"
 )
 
@@ -784,6 +785,14 @@ func (w *World) wear(c *Civ) {
 	if !c.Living() || len(c.Lore) == 0 {
 		return
 	}
+	every := max(w.Cfg.WearEvery, 1)
+	if every > 1 {
+		// the peoples are staggered across the gap, so that no tick
+		// carries every telling and none carries none
+		if (w.Ticks+c.ID)%every != 0 {
+			return
+		}
+	}
 	m := w.memory(c)
 	for _, t := range c.Lore {
 		if t.Forgot {
@@ -808,11 +817,25 @@ func (w *World) wear(c *Civ) {
 		if t.Wear >= 2 && own && wt >= 3 {
 			rate *= 0.25 // the old songs
 		}
-		if !w.chance(rate) {
+		if !w.chance(over(rate, every)) {
 			continue
 		}
 		w.wearStep(c, t, f)
 	}
+}
+
+// over is the chance of a thing of per-tick chance p happening at least
+// once in n ticks. A telling put through the wearing every n ticks with
+// this in place of the rate wears as often as one put through it every
+// tick; it is the same process read at a coarser step.
+func over(p float64, n int) float64 {
+	if n <= 1 || p <= 0 {
+		return p
+	}
+	if p >= 1 {
+		return 1
+	}
+	return 1 - math.Pow(1-p, float64(n))
 }
 
 // wearStep takes one tale one step toward myth, and at the myth step may

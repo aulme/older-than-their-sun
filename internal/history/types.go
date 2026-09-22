@@ -512,12 +512,19 @@ type Config struct {
 	EndFertility    float64
 	EndFertilityLow float64
 	Linger          Year
-	MaxFades        float64      // give up after this many fades and flag it
-	Until           Year         // stop at this year of the age instead of the age's own end, for a state as of then; 0 for none
-	Debug           bool         // log the state of the galaxy every million years
-	TraceAI         bool         // log every council's reasoning
-	Profile         bool         // log each phase's time every million years
-	Tuning          *mind.Tuning // every number the decisions use; nil means mind.Default()
+	MaxFades        float64 // give up after this many fades and flag it
+	Until           Year    // stop at this year of the age instead of the age's own end, for a state as of then; 0 for none
+	// WearEvery is how many ticks apart a people's telling is put
+	// through the wearing. 1 is every tick. Above that the rate of each
+	// tale is compounded over the gap, so a tale wears as often as it
+	// did; what changes is that it can only do so on the ticks its
+	// people is due, and the peoples are staggered so no tick bears
+	// them all. 0 means 1. See specs/plan.md, step 6.
+	WearEvery int
+	Debug     bool         // log the state of the galaxy every million years
+	TraceAI   bool         // log every council's reasoning
+	Profile   bool         // log each phase's time every million years
+	Tuning    *mind.Tuning // every number the decisions use; nil means mind.Default()
 }
 
 // DefaultConfig is a small, fast world.
