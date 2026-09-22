@@ -47,6 +47,7 @@ const (
 	BoonSwarm        = "swarm"
 	BoonUnity        = "unity"
 	BoonCommunion    = "communion"
+	BoonStarKept     = "star_kept"
 )
 
 // Filter describes one hurdle: its numbers are its row in

@@ -65,6 +65,24 @@ var aptitudes = func() []apt {
 	return f.Aptitudes
 }()
 
+// aptFor is the table indexed by node: for each node of tech.Nodes, the
+// rows that name it or its domain, in the table's own order. The rows
+// and their order are what the scan below found; only the finding is
+// done once, at init, instead of once per node per choice per people
+// per tick, which the profile put at nearly half of what a people costs.
+var aptFor = func() [][]*apt {
+	out := make([][]*apt, len(tech.Nodes))
+	for _, n := range tech.Nodes {
+		domain := "domain:" + n.Domain
+		for i := range aptitudes {
+			if a := &aptitudes[i]; a.Node == n.Key || a.Node == domain {
+				out[n.Idx] = append(out[n.Idx], a)
+			}
+		}
+	}
+	return out
+}()
+
 // aptitudeText is the text of a birthright block, by its row's key.
 func aptitudeText(key string) string {
 	for _, a := range aptitudes {
@@ -169,11 +187,7 @@ func (w *World) aptitude(c *Civ, n *tech.Node) (aptMode, float64) {
 		return aptAbsent, 0
 	}
 	mode, mult := aptDear, 1.0
-	domain := "domain:" + n.Domain
-	for _, a := range aptitudes {
-		if a.Node != n.Key && a.Node != domain {
-			continue
-		}
+	for _, a := range aptFor[n.Idx] {
 		if !c.applies(a.When) {
 			continue
 		}

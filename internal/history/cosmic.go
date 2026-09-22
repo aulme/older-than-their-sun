@@ -161,8 +161,8 @@ func (w *World) dyingSun(c *Civ) {
 		c.focus("biology", 1.5)
 		w.fact(FDoom, c, nil, c.Home).with(P{"endure": int(c.Endure)})
 	}
-	if c.Known["star_lifting"] && !c.Boons["star kept"] {
-		w.boon(c, "star kept")
+	if c.Known["star_lifting"] && !c.Boons[BoonStarKept] {
+		w.boon(c, BoonStarKept)
 		w.event(KStarKept, c, nil, c.Home, P{})
 		c.Endure += 5000
 	}

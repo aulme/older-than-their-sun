@@ -3,6 +3,7 @@ package history
 import (
 	"math"
 	"math/rand/v2"
+	"sync"
 	"testing"
 
 	"worldgen/internal/species"
@@ -11,22 +12,47 @@ import (
 // TestDeterminism: one seed gives one history. Three worlds from the same
 // seed have byte-identical events. Any range over a map on a path that draws
 // from the RNG breaks this.
+//
+// The runs are made at once: they share nothing but the tables, which
+// are built at init and never written, so the ages run side by side and
+// the test costs one age rather than three. The first run is the
+// package's reference, which the lookup tests read as well, so the
+// three ages here are two more than the suite already pays for. Each
+// run is reduced to its event lines as it finishes, so only the lines
+// are held while the others run.
 func TestDeterminism(t *testing.T) {
+	t.Parallel()
 	cfg := DefaultConfig()
-	cfg.Stars = 200
-	var first []*Event
-	for i := range 3 {
-		w := Generate(7, cfg)
-		if i == 0 {
-			first = w.Events
-			continue
+	cfg.Stars = heavyStars()
+	lines := func(w *World) []string {
+		out := make([]string, len(w.Events))
+		for i, e := range w.Events {
+			out[i] = e.String()
 		}
-		if len(w.Events) != len(first) {
-			t.Fatalf("run %d: %d events, first run %d", i, len(w.Events), len(first))
+		return out
+	}
+	runs := make([][]string, 3)
+	var wg sync.WaitGroup
+	for i := range runs {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if i == 0 {
+				runs[i] = lines(reference())
+				return
+			}
+			runs[i] = lines(Generate(referenceSeed, cfg))
+		}()
+	}
+	wg.Wait()
+	first := runs[0]
+	for i, run := range runs[1:] {
+		if len(run) != len(first) {
+			t.Fatalf("run %d: %d events, first run %d", i+1, len(run), len(first))
 		}
 		for j := range first {
-			if first[j].String() != w.Events[j].String() {
-				t.Fatalf("run %d: event %d differs:\n  %s\n  %s", i, j, first[j], w.Events[j])
+			if first[j] != run[j] {
+				t.Fatalf("run %d: event %d differs:\n  %s\n  %s", i+1, j, first[j], run[j])
 			}
 		}
 	}
@@ -34,9 +60,14 @@ func TestDeterminism(t *testing.T) {
 
 // TestOneStep: the age runs at Step from the dawn to the present, and the
 // waning is declared once and logged once.
+//
+// A small field: what this asks is arithmetic over the age and the one
+// waning, and neither depends on how many stars the age is spent among.
+// The seed is its own, so the suite reads more than one age.
 func TestOneStep(t *testing.T) {
+	t.Parallel()
 	cfg := DefaultConfig()
-	cfg.Stars = 200
+	cfg.Stars = 60
 	w := Generate(3, cfg)
 	span := w.Present - cfg.Dawn
 	if span%cfg.Step != 0 {

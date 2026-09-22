@@ -948,6 +948,7 @@ func (w *World) revise(c *Civ) {
 			w.scapegoat(c, e)
 		}
 	}
+	held := w.regardHolder(c)
 	for _, t := range c.Lore {
 		if t.Forgot {
 			continue
@@ -957,7 +958,7 @@ func (w *World) revise(c *Civ) {
 		if o < 0 {
 			continue
 		}
-		r := w.regard(c, o)
+		r := held(o)
 		if r == t.Slant || r == 0 {
 			continue // indifference is wear's business, not the retellers'
 		}
@@ -971,6 +972,36 @@ func (w *World) revise(c *Civ) {
 		if t.Wear < 2 && w.R.Float64() < 0.5 {
 			t.Wear++
 		}
+	}
+}
+
+// regardHolder answers regard for one people about others, holding each
+// answer for as long as the caller keeps the function. It is for a walk
+// of a whole telling, where the same few parties come up again and
+// again; a caller must not use it across anything that changes what
+// regard reads.
+func (w *World) regardHolder(c *Civ) func(id int) int8 {
+	if len(w.regardSeen) < len(w.Civs) {
+		w.regardOf = make([]int8, len(w.Civs))
+		w.regardSeen = make([]uint32, len(w.Civs))
+		w.regardGen = 0
+	}
+	w.regardGen++
+	if w.regardGen == 0 { // the stamp wrapped: no answer is fresh
+		clear(w.regardSeen)
+		w.regardGen = 1
+	}
+	gen := w.regardGen
+	return func(id int) int8 {
+		if id < 0 || id >= len(w.regardSeen) {
+			return w.regard(c, id)
+		}
+		if w.regardSeen[id] == gen {
+			return w.regardOf[id]
+		}
+		r := w.regard(c, id)
+		w.regardSeen[id], w.regardOf[id] = gen, r
+		return r
 	}
 }
 

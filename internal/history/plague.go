@@ -659,20 +659,28 @@ func (w *World) shutTo(to, from *Civ) bool {
 func (w *World) suspicion(c *Civ) {
 	sick := map[int]int{}   // people -> the plague
 	cured := map[int]Year{} // the newest cure known of each people
+	// One walk of the telling, not two: the cures and the sicknesses
+	// are gathered together, and the sicknesses weighed against the
+	// cures after, since a cure heard of at any point in the telling
+	// answers a sickness anywhere in it. The sicknesses are kept in the
+	// order the telling holds them, which is the order the second walk
+	// read them in, so the last word on a people is the same one.
+	var plagues []*Event
 	for _, t := range c.Lore {
 		if t.Forgot {
 			continue
 		}
-		if f := w.Events[t.Fact]; f.Kind == FCured && f.Year > cured[f.Subject] {
-			cured[f.Subject] = f.Year
+		switch f := w.Events[t.Fact]; {
+		case f.Kind == FCured:
+			if f.Year > cured[f.Subject] {
+				cured[f.Subject] = f.Year
+			}
+		case f.Kind == FPlague && f.Subject != c.ID && f.Plague >= 0:
+			plagues = append(plagues, f)
 		}
 	}
-	for _, t := range c.Lore {
-		if t.Forgot {
-			continue
-		}
-		f := w.Events[t.Fact]
-		if f.Kind == FPlague && f.Subject != c.ID && cured[f.Subject] < f.Year && f.Plague >= 0 {
+	for _, f := range plagues {
+		if cured[f.Subject] < f.Year {
 			sick[f.Subject] = f.Plague
 		}
 	}

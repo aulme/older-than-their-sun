@@ -253,7 +253,10 @@ func TestFold(t *testing.T) {
 		stars int
 		until history.Year
 	}{{7, 120, 0}, {5, 200, 0}, {3, 200, 0}, {9, 200, 20_000_000}} {
-		t.Run(fmt.Sprintf("seed%d", c.seed), func(t *testing.T) { foldOne(t, Run(generate(c.seed, c.stars, c.until), "sol")) })
+		t.Run(fmt.Sprintf("seed%d", c.seed), func(t *testing.T) {
+			t.Parallel() // the four ages share nothing; they run side by side
+			foldOne(t, Run(generate(c.seed, c.stars, c.until), "sol"))
+		})
 	}
 }
 

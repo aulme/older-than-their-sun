@@ -30,6 +30,7 @@ func historyDigest(w *World) string {
 
 // TestSameHistory: the events of one seed are what they were.
 func TestSameHistory(t *testing.T) {
+	t.Parallel()
 	cfg := DefaultConfig()
 	cfg.Stars = 200
 	w := Generate(11, cfg)

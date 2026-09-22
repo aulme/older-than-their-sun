@@ -2,11 +2,43 @@ package history
 
 import (
 	"math/rand/v2"
+	"sync"
 	"testing"
 
 	"worldgen/internal/galaxy"
 	"worldgen/internal/species"
 )
+
+// The package's heavy tests read one generated run rather than each
+// making its own: a 200-star age is a minute and a half of CPU, and
+// most of what the tests ask of it is the same age. A test that reads
+// the reference must not change it; one that needs a world of its own
+// (the determinism check) makes it, and says why.
+//
+// reference is seed 7 at the full field, generated once however many
+// tests ask for it. It is the seed the determinism check runs, so its
+// first of three runs is this one: the age the lookups walk and the age
+// the check compares are the same work, done once. Seed 7 is also the
+// longest history of the seeds the suite reads, so the lookups and the
+// parameter walk see the most kinds.
+var reference = sync.OnceValue(func() *World {
+	cfg := DefaultConfig()
+	cfg.Stars = heavyStars()
+	return Generate(referenceSeed, cfg)
+})
+
+const referenceSeed = 7
+
+// heavyStars is the field a whole-run test spans. Under -short it is
+// smaller, so that the suite can be run between edits; the gate before
+// a commit is the full suite, and the tests that pin a digest ignore
+// this and always run at 200, since their number is of that field.
+func heavyStars() int {
+	if testing.Short() {
+		return 120
+	}
+	return 200
+}
 
 // newTestWorld builds a small real galaxy and an empty world on it, with the
 // cycle set so fertility works and the tick's phases in place. The deep pass

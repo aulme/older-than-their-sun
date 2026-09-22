@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"regexp"
 	"strings"
+	"sync"
 	"testing"
 
 	"worldgen/data"
@@ -241,12 +242,29 @@ func TestKeysReal(t *testing.T) {
 	}
 }
 
-// batch is the books of a few seeds, for the tests that read many names.
+// batch is the books of a few seeds, for the tests that read many
+// names: one book per age. The ages not made yet are made side by side,
+// since they share nothing but the tables, which are built at init and
+// never written.
 func batch(t *testing.T) []*Book {
 	t.Helper()
-	var out []*Book
-	for _, seed := range []uint64{3, 5, 7, 9} {
-		out = append(out, Of(world(t, seed)))
+	made := make([]func() *history.World, len(batchSeeds))
+	for i, seed := range batchSeeds {
+		made[i] = ages[seed]
+	}
+	worlds := make([]*history.World, len(made))
+	var wg sync.WaitGroup
+	for i, age := range made {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			worlds[i] = age()
+		}()
+	}
+	wg.Wait()
+	out := make([]*Book, len(worlds))
+	for i, w := range worlds {
+		out[i] = Of(w)
 	}
 	return out
 }

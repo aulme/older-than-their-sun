@@ -213,8 +213,7 @@ func (w *World) uses(c *Civ) []flow.Use {
 		return nil // sustained by whatever it is
 	}
 	var out []flow.Use
-	for _, k := range knownOf(c) {
-		n := tech.Get(k)
+	for _, n := range useNodesOf(c) {
 		need := w.needOf(c, n)
 		if need == (flow.Income{}) {
 			continue
@@ -223,19 +222,39 @@ func (w *World) uses(c *Civ) []flow.Use {
 		if cat == flow.Fields && !p.Can(species.Fields) {
 			cat = flow.Works
 		}
-		out = append(out, flow.Use{Key: k, Cat: cat, Era: n.Era, Need: need})
+		out = append(out, flow.Use{Key: n.Key, Cat: cat, Era: n.Era, Need: need})
 	}
-	learned := func(k string) Year {
-		if y, ok := c.Learned[k]; ok {
-			return y
-		}
-		return c.Born
-	}
-	sort.SliceStable(out, func(i, j int) bool { return learned(out[i].Key) < learned(out[j].Key) })
 	out = append(out, w.works(c)...)
 	out = append(out, w.weaponUses(c)...)
 	out = append(out, w.reservations(c)...)
 	return append(out, w.contractUses(c)...)
+}
+
+// useNodesOf is every node a people knows, in the order it learned them,
+// which is the order the upkeep is fed in. The list changes only when a
+// node is learned or lost, so it is kept on the people and rebuilt when
+// one of those drops it. Sorting the whole list and filtering after is
+// the order the pass had when it filtered first and sorted after, since
+// the sort is stable and filtering keeps what order there was.
+func useNodesOf(c *Civ) []*tech.Node {
+	if c.useNodesOK {
+		return c.useNodes
+	}
+	out := c.useNodes[:0]
+	for _, n := range tech.Nodes {
+		if c.Known[n.Key] {
+			out = append(out, n)
+		}
+	}
+	learned := func(n *tech.Node) Year {
+		if y, ok := c.Learned[n.Key]; ok {
+			return y
+		}
+		return c.Born
+	}
+	sort.SliceStable(out, func(i, j int) bool { return learned(out[i]) < learned(out[j]) })
+	c.useNodes, c.useNodesOK = out, true
+	return out
 }
 
 // needOf is what a node costs a people each tick: the table's upkeep bent

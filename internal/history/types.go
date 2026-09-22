@@ -17,6 +17,7 @@ import (
 	"worldgen/internal/flow"
 	"worldgen/internal/galaxy"
 	"worldgen/internal/species"
+	"worldgen/internal/tech"
 )
 
 // Year is years since the dawn of the current age (negative = the
@@ -188,6 +189,15 @@ type Civ struct {
 	inscribed  map[int]bool // remains whose testament this people has read
 	foeNow     int          // the enemy of the day, or -1; a new one gets the old blame
 	monsters   map[int]bool // peoples remembered as things that do harm
+	// useNodes is what this people knows that the upkeep pass walks, in
+	// the order it learned them: the answer to a scan of every node of
+	// the tree and a sort, which the pass wanted afresh every tick
+	// though it changes only when a node is learned or lost. know,
+	// forgetNode and learn drop it; uses rebuilds it. The needs
+	// themselves are still read every tick, so a people whose profile
+	// bends its upkeep is unaffected.
+	useNodes   []*tech.Node
+	useNodesOK bool
 	LastDark   Year
 	Summoned   bool // an event calls the council this tick
 	Aloft      bool // a nomad people living as fleets, with no worlds
@@ -525,20 +535,32 @@ func DefaultConfig() Config {
 
 // World is the whole simulated history.
 type World struct {
-	Cfg        Config
-	Seed       uint64
-	G          *galaxy.Galaxy
-	Law        galaxy.Law // the laws of the place
-	R          *rand.Rand
-	Now        Year
-	Present    Year    // when the simulation stopped; years are printed relative to this
-	Waning     Year    // when the waning was declared
-	Capped     bool    // the age never ended on its own; stopped at MaxFades
-	Truncated  bool    // stopped at Cfg.Until, before the age's own end
-	Ticks      int     // ticks run in the current age
-	dt         float64 // current tick in kyr
-	phases     []phase // the tick, in order; see sim.go
+	Cfg       Config
+	Seed      uint64
+	G         *galaxy.Galaxy
+	Law       galaxy.Law // the laws of the place
+	R         *rand.Rand
+	Now       Year
+	Present   Year    // when the simulation stopped; years are printed relative to this
+	Waning    Year    // when the waning was declared
+	Capped    bool    // the age never ended on its own; stopped at MaxFades
+	Truncated bool    // stopped at Cfg.Until, before the age's own end
+	Ticks     int     // ticks run in the current age
+	dt        float64 // current tick in kyr
+	phases    []phase // the tick, in order; see sim.go
+	// regard held for the length of one retelling: revise asks how a
+	// people regards the other party of every tale it holds, and a
+	// people holds hundreds of tales about a handful of others. The
+	// stamp saves clearing the table; nothing revise writes is anything
+	// regard reads, so the answer cannot change under it.
+	regardOf   []int8
+	regardSeen []uint32
+	regardGen  uint32
+
 	phaseTime  map[string]time.Duration
+	stepTime   map[string]time.Duration // under -phases: what each civ step cost
+	stepDraws  map[string]uint64        // under -phases: what each civ step drew from the RNG
+	draws      *drawCount               // the tally behind R, under -phases
 	Bio        []BioState
 	Owner      []int // civ id owning each star, -1 if none
 	Hazard     float64

@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"sync"
 	"testing"
 
 	"worldgen/internal/plague"
@@ -20,14 +19,6 @@ import (
 
 // The lookups: every key the record can carry resolves in data/, and the
 // simulation neither stores nor compares the text beside it.
-
-// reference is the run the lookup tests walk: seed 5 at 200 stars, made
-// once for the package.
-var reference = sync.OnceValue(func() *World {
-	cfg := DefaultConfig()
-	cfg.Stars = 200
-	return Generate(5, cfg)
-})
 
 // keyParams says, for each event parameter that carries a key, which
 // table resolves it. A parameter not here that carries a string must
@@ -118,6 +109,7 @@ func looksLikeKey(v string) bool {
 // TestKeysResolve: every key an event of the reference run carries, and
 // every key its records hold, is a row of a table in data/.
 func TestKeysResolve(t *testing.T) {
+	t.Parallel()
 	w := reference()
 	bad := map[string]int{}
 	fail := func(where string, v any) {

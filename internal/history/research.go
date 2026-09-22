@@ -197,6 +197,7 @@ func (w *World) learn(c *Civ, n *tech.Node, fire bool) {
 	}
 	if _, ok := c.Learned[n.Key]; !ok {
 		c.Learned[n.Key] = w.Now
+		c.useNodesOK = false // the order the uses are fed in is by the year learned
 	}
 	if c.Grants[n.Key] {
 		if c.Granted == nil {

@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 
 	"worldgen/internal/history"
@@ -66,11 +67,32 @@ func TestSource(t *testing.T) {
 	}
 }
 
+// batchSeeds are the ages the package reads, the batch's and the
+// singles' together. A test that wants another seed adds it here.
+var batchSeeds = []uint64{3, 5, 7, 9}
+
+// ages are those runs. The pass is milliseconds and the age is the
+// cost, so each seed is generated once however many tests ask for it,
+// and a test must not change the world it is handed.
+var ages = func() map[uint64]func() *history.World {
+	m := map[uint64]func() *history.World{}
+	for _, seed := range batchSeeds {
+		m[seed] = sync.OnceValue(func() *history.World {
+			cfg := history.DefaultConfig()
+			cfg.Stars = 120 // small: the pass is milliseconds, the run is the cost
+			return history.Generate(seed, cfg)
+		})
+	}
+	return m
+}()
+
 func world(t *testing.T, seed uint64) *history.World {
 	t.Helper()
-	cfg := history.DefaultConfig()
-	cfg.Stars = 120 // small: the pass is milliseconds, the run is the cost
-	return history.Generate(seed, cfg)
+	age, ok := ages[seed]
+	if !ok {
+		t.Fatalf("seed %d is not one of the package's ages; add it to batchSeeds", seed)
+	}
+	return age()
 }
 
 // TestDeterministic: the same record gives the same rows, and adding a

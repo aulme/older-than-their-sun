@@ -20,10 +20,14 @@ import (
 // technical terms replaced the stubs and the miracle names while the
 // history stayed the same. At the writer step (step 5) the view began
 // reading the run directory instead of the world, and the digest held.
+// It was re-pinned at the optimisation step, where a party that is the
+// teller and the subject of its clause began to say "we" where it said
+// "us" ({OS} and the reflexives in telling.go); that moved 840 lines of
+// this seed and nothing else.
 // A step that must not change what the view prints keeps it green; one
 // that changes the view or the history on purpose re-pins it and says
 // so in its commit.
-const sameLegendsDigest = "836a8a186c3e5fb1ef35c41597202e54f9c731c9b185931e5ae1fd4060a9a372"
+const sameLegendsDigest = "f1fbd1e85a6b5e119c7dbab28258b8f43f767546460984bcad2a5be5b7f16236"
 
 // run is seed 5 at 200 stars, written to a directory and read back, so
 // that the view is tested on the files alone.

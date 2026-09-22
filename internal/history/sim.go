@@ -28,13 +28,21 @@ func newWorld(seed uint64, cfg Config) *World {
 	if cfg.Tuning == nil {
 		cfg.Tuning = mind.Default()
 	}
-	r := rand.New(rand.NewPCG(seed, seed^0x9E3779B97F4A7C15))
+	var src rand.Source = rand.NewPCG(seed, seed^0x9E3779B97F4A7C15)
+	var draws *drawCount
+	if cfg.Profile {
+		// under -phases only: what each step draws, which is what says
+		// whether it could ever be run beside another people's
+		draws = &drawCount{src: src}
+		src = draws
+	}
+	r := rand.New(src)
 	rg, err := galaxy.RegionByName(cfg.Region)
 	if err != nil {
 		rg, _ = galaxy.RegionByName("sol")
 	}
 	g := galaxy.GenerateAt(r, rg, cfg.Stars, cfg.Radius, cfg.Thickness)
-	w := &World{Cfg: cfg, Seed: seed, G: g, R: r, Law: g.Law, Hazard: g.Law.Hazard(), factsAt: map[int][]int{}}
+	w := &World{Cfg: cfg, Seed: seed, G: g, R: r, Law: g.Law, Hazard: g.Law.Hazard(), factsAt: map[int][]int{}, draws: draws}
 	n := len(g.Stars)
 	w.Bio = make([]BioState, n)
 	w.Owner = make([]int, n)
@@ -65,6 +73,21 @@ func newWorld(seed uint64, cfg Config) *World {
 		{"hazard", (*World).updateHazard},
 	}
 	return w
+}
+
+// drawCount is the random source with a tally of what has been drawn
+// from it. It wraps the source rather than the calls, so no draw can
+// escape it, and it is only in the stream under -phases, where the
+// count is what is wanted; the numbers it hands out are the source's
+// own, so a counted run is the same history as an uncounted one.
+type drawCount struct {
+	src rand.Source
+	n   uint64
+}
+
+func (d *drawCount) Uint64() uint64 {
+	d.n++
+	return d.src.Uint64()
 }
 
 // phase is one stage of the tick. The tick is the ordered list of them: a
@@ -98,6 +121,8 @@ func (w *World) runPhases() {
 	}
 	if w.phaseTime == nil {
 		w.phaseTime = map[string]time.Duration{}
+		w.stepTime = map[string]time.Duration{}
+		w.stepDraws = map[string]uint64{}
 	}
 	for _, p := range w.phases {
 		start := time.Now()
@@ -106,14 +131,34 @@ func (w *World) runPhases() {
 	}
 }
 
-// profileLine logs the time each phase took since the last line and resets.
+// profileLine logs the time each phase took since the last line and
+// resets, and beside it what the tick was spent on: the peoples it
+// stepped, the worlds they hold and the tales they carry. A phase's
+// cost is read against those, not against the field, since the field
+// only decides how many peoples there come to be.
 func (w *World) profileLine() {
 	line := "[phases:"
 	for _, p := range w.phases {
 		line += sprintf(" %s %dms", p.Name, w.phaseTime[p.Name].Milliseconds())
 		w.phaseTime[p.Name] = 0
 	}
+	var living, worlds, tales int
+	for _, c := range w.Civs {
+		if !c.Living() {
+			continue
+		}
+		living++
+		worlds += len(c.Systems)
+		tales += len(c.Lore)
+	}
+	line += sprintf(" | civs %d of %d, worlds %d, tales %d", living, len(w.Civs), worlds, tales)
 	w.event(KDebug, nil, nil, -1, P{"text": line + "]"})
+	steps := "[steps:"
+	for _, s := range civSteps {
+		steps += sprintf(" %s %dms/%dr", s.Name, w.stepTime[s.Name].Milliseconds(), w.stepDraws[s.Name])
+		w.stepTime[s.Name], w.stepDraws[s.Name] = 0, 0
+	}
+	w.event(KDebug, nil, nil, -1, P{"text": steps + "]"})
 }
 
 // runAge is the civilisation engine. It runs from the dawn at one tick to

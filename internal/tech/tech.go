@@ -58,6 +58,7 @@ type Node struct {
 	Structures []string `json:"structures,omitempty"` // structure keys unlocked; Structure() is the first
 	Gated      string   `json:"gated,omitempty"`      // a rarity without which the node cannot be learned at all; none is, and TestNoCatch22 keeps it so
 	Milestone  bool     `json:"milestone,omitempty"`  // worth a line in the legends
+	Idx        int      `json:"-"`                    // this node's place in Nodes, for callers that index by node
 	Ladder     string   `json:"ladder,omitempty"`     // a rung of a plague ladder: Bio or Mind; see plague.go
 	Immune     bool     `json:"immune,omitempty"`     // the top of its ladder: no plague of the kind is born in or caught by a people working it
 	Clean      bool     `json:"clean,omitempty"`      // halves biological births only: sewers, sealed cities
@@ -171,7 +172,8 @@ func init() {
 		StructureKeys = append(StructureKeys, st.Key)
 	}
 	loadUpkeep(f.Upkeep)
-	for _, n := range Nodes {
+	for i, n := range Nodes {
+		n.Idx = i
 		if n.Desc == "" {
 			panic("tech: no description for " + n.Key)
 		}

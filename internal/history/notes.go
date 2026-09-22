@@ -104,6 +104,7 @@ func (w *World) know(c *Civ, k string) {
 		return
 	}
 	c.Known[k] = true
+	c.useNodesOK = false
 	w.note(KNodeHeld, c, nil, -1, P{"node": k})
 }
 
@@ -113,6 +114,7 @@ func (w *World) forgetNode(c *Civ, k string) {
 		return
 	}
 	delete(c.Known, k)
+	c.useNodesOK = false
 	w.note(KNodeLost, c, nil, -1, P{"node": k})
 }
 

@@ -15,7 +15,10 @@ import (
 // differently as the ages pass.
 
 // templates are the plain lines. S and O are the parties, T the star, L
-// the remain, X the word (what, below, by kind), N the count.
+// the remain, X the word (what, below, by kind), N the count. A letter's
+// case is the party's grammatical case where the teller is one of them
+// and renders as a pronoun: {S} "we" against {s} "us", {OS} "we" against
+// {O} "us". A named people reads the same either way.
 var templates = map[record.Kind]string{
 	record.FArise:        "{S} arose on {T}.",
 	record.FStars:        "{S} reached the stars.",
@@ -29,16 +32,16 @@ var templates = map[record.Kind]string{
 	record.FBurned:       "{S} burned {T}, a world of {O}.",
 	record.FHomeBroken:   "{S} broke {T}, the home of {O}.",
 	record.FScoured:      "{S} scoured {O} from {T}, and left none.",
-	record.FYield:        "{O} yielded to {s}.",
+	record.FYield:        "{OS} yielded to {s}.",
 	record.FPeace:        "{S} and {O} made peace.",
 	record.FEnslaved:     "{S} took {O} and kept {o}.",
-	record.FVassal:       "{O} bent the knee to {s}.",
+	record.FVassal:       "{OS} bent the knee to {s}.",
 	record.FFreed:        "{S} rose against {O} and were free.",
 	record.FCrushed:      "{S} put down the rising of {O}.",
 	record.FMet:          "{S} and {O} found each other.",
 	record.FTrade:        "{S} and {O} traded across the dark.",
 	record.FPact:         "{S} and {O} swore a pact of {X}.",
-	record.FBetrayal:     "{S} {X}, and {O} paid for it.",
+	record.FBetrayal:     "{S} {X}, and {OS} paid for it.",
 	record.FRelief:       "{S} stood with {O} at {T}.",
 	record.FDefeat:       "{P} fleet was broken at {T} by {O}.",
 	record.FIntercept:    "{S} met the fleet of {O} in the dark near {T} and beat it.",
@@ -65,7 +68,7 @@ var templates = map[record.Kind]string{
 	record.FWant:         "{S} went without, and called them the lean years.",
 	record.FHarness:      "{S} put {X} to use.",
 	record.FEmbargo:      "{S} closed their ports to {O}.",
-	record.FCutOff:       "{S} went dark when {O} stopped sending.",
+	record.FCutOff:       "{S} went dark when {OS} stopped sending.",
 	record.FManna:        "{S} ate what thought.",
 	record.FRise:         "{S} were grown for the table of {O}, and rose.",
 	record.FLoose:        "{S} let loose what they grew for the table, and it ate {T}.",
@@ -85,11 +88,11 @@ var templates = map[record.Kind]string{
 	record.FBelieved:     "{T} went over to {X}, and was lost to {s}.",
 	record.FWildfire:     "{X} was everywhere.",
 	record.FPoisoned:     "{S} made {X} for {O} and hid it in what they sent.",
-	record.FWoke:         "{X} began to think, and took {O}, and was {S}.",
+	record.FWoke:         "{X} began to think, and took {O}, and was {s}.",
 	record.FRenaissance:  "{S} grew old, and then young again.",
-	record.FSundered:     "{S} tore themselves apart, and {O} declared themselves {X}.",
+	record.FSundered:     "{S} tore {RS} apart, and {OS} declared {RO} {X}.",
 	record.FReclaimed:    "{S} took {T} back from {O}, and called it restored to the realm.",
-	record.FShattered:    "{S} forgot how to reach the stars, and on {T} {O} woke up alone.",
+	record.FShattered:    "{S} forgot how to reach the stars, and on {T} {OS} woke up alone.",
 	record.FSevered:      "{T} was too far from the seat of {S} for one mind to hold, and what was there was {O} after.",
 	record.FDeepened:     "{S} changed: {X} was in them after.",
 	record.FAppeared:     "Another of {s} was at {T}, and nothing was seen to cross.",
@@ -178,7 +181,16 @@ func (v *view) tell(c *record.Civ, t *record.Tale) string {
 		"{S}", sName,
 		"{s}", v.partyName(c, t, k, subj, false),
 		"{P}", poss,
+		// {OS} before {O}: the replacer matches in argument order, and
+		// {O} is a prefix of {OS}. {O} is the object party where the
+		// clause makes it an object ("took us"), {OS} where the clause
+		// makes it the subject ("we paid for it"); the two differ only
+		// when that party is the teller, since a name does not inflect.
+		"{OS}", v.partyName(c, t, k, obj, true),
 		"{O}", oName,
+		// the reflexives, which follow whichever party is the teller
+		"{RS}", reflexive(we == 1),
+		"{RO}", reflexive(we == 2),
 		"{o}", pronoun(we == 2),
 		"{T}", v.starName(c, t, k, f.Star),
 		"{L}", v.remainName(f),
@@ -324,6 +336,15 @@ func achievement(k record.Kind) bool {
 		return false
 	}
 	return true
+}
+
+// reflexive is how a party refers back to itself: its own telling says
+// ourselves, anyone else's says themselves.
+func reflexive(ours bool) string {
+	if ours {
+		return "ourselves"
+	}
+	return "themselves"
 }
 
 // ours turns a cause written of a people into one told by it.

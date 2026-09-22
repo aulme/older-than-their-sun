@@ -28,9 +28,8 @@ func TestKindsGenerated(t *testing.T) {
 // TestParams: every event of a run carries the keys its kind declares
 // and no others, is placed in the chronicle once, and renders.
 func TestParams(t *testing.T) {
-	cfg := DefaultConfig()
-	cfg.Stars = 200
-	w := Generate(5, cfg)
+	t.Parallel()
+	w := reference()
 	placed := map[int]int{}
 	for i, e := range w.Chronicle {
 		if e == nil {

@@ -2,6 +2,7 @@ package history
 
 import (
 	"slices"
+	"time"
 
 	"worldgen/internal/flow"
 	"worldgen/internal/mind"
@@ -217,6 +218,13 @@ func (w *World) tickCivs() {
 			}
 			if off && offSteps[step.Name] {
 				continue // an ossified people sits this tick out: upkeep, fleets, wars and answers only
+			}
+			if w.Cfg.Profile {
+				start, drawn := time.Now(), w.draws.n
+				step.Run(w, c)
+				w.stepTime[step.Name] += time.Since(start)
+				w.stepDraws[step.Name] += w.draws.n - drawn
+				continue
 			}
 			step.Run(w, c)
 		}
