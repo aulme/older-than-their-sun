@@ -101,7 +101,7 @@ var templates = map[Kind]string{
 	FShipLost:     "{P} {X} to {T} was never heard from again.",
 	FHunt:         "{P} ledger showed a hole around {T}, and {s} declared a hunt on it.",
 	FDrifted:      "{S} changed again: {X}.",
-	FWord:         "{S} reached into what lies beneath, and gave it a name.",
+	FWord:         "{S} reached into what lies beneath, and {X}.",
 }
 
 // blamedTemplates are the woes that name their own cause, retold once
@@ -225,6 +225,11 @@ func pronoun(us bool) string {
 // name, a miracle, a shape of betrayal, from the event's parameters.
 func (w *World) what(e *Event) string {
 	switch e.Kind {
+	case FWord:
+		if w.Civs[e.Subject].Species.Voiceless() {
+			return "had no word for it"
+		}
+		return "gave it a name"
 	case FDarkAge, FFall, FEnd:
 		return w.whyText(e, "cause")
 	case FWar:
@@ -238,7 +243,7 @@ func (w *World) what(e *Event) string {
 	case FOvercome, FScarred, FDeclined:
 		return filters[e.P["filter"].(string)].Name
 	case FMiracle:
-		return tables.miracleByKey[e.P["miracle"].(string)].Name
+		return tables.miracleByKey[e.P["miracle"].(string)].Term
 	case FHarness:
 		if id, ok := e.P["source"]; ok {
 			return w.sourceName(w.Sources[id.(int)])
@@ -397,12 +402,12 @@ func (w *World) partyName(c *Civ, t *Tale, id int, subject bool) string {
 		return "us"
 	}
 	e := w.Civs[id]
-	own := e.tokBy(c) // the teller's own name for them
-	name := "the " + own
 	sl := t.Slant
 	if t.Blamed == id {
 		sl = -1
 	}
+	own := e.tokBy(c, regardTone(sl)) // the teller's own name for them, in the tale's regard
+	name := "the " + own
 	arch := archetypes[(t.Fact+id)%len(archetypes)]
 	switch {
 	case sl >= 1 && t.Wear == 0:
@@ -430,6 +435,20 @@ func (w *World) partyName(c *Civ, t *Tale, id int, subject bool) string {
 		return "a people whose name is lost"
 	}
 	return name
+}
+
+// regardTone is the tone of name a slant asks for: the friend row for
+// a friend, the exonym for a stranger, the enemy or monster row below.
+func regardTone(sl int8) string {
+	switch {
+	case sl >= 1:
+		return "friend"
+	case sl == -1:
+		return "enemy"
+	case sl <= -2:
+		return "monster"
+	}
+	return "stranger"
 }
 
 // starName is what the teller calls a star: its own it never forgets.

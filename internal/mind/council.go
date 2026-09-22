@@ -133,7 +133,7 @@ type ScoutChoice struct {
 func (s ScoutChoice) Why() string {
 	switch {
 	case s.Look:
-		return "the Sight reads them"
+		return "precognition reads them"
 	case s.Send:
 		return "a scout is sent"
 	case s.Kept:

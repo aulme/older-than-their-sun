@@ -600,7 +600,7 @@ func report(out io.Writer, recs []Rec, seeds int, from uint64, at string, ageMea
 		}
 		return r.Miracles["directed_evolution"] != "" || r.Miracles["ftl"] != ""
 	}
-	p("Reached the stars (any node with reach 10 ly or more, or the Flesh or the Door): %d (%s), median life %.2f Myr against %.2f for those who did not.", count(stars), pct(count(stars), N), median(lives(stars)), median(lives(func(r Rec) bool { return !stars(r) })))
+	p("Reached the stars (any node with reach 10 ly or more, or directed evolution or faster-than-light travel): %d (%s), median life %.2f Myr against %.2f for those who did not.", count(stars), pct(count(stars), N), median(lives(stars)), median(lives(func(r Rec) bool { return !stars(r) })))
 	p("")
 
 	// ---- the tree ----
@@ -664,7 +664,7 @@ func report(out io.Writer, recs []Rec, seeds int, from uint64, at string, ageMea
 	// ---- filters at nodes ----
 	p("## What happens at the nodes that test a people")
 	p("")
-	p("Outcomes recorded when a node's filter was faced. Foresaw means the Sight stepped around it.")
+	p("Outcomes recorded when a node's filter was faced. Foresaw means precognition stepped around it.")
 	p("")
 	p("| Node | Filter | Faced | Overcame | Scarred | Fell | Foresaw |")
 	p("|---|---|---|---|---|---|---|")

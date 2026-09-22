@@ -171,7 +171,7 @@ func (w *World) sightMode(c *Civ) {
 	if m.Outward == c.Searching {
 		return
 	}
-	w.explain(c, "the Sight", m)
+	w.explain(c, "precognition", m)
 	c.Searching = m.Outward
 	switch {
 	case m.Outward && c.Tally.Searched == 0:

@@ -31,7 +31,7 @@ type Row struct {
 	Coined history.Year `json:"coined"`
 	From   int          `json:"from"`            // the culture an adopted name was learned from, or -1
 	Gloss  string       `json:"gloss,omitempty"` // the meaning a transcribed name would also be given
-	Stub   bool         `json:"stub,omitempty"`  // a placeholder from the old generators until the translated pass lands
+	Recipe Recipe       `json:"recipe,omitzero"` // how a translated name was made; empty for a transcription
 }
 
 // Voice is how a culture names: none, transcribed or translated.
@@ -47,15 +47,18 @@ const (
 // voice and phonology of every people. It is built once from the record
 // and answers the view.
 type Book struct {
-	w     *history.World
-	rows  map[Object][]Row
-	voice map[int]Voice
-	phon  map[int]*Phonology
+	w        *history.World
+	rows     map[Object][]Row
+	voice    map[int]Voice
+	phon     map[int]*Phonology
+	noticeOf map[int]map[string]float64
+	pairs    map[[2]int][]*history.Event
 }
 
-// Of builds the book of a world.
+// Of builds the book of a world: the voices, the transcribed rows, the
+// designations, the adopted endonyms, then every translated row.
 func Of(w *history.World) *Book {
-	b := &Book{w: w, rows: map[Object][]Row{}, voice: map[int]Voice{}, phon: map[int]*Phonology{}}
+	b := &Book{w: w, rows: map[Object][]Row{}, voice: map[int]Voice{}, phon: map[int]*Phonology{}, noticeOf: map[int]map[string]float64{}}
 	for _, c := range w.Civs {
 		b.voice[c.ID] = VoiceOf(c.Species)
 	}
@@ -65,7 +68,7 @@ func Of(w *history.World) *Book {
 	b.selfRows()
 	b.designations()
 	b.factRows()
-	b.stubs()
+	b.translatedRows()
 	return b
 }
 
@@ -95,7 +98,7 @@ func (b *Book) All() []Row {
 // what the people is, never rolled.
 func VoiceOf(sp *species.Species) Voice {
 	switch {
-	case sp.Is(species.Hive), sp.Is(species.Unconscious), sp.Is(species.Planetary), sp.Is(species.Replicator), sp.Sub == species.Eldritch:
+	case sp.Voiceless():
 		return None
 	case sp.Sub == species.Machine:
 		return Translated
@@ -183,23 +186,18 @@ func (b *Book) add(r Row) {
 	b.rows[r.Object] = append(rs, r)
 }
 
-// selfRows is every people's own name for itself, in its own voice; a
-// voiceless people has none. A translated voice's endonym is a stub
-// until the translated pass: the syllabary stands in.
+// selfRows is every transcribed people's own name for itself, in its
+// own sounds; a translated voice's endonym is a recipe (translated.go)
+// and a voiceless people has none.
 func (b *Book) selfRows() {
 	w := b.w
 	for _, c := range w.Civs {
-		v := b.voice[c.ID]
-		if v == None {
+		if b.voice[c.ID] != Transcribed {
 			continue
 		}
 		p := b.phon[c.ID]
 		r := stream(w.Seed, itoa(c.ID), "civ", itoa(c.ID), "self")
-		row := Row{Object: Object{"civ", c.ID}, By: c.ID, Name: p.Word(r, 0), Mode: string(v), Tone: "self", Coined: c.Born, From: -1}
-		if v == Translated {
-			row.Stub = true
-		}
-		b.add(row)
+		b.add(Row{Object: Object{"civ", c.ID}, By: c.ID, Name: p.Word(r, 0), Mode: "transcribed", Tone: "self", Coined: c.Born, From: -1})
 	}
 }
 
@@ -219,9 +217,10 @@ func (b *Book) designations() {
 	}
 }
 
-// factRows walks the facts for the relationships that entitle a name:
-// a cradle and a settled star are named by their people; a meeting
-// adopts the other's endonym.
+// factRows walks the facts for the transcribed and adopted rows: a
+// cradle and a settled star are named by their people in its own
+// sounds; a meeting adopts the other's endonym. The translated rows
+// follow (translated.go), once every endonym exists to be adopted.
 func (b *Book) factRows() {
 	w := b.w
 	for _, f := range w.Events {
@@ -230,55 +229,65 @@ func (b *Book) factRows() {
 			b.starRow(f.Subject, f.Star, f.Year)
 		case history.FSettle:
 			b.starRow(f.Subject, f.Star, f.Year)
-		case history.FMet:
-			if f.Object >= 0 {
-				b.adopt(f.Subject, f.Object, f.Year)
-				if f.P["how"] != "noticed" { // a one-sided finding: the other never knew
-					b.adopt(f.Object, f.Subject, f.Year)
-				}
+		}
+	}
+	// the endonyms of translated voices exist before any adoption
+	b.indexPairs()
+	for _, c := range w.Civs {
+		if b.voice[c.ID] == Translated {
+			if row, ok := b.translate(c.ID, Object{"civ", c.ID}, "self", c.Born, b.selfProps(c)); ok {
+				b.add(row)
+			}
+		}
+	}
+	for _, f := range w.Events {
+		if f.Kind == history.FMet && f.Object >= 0 {
+			b.adopt(f.Subject, f.Object, f.Year)
+			if f.P["how"] != "noticed" { // a one-sided finding: the other never knew
+				b.adopt(f.Object, f.Subject, f.Year)
 			}
 		}
 	}
 }
 
-// starRow is a people's name for a star of its own: one or two syllables
-// of its voice; a voiceless people names nothing.
+// starRow is a transcribed people's name for a star of its own: one or
+// two syllables of its voice. A translated voice names its cradle by a
+// recipe; a voiceless people names nothing.
 func (b *Book) starRow(by, star int, y history.Year) {
 	if star < 0 || by < 0 {
 		return
 	}
-	v := b.voice[by]
-	if v == None {
+	switch b.voice[by] {
+	case None:
+		return
+	case Translated:
+		b.starTranslated(by, star, "self", "cradle", y)
 		return
 	}
 	p := b.phon[by]
 	r := stream(b.w.Seed, itoa(by), "star", itoa(star), "self")
-	row := Row{Object: Object{"star", star}, By: by, Name: p.Word(r, 1+r.IntN(2)), Mode: string(v), Tone: "self", Coined: y, From: -1}
-	if v == Translated {
-		row.Stub = true
-	}
-	b.add(row)
+	b.add(Row{Object: Object{"star", star}, By: by, Name: p.Word(r, 1+r.IntN(2)), Mode: "transcribed", Tone: "self", Coined: y, From: -1})
 }
 
-// adopt is a people learning another's endonym at a meeting: transcribed
-// through its own voice. A voiceless learner adopts nothing; a voiceless
-// other has nothing to adopt, and gets a stranger row from the old
-// syllabary instead, a stub until the translated pass.
+// adopt is a people learning another's endonym at a meeting, as its
+// friend row: transcribed through its own voice, or copied unchanged
+// when it is already in our words. A voiceless learner adopts nothing;
+// a voiceless other has nothing to adopt, and its friend row is a
+// translation at the first bond (translated.go).
 func (b *Book) adopt(by, other int, y history.Year) {
 	if by == other || b.voice[by] == None {
 		return
 	}
 	self := b.selfName(other)
-	r := stream(b.w.Seed, itoa(by), "civ", itoa(other), "adopted")
 	if self == "" {
-		b.add(Row{Object: Object{"civ", other}, By: by, Name: b.phon[by].Word(r, 0), Mode: "translated", Tone: "stranger", Coined: y, From: -1, Stub: true})
 		return
 	}
+	r := stream(b.w.Seed, itoa(by), "civ", itoa(other), "adopted")
 	name := self
 	if b.voice[by] == Transcribed && b.voice[other] == Transcribed {
 		name = b.phon[by].Adopt(r, self)
 	}
-	b.add(Row{Object: Object{"civ", other}, By: by, Name: name, Mode: "adopted", Tone: "stranger", Coined: y, From: other})
+	b.add(Row{Object: Object{"civ", other}, By: by, Name: name, Mode: "adopted", Tone: "friend", Coined: y, From: other})
 }
 
 func (b *Book) selfName(id int) string {
@@ -288,115 +297,6 @@ func (b *Book) selfName(id int) string {
 		}
 	}
 	return ""
-}
-
-// stubs are the descriptive names the translated pass will make from
-// recipes, meanwhile made by the old generators on the hash stream so
-// the legends read as before: plagues, titles, wars, the words for the
-// state beneath, finder names for elders and for makers nobody knew.
-func (b *Book) stubs() {
-	w := b.w
-	for _, p := range w.Plagues {
-		b.plagueRow(p)
-	}
-	for _, c := range w.Civs {
-		if c.Fate == history.Contracted {
-			r := stream(w.Seed, itoa(c.ID), "title", itoa(c.ID), "self")
-			b.add(Row{Object: Object{"title", c.ID}, By: c.ID, Name: title(r), Mode: "translated", Tone: "self", Coined: c.Ended, From: -1, Stub: true})
-		}
-	}
-	for _, f := range w.Events {
-		switch f.Kind {
-		case history.FWord:
-			c := w.Civs[f.Subject]
-			// an heir keeps the old people's word: the row hashes on the first of the line to have one
-			root := f.Subject
-			for _, a := range c.Line {
-				if b.hasWord(a) {
-					root = a
-					break
-				}
-			}
-			r := stream(w.Seed, itoa(root), "word", itoa(root), "self")
-			b.add(Row{Object: Object{"word", c.ID}, By: c.ID, Name: pick(r, beneathWords), Mode: "translated", Tone: "self", Coined: f.Year, From: -1, Stub: true})
-		case history.FFind:
-			if f.Legacy < 0 {
-				continue
-			}
-			l := w.Legacies[f.Legacy]
-			if l.Elder != nil {
-				r := stream(w.Seed, itoa(f.Subject), "elder", itoa(l.Elder.ID), "stranger")
-				b.add(Row{Object: Object{"elder", l.Elder.ID}, By: f.Subject, Name: pick(r, finderNames[l.Kind]), Mode: "translated", Tone: "stranger", Coined: f.Year, From: -1, Stub: true})
-			} else if !f.P["known"].(bool) {
-				r := stream(w.Seed, itoa(f.Subject), "makers", itoa(l.ID), "stranger")
-				b.add(Row{Object: Object{"makers", l.ID}, By: f.Subject, Name: pick(r, ruinNames), Mode: "translated", Tone: "stranger", Coined: f.Year, From: -1, Stub: true})
-			}
-		}
-	}
-	for _, wr := range w.Wars {
-		if wr.Named >= 0 {
-			b.add(Row{Object: Object{"war", wr.ID}, By: wr.Sides[0], Name: "the war of " + b.Default(Object{"star", wr.Named}), Mode: "translated", Tone: "self", Coined: wr.Began, From: -1, Stub: true})
-		}
-	}
-	for _, s := range w.Sources {
-		if s.Kind == history.MadeSource && s.Maker >= 0 && b.voice[s.Maker] != None {
-			r := stream(w.Seed, itoa(s.Maker), "source", itoa(s.ID), "self")
-			b.add(Row{Object: Object{"source", s.ID}, By: s.Maker, Name: b.phon[s.Maker].Word(r, 1+r.IntN(2)), Mode: string(b.voice[s.Maker]), Tone: "self", Coined: s.Made, From: -1})
-		}
-	}
-}
-
-func (b *Book) hasWord(id int) bool {
-	for _, f := range b.w.Events {
-		if f.Kind == history.FWord && f.Subject == id {
-			return true
-		}
-	}
-	return false
-}
-
-// plagueRow is the old plague generator on the hash stream: a made
-// plague is its maker's gift or lie, in order; a born one is named by
-// its first host, one time in three for the host or the host's star.
-func (b *Book) plagueRow(p *history.Plague) {
-	w := b.w
-	by := p.FirstHost
-	if p.Maker >= 0 && p.Made {
-		by = p.Maker
-	}
-	if by < 0 {
-		by = p.Maker
-	}
-	r := stream(w.Seed, itoa(by), "plague", itoa(p.ID), "self")
-	var name string
-	switch {
-	case p.Made && p.Maker >= 0:
-		word := "Gift"
-		if p.Kind == plague.Memetic {
-			word = "Lie"
-		}
-		n := 1
-		for _, q := range w.Plagues {
-			if q.ID < p.ID && q.Maker == p.Maker && q.Made && q.Kind == p.Kind {
-				n++
-			}
-		}
-		name = "the " + b.Default(Object{"civ", p.Maker}) + " " + word
-		if n > 1 {
-			name = "the " + ordinal(n) + " " + b.Default(Object{"civ", p.Maker}) + " " + word
-		}
-	default:
-		host := ""
-		if p.FirstHost >= 0 && !p.Made {
-			h := w.Civs[p.FirstHost]
-			host = b.Default(Object{"civ", h.ID})
-			if r.IntN(2) == 0 {
-				host = b.Default(Object{"star", h.Cradle})
-			}
-		}
-		name = plagueName(r, p.Kind == plague.Memetic, host)
-	}
-	b.add(Row{Object: Object{"plague", p.ID}, By: max(by, -1), Name: name, Mode: "translated", Tone: "self", Coined: p.Born, From: -1, Stub: true})
 }
 
 // Default is the debug view's one name for a thing: the human proper
@@ -423,21 +323,30 @@ func (b *Book) Default(o Object) string {
 	return b.fallback(o)
 }
 
-// By is what one culture calls a thing: its own row for it, else the
+// By is what one culture calls a thing: its own row for it in the tone
+// asked for, else down the ladder of regard (a monster is at least an
+// enemy, an enemy at least a stranger); with no tone, its own name for
+// its own thing, else the endonym it adopted, else its exonym; else the
 // default.
-func (b *Book) By(o Object, by int) string {
-	var best *Row
-	for i := range b.rows[o] {
-		r := &b.rows[o][i]
-		if r.By != by {
-			continue
-		}
-		if best == nil || r.Tone == "self" || (best.Tone != "self" && r.Coined < best.Coined) {
-			best = r
-		}
+func (b *Book) By(o Object, by int, tone string) string {
+	order := []string{"self", "friend", "stranger", "sky", "enemy", "monster"}
+	switch tone {
+	case "monster":
+		order = []string{"monster", "enemy", "stranger", "friend", "self"}
+	case "enemy":
+		order = []string{"enemy", "monster", "stranger", "friend", "self"}
+	case "stranger":
+		order = []string{"stranger", "self", "friend", "enemy", "monster"}
+	case "friend":
+		order = []string{"friend", "self", "stranger", "enemy", "monster"}
 	}
-	if best != nil {
-		return best.Name
+	for _, t := range order {
+		for i := range b.rows[o] {
+			r := &b.rows[o][i]
+			if r.By == by && r.Tone == t {
+				return r.Name
+			}
+		}
 	}
 	return b.Default(o)
 }
@@ -464,8 +373,19 @@ func (b *Book) fallback(o Object) string {
 		if o.ID >= 0 && o.ID < len(b.w.G.Stars) {
 			return b.w.G.Stars[o.ID].Name
 		}
-	case "war", "word", "title":
+	case "war":
+		return "a war"
+	case "word":
 		return ""
+	case "title":
+		return "nameless"
+	case "source":
+		return "nothing" // a voiceless maker calls its object nothing
+	case "plague":
+		if o.ID >= 0 && o.ID < len(b.w.Plagues) && b.w.Plagues[o.ID].Kind == plague.Memetic {
+			return "a nameless idea"
+		}
+		return "a nameless sickness"
 	case "species":
 		for _, c := range b.w.Civs {
 			if c.Species.ID == o.ID {
@@ -480,12 +400,13 @@ func (b *Book) fallback(o Object) string {
 	return "unnamed #" + itoa(o.ID)
 }
 
-var tokenRe = regexp.MustCompile(`\{(\^?)([a-z]+):(-?\d+)(?:@(-?\d+))?\}`)
+var tokenRe = regexp.MustCompile(`\{(\^?)([a-z]+):(-?\d+)(?:@(-?\d+)(?::([a-z]+))?)?\}`)
 
 // Text resolves every name token in a text: {kind:id} to the default
-// name, {kind:id@by} to what that culture calls it, {^kind:id} with the
-// first letter raised. Names may hold tokens themselves, so it runs to
-// a fixed point.
+// name, {kind:id@by} to what that culture calls it, {kind:id@by:tone}
+// to what it calls it in that regard (a telling's slant), {^kind:id}
+// with the first letter raised. Names may hold tokens themselves, so it
+// runs to a fixed point.
 func (b *Book) Text(s string) string {
 	for range 4 {
 		if !strings.Contains(s, "{") {
@@ -496,7 +417,7 @@ func (b *Book) Text(s string) string {
 			o := Object{Kind: g[2], ID: atoi(g[3])}
 			var name string
 			if g[4] != "" {
-				name = b.By(o, atoi(g[4]))
+				name = b.By(o, atoi(g[4]), g[5])
 			} else {
 				name = b.Default(o)
 			}

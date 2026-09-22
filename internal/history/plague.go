@@ -266,7 +266,13 @@ func (w *World) bearPlague(c *Civ) {
 
 // newPlague draws one; its name is the names pass's, from its first host.
 func (w *World) newPlague(k plague.Kind, host *Civ, cause string) *Plague {
-	p := &Plague{Plague: plague.New(w.R, k, &w.Cfg.Tuning.Plague), ID: len(w.Plagues), Born: w.Now, FirstHost: host.ID, Cause: cause, Maker: -1, Rider: -1, Transmitter: -1}
+	return w.bornPlague(&Plague{Plague: plague.New(w.R, k, &w.Cfg.Tuning.Plague), ID: len(w.Plagues), Born: w.Now, FirstHost: host.ID, Cause: cause, Maker: -1, Rider: -1, Transmitter: -1})
+}
+
+// bornPlague records a plague and gives it its profile, drawn by a hash
+// of the seed and its id: what it is costs the history no roll.
+func (w *World) bornPlague(p *Plague) *Plague {
+	p.Profile = plague.ProfileOf(w.Seed, p.ID, p.Plague)
 	w.Plagues = append(w.Plagues, p)
 	return p
 }

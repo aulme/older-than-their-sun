@@ -117,8 +117,8 @@ func TestDeterministic(t *testing.T) {
 			t.Errorf("a row changed when a meeting was added: %+v", r)
 		}
 	}
-	if n := len(c.All()) - len(a.All()); n != 2 {
-		t.Errorf("a meeting added %d rows, want two adopted names", n)
+	if n := len(c.All()) - len(a.All()); n != 4 {
+		t.Errorf("a meeting added %d rows, want two adopted endonyms and two exonyms", n)
 	}
 }
 
@@ -133,7 +133,7 @@ func TestVoice(t *testing.T) {
 			if r.Tone == "self" {
 				self++
 			}
-			if r.Mode == "transcribed" || r.Mode == "adopted" {
+			if r.Mode == "transcribed" || (r.Mode == "adopted" && b.voice[r.From] == Transcribed) {
 				if f := b.phonologyOf(r.By); f == nil || !Conventional(r.Name, f.family().Exempt) {
 					t.Errorf("%q by %d is not a conventional transcription", r.Name, r.By)
 				}

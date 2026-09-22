@@ -12,7 +12,7 @@
     {"key": "breakout", "text": "what got out of {L}", "desc": "a swarm that got out of a remain", "parties": "legacy"},
     {"key": "woke_in", "text": "a mind that woke in {L}", "desc": "a machine mind that woke in a remain", "parties": "legacy"},
     {"key": "bred", "text": "what the {C} bred", "desc": "a brood loose from its makers", "parties": "civ"},
-    {"key": "manna_loose", "text": "the Manna of the {C}, loose", "desc": "a Manna that got loose and thought", "parties": "civ"},
+    {"key": "manna_loose", "text": "the food organism of the {C}, loose", "desc": "a food organism that got loose and thought", "parties": "civ"},
     {"key": "heirs", "text": "heirs of the {C}", "desc": "an heir of a sundered or shattered people", "parties": "civ"},
     {"key": "cut", "text": "cut from the {C}", "desc": "a people cut from another by the demand", "parties": "civ"},
     {"key": "lost_fleet", "text": "the fleet of the {C} that never came home", "desc": "a fleet that stayed where it was sent", "parties": "civ"},

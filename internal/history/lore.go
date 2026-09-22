@@ -56,6 +56,12 @@ func (e *Event) weight() float64 { return e.shapeOf().Weight }
 // IsFact says whether an event is one a people can hold a tale of.
 func (e *Event) IsFact() bool { return e.shapeOf().Weight > 0 }
 
+// Weight is a fact's weight, 0 for an event that is not one; Sort its
+// moral shape. The names pass reads them to rank the deeds between two
+// peoples.
+func (e *Event) Weight() float64 { return e.weight() }
+func (e *Event) Sort() Sort      { return e.sort() }
+
 // Provenance is how a people came to know a tale.
 type Provenance uint8
 

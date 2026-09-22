@@ -60,9 +60,9 @@ func exploreReport(out io.Writer, recs []Rec) {
 		sighted += r.Tally.Sighted
 	}
 	if sighted > 0 {
-		p("Peoples holding the Sight spent %s of their time with it turned outward, reading stars instead of watching borders (%.0f of %.0f kyr).", pct(int(searched), int(sighted)), searched, sighted)
+		p("Peoples holding precognition spent %s of their time with it turned outward, reading stars instead of watching borders (%.0f of %.0f kyr).", pct(int(searched), int(sighted)), searched, sighted)
 	} else {
-		p("Nobody held the Sight.")
+		p("Nobody held precognition.")
 	}
 	p("")
 	p("### Surveys by posture")

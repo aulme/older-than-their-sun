@@ -380,7 +380,9 @@ func write(p func(string, ...any), w *history.World, book *names.Book, full bool
 			into += " Miracles: " + strings.Join(ms, ", ") + "."
 		}
 		if c.Named {
-			into += " They called it " + word(c) + "."
+			if !c.Species.Voiceless() {
+				into += " They called it " + word(c) + "."
+			}
 		}
 		if len(c.Taught) > 0 {
 			var ts []string
@@ -577,10 +579,7 @@ func wars(p func(string, ...any), w *history.World) {
 			continue
 		}
 		a, b := w.Civs[wr.Sides[0]], w.Civs[wr.Sides[1]]
-		name := "a war"
-		if wr.Named >= 0 {
-			name = wr.Tok()
-		}
+		name := wr.Tok() // a side's name for it, or "a war" where no side has a voice
 		nth := ""
 		if wr.Nth > 1 {
 			nth = fmt.Sprintf(", their %s", ordinalOf(wr.Nth))

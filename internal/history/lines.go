@@ -62,6 +62,13 @@ func (w *World) render(e *Event, tmpl string) string {
 		case "T":
 			out = w.tokenOf(e.Star, "star", format)
 		case "Q":
+			if format == "called" {
+				// the naming sentence: a voiceless people gives it no name
+				if e.Subject >= 0 && w.Civs[e.Subject].Species.Voiceless() {
+					return ""
+				}
+				return " They call it {plague:" + itoa(e.Plague) + "}."
+			}
 			out = w.tokenOf(e.Plague, "plague", format)
 		case "L":
 			out = w.legacyOf(e, format)
@@ -162,7 +169,7 @@ func (w *World) format(v any, format string, e *Event) string {
 	case "structure":
 		return tech.Structures[v.(string)].Name
 	case "miracle":
-		return tables.miracleByKey[v.(string)].Name
+		return tables.miracleByKey[v.(string)].Term
 	case "object":
 		return tables.miracleByKey[v.(string)].Object
 	case "filter":
@@ -173,6 +180,8 @@ func (w *World) format(v any, format string, e *Event) string {
 		return species.DescribeTraits(v.([]string))
 	case "source":
 		return w.sourceName(w.Sources[v.(int)])
+	case "named":
+		return "{source:" + itoa(v.(int)) + "}" // the object's proper name, a row of the names pass
 	case "colony":
 		return w.Species[v.(int)].Flavour().Colony
 	case "ship":
@@ -323,7 +332,7 @@ var lines = map[Kind]string{
 	KFindLeap:         "The {S}, who are wise, look hard at it and count what it would take of them, and do not try.",
 	FSealed:           "The {S} seal it, and post a watch, and the watch holds.",
 	KSealFailed:       "The {S} seal it. Someone opens it.",
-	KSignalPlague:     "The {S} hear the transmitter at {T}. Something comes down the signal with it and begins to move through their minds. They call it {Q}.",
+	KSignalPlague:     "The {S} hear the transmitter at {T}. Something comes down the signal with it and begins to move through their minds.{Q:called}",
 	KNewSignal:        "From {T} a new signal goes out, in the voice of the {S}.",
 	FHunt:             "The ledger of the {S} shows a hole around {T}: {losses} losses inside {radius:.0f} light years, and nothing in any record to say what took them. The council declares a hunt on the region.",
 	KHuntOn:           "The {S} are at war with something they can no longer name. What they have is the ledger, and the ledger says {T}.",
@@ -589,9 +598,13 @@ var lineFns = map[Kind]func(w *World, e *Event) string{
 		return "The {S} wake."
 	},
 	FWord: func(w *World, e *Event) string {
-		t, ok := beneathNames[e.P["route"].(string)]
+		route := e.P["route"].(string)
+		t, ok := beneathNames[route]
 		if !ok {
 			return ""
+		}
+		if w.Civs[e.Subject].Species.Voiceless() {
+			return beneathDesc[route] + " The {S} have no word for it, having no words."
 		}
 		return sprintf(t, "{S}", "{S:word}")
 	},
@@ -606,9 +619,9 @@ var lineFns = map[Kind]func(w *World, e *Event) string{
 	},
 	KSightTurned: func(w *World, e *Event) string {
 		if e.P["outward"].(bool) {
-			return "The {S} turn the Sight outward, to the stars nobody has visited."
+			return "The {S} turn their precognition outward, to the stars nobody has visited."
 		}
-		return "The {S} turn the Sight back to their own borders."
+		return "The {S} turn their precognition back to their own borders."
 	},
 	FSurveyLost: func(w *World, e *Event) string {
 		if e.P["unseen"].(bool) {
@@ -878,9 +891,9 @@ var lineFns = map[Kind]func(w *World, e *Event) string{
 			return "The {S} put it to use. It is {object:object}, and it feeds them a swarm's worth."
 		}
 		if e.P["object"] == "ember" {
-			return "The {S} kindle the Ember: {source:source}. It gives what a swarm gives, and it is theirs to carry."
+			return "The {S} kindle an exotic energy source, {source:source}, and call it {source:named}. It gives what a swarm gives, and it is theirs to carry."
 		}
-		return "The {S} grow the Manna: {source:source}. It feeds them, and it does not stop."
+		return "The {S} grow a self-sustaining food organism, {source:source}, and call it {source:named}. It feeds them, and it does not stop."
 	},
 	FManna: func(w *World, e *Event) string {
 		if e.P["way"] == "eat" {
@@ -890,9 +903,9 @@ var lineFns = map[Kind]func(w *World, e *Event) string{
 	},
 	KThrough: func(w *World, e *Event) string {
 		if e.P["burned"].(bool) {
-			return "Something comes through the Ember at {T}. The {S} burn it off."
+			return "Something comes through the energy source at {T}. The {S} burn it off."
 		}
-		return "Something comes through the Ember at {T}, and what lived there is lost to it."
+		return "Something comes through the energy source at {T}, and what lived there is lost to it."
 	},
 	FFreed: func(w *World, e *Event) string {
 		switch e.P["way"] {
@@ -907,9 +920,9 @@ var lineFns = map[Kind]func(w *World, e *Event) string{
 		road := e.P["road"].(string)
 		switch {
 		case road == "born" && w.Plagues[e.Plague].Kind == plague.Memetic:
-			return "Something moves through the minds of the {S}. They call it {Q}."
+			return "Something moves through the minds of the {S}.{Q:called}"
 		case road == "born":
-			return "Something moves through the worlds of the {S}. They call it {Q}."
+			return "Something moves through the worlds of the {S}.{Q:called}"
 		case e.Object >= 0 && roadPhrases[road] != "":
 			return "{^Q} comes to the {S} " + roadPhrases[road] + "."
 		}
@@ -951,7 +964,7 @@ var lineFns = map[Kind]func(w *World, e *Event) string{
 	},
 	KRelicWoke: func(w *World, e *Event) string {
 		if e.P["took"].(bool) {
-			return "It does what it was made to do, to the {S}. They call it {Q}."
+			return "It does what it was made to do, to the {S}.{Q:called}"
 		}
 		return "It does what it was made to do, and finds nothing in the {S} to do it to."
 	},
@@ -1196,7 +1209,7 @@ var lineFns = map[Kind]func(w *World, e *Event) string{
 		case how == "kin", how == "meeting":
 			return ""
 		case how == "chorus":
-			return "The {S}, who hold the Chorus, understand the {O} at once."
+			return "The {S}, whose thought takes root in any mind, understand the {O} at once."
 		case how == "taught" && mutual:
 			return "The {S}, long spoken to, at last understand the {O}."
 		case how == "broker":
@@ -1255,7 +1268,7 @@ var facedLines = map[string]string{
 	"brood/scarred":        "The {S} come out the other side of the change {trait:trait}. They did not mean to.",
 	"brood/declined":       "What the {S} bred at {T} does not stop breeding, and does not stop at what it was bred from.",
 	"unmaking/overcome":    "The {S} build it and do not use it. Everyone within reach knows they have it. That is enough.",
-	"unmaking/declined":    "The {S} turn the Unmaking on something too close.",
+	"unmaking/declined":    "The {S} turn their annihilation on something too close.",
 	"chorus/overcome":      "The {S} think one thought and remain many people. It can be done.",
 	"chorus/scarred":       "The {S} think one thought, and it is the same thought every year after. Nothing new is ever said.",
 	"chorus/declined":      "The thought of the {S} gets loose. From {T} it goes out to whoever will hear it.",
@@ -1275,8 +1288,8 @@ var blastLines = map[string]string{
 	"failure_old":     "Something at {T} that held for a billion years lets go.",
 	"law":             "Around {T}, for a moment, physics is negotiable.",
 	"singularity":     "The singularity at {T} is not captive any more, and takes the star with it.",
-	"ember":           "The Ember at {T} burns, once, and takes the star with it.",
-	"manna":           "The Manna at {T} gets out, and eats.",
+	"ember":           "The energy source at {T} burns, once, and takes the star with it.",
+	"manna":           "The food organism at {T} gets out, and eats.",
 	"manna_grown":     "What the {S} grew for the table at {T} gets out, and eats.",
 	"unmaking_test":   "The first test of the {T}' Unmaking takes a world with it.",
 	"unmaking_inward": "Everything around {T} stops being matter for a while.",
@@ -1324,13 +1337,23 @@ var roadPhrases = map[string]string{
 	"whisper":    "hidden in a message from the {O}",
 }
 
-// naming: what each miracle's holders say about the state when they first
-// reach into it. The people's word is the %s.
+// beneathDesc is what each miracle's holders find when they first reach
+// into the state beneath; beneathNames adds what they call it, the
+// people's word being the second %s. A voiceless people gets the
+// description alone.
+var beneathDesc = map[string]string{
+	"ftl":       "Whatever the ships pass through, nobody is in it. From inside, the crossing has no duration: one moment here, the next there. The ones who tried to stay awake for it did not come back as one person.",
+	"ansible":   "The ansible does not cross space; it goes under it. The speakers do not hear what it goes under. Anyone who begins to hear it is taken off the line.",
+	"foresight": "Precognition is not a looking forward. It is a leaning on something under time, where before and after are one thing, and the ones who lean too hard do not come back up.",
+	"unmaking":  "What their annihilation does is not destruction. Matter is put back the way it was before it was matter.",
+	"wound":     "There is a place in them where the wall is not, and what shows through it is the only thing they are afraid of.",
+}
+
 var beneathNames = map[string]string{
 	"ftl":       "Whatever the ships pass through, nobody is in it. From inside, the crossing has no duration: one moment here, the next there. The ones who tried to stay awake for it did not come back as one person. The %s call it %s and do not look at it.",
-	"ansible":   "The Voice does not cross space; it goes under it. The %s call what it goes under %s. The speakers do not hear it. Anyone who begins to hear it is taken off the line.",
-	"foresight": "The Sight is not a looking forward. It is a leaning on something under time, where before and after are one thing. The %s call it %s, and the ones who lean too hard do not come back up.",
-	"unmaking":  "What the Unmaking does is not destruction. Matter is put back the way it was before it was matter. The %s have a word for that state, %s, and it is a word they say once.",
+	"ansible":   "The ansible does not cross space; it goes under it. The %s call what it goes under %s. The speakers do not hear it. Anyone who begins to hear it is taken off the line.",
+	"foresight": "Precognition is not a looking forward. It is a leaning on something under time, where before and after are one thing. The %s call it %s, and the ones who lean too hard do not come back up.",
+	"unmaking":  "What their annihilation does is not destruction. Matter is put back the way it was before it was matter. The %s have a word for that state, %s, and it is a word they say once.",
 	"wound":     "There is a place in the %s where the wall is not. They call what shows through it %s, and it is the only thing they are afraid of.",
 }
 

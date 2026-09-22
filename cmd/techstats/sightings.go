@@ -187,7 +187,7 @@ func eyeWord(k string) string {
 	case "picket":
 		return "pickets"
 	case "sight":
-		return "the Sight"
+		return "precognition"
 	}
 	return k
 }

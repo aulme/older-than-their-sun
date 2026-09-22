@@ -32,7 +32,7 @@
     {"key": "ash", "kind": "cosmic", "name": "{F}", "desc": "a supernova remnant within reach", "frame": "the ash", "remark": true},
     {"key": "artifact", "kind": "elder", "name": "{L}", "desc": "a wielded remain"},
     {"key": "bounty", "kind": "elder", "name": "{L}", "desc": "an elder bounty; the key carries the bounty's kind after a colon"},
-    {"key": "ember", "kind": "made", "name": "{L}", "desc": "an Ember"},
-    {"key": "manna", "kind": "made", "name": "{L}", "desc": "a Manna"}
+    {"key": "ember", "kind": "made", "name": "{L}", "desc": "an exotic energy source"},
+    {"key": "manna", "kind": "made", "name": "{L}", "desc": "a self-sustaining food organism"}
   ]
 }

@@ -35,6 +35,7 @@ type Plague struct {
 	Conscious  bool    // a parasite people waiting to happen: it wakes when its first host's home goes over
 	Engineered bool    // made as a weapon
 	Band       int     // the species it was tailored to catch, with its kin; -1 for any body
+	Profile    Profile // what it is, as keys; see profile.go
 }
 
 // Tuning is every number the plagues use.

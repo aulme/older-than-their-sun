@@ -1,0 +1,410 @@
+package names
+
+import (
+	"encoding/json"
+	"regexp"
+	"strings"
+	"testing"
+
+	"worldgen/data"
+	"worldgen/internal/history"
+	"worldgen/internal/plague"
+)
+
+// sizes are the inventory's targets at landing: entries per kind of
+// thing and tone group, and how many of them are grounded (require a
+// property of the thing).
+var sizes = []struct {
+	about   string
+	tones   []string
+	entries int
+	ground  int
+	req     string // a requirement that marks the group, "" for any
+}{
+	{"civ", []string{"self"}, 60, 50, ""},
+	{"civ", []string{"self"}, 20, 20, "kind:machine"},
+	{"civ", []string{"stranger", "friend"}, 120, 100, ""},
+	{"civ", []string{"enemy", "monster"}, 120, 100, ""},
+	{"star", []string{"self", "stranger", "sky"}, 80, 80, ""},
+	{"elder", []string{"stranger"}, 40, 40, ""},
+	{"makers", []string{"stranger"}, 40, 40, ""},
+	{"plague", []string{"self", "stranger"}, 40, 40, ""},
+	{"title", []string{"self"}, 30, 20, ""},
+	{"war", []string{"self"}, 20, 20, ""},
+	{"word", []string{"self"}, 30, 30, ""},
+}
+
+func hasTone(e *Entry, tones []string) bool {
+	for _, t := range tones {
+		if contains(e.Tone, t) {
+			return true
+		}
+	}
+	return false
+}
+
+// TestInventorySize: the inventory meets its size and grounding targets,
+// and every counted property is required by at least eight entries.
+func TestInventorySize(t *testing.T) {
+	for _, sz := range sizes {
+		n, g := 0, 0
+		for _, e := range Epithets() {
+			if e.About != sz.about || !hasTone(e, sz.tones) || (sz.req != "" && !contains(e.Requires, sz.req)) {
+				continue
+			}
+			n++
+			if len(e.Requires) > 0 {
+				g++
+			}
+		}
+		if n < sz.entries || g < sz.ground {
+			t.Errorf("%s %v%s: %d entries (%d grounded), want %d (%d)", sz.about, sz.tones, sz.req, n, g, sz.entries, sz.ground)
+		}
+	}
+	counts := map[string]int{}
+	for _, e := range Epithets() {
+		for _, r := range e.Requires {
+			counts[strings.TrimPrefix(r, "!")]++
+		}
+	}
+	for _, p := range Properties() {
+		if counts[p] < 8 {
+			t.Errorf("property %s is required by %d entries, want eight", p, counts[p])
+		}
+	}
+	t.Logf("%d entries, %d counted properties", len(Epithets()), len(Properties()))
+}
+
+// TestInventoryWellFormed: every id is unique, every slot names a bank
+// that exists or a value the pass fills, every pattern's holes have
+// slots, every bank has a dozen words, and every requirement is a
+// property key the pass can set.
+func TestInventoryWellFormed(t *testing.T) {
+	ids := map[string]bool{}
+	hole := regexp.MustCompile(`\{(\w+)\}`)
+	values := map[string]bool{"self": true, "home": true, "cradle": true, "them": true, "deed.star": true, "host": true, "host.star": true, "star": true, "enemy": true, "work": true, "first": true, "first.adj": true, "last": true, "mark": true, "form": true, "onset": true}
+	prefixes := []string{"trait:", "world:", "way:", "fix:", "deed:", "did:", "bond:", "warcause:", "heavy:", "voice:", "kind:", "class:", "mult:", "remnant:", "place:", "legacy:", "work:", "portrait:", "elder:", "symptom:", "first:", "last:", "mark:", "onset:", "course:", "takes:", "form:", "effect:", "carrier:", "cause:", "side:", "miracle:"}
+	flags := map[string]bool{"seen": true, "bright": true, "dim": true, "dead": true, "brilliant": true, "marked": true, "made": true, "host": true, "thinks": true, "named": true, "again": true, "deed.star": true}
+	for _, e := range Epithets() {
+		if ids[e.ID] {
+			t.Errorf("entry %s twice", e.ID)
+		}
+		ids[e.ID] = true
+		for _, h := range hole.FindAllStringSubmatch(e.Pattern, -1) {
+			src, ok := e.Slots[h[1]]
+			if !ok {
+				t.Errorf("%s: hole {%s} has no slot", e.ID, h[1])
+				continue
+			}
+			if bank, isBank := strings.CutPrefix(src, "bank:"); isBank {
+				if len(Banks()[bank]) < 12 {
+					t.Errorf("%s: bank %s has %d words", e.ID, bank, len(Banks()[bank]))
+				}
+			} else if !values[src] {
+				t.Errorf("%s: slot %s reads %q, which the pass never fills", e.ID, h[1], src)
+			}
+		}
+		for _, r := range e.Requires {
+			r = strings.TrimPrefix(r, "!")
+			ok := flags[r]
+			for _, p := range prefixes {
+				ok = ok || strings.HasPrefix(r, p)
+			}
+			if !ok {
+				t.Errorf("%s requires %q, which the pass never sets", e.ID, r)
+			}
+		}
+	}
+	for k, words := range Banks() {
+		if len(words) < 12 {
+			t.Errorf("bank %s has %d words, want a dozen", k, len(words))
+		}
+	}
+}
+
+// TestKeysReal: every property key an entry requires that names a row of
+// another table (a trait, a world, a portrait, a symptom, a cause) is a
+// row of that table.
+func TestKeysReal(t *testing.T) {
+	var traits struct {
+		Traits []struct {
+			Key string `json:"key"`
+		} `json:"traits"`
+	}
+	data.Load("traits.json", &traits)
+	var worlds struct {
+		Archetypes []struct {
+			Key string `json:"key"`
+		} `json:"archetypes"`
+	}
+	data.Load("worlds.json", &worlds)
+	var portraits map[string]json.RawMessage
+	data.Load("portraits.json", &portraits)
+	var causes struct {
+		Causes     []struct{ Key string } `json:"causes"`
+		WarCauses  []struct{ Key string } `json:"war_causes"`
+		WarResults []struct{ Key string } `json:"war_results"`
+	}
+	data.Load("causes.json", &causes)
+	var works struct {
+		Structures []struct{ Key string } `json:"structures"`
+	}
+	data.Load("works.json", &works)
+	var events struct {
+		Kinds []struct{ Kind string } `json:"kinds"`
+	}
+	data.Load("events.json", &events)
+	known := map[string]bool{}
+	for _, x := range traits.Traits {
+		known["trait:"+x.Key] = true
+		known["way:"+x.Key] = true
+		known["world:"+x.Key] = true
+	}
+	for _, x := range worlds.Archetypes {
+		known["world:"+x.Key] = true
+	}
+	known["world:manysuns"] = true
+	for name, raw := range portraits {
+		if name == "_" {
+			continue
+		}
+		var rows []struct{ Key string }
+		if json.Unmarshal(raw, &rows) == nil {
+			for _, r := range rows {
+				known["portrait:"+r.Key] = true
+				known["elder:"+r.Key] = true
+			}
+		}
+	}
+	for _, x := range works.Structures {
+		known["portrait:"+x.Key] = true
+	}
+	for _, x := range causes.Causes {
+		known["cause:"+x.Key] = true
+	}
+	for _, x := range causes.WarCauses {
+		known["cause:"+x.Key] = true
+		known["warcause:"+x.Key] = true
+	}
+	for _, x := range events.Kinds {
+		for _, p := range []string{"deed:", "did:", "bond:", "heavy:"} {
+			known[p+x.Kind] = true
+		}
+	}
+	var miracles struct {
+		Miracles []struct {
+			Forms []struct{ Key string } `json:"forms"`
+		} `json:"miracles"`
+	}
+	data.Load("miracles.json", &miracles)
+	for _, m := range miracles.Miracles {
+		for _, f := range m.Forms {
+			known["form:"+f.Key] = true
+		}
+	}
+	pt := plague.Profiles
+	for _, s := range pt.Symptoms {
+		known["symptom:"+s.Key], known["first:"+s.Key], known["last:"+s.Key], known["mark:"+s.Key] = true, true, true, true
+	}
+	for _, s := range pt.Forms {
+		known["form:"+s.Key] = true
+	}
+	for _, s := range pt.Effects {
+		known["effect:"+s.Key], known["last:"+s.Key] = true, true
+	}
+	for _, s := range pt.Onsets {
+		known["onset:"+s.Key] = true
+	}
+	for _, s := range pt.Courses {
+		known["course:"+s.Key] = true
+	}
+	for _, s := range pt.Takes {
+		known["takes:"+s.Key] = true
+	}
+	for _, s := range pt.Carriers {
+		known["carrier:"+s.Key] = true
+	}
+	for _, e := range Epithets() {
+		for _, r := range e.Requires {
+			r = strings.TrimPrefix(r, "!")
+			i := strings.IndexByte(r, ':')
+			if i < 0 {
+				continue
+			}
+			switch r[:i] {
+			case "trait", "way", "world", "portrait", "elder", "cause", "warcause", "deed", "did", "bond", "heavy", "symptom", "first", "last", "mark", "form", "effect", "onset", "course", "takes", "carrier":
+				if !known[r] {
+					t.Errorf("%s requires %q, which no table has", e.ID, r)
+				}
+			}
+		}
+	}
+}
+
+// batch is the books of a few seeds, for the tests that read many names.
+func batch(t *testing.T) []*Book {
+	t.Helper()
+	var out []*Book
+	for _, seed := range []uint64{3, 5, 7, 9} {
+		out = append(out, Of(world(t, seed)))
+	}
+	return out
+}
+
+// TestExonymSpread: over a thousand exonyms from a batch, no entry
+// accounts for more than three percent.
+func TestExonymSpread(t *testing.T) {
+	counts := map[string]int{}
+	n := 0
+	for _, b := range batch(t) {
+		for _, r := range b.All() {
+			if r.Object.Kind == "civ" && r.Mode == "translated" && r.Tone != "self" {
+				counts[r.Recipe.Entry]++
+				n++
+			}
+		}
+	}
+	if n < 1000 {
+		t.Fatalf("%d exonyms, want a thousand to judge the spread", n)
+	}
+	for e, c := range counts {
+		if float64(c) > 0.03*float64(n) {
+			t.Errorf("%s accounts for %d of %d exonyms (%.1f%%), over three percent", e, c, n, 100*float64(c)/float64(n))
+		}
+	}
+	t.Logf("%d exonyms from %d entries", n, len(counts))
+}
+
+// TestEntitled: every translated row's requirements held of the thing
+// as the namer could know it at the coining year, recomputed from the
+// facts: a body or a world only after a meeting in the flesh or an
+// understanding, a way only after an understanding or a war, a deed only
+// from a fact before the coining.
+func TestEntitled(t *testing.T) {
+	w := world(t, 5)
+	b := Of(w)
+	byID := map[string]*Entry{}
+	for _, e := range Epithets() {
+		byID[e.ID] = e
+	}
+	checked := 0
+	for _, r := range b.All() {
+		if r.Object.Kind != "civ" || r.Mode != "translated" || r.By == r.Object.ID {
+			continue
+		}
+		e := byID[r.Recipe.Entry]
+		if e == nil {
+			t.Fatalf("row %v names an entry the inventory lacks", r)
+		}
+		// what the facts before the coining allow
+		touched, fathomed, warred, met := false, false, false, false
+		deeds := map[string]bool{}
+		for _, f := range w.Events {
+			if f.Year > r.Coined || !f.IsFact() {
+				continue
+			}
+			pair := (f.Subject == r.By && f.Object == r.Object.ID) || (f.Subject == r.Object.ID && f.Object == r.By)
+			if !pair {
+				continue
+			}
+			met = true
+			switch f.Kind {
+			case history.FMet:
+				touched = touched || f.P["how"] == "touch"
+			case history.FFathomed:
+				fathomed = fathomed || f.Subject == r.By
+			case history.FWar:
+				warred = true
+			}
+			deeds[string(f.Kind)] = true
+		}
+		for _, req := range e.Requires {
+			if strings.HasPrefix(req, "!") {
+				continue
+			}
+			i := strings.IndexByte(req, ':')
+			if i < 0 {
+				continue
+			}
+			ok := true
+			switch req[:i] {
+			case "trait", "world":
+				ok = touched || fathomed
+			case "way", "fix":
+				ok = fathomed || warred
+			case "deed", "did", "bond", "heavy":
+				ok = deeds[req[i+1:]]
+			case "warcause":
+				ok = warred
+			case "kind", "voice":
+				ok = met
+			}
+			if !ok {
+				t.Errorf("%d names %d %q by %s at %d, but could not know %s then", r.By, r.Object.ID, r.Name, e.ID, r.Coined, req)
+			}
+			checked++
+		}
+	}
+	t.Logf("%d requirements checked", checked)
+}
+
+// TestVoicelessNamed: every voiceless people that was met has an exonym
+// from someone, and a translated voice's endonym is a recipe; every
+// plague has a name from its first host when it has a voice; every
+// remnant a title; every reaching-in a word.
+func TestVoicelessNamed(t *testing.T) {
+	w := world(t, 3)
+	b := Of(w)
+	for _, c := range w.Civs {
+		rows := b.Rows(Object{"civ", c.ID})
+		if b.Voice(c) == None {
+			metBy := false
+			for _, f := range w.Events {
+				if f.Kind == history.FMet && (f.Object == c.ID || f.Subject == c.ID) && f.Object >= 0 {
+					o := f.Subject
+					if o == c.ID {
+						o = f.Object
+					}
+					if b.Voice(w.Civs[o]) != None {
+						metBy = true
+					}
+				}
+			}
+			if metBy && len(rows) == 0 {
+				t.Errorf("civ %d is voiceless, was met by a voiced people, and has no name", c.ID)
+			}
+		}
+		if b.Voice(c) == Translated {
+			self := earliest(rows, "self")
+			if self == nil || self.Recipe.Entry == "" {
+				t.Errorf("civ %d speaks in translation and has no recipe for its own name: %+v", c.ID, self)
+			}
+		}
+		if c.Fate == history.Contracted && b.Voice(c) != None && len(b.Rows(Object{"title", c.ID})) == 0 {
+			t.Errorf("civ %d is a remnant with no title", c.ID)
+		}
+	}
+	for _, p := range w.Plagues {
+		if p.FirstHost >= 0 && b.Voice(w.Civs[p.FirstHost]) != None && len(b.Rows(Object{"plague", p.ID})) == 0 {
+			t.Errorf("plague %d has no name from its first host %d", p.ID, p.FirstHost)
+		}
+	}
+	for _, f := range w.Events {
+		if f.Kind == history.FWord && b.Voice(w.Civs[f.Subject]) != None && len(b.Rows(Object{"word", f.Subject})) == 0 {
+			t.Errorf("civ %d reached in and has no word", f.Subject)
+		}
+	}
+}
+
+// TestNoTokensUnresolved: every name of the view resolves: a name may
+// hold a token, and the fixed point leaves none.
+func TestNoTokensUnresolved(t *testing.T) {
+	w := world(t, 7)
+	b := Of(w)
+	for _, r := range b.All() {
+		s := b.Text(r.Name)
+		if strings.Contains(s, "{") || strings.Contains(s, "  ") || strings.HasSuffix(s, " ") {
+			t.Errorf("%q renders as %q", r.Name, s)
+		}
+	}
+}

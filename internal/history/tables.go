@@ -66,7 +66,7 @@ type (
 	}
 	miracleDef struct {
 		Key    string    `json:"key"`
-		Name   string    `json:"name"`
+		Term   string    `json:"term"`
 		Desc   string    `json:"desc"`
 		Causal bool      `json:"causal"`
 		Wear   float64   `json:"wear"`

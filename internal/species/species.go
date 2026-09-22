@@ -198,6 +198,14 @@ func MadeBy(key string, by int) Making {
 // Is says whether the species carries every modifier in m.
 func (s *Species) Is(m Mod) bool { return s.Mods.Has(m) }
 
+// Voiceless says whether the people has no language a human could render:
+// a hive, an unconscious people, a living world, a replicator, an eldritch
+// thing. It coins no names and is known only by what others call it; the
+// names pass and the view read this, the simulation never.
+func (s *Species) Voiceless() bool {
+	return s.Is(Hive) || s.Is(Unconscious) || s.Is(Planetary) || s.Is(Replicator) || s.Sub == Eldritch
+}
+
 // entries lists the carried registry entries: the substrate, then the
 // modifiers in registry order.
 func (s *Species) entries() []*Entry {

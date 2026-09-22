@@ -1,0 +1,70 @@
+{
+  "_": [
+    "The plague profile: what a sickness is, as keys, drawn for every plague at its birth by a hash of the seed and the plague's id (never from the history's rolls). A biological plague is a list of symptoms in the order they come, an onset, a course and whom it takes; a memetic one is a form, a list of effects in the order they come, and a carrier. The names pass reads the profile (a sufferer names the sickness by the symptom it noticed, a neighbour by the host); the flavour of a plague is the whole list read in order.",
+    "symptoms: one row per symptom: key; noun (the word a name uses for it); adj (the adjective a name uses when it is the mark); visible marks the ones seen on the body (an engineered plague hides them); end says which bank the last symptom is drawn from by lethality: deadly (over 0.6), wasting (under 0.3), or either; desc is what it looks like. onsets, courses, takes: one row each with a desc. forms: the shape a memetic plague takes, with noun; hosted marks the forms that want a host, which a conscious one is drawn from. effects: what believers do, with severity 1 to 3; the last effect's severity follows lethality. carriers: what carries it.",
+    "Every term here is a technical term: a phrase a reader who never saw this project understands or can search for, never a coinage."
+  ],
+  "symptoms": [
+    {"key": "fever", "noun": "Fever", "adj": "Burning", "end": "either", "desc": "a fever that comes and goes and comes back"},
+    {"key": "cough", "noun": "Cough", "adj": "Coughing", "end": "wasting", "desc": "a cough that never quite clears"},
+    {"key": "sweat", "noun": "Sweat", "adj": "Sweating", "end": "wasting", "desc": "sweats that soak the bedding"},
+    {"key": "pox", "noun": "Pox", "adj": "Spotted", "visible": true, "end": "either", "desc": "sores that open and close"},
+    {"key": "bleeding", "noun": "Bleeding", "adj": "Bleeding", "visible": true, "end": "deadly", "desc": "bleeding from the eyes, the gums, the skin"},
+    {"key": "blindness", "noun": "Blindness", "adj": "Blind", "end": "deadly", "desc": "the sight goes, and does not come back"},
+    {"key": "madness", "noun": "Madness", "adj": "Raving", "end": "deadly", "desc": "the sick talk to people who are not there, and then to nobody"},
+    {"key": "sleep", "noun": "Sleep", "adj": "Sleeping", "end": "deadly", "desc": "a sleep nobody wakes from"},
+    {"key": "wasting", "noun": "Wasting", "adj": "Thin", "end": "wasting", "desc": "the flesh goes off the bone over a season"},
+    {"key": "rot", "noun": "Rot", "adj": "Rotting", "visible": true, "end": "deadly", "desc": "the flesh dies while the body lives"},
+    {"key": "bloom", "noun": "Bloom", "adj": "Flowering", "visible": true, "end": "wasting", "desc": "growths that open like flowers on the skin"},
+    {"key": "fade", "noun": "Fade", "adj": "Fading", "end": "wasting", "desc": "the sick grow quiet, then still, then absent"},
+    {"key": "grey_skin", "noun": "Greying", "adj": "Grey", "visible": true, "end": "either", "desc": "the skin turns the colour of ash"},
+    {"key": "weeping_eyes", "noun": "Weeping", "adj": "Weeping", "visible": true, "end": "either", "desc": "the eyes run and will not stop"},
+    {"key": "glass_growths", "noun": "Glassing", "adj": "Glass", "visible": true, "end": "either", "desc": "hard clear growths under the skin, like glass"},
+    {"key": "black_tongue", "noun": "Blackening", "adj": "Black", "visible": true, "end": "either", "desc": "the tongue goes black, then the lips"}
+  ],
+  "onsets": [
+    {"key": "quick", "adj": "Quick", "desc": "days from the first sign to the bed"},
+    {"key": "slow", "adj": "Slow", "desc": "a season of small signs before anyone is sure"}
+  ],
+  "courses": [
+    {"key": "days", "desc": "it is over in days, one way or the other"},
+    {"key": "years", "desc": "it runs for years in the body"},
+    {"key": "generations", "desc": "it is passed down, and the children have it before they are born"}
+  ],
+  "takes": [
+    {"key": "young", "desc": "it takes the young"},
+    {"key": "old", "desc": "it takes the old"},
+    {"key": "everyone", "desc": "it takes everyone"},
+    {"key": "caste", "desc": "it takes one caste, one kind of body among them, and leaves the rest"},
+    {"key": "species", "desc": "it takes one blood and its kin and nothing else; it was made to"}
+  ],
+  "forms": [
+    {"key": "question", "noun": "Question", "hosted": true, "desc": "a question that cannot be put down once it is heard"},
+    {"key": "doctrine", "noun": "Doctrine", "desc": "a set of rules that explains everything"},
+    {"key": "laugh", "noun": "Laugh", "desc": "a joke that is only funny the second time"},
+    {"key": "silence", "noun": "Silence", "desc": "a refusal to say a certain thing, then any thing"},
+    {"key": "number", "noun": "Number", "desc": "a number that has to be counted to"},
+    {"key": "song", "noun": "Song", "desc": "a song that will not leave the head"},
+    {"key": "dream", "noun": "Dream", "desc": "a dream everyone has the same night"},
+    {"key": "argument", "noun": "Argument", "hosted": true, "desc": "an argument with no last word"},
+    {"key": "certainty", "noun": "Certainty", "desc": "a certainty, about nothing in particular"},
+    {"key": "prayer", "noun": "Prayer", "hosted": true, "desc": "a prayer to something that answers"}
+  ],
+  "effects": [
+    {"key": "stop_working", "severity": 2, "desc": "the believers stop working"},
+    {"key": "stop_speaking", "severity": 1, "desc": "the believers stop speaking to anyone who does not believe"},
+    {"key": "build", "severity": 1, "desc": "the believers build, and what they build has no use"},
+    {"key": "burn", "severity": 3, "desc": "the believers burn what they built before"},
+    {"key": "leave", "severity": 2, "desc": "the believers walk out of the cities"},
+    {"key": "count", "severity": 1, "desc": "the believers count, and nothing else"},
+    {"key": "kneel", "severity": 1, "desc": "the believers kneel, wherever they are, when it comes"},
+    {"key": "refuse_cure", "severity": 3, "desc": "the believers refuse the cure and hide the sick"},
+    {"key": "spread_it", "severity": 3, "desc": "the believers carry it to whoever will listen, on purpose"}
+  ],
+  "carriers": [
+    {"key": "words", "desc": "it travels in words; a sentence is enough"},
+    {"key": "images", "desc": "it travels in images; a glance is enough"},
+    {"key": "music", "desc": "it travels in music"},
+    {"key": "proof", "desc": "it travels as a proof, and is caught by whoever follows it to the end"}
+  ]
+}

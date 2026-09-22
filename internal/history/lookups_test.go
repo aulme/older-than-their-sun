@@ -11,6 +11,8 @@ import (
 	"sync"
 	"testing"
 
+	"worldgen/internal/plague"
+
 	"worldgen/internal/galaxy"
 	"worldgen/internal/species"
 	"worldgen/internal/tech"
@@ -183,6 +185,25 @@ func TestKeysResolve(t *testing.T) {
 	for _, sp := range w.Species {
 		if sp.Made.Key != "" && tables.origins[sp.Made.Key] == nil {
 			fail("Species.Made", sp.Made.Key)
+		}
+	}
+	for _, p := range w.Plagues {
+		pr := p.Profile
+		if pr.First() == "" || pr.Last() == "" {
+			fail("plague.profile", p.ID)
+		}
+		for _, k := range pr.Symptoms {
+			if plague.Profiles.SymptomOf(k) == nil {
+				fail("plague.profile.symptom", k)
+			}
+		}
+		for _, k := range pr.Effects {
+			if plague.Profiles.EffectOf(k) == nil {
+				fail("plague.profile.effect", k)
+			}
+		}
+		if pr.Form != "" && plague.Profiles.FormOf(pr.Form) == nil {
+			fail("plague.profile.form", pr.Form)
 		}
 	}
 	for _, l := range w.Legacies {

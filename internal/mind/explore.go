@@ -124,9 +124,9 @@ type SightMode struct {
 func (s SightMode) Why() string {
 	switch {
 	case s.Outward:
-		return "the Sight looks outward"
+		return "precognition looks outward"
 	case s.Threat:
-		return "the Sight watches the borders"
+		return "precognition watches the borders"
 	}
 	return "nothing left to look for"
 }

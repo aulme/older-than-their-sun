@@ -11,10 +11,13 @@ import (
 
 // sameLegendsDigest is the digest of the full legends of seed 5 at 200
 // stars, pinned at the events step (specs/plan.md step 2), where the
-// view began rendering the chronicle from the record. A step that must
-// not change what the view prints keeps it green; one that changes the
-// view or the history on purpose re-pins it and says so in its commit.
-const sameLegendsDigest = "653b6b319d1d2632b2451cfa31ac8cbf22940652a3c3e05a9763837d6ee53b70"
+// view began rendering the chronicle from the record, and re-pinned at
+// names-translated (step 4), where the translated names and the
+// technical terms replaced the stubs and the miracle names while the
+// history stayed the same. A step that must not change what the view
+// prints keeps it green; one that changes the view or the history on
+// purpose re-pins it and says so in its commit.
+const sameLegendsDigest = "836a8a186c3e5fb1ef35c41597202e54f9c731c9b185931e5ae1fd4060a9a372"
 
 // TestResolved: the legends of a seed carry no unresolved name token;
 // every {kind:id} the history printed went through the names pass. And

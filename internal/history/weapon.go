@@ -169,8 +169,7 @@ func (w *World) makePlague(c, e *Civ, n *tech.Node, aim plague.Aim) *Plague {
 	if wd.Tailored {
 		pl.Band = e.Species.ID
 	}
-	p := &Plague{Plague: pl, ID: len(w.Plagues), Born: w.Now, FirstHost: -1, Cause: "made", Maker: c.ID, Made: true, Rider: -1}
-	w.Plagues = append(w.Plagues, p)
+	p := w.bornPlague(&Plague{Plague: pl, ID: len(w.Plagues), Born: w.Now, FirstHost: -1, Cause: "made", Maker: c.ID, Made: true, Rider: -1})
 	c.Weapons[n.Key] = &Weapon{Plague: p.ID, Target: e.ID, Node: n.Key, Made: w.Now}
 	if wd.Immune {
 		c.Immune[p.ID] = true // a thing designed has a designed cure
@@ -310,8 +309,7 @@ func (w *World) breakout(c *Civ, n *tech.Node, p *Plague) {
 	wd := n.Weapon
 	if p == nil {
 		pl := plague.Loose(w.R, plagueKind(wd.Memetic), wd.Band, t)
-		p = &Plague{Plague: pl, ID: len(w.Plagues), Born: w.Now, FirstHost: -1, Cause: "breakout", Maker: c.ID, Rider: -1}
-		w.Plagues = append(w.Plagues, p)
+		p = w.bornPlague(&Plague{Plague: pl, ID: len(w.Plagues), Born: w.Now, FirstHost: -1, Cause: "breakout", Maker: c.ID, Rider: -1})
 	} else {
 		delete(c.Weapons, n.Key)
 		p.Cause = "breakout"

@@ -181,11 +181,11 @@ func tradeReport(out io.Writer, recs []Rec) {
 	}
 	if total == 0 {
 		p("")
-		p("No Ember or Manna was made.")
+		p("No energy source or food organism was made.")
 		return
 	}
 	p("")
-	p("The Ember and the Manna: %d objects made over every people. By form, with how many thought, how many gave cuttings, and what came of them.", total)
+	p("The energy sources and the food organisms: %d objects made over every people. By form, with how many thought, how many gave cuttings, and what came of them.", total)
 	p("")
 	p("| Object | Form | Made | Thought | Gave cuttings | Fates |")
 	p("|---|---|---|---|---|---|")

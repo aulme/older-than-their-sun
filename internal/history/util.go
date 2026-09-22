@@ -64,8 +64,12 @@ func (w *World) star(id int) string { return "{star:" + itoa(id) + "}" }
 // Tok is a people's token.
 func (c *Civ) Tok() string { return "{civ:" + itoa(c.ID) + "}" }
 
-// tokBy is a people's token as another people names it.
-func (c *Civ) tokBy(by *Civ) string { return "{civ:" + itoa(c.ID) + "@" + itoa(by.ID) + "}" }
+// tokBy is a people's token as another people names it, in a tone of
+// regard (friend, stranger, enemy, monster); the pass falls back down
+// the ladder when the namer has no row in that tone.
+func (c *Civ) tokBy(by *Civ, tone string) string {
+	return "{civ:" + itoa(c.ID) + "@" + itoa(by.ID) + ":" + tone + "}"
+}
 
 // Tok is a plague's token; the name carries its article.
 func (p *Plague) Tok() string { return "{plague:" + itoa(p.ID) + "}" }
