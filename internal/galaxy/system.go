@@ -1,6 +1,7 @@
 package galaxy
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
 	"math/rand/v2"
@@ -30,31 +31,48 @@ var kindWords = map[PlanetKind]string{Rock: "rocky world", SuperEarth: "super-Ea
 
 // Planet is one world.
 type Planet struct {
-	Name      string // the catalogued name, "" for procedural worlds
-	Kind      PlanetKind
-	MassE     float64 // Earth masses
-	RadE      float64 // Earth radii
-	Period    float64 // days
-	SMA       float64 // AU
-	Teq       float64 // K, equilibrium
-	Ecc       float64
-	Known     bool
-	Method    string
-	Year      int
-	Temperate bool // rock or super-Earth in the temperate band
-	Moons     int
-	Tag       string // one detail: "tidally locked", "in a cloud of its own dust", ...
+	Name      string     `json:"name,omitempty"` // the catalogued name, "" for procedural worlds
+	Kind      PlanetKind `json:"kind"`
+	MassE     float64    `json:"mass"`   // Earth masses
+	RadE      float64    `json:"radius"` // Earth radii
+	Period    float64    `json:"period"` // days
+	SMA       float64    `json:"sma"`    // AU
+	Teq       float64    `json:"teq"`    // K, equilibrium
+	Ecc       float64    `json:"ecc"`
+	Known     bool       `json:"known"`
+	Method    string     `json:"method,omitempty"`
+	Year      int        `json:"year,omitempty"`
+	Temperate bool       `json:"temperate"` // rock or super-Earth in the temperate band
+	Moons     int        `json:"moons"`
+	Tag       string     `json:"tag,omitempty"` // one detail: "tidally locked", "in a cloud of its own dust", ...
+}
+
+// planetKeys are the planet kinds as the record writes them.
+var planetKeys = map[PlanetKind]string{Rock: "rock", SuperEarth: "super_earth", SubNeptune: "sub_neptune", IceGiant: "ice_giant", GasGiant: "gas_giant", HotJupiter: "hot_jupiter", Dwarf: "dwarf"}
+
+// MarshalText writes the kind's key.
+func (k PlanetKind) MarshalText() ([]byte, error) { return []byte(planetKeys[k]), nil }
+
+// UnmarshalText reads a kind by its key.
+func (k *PlanetKind) UnmarshalText(b []byte) error {
+	for kind, key := range planetKeys {
+		if key == string(b) {
+			*k = kind
+			return nil
+		}
+	}
+	return fmt.Errorf("galaxy: unknown planet kind %q", b)
 }
 
 // System is what orbits a star.
 type System struct {
-	Planets []Planet
-	Belts   []float64 // AU
-	Disc    string    // a debris disc, described; "" if none
-	Comp    string    // a companion, keyed: white_dwarf, brown_dwarf; CompanionWords say it
-	Home    int       // index of the habitable world, -1 if none
-	Arch    string    // archetype key of the habitable world: lush, twilight, floater...
-	Missed  bool      // the habitable world is one the old surveys did not see
+	Planets []Planet  `json:"planets"`
+	Belts   []float64 `json:"belts"`          // AU
+	Disc    string    `json:"disc,omitempty"` // a debris disc, described; "" if none
+	Comp    string    `json:"comp,omitempty"` // a companion, keyed: white_dwarf, brown_dwarf; CompanionWords say it
+	Home    int       `json:"home"`           // index of the habitable world, -1 if none
+	Arch    string    `json:"arch,omitempty"` // archetype key of the habitable world: lush, twilight, floater...
+	Missed  bool      `json:"missed"`         // the habitable world is one the old surveys did not see
 }
 
 // lum, mass by class, for procedural stars
@@ -626,4 +644,30 @@ func (sys *System) Describe(star string) string {
 		parts = append(parts, CompanionWords[sys.Comp])
 	}
 	return strings.Join(parts, "; ")
+}
+
+// MarshalJSON writes a planet with a number the generator could not
+// compute (an orbit at nothing, a temperature of infinity: a catalogue
+// world with a period and no orbit puts the unseen worlds at zero) as
+// null, since JSON has no infinity. The record keeps the glitch visible
+// rather than mending it, because mending it would move the galaxy.
+func (p Planet) MarshalJSON() ([]byte, error) {
+	type plain Planet
+	q := struct {
+		plain
+		MassE  *float64 `json:"mass"`
+		RadE   *float64 `json:"radius"`
+		Period *float64 `json:"period"`
+		SMA    *float64 `json:"sma"`
+		Teq    *float64 `json:"teq"`
+		Ecc    *float64 `json:"ecc"`
+	}{plain: plain(p)}
+	finite := func(x float64) *float64 {
+		if math.IsInf(x, 0) || math.IsNaN(x) {
+			return nil
+		}
+		return &x
+	}
+	q.MassE, q.RadE, q.Period, q.SMA, q.Teq, q.Ecc = finite(p.MassE), finite(p.RadE), finite(p.Period), finite(p.SMA), finite(p.Teq), finite(p.Ecc)
+	return json.Marshal(q)
 }

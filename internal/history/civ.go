@@ -42,7 +42,7 @@ func (w *World) spawn(home int, sp *species.Species, maker int, host *Civ) *Civ 
 		}
 	}
 	if host == nil {
-		w.Owner[home] = c.ID
+		w.setOwner(home, c.ID)
 	}
 	prior := -1
 	for _, o := range w.Civs {
@@ -68,7 +68,7 @@ func (w *World) spawn(home int, sp *species.Species, maker int, host *Civ) *Civ 
 		w.fact(FManna, c, nil, home).with(P{"way": "kinfed"}) // a fact every other people judges by its own lights, once known
 	}
 	if m := sp.Miracle(); m != "" {
-		c.Miracles[m] = "born" // the surge begins when they can first use it: see tickCivs
+		w.holdMiracle(c, m, "born") // the surge begins when they can first use it: see tickCivs
 		if f := tech.Get(m).Filter; f != "" {
 			c.Faced[f] = true // what is evolved is not a leap; nothing to fall from
 		}
@@ -108,6 +108,7 @@ func (w *World) newCiv(home int, sp *species.Species, maker int) *Civ {
 		LastDark: -1 << 40, foeNow: -1,
 	}
 	w.Civs = append(w.Civs, c)
+	w.born(c)
 	return c
 }
 
@@ -290,7 +291,7 @@ func (w *World) settle(c *Civ, t int) {
 // holdWorld is a new world held: the state of a settlement, whether a
 // ship brought it or another of an eldritch people is simply there.
 func (w *World) holdWorld(c *Civ, t int) {
-	w.Owner[t] = c.ID
+	w.setOwner(t, c.ID)
 	c.Systems = append(c.Systems, t)
 	c.colonies++
 	w.stir(c)
@@ -304,7 +305,7 @@ func (w *World) holdWorld(c *Civ, t int) {
 // the chart, what wakes there and who notices.
 func (w *World) afterHold(c *Civ, t int) {
 	if len(c.Systems) >= 6 && c.Era >= 3 && c.Stage == Interstellar {
-		c.Stage = Zenith
+		w.setStage(c, Zenith)
 		w.factN(FZenith, c, nil, -1, len(c.Systems))
 	}
 	w.chart(c, t, "settle")
@@ -568,7 +569,7 @@ func (w *World) loseSystem(c *Civ, s int, kind string, cause reason) {
 		return
 	}
 	c.Systems = remove(c.Systems, s)
-	w.Owner[s] = -1
+	w.setOwner(s, -1)
 	w.trace(s, kind, c)
 	delete(c.Guns, s)
 	delete(c.GridBroken, s)
@@ -633,7 +634,7 @@ func (w *World) seatLost(c *Civ, cause reason) {
 		w.endCiv(c, Extinct, cause).P["queen"] = true
 	case c.Has("noqueen") && len(c.Systems) > 1:
 		w.event(KHomeLost, c, nil, c.Home, P{"way": "noqueen"})
-		c.Home = c.Systems[0]
+		w.setHome(c, c.Systems[0])
 		w.shatter(c, cause, nil)
 	default:
 		w.reseat(c)
@@ -652,7 +653,7 @@ func (w *World) reseat(c *Civ) {
 	if best < 0 {
 		return
 	}
-	c.Home = best
+	w.setHome(c, best)
 	c.Dying = false
 	w.event(KReseated, c, nil, c.Home, P{})
 }
@@ -679,7 +680,9 @@ func (w *World) contract(c *Civ, cause reason) {
 		}
 	}
 	fell := w.unplaced(FFall, c, nil, keep).with(P{"peak": c.Peak}).with(cause.params("cause"))
-	c.Stage, c.Fate, c.Cause, c.Ended = Remnant, Contracted, cause.key, w.Now
+	w.setStage(c, Remnant)
+	w.setFate(c, Contracted, cause.key)
+	c.Ended = w.Now
 	c.FallEvent = fell.ID
 	c.Fell = w.Now
 	c.FellDependent = len(c.Dependent) > 0
@@ -696,7 +699,7 @@ func (w *World) endCiv(c *Civ, f Fate, cause reason) *Event {
 		return nil
 	}
 	wasRemnant := c.Stage == Remnant
-	c.Stage = Dead
+	w.setStage(c, Dead)
 	if f == Extinct && len(c.Systems) > 0 && w.R.Float64() < 0.4 {
 		w.leaveRelic(c, w.lateNode(c), c.Home)
 	}
@@ -707,7 +710,8 @@ func (w *World) endCiv(c *Civ, f Fate, cause reason) *Event {
 			w.loseSystem(c, s, "transformed", reason{})
 		}
 	}
-	c.Fate, c.Cause, c.Ended = f, cause.key, w.Now
+	w.setFate(c, f, cause.key)
+	c.Ended = w.Now
 	if !wasRemnant {
 		c.Fell = w.Now
 		c.FellDependent = len(c.Dependent) > 0
@@ -772,9 +776,9 @@ func (w *World) darkAge(c *Civ, why reason) {
 	w.dropWielded(c, 0.5)
 	w.recompute(c)
 	if c.Reach < 10 {
-		c.Stage = Emergent
+		w.setStage(c, Emergent)
 	} else if c.Stage == Zenith {
-		c.Stage = Interstellar
+		w.setStage(c, Interstellar)
 	}
 	f.P["lost"] = lost
 	w.place(f)
@@ -842,7 +846,7 @@ func (w *World) forget(c *Civ, frac float64) []string {
 			break
 		}
 		k := leaves[w.R.IntN(len(leaves))]
-		delete(c.Known, k)
+		w.forgetNode(c, k)
 		delete(c.Shed, k)
 		delete(c.DormantSince, k)
 		forgotten = append(forgotten, k)
@@ -906,14 +910,14 @@ func (w *World) machinePeople(c *Civ) *Civ {
 	nc.Master = -1
 	for _, s := range worlds {
 		if s != home && w.Owner[s] < 0 {
-			w.Owner[s] = nc.ID
+			w.setOwner(s, nc.ID)
 			nc.Systems = append(nc.Systems, s)
 		}
 	}
 	nc.Peak = len(nc.Systems)
 	for _, k := range known {
 		if w.R.Float64() < 0.6 && tech.Get(k).Domain != tech.Biology {
-			nc.Known[k] = true
+			w.know(nc, k)
 		}
 	}
 	w.recompute(nc)

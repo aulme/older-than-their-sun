@@ -22,7 +22,7 @@ func (w *World) heir(old *Civ, home int, origin string) *Civ {
 	// origin is heirs or cut: the key of what the old people became
 	nc := w.newCiv(home, old.Species, -1)
 	nc.Origin = species.MadeBy(origin, old.ID)
-	nc.Line = append(append([]int(nil), old.Line...), old.ID)
+	w.setLine(nc, append(append([]int(nil), old.Line...), old.ID))
 	nc.Systems, nc.Peak = nil, 0
 	nc.Own = old.Own
 	nc.Morality = old.Morality
@@ -31,19 +31,25 @@ func (w *World) heir(old *Civ, home int, origin string) *Civ {
 	nc.DarkAges, nc.Renaissances = old.DarkAges, old.Renaissances // the institutions are the old ones', however new the name
 	nc.LastDark = old.LastDark
 	nc.NextDrift = old.NextDrift
-	nc.Named = old.Named // the line's word for the state beneath is the heir's; see beneath.go
-	for k := range old.Known {
-		nc.Known[k] = true
+	w.setNamed(nc, old.Named) // the line's word for the state beneath is the heir's; see beneath.go
+	for _, k := range knownOf(old) {
+		w.know(nc, k)
+	}
+	for _, k := range sortedKeys(old.Scars) {
+		w.scar(nc, k)
+	}
+	for _, k := range sortedKeys(old.Boons) {
+		w.boon(nc, k)
 	}
 	for _, m := range []struct{ to, from map[string]bool }{
-		{nc.Scars, old.Scars}, {nc.Boons, old.Boons}, {nc.Faced, old.Faced}, {nc.Locked, old.Locked}, {nc.Lifted, old.Lifted},
+		{nc.Faced, old.Faced}, {nc.Locked, old.Locked}, {nc.Lifted, old.Lifted},
 	} {
 		for k, v := range m.from {
 			m.to[k] = v
 		}
 	}
-	for k, v := range old.Miracles {
-		nc.Miracles[k] = v
+	for _, k := range sortedKeys(old.Miracles) {
+		w.holdMiracle(nc, k, old.Miracles[k])
 	}
 	for _, m := range []struct{ to, from map[int]bool }{
 		{nc.Met, old.Met}, {nc.Reached, old.Reached}, {nc.Trade, old.Trade}, {nc.Fathomed, old.Fathomed}, {nc.Watched, old.Watched}, {nc.Marked, old.Marked}, {nc.Ridden, old.Ridden},
@@ -155,7 +161,7 @@ func (w *World) deal(old *Civ, d *dealing, fate Fate, cause string) {
 			h = w.Civs[w.Sources[l.Source].Holder]
 		}
 		h.Wielded = append(h.Wielded, l)
-		l.Finder = h.ID
+		w.setFinder(l, h.ID)
 	}
 	for _, key := range old.held() {
 		for _, h := range d.heirs {
@@ -167,8 +173,8 @@ func (w *World) deal(old *Civ, d *dealing, fate Fate, cause string) {
 				wielded = wielded || l.Node == key
 			}
 			if !wielded {
-				delete(h.Known, key)
-				delete(h.Miracles, key)
+				w.forgetNode(h, key)
+				w.dropMiracle(h, key)
 			}
 		}
 	}
@@ -182,7 +188,7 @@ func (w *World) deal(old *Civ, d *dealing, fate Fate, cause string) {
 					}
 				}
 			}
-			o.Master = h.ID
+			w.setMaster(o, h.ID, o.Vassal)
 			h.Ruled++
 		}
 	}
@@ -199,7 +205,7 @@ func (w *World) deal(old *Civ, d *dealing, fate Fate, cause string) {
 // guns, the grid and the dock's rate there, and the works on it. The
 // old people's list of worlds is the caller's to keep or clear.
 func (w *World) handWorld(old, h *Civ, s int) {
-	w.Owner[s] = h.ID
+	w.setOwner(s, h.ID)
 	h.Systems = append(h.Systems, s)
 	if g, ok := old.Guns[s]; ok {
 		if h.Guns == nil {
@@ -284,6 +290,7 @@ func (w *World) sunder(old *Civ, heirs []*Civ, fate Fate, cause string) {
 	for _, wr := range w.Wars {
 		if !wr.Over && (wr.Sides[0] == old.ID || wr.Sides[1] == old.ID) {
 			wr.Over, wr.Ended, wr.Result = true, w.Now, cause
+			w.warOver(wr, cause)
 			e := w.Civs[wr.Sides[1-wr.side(old.ID)]]
 			delete(e.Wars, old.ID)
 		}
@@ -300,7 +307,9 @@ func (w *World) sunder(old *Civ, heirs []*Civ, fate Fate, cause string) {
 	}
 	old.Systems, old.Works, old.Wielded, old.Voyages, old.Guns, old.Muster = nil, nil, nil, nil, nil, nil
 	old.Wars, old.Trade = map[int]bool{}, map[int]bool{}
-	old.Stage, old.Fate, old.Cause, old.Ended, old.Fell = Dead, fate, cause, w.Now, w.Now
+	w.setStage(old, Dead)
+	w.setFate(old, fate, cause)
+	old.Ended, old.Fell = w.Now, w.Now
 	old.FellDependent = len(old.Dependent) > 0
 	old.Into = "people"
 	for _, h := range heirs {
@@ -319,7 +328,7 @@ func (w *World) inheritWar(wr *War, old, h *Civ) {
 	nw := &War{ID: len(w.Wars), Sides: [2]int{h.ID, e.ID}, Began: wr.Began, Cause: wr.Cause, CauseOf: wr.CauseOf, Nth: 1, Named: -1, Pact: -1, Principal: -1, Hire: -1, Contested: map[int]int{}, Called: map[int]bool{},
 		Slights: map[int]float64{}, Sent: map[int]float64{}, Slighted: map[int]float64{}, SlightTold: map[int]bool{}}
 	nw.Will = [2]float64{wr.Will[i], wr.Will[1-i]}
-	w.Wars = append(w.Wars, nw)
+	w.addWar(nw)
 	h.Wars[e.ID], e.Wars[h.ID] = true, true
 	h.Fought[e.ID], e.Fought[h.ID] = 1, e.Fought[h.ID]+1
 	h.Tally.Fought++
@@ -469,7 +478,7 @@ func (w *World) shatter(c *Civ, why reason, forgotten []string) {
 	t := &w.Cfg.Tuning.Ossify
 	if c.Species.Profile().Backups {
 		for _, k := range forgotten {
-			c.Known[k] = true // the backups are on every world; each shard wakes with the whole tree
+			w.know(c, k) // the backups are on every world; each shard wakes with the whole tree
 		}
 	}
 	worlds := []int{c.Home}
@@ -494,7 +503,7 @@ func (w *World) shatter(c *Civ, why reason, forgotten []string) {
 		for _, tl := range h.Lore {
 			tl.Wear = min(2, tl.Wear+1) // a step more worn than the old people held it
 		}
-		h.Stage = Emergent
+		w.setStage(h, Emergent)
 		w.recompute(h)
 		ids, stars := shardIDs(d.heirs)
 		p := why.params("why")
@@ -528,7 +537,7 @@ func (w *World) cutOff(c *Civ, star int) *Civ {
 	}
 	w.passOn(c, h)
 	h.Peak = 1
-	h.Stage = Interstellar
+	w.setStage(h, Interstellar)
 	w.recompute(c)
 	w.recompute(h)
 	w.renew(c, 0.05)

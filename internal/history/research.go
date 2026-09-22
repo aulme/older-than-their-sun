@@ -190,7 +190,7 @@ func (w *World) choose(c *Civ) string {
 
 // learn adds a node, applies its side effects and fires its filter.
 func (w *World) learn(c *Civ, n *tech.Node, fire bool) {
-	c.Known[n.Key] = true
+	w.know(c, n.Key)
 	w.stir(c)
 	if n.Key == resilience {
 		w.unveil(c)

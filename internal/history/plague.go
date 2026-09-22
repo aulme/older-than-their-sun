@@ -286,6 +286,7 @@ func (w *World) infect(c *Civ, p *Plague, from *Civ, roadKey string) *Infection 
 		inf.From = from.ID
 	}
 	c.Infections[p.ID] = inf
+	w.infected(c, p)
 	p.Hosts++
 	p.Caught++
 	p.Peak = max(p.Peak, p.Hosts)
@@ -411,7 +412,7 @@ func (w *World) fightPlagues(c *Civ) {
 				w.event(KSealedDoors, c, nil, -1, P{}).Plague = p.ID
 			}
 			if inf.Held == t.CreedTicks && !c.Scars[ScarQuarantine] {
-				c.Scars[ScarQuarantine] = true
+				w.scar(c, ScarQuarantine)
 				w.event(KQuarantineCreed, c, nil, -1, P{}).Plague = p.ID
 			}
 			if rider != nil && !ridden {
@@ -426,7 +427,7 @@ func (w *World) fightPlagues(c *Civ) {
 
 // cure is a people rid of a plague: immune for good.
 func (w *World) cure(c *Civ, p *Plague) {
-	delete(c.Infections, p.ID)
+	w.cleared(c, p.ID)
 	c.Immune[p.ID] = true
 	p.Hosts--
 	p.Cures++
@@ -532,8 +533,8 @@ func (w *World) cult(c *Civ, p *Plague, s int) *Civ {
 	nc := w.spawnCiv(s, c.Species, -1)
 	nc.Origin = species.Making{Key: "believers", By: c.ID, From: -1, Legacy: -1, Plague: p.ID}
 	nc.Master = -1
-	for k := range c.Known {
-		nc.Known[k] = true
+	for _, k := range knownOf(c) {
+		w.know(nc, k)
 	}
 	w.forget(nc, 0.2)
 	w.recompute(nc)
@@ -541,6 +542,7 @@ func (w *World) cult(c *Civ, p *Plague, s int) *Civ {
 	w.inherit(nc, c, 0)
 	nc.Immune[p.ID] = true
 	nc.Infections[p.ID] = &Infection{Since: w.Now, From: c.ID, Road: "belief", Carrier: true}
+	w.infected(nc, p)
 	p.Hosts++
 	p.Cults++
 	c.Tally.Cults++

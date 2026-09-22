@@ -3,8 +3,6 @@ package main
 import (
 	"fmt"
 	"io"
-
-	"worldgen/internal/history"
 )
 
 // Blocs: nothing declared; the connected components of the partner graph
@@ -26,8 +24,8 @@ type BlocRec struct {
 	SlightsBy int // peoples that took any slight
 }
 
-func flattenBlocs(w *history.World) BlocRec {
-	n := len(w.Civs)
+func flattenBlocs(w *world) BlocRec {
+	n := len(w.State.Civs)
 	parent := make([]int, n)
 	for i := range parent {
 		parent[i] = i
@@ -42,19 +40,19 @@ func flattenBlocs(w *history.World) BlocRec {
 	}
 	union := func(a, b int) { parent[find(a)] = find(b) }
 	linked := make([]bool, n)
-	for _, c := range w.Civs {
-		for _, p := range c.PeakTrade {
+	for _, c := range w.State.Civs {
+		for _, p := range c.Batch.PeakTrade {
 			union(c.ID, p)
 			linked[c.ID], linked[p] = true, true
 		}
 	}
 	size := map[int]int{}
-	for _, c := range w.Civs {
+	for _, c := range w.State.Civs {
 		if linked[c.ID] {
 			size[find(c.ID)]++
 		}
 	}
-	r := BlocRec{Seed: w.Seed}
+	r := BlocRec{Seed: w.seed()}
 	for _, s := range size {
 		if s >= 2 {
 			r.Blocs++
@@ -62,7 +60,7 @@ func flattenBlocs(w *history.World) BlocRec {
 			r.Largest = max(r.Largest, s)
 		}
 	}
-	for _, wr := range w.Wars {
+	for _, wr := range w.State.Wars {
 		a, b := wr.Sides[0], wr.Sides[1]
 		switch {
 		case !linked[a] || !linked[b]:
@@ -73,11 +71,12 @@ func flattenBlocs(w *history.World) BlocRec {
 			r.Across++
 		}
 	}
-	for _, c := range w.Civs {
-		r.Slights += c.Tally.Slights
-		r.Judged += c.Tally.Judged
-		r.Deterred += c.Tally.Deterred
-		if c.Tally.Slights > 0 {
+	for _, c := range w.State.Civs {
+		t := c.Batch.Tally
+		r.Slights += t.Slights
+		r.Judged += t.Judged
+		r.Deterred += t.Deterred
+		if t.Slights > 0 {
 			r.SlightsBy++
 		}
 	}

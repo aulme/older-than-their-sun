@@ -45,7 +45,7 @@ func init() {
 		Overcome: func(w *World, c *Civ) {}, // most keep it in the vial; the legends note the ones that did not
 		Scar: func(w *World, c *Civ) {
 			if !c.Scars[ScarVial] {
-				c.Scars[ScarVial] = true
+				w.scar(c, ScarVial)
 				w.faced(c, "containment", "scarred", "", -1)
 			}
 		},

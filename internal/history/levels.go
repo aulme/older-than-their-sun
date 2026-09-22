@@ -170,10 +170,10 @@ func (w *World) recompute(c *Civ) {
 		c.Envelope++
 	}
 	if c.Aloft && c.Stage == Emergent {
-		c.Stage = Interstellar
+		w.setStage(c, Interstellar)
 	}
 	if c.Stage == Emergent && c.Reach >= 10 {
-		c.Stage = Interstellar
+		w.setStage(c, Interstellar)
 	}
 }
 

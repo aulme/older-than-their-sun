@@ -91,9 +91,6 @@ func RarityFrame(key string) string {
 	return key
 }
 
-// GrantedNodes lists every node some natural rarity grants, for the batch.
-var GrantedNodes = []string{"causal_physics", "deep_time", "unmaking", "stellar_weapons", "exotic_matter", "transcendence"}
-
 // firstHarness is the line and the deed for the first source of a kind a
 // people harnesses; the kinds with no line in the table pass in silence.
 // A structure announces itself when it is raised; see raise.
@@ -298,8 +295,8 @@ func (w *World) transfer(s *Source, from, to *Civ) {
 	s.Holder = to.ID
 	if s.Legacy >= 0 {
 		l := w.Legacies[s.Legacy]
-		l.Finder = to.ID
-		l.State = Wielded
+		w.setFinder(l, to.ID)
+		w.setState(l, Wielded)
 		held := false
 		for _, x := range to.Wielded {
 			if x == l {
@@ -319,7 +316,8 @@ func (w *World) bury(s *Source, from *Civ, star int) {
 	s.Star, s.Carried = star, -1
 	if s.Legacy >= 0 {
 		l := w.Legacies[s.Legacy]
-		l.State, l.Star = Buried, star
+		w.moveRemain(l, star)
+		w.setState(l, Buried)
 	}
 }
 
@@ -418,8 +416,8 @@ func (w *World) leaveBounty(l *Legacy, i int) {
 // useBounty is a people putting a bounty to use: it yields to the star's
 // holder from now on.
 func (w *World) useBounty(c *Civ, l *Legacy) {
-	l.State = Wielded
-	l.Finder = c.ID
+	w.setState(l, Wielded)
+	w.setFinder(l, c.ID)
 	s := w.Sources[l.Source]
 	if s.Since == 0 {
 		s.Since = w.Now

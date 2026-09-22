@@ -28,14 +28,6 @@ type Entry struct {
 	Weight   float64           `json:"weight,omitempty"`
 }
 
-// Recipe is how a translated name was made: the entry, its pattern and
-// the slots as filled, so a consumer can re-render or translate it.
-type Recipe struct {
-	Entry   string `json:"entry"`
-	Pattern string `json:"pattern"`
-	Slots   string `json:"slots,omitempty"` // hole=value pairs, joined with "; "
-}
-
 type inventory struct {
 	Notice     map[string]map[string]float64 `json:"notice"`     // a namer's trait, world or organisation -> field -> weight
 	Properties []string                      `json:"properties"` // the properties the floor test counts
@@ -533,7 +525,7 @@ func (b *Book) translatedRows() {
 			continue
 		}
 		k := b.selfProps(c)
-		o := Object{"civ", c.ID}
+		o := Object{Kind: "civ", ID: c.ID}
 		r := stream(w.Seed, itoa(c.ID), "gloss", itoa(c.ID), "self")
 		if r.IntN(3) == 0 {
 			if e := b.choose(r, c.ID, "civ", "self", k); e != nil {
@@ -630,11 +622,11 @@ func (b *Book) gloss(o Object, by int, gloss string) {
 
 // exonym is a people's name for another it has met, in a tone.
 func (b *Book) exonym(by, other int, tone string, y history.Year) {
-	if by == other || b.voice[by] == None || b.has(Object{"civ", other}, by, tone) {
+	if by == other || b.voice[by] == None || b.has(Object{Kind: "civ", ID: other}, by, tone) {
 		return
 	}
 	k := b.civProps(by, b.w.Civs[other], y)
-	if row, ok := b.translate(by, Object{"civ", other}, tone, y, k); ok {
+	if row, ok := b.translate(by, Object{Kind: "civ", ID: other}, tone, y, k); ok {
 		b.add(row)
 	}
 }
@@ -652,7 +644,7 @@ func (b *Book) friend(by, other int, y history.Year) {
 // enemy is the name at the first war or crime: monster when the crime
 // was a heavy one.
 func (b *Book) enemy(by, other int, y history.Year, monster bool) {
-	o := Object{"civ", other}
+	o := Object{Kind: "civ", ID: other}
 	if b.has(o, by, "enemy") || b.has(o, by, "monster") {
 		return
 	}
@@ -679,7 +671,7 @@ func (b *Book) starTranslated(by, star int, tone, place string, y history.Year) 
 	if by < 0 || star < 0 || b.voice[by] == None {
 		return
 	}
-	o := Object{"star", star}
+	o := Object{Kind: "star", ID: star}
 	if b.has(o, by, tone) {
 		return
 	}
@@ -703,7 +695,7 @@ func (b *Book) findRows(f *history.Event) {
 	k := b.workProps(by, l)
 	switch {
 	case l.Elder != nil:
-		if row, ok := b.translate(by, Object{"elder", l.Elder.ID}, "stranger", f.Year, k); ok {
+		if row, ok := b.translate(by, Object{Kind: "elder", ID: l.Elder.ID}, "stranger", f.Year, k); ok {
 			b.add(row)
 		}
 	case l.Maker < 0:
@@ -711,10 +703,10 @@ func (b *Book) findRows(f *history.Event) {
 		if l.Maker == by {
 			return
 		}
-		b.adoptFrom(by, l.Maker, Object{"civ", l.Maker}, f.Year)
-		b.adoptFrom(by, l.Maker, Object{"star", l.Star}, f.Year)
+		b.adoptFrom(by, l.Maker, Object{Kind: "civ", ID: l.Maker}, f.Year)
+		b.adoptFrom(by, l.Maker, Object{Kind: "star", ID: l.Star}, f.Year)
 	default:
-		if row, ok := b.translate(by, Object{"makers", l.ID}, "stranger", f.Year, k); ok {
+		if row, ok := b.translate(by, Object{Kind: "makers", ID: l.ID}, "stranger", f.Year, k); ok {
 			b.add(row)
 		}
 	}
@@ -750,7 +742,7 @@ func (b *Book) plagueTranslated(by int, p *history.Plague, host int, tone string
 	if by < 0 || b.voice[by] == None {
 		return
 	}
-	o := Object{"plague", p.ID}
+	o := Object{Kind: "plague", ID: p.ID}
 	if b.has(o, by, tone) {
 		return
 	}
@@ -776,7 +768,7 @@ func (b *Book) title(id int, y history.Year) {
 	if c.Cause != "" {
 		k.set("cause:" + c.Cause)
 	}
-	if row, ok := b.translate(id, Object{"title", id}, "self", y, k); ok {
+	if row, ok := b.translate(id, Object{Kind: "title", ID: id}, "self", y, k); ok {
 		b.add(row)
 	}
 }
@@ -811,7 +803,7 @@ func (b *Book) warRows(f *history.Event) {
 		other := wr.Sides[1-i]
 		k.val("enemy", tok("civ", other, side))
 		k.val("self", tok("civ", side, side))
-		if row, ok := b.translate(side, Object{"war", wr.ID}, "self", wr.Began, k); ok {
+		if row, ok := b.translate(side, Object{Kind: "war", ID: wr.ID}, "self", wr.Began, k); ok {
 			b.add(row)
 		}
 	}
@@ -841,7 +833,7 @@ func (b *Book) word(f *history.Event) {
 		return
 	}
 	name, rec := b.render(r, e, c.ID, k)
-	b.add(Row{Object: Object{"word", c.ID}, By: c.ID, Name: name, Mode: "translated", Tone: "self", Coined: f.Year, From: -1, Recipe: rec})
+	b.add(Row{Object: Object{Kind: "word", ID: c.ID}, By: c.ID, Name: name, Mode: "translated", Tone: "self", Coined: f.Year, From: -1, Recipe: rec})
 }
 
 func (b *Book) hasWord(id int) bool {
@@ -862,7 +854,7 @@ func (b *Book) objectRows() {
 		if s.Kind != history.MadeSource || s.Maker < 0 || s.Form == "" || b.voice[s.Maker] == None {
 			continue
 		}
-		o := Object{"source", s.ID}
+		o := Object{Kind: "source", ID: s.ID}
 		if b.voice[s.Maker] == Transcribed {
 			r := stream(w.Seed, itoa(s.Maker), "source", itoa(s.ID), "self")
 			b.add(Row{Object: o, By: s.Maker, Name: b.phon[s.Maker].Word(r, 1+r.IntN(2)), Mode: "transcribed", Tone: "self", Coined: s.Made, From: -1})
@@ -891,13 +883,13 @@ func (b *Book) objectRows() {
 			if s.Maker != f.Object || s.Made != f.Year || s.Key != "manna" || s.Form == "" {
 				continue
 			}
-			o := Object{"source", s.ID}
+			o := Object{Kind: "source", ID: s.ID}
 			if b.has(o, f.Object, "self") || b.voice[f.Object] == None {
 				continue
 			}
 			var src *Row
-			for i := range b.rows[Object{"source", from}] {
-				r := &b.rows[Object{"source", from}][i]
+			for i := range b.rows[Object{Kind: "source", ID: from}] {
+				r := &b.rows[Object{Kind: "source", ID: from}][i]
 				if r.By == f.Subject {
 					src = r
 					break
@@ -960,7 +952,7 @@ func (b *Book) skyRows() {
 			sky = sky[:skyNames]
 		}
 		for _, x := range sky {
-			o := Object{"star", x.star}
+			o := Object{Kind: "star", ID: x.star}
 			if b.has(o, c.ID, "self") {
 				continue
 			}

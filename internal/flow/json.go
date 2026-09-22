@@ -57,3 +57,17 @@ func (c *Category) UnmarshalJSON(b []byte) error {
 	}
 	return fmt.Errorf("flow: unknown category %q", s)
 }
+
+// MarshalText writes a kind by its symbol, as an income's keys are.
+func (k Kind) MarshalText() ([]byte, error) { return []byte(k.Symbol()), nil }
+
+// UnmarshalText reads a kind by its symbol.
+func (k *Kind) UnmarshalText(b []byte) error {
+	for _, x := range Kinds {
+		if x.Symbol() == string(b) {
+			*k = x
+			return nil
+		}
+	}
+	return fmt.Errorf("flow: unknown kind %q", b)
+}

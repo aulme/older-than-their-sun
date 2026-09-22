@@ -36,7 +36,7 @@ func (w *World) blastAll(what reason, adj float64) {
 		}
 		for _, s := range c.Systems {
 			if w.Bio[s] == BioComplex && w.R.Float64() < 0.3 {
-				w.Bio[s] = BioSimple
+				w.setBio(s, BioSimple)
 			}
 		}
 		if !c.Active() {

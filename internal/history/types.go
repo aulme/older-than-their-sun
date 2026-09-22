@@ -10,22 +10,26 @@ package history
 import (
 	"math/rand/v2"
 	"time"
+
 	"worldgen/internal/mind"
+	"worldgen/internal/record"
 
 	"worldgen/internal/flow"
 	"worldgen/internal/galaxy"
 	"worldgen/internal/species"
 )
 
-// Year is years relative to the present (negative = past).
-type Year int64
+// Year is years since the dawn of the current age (negative = the
+// ages of myth): the record's own type.
+type Year = record.Year
 
 // Kind is what an event is: a key in data/events.json, where its
 // parameters, its meaning and, for a fact, its sort and weight are
 // declared. The constants are generated from the file (kinds_gen.go):
 // F-kinds are facts, the ones a people can hold a tale of; K-kinds are
-// the rest of the chronicle.
-type Kind string
+// the rest of the chronicle. The type is the record's, so the readers of
+// the files compare against the same constants.
+type Kind = record.Kind
 
 // P is an event's parameters: the keys its kind declares, each an id, a
 // number, a key or a flag. What is text today is a debt to the lookups
@@ -311,58 +315,9 @@ type Civ struct {
 	Endure       float64 // kyr left under the failing star
 }
 
-// Tally counts what a people did in war and peace, for the batch reports.
-type Tally struct {
-	Declared, Fought, Taken, Lost, Glassed int
-	Fleets, Native, Scouts, Relief         int
-	Pacts, Refused, Betrayals, Called      int
-	Capitulated                            bool
-	// exploration
-	Surveys, Charted, Blind, BlindLost          int
-	FindSurvey, FindSettle, FindChance, FindOwn int
-	MetTouch, MetHeard, MetSurvey, MetShip      int
-	Searched, Sighted                           float64 // kyr with the Sight turned outward; kyr holding it
-	// tellings
-	Tales, Witnessed, Told, Read, Inherited              int
-	Forgot, Myths, Revised, Blamed, Testaments, Restored int
-	// flows: ticks lived, ticks shedding, both by era, and both alone (one system)
-	Ticks, Lean          int
-	TicksAt, LeanAt      [5]int
-	AloneAt, LeanAloneAt [5]int
-	// trade: what was sent and what came, over the life; partners ever, and partners ever sent to
-	Sent, Got     flow.Income
-	Partners, Fed int
-	// ships: built, lost in battle, rotted laid up; ship-kyr of flow spent building; ticks starfaring, at the want, with ships laid up
-	Built, ShipsLost, Rotted    int
-	Building                    float64
-	StarTicks, AtWant, LaidTick int
-	// battles: fought as the attacker, won on the roll, worlds taken with nothing in the sky; garrison moves and musters ordered
-	Battles, Won, EmptySky int
-	Garrisons, Musters     int
-	// sightings: fleets seen by own eyes, interceptors sent, meetings fought, own fleets turned back or broken in the dark, pickets sent, ships crewed from fields
-	Sightings, Intercepts, Meetings, Caught, Pickets, Salvaged int
-	// wisdom: peoples fathomed, fathomings lost to a dark age, brokered attempts made for others, wars that ended unfathomed, remains sealed by looking before the leap; messages dropped unread; councils' verdicts and the sum of the acted-on odds' distance from the mean
-	Fathomed, Unfathomed, Brokered, Misunderstood, Leaps int
-	Dropped, Judged                                      int
-	ActedGap                                             float64
-	// contracts: bought, sold, broken by this people, sold out of by it, tributes paid, sightings sold
-	Hired, Sold, Broke, BoughtOff, Tributes, SoldSightings int
-	// slights: taken in all; councils the offence alone held back
-	Slights  float64
-	Deterred int
-	// plagues: caught, cured, ticks contained, worlds lost, cults formed from it; senders closed out, messages dropped for it
-	Sickened, Cured, Contained, WorldsSick, Cults  int
-	Refusals, Shut                                 int
-	Attempts, Poisoned, Detected, Breakouts, Leaks int // plagues made and tried: attempts, ones that took, ones seen, ones that got out at discovery, ones that leaked while held
-	Ridden, Risen                                  int // peoples ridden by this parasite; risings against a rider
-	// ossification: facings of the filter, renaissances, times set, breaks, and the stiffness summed at each facing; see ossify.go
-	OssFaced, OssRenewed, OssSet, OssBroke int
-	OssStiff                               float64
-	// kinds: see eldritch.go and waking.go
-	Appeared, Deepened, Tithed, Sleeps, Wakings, Demands, Unmade int
-	Eaten, Consumed                                              int // ships grown by eating; worlds stripped and held empty
-	Hunts, Drifts                                                int // hunts declared on a hole in the ledger; times the shape drifted
-}
+// Tally counts what a people did in war and peace, for the batch reports:
+// a record type, written to the state as it is.
+type Tally = record.Tally
 
 // Living is true for active and remnant civilisations.
 func (c *Civ) Living() bool { return c.Stage != Dead }
@@ -548,6 +503,7 @@ type Config struct {
 	EndFertilityLow float64
 	Linger          Year
 	MaxFades        float64      // give up after this many fades and flag it
+	Until           Year         // stop at this year of the age instead of the age's own end, for a state as of then; 0 for none
 	Debug           bool         // log the state of the galaxy every million years
 	TraceAI         bool         // log every council's reasoning
 	Profile         bool         // log each phase's time every million years
@@ -578,6 +534,7 @@ type World struct {
 	Present    Year    // when the simulation stopped; years are printed relative to this
 	Waning     Year    // when the waning was declared
 	Capped     bool    // the age never ended on its own; stopped at MaxFades
+	Truncated  bool    // stopped at Cfg.Until, before the age's own end
 	Ticks      int     // ticks run in the current age
 	dt         float64 // current tick in kyr
 	phases     []phase // the tick, in order; see sim.go
@@ -599,6 +556,7 @@ type World struct {
 	Traces     []Trace
 	Events     []*Event      // what happened, as it happened, by id; see lore.go
 	Chronicle  []*Event      // the same in the order it is told, and by year once the run is over
+	notes      []*Event      // the silent events of the run, placed after the told ones at the end; see notes.go
 	factsAt    map[int][]int // facts by star
 	// war and diplomacy
 	Wars        []*War

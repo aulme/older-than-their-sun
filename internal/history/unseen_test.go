@@ -1,7 +1,6 @@
 package history
 
 import (
-	"strings"
 	"testing"
 
 	"worldgen/internal/flow"
@@ -192,13 +191,14 @@ func TestHunt(t *testing.T) {
 	for _, tl := range c.Lore {
 		f := w.Events[tl.Fact]
 		if f.Kind == FTaken && f.Subject == c.ID && f.Object == x.ID {
-			if line := w.tell(c, tl); !strings.Contains(line, "nameless") {
-				t.Fatalf("the taking names them: %q", line)
+			// the telling has no name for them: the view says "something nameless"
+			if w.seen(c, f.Object) >= 0 {
+				t.Fatalf("the taking names them: %s", f)
 			}
 		}
 		if f.Kind == FHunt && f.Subject == c.ID {
-			if line := w.tell(c, tl); !strings.Contains(line, "hole") {
-				t.Fatalf("the deduction: %q", line)
+			if f.Star < 0 {
+				t.Fatalf("the deduction names no star: %s", f)
 			}
 		}
 	}

@@ -159,7 +159,7 @@ func (w *World) seat(c *Civ) {
 		s = best.Star
 	}
 	if s != c.Home {
-		c.Home = s
+		w.setHome(c, s)
 	}
 }
 
@@ -356,8 +356,8 @@ func (w *World) rest(c *Civ, why reason) {
 		}
 	}
 	c.Systems = []int{t}
-	w.Owner[t] = c.ID
-	c.Home = t
+	w.setOwner(t, c.ID)
+	w.setHome(c, t)
 	c.Record = append(c.Record, Record{Kind: "rest", Legacy: -1})
 	w.takeOver(c, t)
 	w.recompute(c)

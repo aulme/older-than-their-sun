@@ -31,13 +31,13 @@ func (w *World) starDeaths() {
 		}
 		if Year(s.DiesAt) <= w.Now {
 			if s.Massive() {
-				s.Kill()
+				w.killStar(s)
 				w.blast(i, 30, "supernova", nil, 1, -1)
 				continue
 			}
 			cid := w.Owner[i]
-			s.Kill()
-			w.Bio[i] = BioNone
+			w.killStar(s)
+			w.setBio(i, BioNone)
 			if cid >= 0 {
 				c := w.Civs[cid]
 				if i == c.Home && c.Active() {
@@ -72,7 +72,7 @@ func (w *World) blast(origin int, radius float64, way string, by *Civ, adj float
 			continue
 		}
 		if w.Bio[s] == BioComplex {
-			w.Bio[s] = BioSimple
+			w.setBio(s, BioSimple)
 		}
 		if cid := w.Owner[s]; cid >= 0 {
 			hit[cid] = append(hit[cid], s)
@@ -129,9 +129,9 @@ func (w *World) leaveHome(c *Civ, why reason) {
 		return
 	}
 	c.Systems = remove(c.Systems, old)
-	w.Owner[old] = -1
+	w.setOwner(old, -1)
 	w.trace(old, "burned_cradle", c)
-	c.Home = best
+	w.setHome(c, best)
 	c.Dying = false
 	c.Morale -= 1
 	w.fact(FLeftStar, c, nil, old).with(P{"to": best}).with(why.params("why"))
@@ -162,7 +162,7 @@ func (w *World) dyingSun(c *Civ) {
 		w.fact(FDoom, c, nil, c.Home).with(P{"endure": int(c.Endure)})
 	}
 	if c.Known["star_lifting"] && !c.Boons["star kept"] {
-		c.Boons["star kept"] = true
+		w.boon(c, "star kept")
 		w.event(KStarKept, c, nil, c.Home, P{})
 		c.Endure += 5000
 	}
@@ -210,7 +210,7 @@ func init() {
 			w.faced(c, "cosmic", "overcome", "", -1)
 		},
 		Scar: func(w *World, c *Civ) {
-			c.Scars[ScarBurningSky] = true
+			w.scar(c, ScarBurningSky)
 			for _, s := range w.blastWorlds {
 				if s != c.Home {
 					w.loseSystem(c, s, "scoured", reason{})

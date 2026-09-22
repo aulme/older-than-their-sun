@@ -16,6 +16,7 @@ func Generate(seed uint64, cfg Config) *World {
 	w.runAges()
 	w.runAge()
 	w.skyEvents()
+	w.placeNotes()
 	sort.SliceStable(w.Chronicle, func(i, j int) bool { return w.Chronicle[i].Year < w.Chronicle[j].Year })
 	return w
 }
@@ -40,8 +41,9 @@ func newWorld(seed uint64, cfg Config) *World {
 	for i := range n {
 		w.Owner[i] = -1
 	}
+	w.Now = cfg.DeepStart // the first notes are the substrate's, before the ages
 	if g.Sol >= 0 {
-		w.Bio[g.Sol] = BioSimple
+		w.setBio(g.Sol, BioSimple)
 	}
 	w.Sources, w.sourcesAt = naturalSources(g)
 	w.Reservoir = map[int]*Reservoir{}
@@ -158,6 +160,10 @@ func (w *World) runAge() {
 			w.Capped = true
 			break
 		}
+		if cfg.Until > 0 && y >= cfg.Until {
+			w.Truncated = true // asked for the age as of this year: the same ticks, stopped early
+			break
+		}
 		y += cfg.Step
 	}
 	w.Present = y
@@ -207,11 +213,11 @@ func (w *World) life() {
 		switch b {
 		case BioNone:
 			if w.G.Stars[i].Hab > 0 && w.chance(w.G.Stars[i].Hab*0.000002*w.Law.Life()) {
-				w.Bio[i] = BioSimple
+				w.setBio(i, BioSimple)
 			}
 		case BioSimple:
 			if w.chance(0.00005 * w.Law.Life()) {
-				w.Bio[i] = BioComplex
+				w.setBio(i, BioComplex)
 			}
 		case BioComplex:
 			if i != w.G.Sol && w.Owner[i] < 0 && !w.G.Stars[i].Dead() && w.chance(0.0004*w.fertility()) {

@@ -217,7 +217,7 @@ func (w *World) makeObject(c *Civ, key string, l *Legacy, parent *Source, how st
 	if l == nil {
 		l = &Legacy{ID: len(w.Legacies), Age: -1, Maker: c.ID, Kind: Artifact, Star: c.Home, Node: key, Portrait: f.Key,
 			State: Wielded, People: -1, Finder: c.ID, Level: "miracle", Cond: Abandoned, Source: s.ID, Plague: -1}
-		w.Legacies = append(w.Legacies, l)
+		w.addLegacy(l)
 	} else {
 		l.Source = s.ID
 		l.State, l.Finder, l.Level = Wielded, c.ID, "miracle"
@@ -305,7 +305,7 @@ func (w *World) lose(s *Source, from *Civ, fate string) {
 	w.transfer(s, from, nil)
 	s.Star, s.Carried, s.Fate = -1, -1, fate
 	if s.Legacy >= 0 {
-		w.Legacies[s.Legacy].State = Lost
+		w.setState(w.Legacies[s.Legacy], Lost)
 	}
 }
 
@@ -373,7 +373,7 @@ func (w *World) rise(c *Civ, s *Source) {
 	nc.Seen = c.Declines
 	for _, k := range knownOf(c) {
 		if w.R.Float64() < 0.5 {
-			nc.Known[k] = true
+			w.know(nc, k)
 		}
 	}
 	w.forget(nc, 0.3)

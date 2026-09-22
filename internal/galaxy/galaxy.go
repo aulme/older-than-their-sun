@@ -37,7 +37,33 @@ type Star struct {
 	Mag      float64 // apparent magnitude from Earth; 99 if not visible or not real
 	Note     string  // giant, supergiant, white dwarf, brown dwarf, subdwarf
 	Remnant  string  // for class N, a key: neutron_star, magnetar, black_hole, great_hole; RemnantWords say them
+	Desig    string  // what the human label is: proper, or a catalogue's key (hip, hd, gj, ...), or code for a synthetic star; see Designation
 	cat      *CatStar
+}
+
+// Designation classes a star's human label: "proper" for a proper name
+// (Sirius, Ran), the catalogue's key for a designation (HIP 56601 is
+// "hip"), "code" for a synthetic star's label, "" for none.
+func Designation(s *Star) string {
+	switch {
+	case !s.Real || s.Name == "":
+		if s.Name == "" {
+			return ""
+		}
+		return "code"
+	case s.cat == nil || s.cat.Proper():
+		return "proper"
+	}
+	for _, p := range []struct{ prefix, key string }{
+		{"HD ", "hd"}, {"HIP ", "hip"}, {"HR ", "hr"}, {"GJ", "gj"}, {"Gl ", "gj"}, {"G ", "giclas"}, {"L ", "luyten"}, {"LP ", "luyten"}, {"LHS ", "lhs"}, {"LSPM", "lspm"}, {"LTT", "ltt"}, {"NLTT", "nltt"},
+		{"Gaia-", "gaia"}, {"TOI-", "toi"}, {"HAT", "hat"}, {"WASP", "wasp"}, {"K2-", "k2"}, {"Kepler", "kepler"}, {"Wolf ", "wolf"}, {"Ross ", "ross"}, {"BD", "bd"}, {"CD-", "cd"}, {"WISE", "wise"}, {"2MASS", "2mass"}, {"TYC", "tycho"},
+		{"Luyten", "luyten"}, {"Lalande", "lalande"}, {"Lacaille", "lacaille"}, {"Groombridge", "groombridge"}, {"Struve", "struve"}, {"Kruger", "kruger"}, {"COCONUTS", "coconuts"},
+	} {
+		if len(s.Name) >= len(p.prefix) && s.Name[:len(p.prefix)] == p.prefix {
+			return p.key
+		}
+	}
+	return "catalogue"
 }
 
 // Proper says whether the human name is a proper name (Sirius, Ran) as
@@ -46,6 +72,9 @@ type Star struct {
 func (s *Star) Proper() bool {
 	if !s.Real || s.Name == "" {
 		return false
+	}
+	if s.cat == nil && s.Desig != "" {
+		return s.Desig == "proper" // a star rebuilt from a record carries its class
 	}
 	return s.cat == nil || s.cat.Proper()
 }
@@ -202,6 +231,15 @@ func Generate(r *rand.Rand, n int, radius, thickness float64) *Galaxy {
 }
 
 func sq(x float64) float64 { return x * x }
+
+// Rebuild makes a galaxy from stars and systems as a record holds them:
+// the same field as the run's, with its distances indexed, for a reader
+// of the files. The region is looked up by the name the run was given.
+func Rebuild(stars []Star, sys []*System, sol int, radius, thickness float64, rg Region) *Galaxy {
+	g := &Galaxy{Stars: stars, Sys: sys, Sol: sol, Radius: radius, Thickness: thickness, Region: rg, Law: rg.Law}
+	g.index()
+	return g
+}
 
 // Dist returns the distance in light years between two stars.
 func (g *Galaxy) Dist(a, b int) float64 { return g.dist[a*len(g.Stars)+b] }

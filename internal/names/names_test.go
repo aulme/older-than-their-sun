@@ -129,7 +129,7 @@ func TestVoice(t *testing.T) {
 	b := Of(w)
 	for _, c := range w.Civs {
 		self := 0
-		for _, r := range b.Rows(Object{"civ", c.ID}) {
+		for _, r := range b.Rows(Object{Kind: "civ", ID: c.ID}) {
 			if r.Tone == "self" {
 				self++
 			}

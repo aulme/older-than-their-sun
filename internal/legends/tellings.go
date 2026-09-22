@@ -3,53 +3,45 @@ package legends
 import (
 	"fmt"
 
-	"worldgen/internal/history"
+	"worldgen/internal/record"
 )
 
 // tellings prints history as each living people tells it: the tales it
 // holds dearest, in the order it believes they happened, with the years
 // it believes, the names it uses and the slant it puts on them. Dead
 // peoples are printed only in full, as they told it at the end.
-func tellings(p func(string, ...any), w *history.World, full bool) {
+func (v *view) tellings(p func(string, ...any), full bool) {
 	p("=== AS THEY TELL IT ===")
 	shown := 0
-	for _, c := range w.Civs {
-		if !c.Living() && !full {
+	for _, c := range v.st.Civs {
+		if !living(c) && !full {
 			continue
 		}
 		limit := 30
-		if !c.Living() {
+		if !living(c) {
 			limit = 10
 		}
-		tales := w.Telling(c, limit)
-		held, myth := 0, 0
-		for _, t := range c.Lore {
-			if !t.Forgot {
-				held++
-				if t.Wear >= 2 {
-					myth++
-				}
-			}
-		}
+		tales := v.telling(c, limit)
+		m := c.Knowledge.Memory
 		state := "tell it so"
-		if !c.Living() {
+		if !living(c) {
 			state = "told it so, at the end"
 		}
-		p("The %s %s (%d things held, %d of them myth, %d forgotten, %d retold):", c.Tok(), state, held, myth, c.Tally.Forgot, c.Tally.Revised)
+		p("The %s %s (%d things held, %d of them myth, %d forgotten, %d retold):", tok(c.ID), state, m.Held, m.Myth, m.Forgot, m.Revised)
 		if len(tales) == 0 {
 			p("  nothing; they have no story yet")
 		}
 		for _, t := range tales {
 			src := ""
 			switch t.Source {
-			case history.Told:
-				src = fmt.Sprintf(" [told by the %s]", w.Civs[t.From].Tok())
-			case history.Read:
+			case "told":
+				src = fmt.Sprintf(" [told by the %s]", tok(t.From))
+			case "read":
 				src = " [read in a ruin]"
-			case history.Inherited:
+			case "inherited":
 				src = " [handed down]"
 			}
-			p("  %-18s %s%s", believed(w, t), w.Tell(c, t), src)
+			p("  %-18s %s%s", v.believed(t), v.tell(c, t), src)
 		}
 		shown++
 	}
@@ -59,17 +51,13 @@ func tellings(p func(string, ...any), w *history.World, full bool) {
 }
 
 // believed is the year a people puts on a tale: exact while it is fresh,
-// rough once worn, none at all once it is myth.
-func believed(w *history.World, t *history.Tale) string {
-	f := w.Events[t.Fact]
-	switch t.Wear {
-	case 0:
-		return year(f.Year)
-	case 1:
-		y := f.Year - present
-		r := history.Year(100_000)
-		y = (y - r/2) / r * r
-		return "about " + year(y+present)
+// rough once worn, none at all once it is myth. The record carries it.
+func (v *view) believed(t *record.Tale) string {
+	switch {
+	case t.Believed == nil:
+		return "long ago"
+	case t.Wear == 1:
+		return "about " + v.year(*t.Believed)
 	}
-	return "long ago"
+	return v.year(*t.Believed)
 }

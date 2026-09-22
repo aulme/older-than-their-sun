@@ -424,7 +424,7 @@ func (w *World) goNative(x *Expedition) {
 	home := held[len(held)-1]
 	for _, s := range held {
 		c.Systems = remove(c.Systems, s)
-		w.Owner[s] = -1
+		w.setOwner(s, -1)
 	}
 	w.event(KFleetStayed, c, nil, home, P{})
 	nc := w.spawnCiv(home, c.Species, -1)
@@ -432,7 +432,7 @@ func (w *World) goNative(x *Expedition) {
 	nc.Master = -1
 	for _, s := range held {
 		if s != home {
-			w.Owner[s] = nc.ID
+			w.setOwner(s, nc.ID)
 			nc.Systems = append(nc.Systems, s)
 		}
 	}
@@ -442,7 +442,7 @@ func (w *World) goNative(x *Expedition) {
 		s.Carried, s.Star = -1, home
 	}
 	for _, k := range knownOf(c) {
-		nc.Known[k] = true
+		w.know(nc, k)
 	}
 	w.forget(nc, 0.1)
 	w.recompute(nc)

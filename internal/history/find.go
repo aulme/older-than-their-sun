@@ -71,7 +71,7 @@ func findChance(c *Civ) float64 {
 // by settling the star, by a fleet basing there, or by chance ("").
 func (w *World) discover(c *Civ, l *Legacy, how string) {
 	c.Found[l.ID] = true
-	l.Finder = c.ID
+	w.setFinder(l, c.ID)
 	switch how {
 	case "survey":
 		c.Tally.FindSurvey++
@@ -118,7 +118,7 @@ func (w *World) discover(c *Civ, l *Legacy, how string) {
 	if !c.Species.Profile().Can(species.Researches) {
 		a.Master = 0 // no tree to master it into: it wields what it finds, or seals it
 	}
-	w.explain(c, "weighing what to do with "+w.Describe(l), a)
+	w.explain(c, "weighing what to do with legacy "+itoa(l.ID)+" ("+l.Kind.String()+" "+l.Portrait+")", a)
 	pick := a.Pick(w.R.Float64())
 	// whichever way the die falls, a wise people asks whether it can
 	// before it tries
@@ -182,11 +182,11 @@ func (w *World) attemptMaster(c *Civ, l *Legacy) {
 	}
 	diff := w.masterDiff(c, l)
 	if c.level("mil", "sur", "soc")+w.R.NormFloat64()*1.5 >= diff {
-		l.State = Mastered
+		w.setState(l, Mastered)
 		c.Record = append(c.Record, Record{Kind: "mastered", Legacy: l.ID, Known: w.knowsMaker(c, l)})
 		f := w.toldL(FMastered, c, l)
 		if l.Kind == Sleeper {
-			c.Boons[BoonCommunion] = true
+			w.boon(c, BoonCommunion)
 			f.P["way"] = "sleeper"
 			return
 		}
@@ -251,7 +251,7 @@ func (w *World) attemptWield(c *Civ, l *Legacy) {
 	if l.Kind == Field {
 		// hulls: crewed, or not; nothing in a field gets loose
 		if c.Mil+w.R.NormFloat64()*1.5 >= diff {
-			l.State = Wielded
+			w.setState(l, Wielded)
 			c.Record = append(c.Record, Record{Kind: "crewed", Legacy: l.ID, Known: w.knowsMaker(c, l)})
 			w.salvage(c, l)
 		} else {
@@ -260,9 +260,9 @@ func (w *World) attemptWield(c *Civ, l *Legacy) {
 		return
 	}
 	if c.Mil+w.R.NormFloat64()*1.5 >= diff {
-		l.State = Wielded
+		w.setState(l, Wielded)
 		if l.Maker >= 0 && l.Cond == Wreck {
-			l.Cond = Derelict // repaired, after a fashion
+			w.setCond(l, Derelict) // repaired, after a fashion
 		}
 		c.Record = append(c.Record, Record{Kind: "wielded", Legacy: l.ID, Known: w.knowsMaker(c, l)})
 		if l.Kind == Structure && l.Maker >= 0 && (contains(c.Systems, l.Star) || (w.Owner[l.Star] < 0 && w.canLive(c, l.Star))) {
@@ -323,7 +323,7 @@ func (w *World) attemptWield(c *Civ, l *Legacy) {
 
 func (w *World) attemptSeal(c *Civ, l *Legacy) {
 	if c.Soc+w.R.NormFloat64()*1.5 >= 3+c.traitDiff("find")+min(l.condAdj(), 0) {
-		l.State = Sealed
+		w.setState(l, Sealed)
 		c.Record = append(c.Record, Record{Kind: "sealed", Legacy: l.ID, Known: w.knowsMaker(c, l)})
 		w.toldL(FSealed, c, l)
 		return
@@ -334,7 +334,7 @@ func (w *World) attemptSeal(c *Civ, l *Legacy) {
 
 // unleash is the failure: the legacy acts on its own terms.
 func (w *World) unleash(c *Civ, l *Legacy) {
-	l.State = Unleashed
+	w.setState(l, Unleashed)
 	c.Record = append(c.Record, Record{Kind: "unleashed", Legacy: l.ID, Known: w.knowsMaker(c, l)})
 	f := w.toldL(FUnleashed, c, l).with(P{"way": ""})
 	switch l.Kind {
@@ -409,11 +409,11 @@ func (w *World) dropWielded(c *Civ, p float64) {
 			continue
 		}
 		if w.R.Float64() < 0.5 {
-			l.State = Buried
-			l.Star = c.Home
+			w.moveRemain(l, c.Home)
+			w.setState(l, Buried)
 			w.event(KWieldedDropped, c, nil, c.Home, P{"way": "buried", "known": w.knowsMaker(c, l)}).Legacy = l.ID
 		} else {
-			l.State = Lost
+			w.setState(l, Lost)
 			w.event(KWieldedDropped, c, nil, -1, P{"way": "broken", "known": w.knowsMaker(c, l)}).Legacy = l.ID
 		}
 		if l.Source >= 0 {

@@ -173,3 +173,5 @@ func atoi(s string) int {
 	}
 	return n
 }
+
+func hasPrefix(s, p string) bool { return len(s) >= len(p) && s[:len(p)] == p }

@@ -37,9 +37,9 @@ func (w *World) makeTransmitter(star, maker int, live bool) *Legacy {
 		l.Payload = Seed
 	}
 	if live {
-		l.State = Unleashed
+		w.setState(l, Unleashed)
 	}
-	w.Legacies = append(w.Legacies, l)
+	w.addLegacy(l)
 	if maker >= 0 {
 		w.factL(FUnleashed, w.Civs[maker], l).with(P{"way": "made"})
 	}
@@ -122,7 +122,7 @@ func (w *World) seeded(c *Civ, l *Legacy) {
 	p := w.newPlague(plague.Memetic, c, "signal")
 	p.Conscious = true
 	p.Transmitter = l.ID
-	l.Listeners++
+	w.listened(l, c)
 	w.infect(c, p, nil, "signal")
 	ev := w.event(KSignalPlague, c, nil, l.Star, P{})
 	ev.Legacy, ev.Plague = l.ID, p.ID
@@ -151,15 +151,15 @@ func init() {
 		},
 		Scar: func(w *World, c *Civ) {
 			l := w.transmitter
-			c.Scars[ScarSignal] = true
+			w.scar(c, ScarSignal)
 			c.Morale -= 1
-			l.Listeners++
+			w.listened(l, c)
 			w.faced(c, "beacon", "scarred", "", l.Star)
 			w.corrupted(c, l)
 		},
 		Decline: func(w *World, c *Civ) {
 			l := w.transmitter
-			l.Listeners++
+			w.listened(l, c)
 			if w.R.Float64() < 0.3 {
 				home := c.Home
 				w.endCiv(c, Transformed, because("transmitter_changed").At(l.Star))

@@ -13,8 +13,15 @@ func TestKindsGenerated(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if string(have) != KindsSource() {
+	if string(have) != KindsSource("history") {
 		t.Fatal("kinds_gen.go is stale: run go generate ./internal/history")
+	}
+	have, err = os.ReadFile("../record/kinds_gen.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(have) != KindsSource("record") {
+		t.Fatal("record/kinds_gen.go is stale: run go generate ./internal/history")
 	}
 }
 
@@ -62,33 +69,27 @@ func TestParams(t *testing.T) {
 		if e.IsFact() && e.Subject < 0 {
 			t.Errorf("fact %s with no subject: %s", e.Kind, e)
 		}
-		if line := w.Line(e); strings.Contains(line, "{") && !strings.Contains(line, ":") {
-			t.Errorf("%s renders with a placeholder left: %s", e.Kind, line)
-		}
 		seen[e.Kind] = true
 	}
 	t.Logf("%d events of %d kinds, %d kinds of %d in the table seen", len(w.Events), len(seen), len(seen), len(kindDefs))
 }
 
-// TestLinesUnread: the chronicle's templates and the view's renderers
-// are the view's (lines.go, describe.go); nothing in the simulation
-// reads them, so the text is free to change. The tellings (telling.go)
-// render too, and the simulation reads only their weights.
+// TestLinesUnread: the chronicle's templates and the renderers are the
+// view's (internal/legends); nothing in the simulation reads them, so
+// the text is free to change. The view imports the record and never the
+// history, and the history never imports the view.
 func TestLinesUnread(t *testing.T) {
 	files, _ := filepath.Glob("*.go")
 	for _, file := range files {
-		if strings.HasSuffix(file, "_test.go") || file == "lines.go" || file == "describe.go" || file == "telling.go" {
+		if strings.HasSuffix(file, "_test.go") {
 			continue
 		}
 		src, err := os.ReadFile(file)
 		if err != nil {
 			t.Fatal(err)
 		}
-		for _, ident := range []string{"w.Line(", "lines[", "lineFns[", "facedLines[", "blastLines[", "harnessLines[", "rarityLines[", "roadPhrases[", "beneathNames[",
-			"legacyDesc(", "describeAt(", "whyText(", "reasonText(", "sourceName(", "traceName(", "OriginText(", "CauseText(", "IntoText(", "WarCause(", "WarResult(", "BetrayalText(", "RecordText(", "useName(", "driftText(", "blastText(", "portraitText(", "conditionText(", "traceText("} {
-			if strings.Contains(string(src), ident) {
-				t.Errorf("%s reads the chronicle's templates (%s)", file, ident)
-			}
+		if strings.Contains(string(src), `"worldgen/internal/`+"legends"+`"`) {
+			t.Errorf("%s imports the view", file)
 		}
 	}
 }

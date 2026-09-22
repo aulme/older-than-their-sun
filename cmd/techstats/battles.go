@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"io"
 	"math"
-
-	"worldgen/internal/history"
 )
 
 // BattleRec is one battle at a world, for the report.
@@ -22,14 +20,14 @@ type BattleRec struct {
 	Fewer    bool // the side with fewer ships won
 }
 
-func flattenBattles(w *history.World) []BattleRec {
+func flattenBattles(w *world) []BattleRec {
 	var out []BattleRec
-	for _, b := range w.Battles {
+	for _, b := range w.State.Battles {
 		fewer := false
 		if b.Ships != b.Held {
 			fewer = b.Won == (b.Ships < b.Held)
 		}
-		out = append(out, BattleRec{Seed: w.Seed, Year: int(b.Year), Star: b.Star, Attacker: b.Attacker, Ships: b.Ships, Held: b.Held, Gap: b.Gap, Won: b.Won, Outcome: b.Outcome, Fewer: fewer})
+		out = append(out, BattleRec{Seed: w.seed(), Year: int(b.Year), Star: b.Star, Attacker: b.Attacker, Ships: b.Ships, Held: b.Held, Gap: b.Gap, Won: b.Won, Outcome: b.Outcome, Fewer: fewer})
 	}
 	return out
 }

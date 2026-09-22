@@ -35,7 +35,7 @@ var reference = sync.OnceValue(func() *World {
 // a new name; enums says the ones whose values are the code's own.
 var keyParams = map[string]func(w *World, e *Event, v string) bool{
 	"cause": func(w *World, e *Event, v string) bool {
-		if e.Kind == FWar {
+		if e.Kind == FWar || e.Kind == KWarOpened {
 			return tables.warCauses[v] != nil
 		}
 		return tables.causes[v] != nil
@@ -57,11 +57,21 @@ var keyParams = map[string]func(w *World, e *Event, v string) bool{
 	"lost":     func(w *World, e *Event, v string) bool { return v == "" || species.Get(v) != nil },
 	"miracle":  func(w *World, e *Event, v string) bool { return tables.miracleByKey[v] != nil },
 	"object":   func(w *World, e *Event, v string) bool { return tables.miracleByKey[v] != nil },
-	"route":    func(w *World, e *Event, v string) bool { return tables.miracleByKey[v] != nil || v == "wound" },
-	"form":     func(w *World, e *Event, v string) bool { return v != "" },
-	"power":    func(w *World, e *Event, v string) bool { return species.PowerByKey(v) != nil },
-	"feature":  func(w *World, e *Event, v string) bool { return featureByKey(v) != nil },
-	"line":     func(w *World, e *Event, v string) bool { return tables.portraitByKey["knowers"][v] != nil },
+	"route": func(w *World, e *Event, v string) bool {
+		if e.Kind == KMiracleHeld { // how it was gained: a row of miracles.json's routes
+			for _, r := range tables.routes {
+				if r.Key == v {
+					return true
+				}
+			}
+			return false
+		}
+		return tables.miracleByKey[v] != nil || v == "wound"
+	},
+	"form":    func(w *World, e *Event, v string) bool { return v != "" },
+	"power":   func(w *World, e *Event, v string) bool { return species.PowerByKey(v) != nil },
+	"feature": func(w *World, e *Event, v string) bool { return featureByKey(v) != nil },
+	"line":    func(w *World, e *Event, v string) bool { return tables.portraitByKey["knowers"][v] != nil },
 	"how": func(w *World, e *Event, v string) bool {
 		if e.Kind == FMiracle {
 			for _, r := range tables.routes {
@@ -177,7 +187,9 @@ func TestKeysResolve(t *testing.T) {
 			if r.Filter != "" && filters[r.Filter] == nil {
 				fail("Record.Filter", r.Filter)
 			}
-			if w.RecordText(r) == "" {
+			switch r.Kind {
+			case "faced", "foresaw", "sky", "rest", "bounty", "crewed", "mastered", "wielded", "sealed", "unleashed":
+			default:
 				fail("Record.Kind", r.Kind)
 			}
 		}
@@ -207,7 +219,32 @@ func TestKeysResolve(t *testing.T) {
 		}
 	}
 	for _, l := range w.Legacies {
-		if l.Kind != Field && w.legacyDesc(l) == l.Portrait {
+		list := map[LegacyKind]string{Bounty: "bounties", Threat: "threats", Sleeper: "sleepers", Law: "laws"}[l.Kind]
+		switch {
+		case l.Kind == Field:
+			continue
+		case l.Kind == Structure && l.Maker >= 0:
+			if tech.Structures[l.Portrait] == nil {
+				fail("Legacy.Portrait structure", l.Portrait)
+			}
+			continue
+		case l.Kind == Structure:
+			list = "structures"
+		case l.Kind == Artifact && l.Maker < 0:
+			list = "artifacts"
+		case l.Kind == Artifact:
+			list = "relics"
+			if f := tables.miracleByKey[l.Node]; f != nil && f.Object != "" {
+				found := false
+				for _, fm := range f.Forms {
+					found = found || fm.Key == l.Portrait
+				}
+				if found {
+					continue
+				}
+			}
+		}
+		if tables.portraitByKey[list][l.Portrait] == nil {
 			fail("Legacy.Portrait "+l.Kind.String(), l.Portrait)
 		}
 	}

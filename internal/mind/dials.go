@@ -4,14 +4,14 @@ package mind
 // birth and nudged by scars, morale and memory, all in the history package;
 // every decision here reads dials, never traits.
 type Dials struct {
-	Aggression float64 // readiness to strike first
-	Risk       float64 // acts on hope (high) or on the pessimistic tail (low)
-	Greed      float64 // wants worlds
-	Fear       float64 // wants the home kept safe
-	Loyalty    float64 // keeps promises
-	Hunger     float64 // wants to know before acting
-	Patience   float64 // holds a course, and a grudge
-	Hate       float64 // sees the different as a thing to end
+	Aggression float64 `json:"aggression"` // readiness to strike first
+	Risk       float64 `json:"risk"`       // acts on hope (high) or on the pessimistic tail (low)
+	Greed      float64 `json:"greed"`      // wants worlds
+	Fear       float64 `json:"fear"`       // wants the home kept safe
+	Loyalty    float64 `json:"loyalty"`    // keeps promises
+	Hunger     float64 `json:"hunger"`     // wants to know before acting
+	Patience   float64 `json:"patience"`   // holds a course, and a grudge
+	Hate       float64 `json:"hate"`       // sees the different as a thing to end
 }
 
 // Add sums another set of dials into this one.

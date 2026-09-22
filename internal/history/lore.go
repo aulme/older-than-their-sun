@@ -38,6 +38,7 @@ type shape struct {
 	Sort    Sort
 	Weight  float64
 	Meaning string
+	Silent  bool
 }
 
 // shapeOf is the kind's shape, found once per event: the tellings read
@@ -52,6 +53,10 @@ func (e *Event) shapeOf() *shape {
 
 func (e *Event) sort() Sort      { return e.shapeOf().Sort }
 func (e *Event) weight() float64 { return e.shapeOf().Weight }
+
+// Silent says whether an event is a silent kind: a durable change the
+// fold reads and nothing else.
+func (e *Event) Silent() bool { return e.shapeOf().Silent }
 
 // IsFact says whether an event is one a people can hold a tale of.
 func (e *Event) IsFact() bool { return e.shapeOf().Weight > 0 }
@@ -87,10 +92,53 @@ type Tale struct {
 	Forgot  bool
 }
 
-// Inscription is a tale as it stood when it was written down, with its text.
+// Inscription is a tale as it stood when it was written down: the tale,
+// the maker's judgment of it then, and what the telling read of the
+// world then (Frozen), so that a reader renders it as the maker told it.
 type Inscription struct {
-	Tale Tale
-	Text string
+	Tale   Tale
+	Sort   Sort
+	Weight float64
+	Frozen Frozen
+}
+
+// Frozen is what a telling reads of the world besides the tale: of the
+// parties in it (subject, object, blamed), which the teller can hold in
+// mind, which it has met, which are rising, which live; and whether the
+// star is its own. A testament keeps these as they were.
+type Frozen struct {
+	Perceived, Met, Active, Living []int
+	Ours                           bool
+}
+
+// freeze reads what a telling of a tale would read of the world now.
+func (w *World) freeze(c *Civ, t *Tale) Frozen {
+	f := w.Events[t.Fact]
+	var fz Frozen
+	seen := map[int]bool{}
+	for _, id := range []int{f.Subject, f.Object, t.Blamed} {
+		if id < 0 || seen[id] {
+			continue
+		}
+		seen[id] = true
+		e := w.Civs[id]
+		if w.perceives(c, e) {
+			fz.Perceived = append(fz.Perceived, id)
+		}
+		if c.Met[id] {
+			fz.Met = append(fz.Met, id)
+		}
+		if e.Active() {
+			fz.Active = append(fz.Active, id)
+		}
+		if e.Living() {
+			fz.Living = append(fz.Living, id)
+		}
+	}
+	if s := f.Star; s >= 0 {
+		fz.Ours = s == c.Home || s == c.Cradle || contains(c.Systems, s) || w.Owner[s] == c.ID
+	}
+	return fz
 }
 
 // event writes a happening the chronicle keeps and no people holds a
@@ -533,10 +581,29 @@ func (w *World) testament(c *Civ, l *Legacy) {
 	}
 	sort.SliceStable(keep, func(i, j int) bool { return w.Events[keep[i].Fact].Year < w.Events[keep[j].Fact].Year })
 	for _, t := range keep {
-		l.Testament = append(l.Testament, Inscription{Tale: *t, Text: w.tell(c, t)})
+		sort, weight := sortFor(c, w.Events[t.Fact])
+		l.Testament = append(l.Testament, Inscription{Tale: *t, Sort: sort, Weight: weight, Frozen: w.freeze(c, t)})
 	}
 	c.Tally.Testaments++
 	w.wallsWritten(c, l)
+}
+
+// mythParty is the party the chronicle's note of a myth names, if it
+// names one: -1 when the fact has none or the line needs none. The view
+// keeps the same rule for the line itself.
+func mythParty(f *Event) int {
+	switch f.Kind {
+	case FEnd, FFall, FBetrayal, FCutOff, FWaking:
+		return f.Subject
+	case FEnslaved, FFreed, FBred:
+		return f.Object
+	case FHomeBroken, FScoured, FUnleashed, FDarkAge, FWant, FSundered, FShattered, FSevered, FUnmade, FExodus:
+		return -1
+	}
+	if f.Star >= 0 {
+		return -1
+	}
+	return f.Object
 }
 
 // dearness is how much a tale matters to its teller: the fact's weight,

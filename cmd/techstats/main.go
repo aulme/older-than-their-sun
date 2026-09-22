@@ -3,8 +3,12 @@
 // common builds are, and what the long-lived peoples knew.
 //
 //	go run ./cmd/techstats -seeds 10 -out reports/tech
+//	go run ./cmd/techstats -runs out/1,out/2 -out reports/tech
 //
-// It writes civs.jsonl (one record per civilisation, for later questions),
+// Every reading is of the run's records (internal/record), as the writer
+// lays them out: a batch runs the seeds and reads each as it would read
+// the files, or reads run directories written earlier (-runs). It writes
+// civs.jsonl (one record per civilisation, for later questions),
 // stats.txt (the one-line tuning stats per seed) and report.md.
 package main
 
@@ -26,8 +30,9 @@ import (
 	"worldgen/internal/history"
 	"worldgen/internal/legends"
 	"worldgen/internal/mind"
-	"worldgen/internal/names"
+	"worldgen/internal/record"
 	"worldgen/internal/tech"
+	"worldgen/internal/writer"
 )
 
 // Rec is one civilisation, flattened.
@@ -41,7 +46,7 @@ type Rec struct {
 	Traits    []string           `json:"traits"`
 	Posture   string             `json:"posture"`
 	Honour    string             `json:"honour"`
-	Tally     history.Tally      `json:"tally"`
+	Tally     record.Tally       `json:"tally"`
 	Met       int                `json:"met"`
 	Nomad     bool               `json:"nomad"`
 	Aloft     bool               `json:"aloft"`  // took to the sky at some point
@@ -86,7 +91,7 @@ type Rec struct {
 	Condemned int                `json:"condemned"`        // tales held whose fact is no crime and the people's judgment is one
 	Split     int                `json:"split,omitempty"`  // on the first people of a world: facts a crime to one people that knows them and a deed to another
 	Shared    int                `json:"shared,omitempty"` // on the first people of a world: crimes known to two peoples or more
-	LoreDials history.Dials      `json:"lore_dials"`
+	LoreDials mind.Dials         `json:"lore_dials"`
 	Income    flow.Income        `json:"income"` // at the people's height of means
 	Upkeep    flow.Income        `json:"upkeep"`
 	Want      flow.Income        `json:"want"`
@@ -115,6 +120,7 @@ type Rec struct {
 func main() {
 	seeds := flag.Int("seeds", 10, "how many worlds to run")
 	from := flag.Uint64("from", 1, "first seed")
+	dirs := flag.String("runs", "", "run directories to read instead of running seeds, comma-separated")
 	at := flag.String("at", "sol", "where in the galaxy")
 	out := flag.String("out", "reports/tech", "output directory")
 	tuning := flag.String("tuning", "", "a JSON file of mind.Tuning; fields left out keep their defaults")
@@ -141,6 +147,7 @@ func main() {
 		seed    uint64
 		recs    []Rec
 		wars    []WarRec
+		base    WarBase
 		battles []BattleRec
 		sights  []SightRec
 		meets   []MeetRec
@@ -156,28 +163,44 @@ func main() {
 		stats   string
 		ages    float64
 	}
+	var paths []string
+	if *dirs != "" {
+		paths = strings.Split(*dirs, ",")
+		*seeds = len(paths)
+	}
 	runs := make([]run, *seeds)
 	var wg sync.WaitGroup
 	for i := range runs {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			seed := *from + uint64(i)
-			cfg := history.DefaultConfig()
-			cfg.Region = *at
-			cfg.Tuning = tune
-			w := history.Generate(seed, cfg)
+			var r *record.Run
+			if paths != nil {
+				var err error
+				if r, err = record.Load(paths[i]); err != nil {
+					fmt.Fprintln(os.Stderr, err)
+					os.Exit(1)
+				}
+			} else {
+				seed := *from + uint64(i)
+				cfg := history.DefaultConfig()
+				cfg.Region = *at
+				cfg.Tuning = tune
+				r = writer.Run(history.Generate(seed, cfg), *at)
+			}
+			w := &world{Run: r, rd: legends.Open(r)}
 			var sb strings.Builder
-			legends.Stats(&sb, w)
+			legends.Stats(&sb, r)
 			sights, meets, fleets, fields := flattenSightings(w)
 			ks, sells := flattenContracts(w)
-			runs[i] = run{ks: ks, sells: sells, bloc: flattenBlocs(w), plagues: flattenPlagues(w), oss: flattenOss(w), kinds: flattenKinds(w), seed: seed, recs: flatten(w), wars: flattenWars(w), battles: flattenBattles(w), sights: sights, meets: meets, fleets: fleets, fields: fields, pairs: flattenPairs(w), stats: sb.String(), ages: float64(w.Present-w.Cfg.Dawn) / 1e6}
+			runs[i] = run{ks: ks, sells: sells, bloc: flattenBlocs(w), plagues: flattenPlagues(w), oss: flattenOss(w), kinds: flattenKinds(w), seed: w.seed(), recs: flatten(w), wars: flattenWars(w), base: flattenWarBase(w), battles: flattenBattles(w), sights: sights, meets: meets, fleets: fleets, fields: fields, pairs: flattenPairs(w), stats: sb.String(), ages: float64(w.Dossier.Present-w.Dossier.Dawn) / 1e6}
 		}(i)
 	}
 	wg.Wait()
 
 	var recs []Rec
 	var wars []WarRec
+	var bases []WarBase
 	var battles []BattleRec
 	var sights []SightRec
 	var meets []MeetRec
@@ -195,6 +218,7 @@ func main() {
 	for _, r := range runs {
 		recs = append(recs, r.recs...)
 		wars = append(wars, r.wars...)
+		bases = append(bases, r.base)
 		battles = append(battles, r.battles...)
 		sights = append(sights, r.sights...)
 		meets = append(meets, r.meets...)
@@ -218,7 +242,7 @@ func main() {
 	must(err)
 	defer f.Close()
 	report(f, recs, *seeds, *from, *at, ageSum/float64(*seeds))
-	warReport(f, recs, wars, *seeds)
+	warReport(f, recs, wars, bases, *seeds)
 	exploreReport(f, recs)
 	loreReport(f, recs)
 	meansReport(f, recs)
@@ -241,40 +265,49 @@ func must(err error) {
 	}
 }
 
-func flatten(w *history.World) []Rec {
+// world is one run as the reports read it: the records and the reader
+// that puts words to them.
+type world struct {
+	*record.Run
+	rd   *legends.Reader
+	byID map[int]*record.Event
+}
+
+func (w *world) seed() uint64 { return w.Dossier.Seed }
+
+// civ finds a people by id.
+func (w *world) civ(id int) *record.Civ { return w.State.Civs[id] }
+
+func flatten(w *world) []Rec {
 	var out []Rec
-	book := names.Of(w)
-	for _, c := range w.Civs {
+	d, st := w.Dossier, w.State
+	for _, c := range st.Civs {
+		sp := w.rd.Species(c)
 		end := c.Fell
-		if c.Active() {
-			end = w.Present
+		if legends.Active(c) {
+			end = d.Present
 		}
-		born := max(c.Born, w.Cfg.Dawn) // a sleeper the deep pass left is counted from the dawn, not from the age it slept through
+		born := max(c.Born, d.Dawn) // a sleeper the deep pass left is counted from the dawn, not from the age it slept through
 		r := Rec{
-			Seed: w.Seed, ID: c.ID, Name: book.Text(c.Tok()), Species: book.Text("{species:" + strconv.Itoa(c.Species.ID) + "}"), Sub: c.Species.Sub.String(), World: c.Species.World.Key, Made: book.Text(w.OriginText(c.Species.Made)),
-			Born: float64(born-w.Cfg.Dawn) / 1e6, Lived: float64(end-born) / 1e6,
-			Fate: c.Fate.String(), Cause: book.Text(w.CauseText(c)), Into: book.Text(w.IntoText(c)), Standing: c.Active(), Origin: book.Text(w.OriginText(c.Origin)), Sick: -1, Master: c.Sire >= 0,
-			Peak: c.Peak, Ruled: c.Ruled, Uplifts: c.Uplifts, Channel: c.Species.Channel, Voice: string(book.Voice(c)),
+			Seed: d.Seed, ID: c.ID, Name: w.rd.Text("{civ:" + strconv.Itoa(c.ID) + "}"), Species: w.rd.Text("{species:" + strconv.Itoa(c.Species) + "}"), Sub: sp.Sub.String(), World: sp.World.Key, Made: w.rd.OriginText(sp.Made),
+			Born: float64(born-d.Dawn) / 1e6, Lived: float64(end-born) / 1e6,
+			Fate: c.Fate, Cause: w.rd.CauseText(c), Into: w.rd.IntoText(c), Standing: legends.Active(c), Origin: w.rd.OriginText(c.Origin), Sick: -1, Master: c.Batch.Sire >= 0,
+			Peak: c.Peak, Ruled: c.Ruled, Uplifts: c.Uplifts, Channel: sp.Channel, Voice: string(w.rd.Voice(c.ID)),
 			Miracles: map[string]string{}, Learned: map[string]float64{},
-			Record: recordTexts(w, c), Mil: c.Mil, Sur: c.Sur, Soc: c.Soc,
-			Wis: c.Wis, PeakWis: c.PeakWis, WisFrom: history.WisdomParts(c),
+			Record: recordTexts(w, c), Mil: c.Levels.Mil, Sur: c.Levels.Sur, Soc: c.Levels.Soc,
+			Wis: c.Levels.Wis, PeakWis: c.Batch.PeakWis, WisFrom: c.Batch.WisFrom,
 			Cycle: c.KnowsCycle, DarkAges: c.DarkAges, Renaiss: c.Renaissances,
 			Stiff: c.Stiff, Ossified: c.Ossified, Line: len(c.Line), Claims: len(c.Claim),
 			ever: map[string]bool{},
 		}
-		if c.FirstPlague > 0 {
-			r.Sick = float64(c.FirstPlague-c.Born) / 1e6
+		if c.Batch.FirstPlague > 0 {
+			r.Sick = float64(c.Batch.FirstPlague-c.Born) / 1e6
 		}
 		if c.Named {
-			r.Word = book.Text("{word:" + strconv.Itoa(c.ID) + "}")
+			r.Word = w.rd.Text("{word:" + strconv.Itoa(c.ID) + "}")
 		}
-		for i := range r.Record {
-			r.Record[i] = book.Text(r.Record[i])
-		}
-		for _, d := range c.Species.Mods.Defs() {
-			r.Mods = append(r.Mods, d.Key)
-		}
-		for _, t := range c.Species.Traits {
+		r.Mods = append(r.Mods, sp.ModKeys()...)
+		for _, t := range sp.Traits {
 			r.Traits = append(r.Traits, t.Key)
 			switch t.Group {
 			case "stance":
@@ -283,29 +316,32 @@ func flatten(w *history.World) []Rec {
 				r.Honour = t.Key
 			}
 		}
-		r.Tally = c.Tally
-		r.Met = len(c.Met)
-		r.LoreDials = c.LoreDials
-		r.Income, r.Upkeep, r.Want = c.HighIncome, c.HighUpkeep, c.HighWant
-		r.Had, r.Harnessed, r.Granted = keys(c.Had), keys(c.Harnessed), keys(c.Granted)
+		r.Tally = c.Batch.Tally
+		r.Met = len(c.Knowledge.Met)
+		r.LoreDials = c.Knowledge.LoreDials
+		r.Income, r.Upkeep, r.Want = c.Batch.HighIncome, c.Batch.HighUpkeep, c.Batch.HighWant
+		r.Had, r.Harnessed, r.Granted = c.Batch.Had, c.Batch.Harnessed, c.Batch.Granted
 		r.Built = map[string]int{}
-		for k, n := range c.Built {
+		for k, n := range c.Batch.Built {
 			r.Built[k] = n
 		}
 		r.Shed = map[string]int{}
-		for k, n := range c.ShedTicks {
+		for k, n := range c.Batch.ShedTicks {
 			r.Shed[k] = n
 		}
-		r.Held, r.Myth, r.Monsters = history.LoreCounts(w, c)
-		r.Morality = c.Morality.Word()
-		r.Excused, r.Condemned = history.Judged(w, c)
-		if len(out) == 0 {
-			r.Split, r.Shared = history.SplitFacts(w)
+		r.Held, r.Myth, r.Monsters = c.Knowledge.Memory.Held, c.Knowledge.Memory.Myth, len(c.Knowledge.Monsters)
+		r.Morality = c.Morality.Kind
+		if c.Morality.Kind == "fixation" {
+			r.Morality = "fixed on " + c.Morality.Object
 		}
-		r.FellDep = c.FellDependent
-		r.Ships = c.PeakShips
-		r.ShipsEnd, _, r.LaidUp = history.ShipsOf(w, c)
-		for _, src := range w.Sources {
+		r.Excused, r.Condemned = w.judged(c)
+		if len(out) == 0 {
+			r.Split, r.Shared = w.splitFacts()
+		}
+		r.FellDep = c.Batch.FellDependent
+		r.Ships = c.Batch.PeakShips
+		r.ShipsEnd, r.LaidUp = w.shipsOf(c)
+		for _, src := range st.Sources {
 			if src.Form == "" || src.Maker != c.ID {
 				continue
 			}
@@ -321,7 +357,7 @@ func flatten(w *history.World) []Rec {
 			}
 			r.Objects = append(r.Objects, o)
 		}
-		r.Nomad = c.Has("nomadic")
+		r.Nomad = sp.Has("nomadic")
 		r.Stars = c.Starfaring > 0
 		r.Rested = c.Rested
 		for _, rec := range c.Record {
@@ -329,7 +365,7 @@ func flatten(w *history.World) []Rec {
 				r.Aloft = true
 			}
 		}
-		for k := range c.Known {
+		for _, k := range c.Known {
 			r.Known = append(r.Known, k)
 			r.ever[k] = true
 		}
@@ -346,11 +382,11 @@ func flatten(w *history.World) []Rec {
 		for k, v := range c.Miracles {
 			r.Miracles[k] = v
 		}
-		r.Scars = keys(c.Scars)
-		r.Boons = keys(c.Boons)
+		r.Scars = append([]string{}, c.Scars...)
+		r.Boons = append([]string{}, c.Boons...)
 		sort.Strings(r.Known)
 		sort.Strings(r.Ever)
-		for _, sl := range []*[]string{&r.Record, &r.Known, &r.Ever, &r.Traits} {
+		for _, sl := range []*[]string{&r.Record, &r.Known, &r.Ever, &r.Traits, &r.Had, &r.Harnessed, &r.Granted} {
 			if *sl == nil {
 				*sl = []string{}
 			}
@@ -360,6 +396,91 @@ func flatten(w *history.World) []Rec {
 		out = append(out, r)
 	}
 	return out
+}
+
+// shipsOf is a people's ships in being and of them laid up.
+func (w *world) shipsOf(c *record.Civ) (ships, laidUp int) {
+	for _, x := range w.State.Fleets {
+		if x.Over || x.Owner != c.ID || x.Ships == 0 {
+			continue
+		}
+		ships += x.Ships
+		if x.LaidUp {
+			laidUp += x.Ships
+		}
+	}
+	return
+}
+
+// lore is a people's living tales.
+func (w *world) lore(c *record.Civ) []*record.Tale {
+	var out []*record.Tale
+	for _, t := range w.Tellings {
+		if t.Civ == c.ID && t.Remain < 0 {
+			out = append(out, t)
+		}
+	}
+	return out
+}
+
+// judged counts the tales a people holds whose fact is a crime and its
+// judgment is not, and the reverse.
+func (w *world) judged(c *record.Civ) (excused, condemned int) {
+	for _, t := range w.lore(c) {
+		if t.Forgot {
+			continue
+		}
+		own := legends.SortOf(w.event(t.Fact))
+		switch {
+		case own == "crime" && t.Sort != "crime" && t.Sort != "woe":
+			excused++
+		case own != "crime" && t.Sort == "crime":
+			condemned++
+		}
+	}
+	return
+}
+
+// splitFacts counts the crimes known to two peoples or more, and of them
+// the ones that are a crime to one and a deed to another.
+func (w *world) splitFacts() (split, shared int) {
+	holders := map[int][]*record.Tale{}
+	for _, t := range w.Tellings {
+		if t.Remain < 0 && !t.Forgot {
+			holders[t.Fact] = append(holders[t.Fact], t)
+		}
+	}
+	for _, f := range w.Chronicle {
+		hs := holders[f.ID]
+		if legends.SortOf(f) != "crime" || len(hs) < 2 {
+			continue
+		}
+		shared++
+		crime, deed := false, false
+		for _, t := range hs {
+			switch t.Sort {
+			case "crime":
+				crime = true
+			case "deed":
+				deed = true
+			}
+		}
+		if crime && deed {
+			split++
+		}
+	}
+	return
+}
+
+// event finds an event by id.
+func (w *world) event(id int) *record.Event {
+	if w.byID == nil {
+		w.byID = map[int]*record.Event{}
+		for _, e := range w.Chronicle {
+			w.byID[e.ID] = e
+		}
+	}
+	return w.byID[id]
 }
 
 func keys(m map[string]bool) []string {
@@ -1063,10 +1184,10 @@ func anySub(r Rec, p string) bool {
 }
 
 // recordTexts is a people's record as the legends say it.
-func recordTexts(w *history.World, c *history.Civ) []string {
+func recordTexts(w *world, c *record.Civ) []string {
 	var out []string
 	for _, r := range c.Record {
-		out = append(out, w.RecordText(r))
+		out = append(out, w.rd.RecordText(r))
 	}
 	return out
 }

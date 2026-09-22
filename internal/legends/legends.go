@@ -1,4 +1,3 @@
-// Package legends renders a simulated history as readable text.
 package legends
 
 import (
@@ -6,73 +5,27 @@ import (
 	"io"
 	"sort"
 	"strings"
-	"worldgen/internal/plague"
 
-	"worldgen/internal/history"
-	"worldgen/internal/names"
+	"worldgen/internal/galaxy"
+	"worldgen/internal/record"
 	"worldgen/internal/species"
 	"worldgen/internal/tech"
 )
 
-// present is set by Write; years are printed relative to it.
-var present history.Year
-
-func year(y history.Year) string {
-	y -= present
-	switch {
-	case y == 0:
-		return "present"
-	case y <= -1_000_000_000:
-		return fmt.Sprintf("%.2f Gyr ago", -float64(y)/1e9)
-	case y <= -1_000_000:
-		return fmt.Sprintf("%.2f Myr ago", -float64(y)/1e6)
-	default:
-		return fmt.Sprintf("%s ago", commas(-int64(y)))
-	}
-}
-
-func systems(n int) string {
-	if n == 1 {
-		return "a single world"
-	}
-	return fmt.Sprintf("%d systems", n)
-}
-
 // scarNames is a people's scars as the legends say them, in the order
 // of their names.
-func scarNames(m map[string]bool) []string {
+func scarNames(keys []string) []string {
 	var out []string
-	for k := range m {
-		out = append(out, history.ScarName(k))
+	for _, k := range keys {
+		out = append(out, scarName(k))
 	}
 	sort.Strings(out)
 	return out
 }
 
-func keysOf(m map[string]bool) []string {
-	var out []string
-	for k := range m {
-		out = append(out, k)
-	}
-	sort.Strings(out)
-	return out
-}
-
-func commas(n int64) string {
-	s := fmt.Sprint(n)
-	out := ""
-	for i, c := range s {
-		if i > 0 && (len(s)-i)%3 == 0 {
-			out += ","
-		}
-		out += string(c)
-	}
-	return out
-}
-
-func levels(c *history.Civ) string {
-	s := fmt.Sprintf("military %s, survival %s, social %s", history.LevelName(c.Mil), history.LevelName(c.Sur), history.LevelName(c.Soc))
-	if word := history.WisdomWord(c.Wis); word != "" {
+func (v *view) levels(c *record.Civ) string {
+	s := fmt.Sprintf("military %s, survival %s, social %s", levelName(c.Levels.Mil), levelName(c.Levels.Sur), levelName(c.Levels.Soc))
+	if word := wisdomWord(c.Levels.Wis); word != "" {
 		s += ", " + word
 	}
 	if c.Sellsword {
@@ -83,10 +36,10 @@ func levels(c *history.Civ) string {
 
 // arms is the military line of the portrait: the level, and the ships in
 // being, in how many fleets, how many laid up, and the docks at work.
-func arms(w *history.World, c *history.Civ) string {
-	ships, fleets, laid := history.ShipsOf(w, c)
+func (v *view) arms(c *record.Civ) string {
+	ships, fleets, laid := v.shipsOf(c)
 	if ships == 0 {
-		if g, worlds := history.GunsOf(w, c); g > 0 {
+		if g, worlds := v.gunsOf(c); g > 0 {
 			return fmt.Sprintf("no ships, %d guns over %d worlds", g, worlds)
 		}
 		return "no ships"
@@ -101,14 +54,14 @@ func arms(w *history.World, c *history.Civ) string {
 	if laid > 0 {
 		s += fmt.Sprintf(", %d laid up", laid)
 	}
-	switch g, worlds := history.GunsOf(w, c); {
+	switch g, worlds := v.gunsOf(c); {
 	case g == 0:
 	case worlds == 1:
 		s += fmt.Sprintf(", %d guns over one world", g)
 	default:
 		s += fmt.Sprintf(", %d guns over %d worlds", g, worlds)
 	}
-	switch d := history.Docks(w, c); d {
+	switch d := c.Docks; d {
 	case 0:
 	case 1:
 		s += ", one dock at work"
@@ -118,131 +71,115 @@ func arms(w *history.World, c *history.Civ) string {
 	return s
 }
 
-// Write prints the full legends: the ages of myth, deep time, the current
-// age at both grains, and the present. The history holds ids and prints
-// name tokens; every line goes out through the names pass, which
-// resolves them with the debug view's default rule.
-func Write(out io.Writer, w *history.World, full bool) {
-	book := names.Of(w)
-	p := func(f string, a ...any) { fmt.Fprint(out, book.Text(fmt.Sprintf(f+"\n", a...))) }
-	write(p, w, book, full)
+// Write prints the full legends of a run: the ages of myth, deep time,
+// the current age at both grains, and the present. The records hold ids
+// and the templates print name tokens; every line goes out through the
+// names table, which resolves them with the debug view's default rule.
+func Write(out io.Writer, r *record.Run, full bool) {
+	v := load(r)
+	p := func(f string, a ...any) { fmt.Fprint(out, v.names.Text(fmt.Sprintf(f+"\n", a...))) }
+	v.write(p, full)
 }
 
-func write(p func(string, ...any), w *history.World, book *names.Book, full bool) {
-	events := func(from, to history.Year) {
-		for _, e := range w.Chronicle {
+func (v *view) write(p func(string, ...any), full bool) {
+	d, st, g := v.d, v.st, v.g
+	events := func(from, to Year) {
+		for _, e := range v.r.Chronicle {
 			if e.Year < from || e.Year >= to {
 				continue
 			}
-			for _, line := range strings.Split(w.Line(e), "\n") {
+			for _, line := range strings.Split(v.line(e), "\n") {
 				if line != "" {
-					p("  %-16s %s", year(e.Year), line)
+					p("  %-16s %s", v.year(e.Year), line)
 				}
 			}
 		}
 	}
 
-	present = w.Present
 	p("=== THE GALAXY ===")
-	p("seed %d: %d stars within %.0f ly of %s", w.Seed, len(w.G.Stars), w.G.Radius, w.G.Anchor())
-	p("The place: %s.", w.G.Region.Describe())
-	for _, line := range history.LawsInWords(w.G) {
+	p("seed %d: %d stars within %.0f ly of %s", d.Seed, len(g.Stars), g.Radius, g.Anchor())
+	p("The place: %s.", g.Region.Describe())
+	for _, line := range lawsInWords(g) {
 		p("  %s", line)
 	}
-	real := 0
-	for i := range w.G.Stars {
-		if w.G.Stars[i].Real {
-			real++
-		}
+	if d.Place.Real > 0 {
+		p("  %d of the stars are real, with the worlds Earth knows of; the rest are drawn to the laws of the place.", d.Place.Real)
 	}
-	if real > 0 {
-		p("  %d of the stars are real, with the worlds Earth knows of; the rest are drawn to the laws of the place.", real)
-	}
-	if near := history.NearFeatures(w.G, 14); len(near) > 0 {
+	if near := nearFeatures(g, 14); len(near) > 0 {
 		p("Near:")
 		for _, n := range near {
 			p("  %s", n)
 		}
 	}
-	if sky := history.SkyFeatures(w.G); sky != "" {
+	if sky := skyFeatures(g); sky != "" {
 		p("Beyond: %s.", sky)
 	}
-	eaten, complex := 0, 0
-	for _, c := range w.Civs {
-		if c.Active() && c.Species.Profile().Eats {
-			eaten += len(c.Systems)
-		}
-	}
-	for i := range w.G.Stars {
-		if w.Bio[i] == history.BioComplex {
-			complex++
-		}
-	}
-	p("at the present: galactic hazard %.2f, %d stars held by things that eat them, %d transmitters speaking, %d worlds with complex life; the wall between this and what is beneath it is %s", w.Hazard, eaten, speaking(w), complex, w.ThinWord())
-	cy := w.Cycle
-	if w.Capped {
-		p("WARNING: the age never wound down on its own; stopped after %.0f fades", w.Cfg.MaxFades)
+	p("at the present: galactic hazard %.2f, %d stars held by things that eat them, %d transmitters speaking, %d worlds with complex life; the wall between this and what is beneath it is %s", d.Hazard, d.Counts.Eaten, d.Counts.Speaking, d.Counts.Complex, tables.wall[d.Wall.Stage].Word)
+	cy := d.Cycle
+	if d.Capped {
+		p("WARNING: the age never wound down on its own; stopped after %.0f fades", d.MaxFades)
 	}
 	p("the cycle: period %.0f Myr, fade %.0f Myr; the current age dawned %s, fertility now %.1f%% of its dawn, next dawn in %.0f Myr",
-		float64(cy.Period)/1e6, float64(cy.Fade)/1e6, year(cy.Surges[len(cy.Surges)-1]), 100*w.FertilityNow(), float64(w.NextSurge()-w.Present)/1e6)
+		float64(cy.Period)/1e6, float64(cy.Fade)/1e6, v.year(cy.Surges[len(cy.Surges)-1]), 100*d.Fertility, float64(d.NextDawn-d.Present)/1e6)
 	p("")
-	p("=== THE AGES OF MYTH (%s to %s) ===", year(w.Cfg.DeepStart), year(w.Cfg.Dawn))
-	events(w.Cfg.DeepStart, w.Cfg.Dawn)
+	p("=== THE AGES OF MYTH (%s to %s) ===", v.year(d.DeepStart), v.year(d.Dawn))
+	events(d.DeepStart, d.Dawn)
 	p("")
-	p("=== THE YOUTH OF THE AGE (%s to %s) ===", year(w.Cfg.Dawn), year(w.Waning))
-	events(w.Cfg.Dawn, w.Waning)
+	p("=== THE YOUTH OF THE AGE (%s to %s) ===", v.year(d.Dawn), v.year(d.Waning))
+	events(d.Dawn, d.Waning)
 	p("")
-	p("=== THE WANING (%s to present) ===", year(w.Waning))
-	events(w.Waning, w.Present+1)
+	p("=== THE WANING (%s to present) ===", v.year(d.Waning))
+	events(d.Waning, d.Present+1)
 	p("")
 	p("=== THE PRESENT: AFTERMATH ===")
-	fates := map[history.Fate]int{}
-	for _, c := range w.Civs {
+	fates := map[string]int{}
+	for _, c := range st.Civs {
 		fates[c.Fate]++
 	}
-	p("Civilisations: %d arose. %d extinct, %d transformed, %d contracted, %d sundered into heirs, %d shattered into shards.", len(w.Civs), fates[history.Extinct], fates[history.Transformed], fates[history.Contracted], fates[history.Sundered], fates[history.Shattered])
+	p("Civilisations: %d arose. %d extinct, %d transformed, %d contracted, %d sundered into heirs, %d shattered into shards.", len(st.Civs), fates["extinct"], fates["transformed"], fates["contracted"], fates["sundered"], fates["shattered"])
 	standing := 0
-	for _, c := range w.Civs {
-		if c.Active() {
+	for _, c := range st.Civs {
+		if active(c) {
 			standing++
 		}
 	}
 	if standing > 0 {
 		p("Still standing in the waning of the age: %d.", standing)
-		for _, c := range w.Civs {
+		for _, c := range st.Civs {
+			sp := v.species(c)
 			sick := ""
-			if word := w.SickWord(c); word != "" {
+			if word := v.sickWord(c); word != "" {
 				sick = "; " + word
 			}
-			if word := w.RideWord(c); word != "" {
+			if word := v.rideWord(c); word != "" {
 				sick += "; " + word
 			}
 			line := ""
 			if n := len(c.Line); n > 0 {
-				line = ", heirs of the " + w.Civs[c.Line[n-1]].Tok()
+				line = ", heirs of the " + tok(c.Line[n-1])
 			}
-			ways := "; " + c.StiffWord()
+			ways := "; " + stiffWord(c)
 			if len(c.Claim) > 0 {
 				ways += ", claiming the old realm"
 			}
 			if c.Asleep {
 				ways += ", asleep"
 			}
-			if ps := c.Species.PowerNames(); len(ps) > 0 {
+			if ps := sp.PowerNames(); len(ps) > 0 {
 				ways += "; it has " + strings.Join(ps, ", ")
 			}
-			if c.Active() && c.Aloft {
-				p("  The %s%s, aloft, seated for now at %s, %s, in %d fleets. %s. Now: %s; %s%s%s.", c.Tok(), line, star(c.Home), tech.EraNames[c.Era], fleetsOf(w, c), c.Species.Describe(), levels(c), arms(w, c), ways, sick)
-			} else if c.Active() {
-				p("  The %s%s on %s, %s, holding %s. %s. Now: %s; %s%s%s.", c.Tok(), line, star(c.Home), tech.EraNames[c.Era], systems(len(c.Systems)), c.Species.Describe(), levels(c), arms(w, c), ways, sick)
+			if active(c) && c.Aloft {
+				p("  The %s%s, aloft, seated for now at %s, %s, in %d fleets. %s. Now: %s; %s%s%s.", tok(c.ID), line, star(c.Home), tech.EraNames[c.Era], v.roaming(c), sp.Describe(), v.levels(c), v.arms(c), ways, sick)
+			} else if active(c) {
+				p("  The %s%s on %s, %s, holding %s. %s. Now: %s; %s%s%s.", tok(c.ID), line, star(c.Home), tech.EraNames[c.Era], systems(len(c.Systems)), sp.Describe(), v.levels(c), v.arms(c), ways, sick)
 			}
 		}
 	}
 	p("")
 	p("Remnant civilisations still living:")
 	any := false
-	for _, c := range w.Civs {
-		if c.Stage != history.Remnant {
+	for _, c := range st.Civs {
+		if !remnant(c) {
 			continue
 		}
 		any = true
@@ -256,7 +193,7 @@ func write(p func(string, ...any), w *history.World, book *names.Book, full bool
 		} else {
 			where = "no world of their own, drifting near " + star(c.Home)
 		}
-		p("  The %s on %s, ruled by %s. %s. Once %s, %s. They %s (%s).%s", c.Tok(), where, title(c), c.Species.Describe(), systems(c.Peak), tech.EraNames[c.Era], w.CauseText(c), year(c.Ended), sc)
+		p("  The %s on %s, ruled by %s. %s. Once %s, %s. They %s (%s).%s", tok(c.ID), where, title(c.ID), v.species(c).Describe(), systems(c.Peak), tech.EraNames[c.Era], v.causeText(c), v.year(c.Ended), sc)
 	}
 	if !any {
 		p("  none")
@@ -264,36 +201,37 @@ func write(p func(string, ...any), w *history.World, book *names.Book, full bool
 	p("")
 	p("What is still there:")
 	any = false
-	for _, c := range w.Civs {
-		pr := c.Species.Profile()
-		if !c.Active() || !(pr.Eats || pr.Monster || c.Asleep || !pr.Can(species.Researches) || c.Species.Is(species.Antimemetic)) {
+	for _, c := range st.Civs {
+		sp := v.species(c)
+		pr := sp.Profile()
+		if !active(c) || !(pr.Eats || pr.Monster || c.Asleep || !pr.Can(species.Researches) || sp.Is(species.Antimemetic)) {
 			continue
 		}
 		any = true
 		state := fmt.Sprintf("holding %s", systems(len(c.Systems)))
 		switch {
 		case c.Asleep:
-			state = fmt.Sprintf("asleep at %s since %s, woke %d times", star(c.Home), year(c.Slept), c.Tally.Wakings)
+			state = fmt.Sprintf("asleep at %s since %s, woke %d times", star(c.Home), v.year(c.Slept), c.Batch.Tally.Wakings)
 		case pr.Eats:
-			state += fmt.Sprintf(", %d ships grown of what it ate, %d worlds stripped", c.Tally.Eaten, c.Tally.Consumed)
-		case c.Species.Is(species.Antimemetic):
-			state += fmt.Sprintf(", which nobody who met them remembers; hunted %d times", hunted(w, c))
+			state += fmt.Sprintf(", %d ships grown of what it ate, %d worlds stripped", c.Batch.Tally.Eaten, c.Batch.Tally.Consumed)
+		case sp.Is(species.Antimemetic):
+			state += fmt.Sprintf(", which nobody who met them remembers; hunted %d times", v.hunted(c))
 		}
 		made := ""
 		if c.Origin.Key != "" {
-			made = ", " + w.OriginText(c.Origin)
-		} else if c.Species.Made.Key != "" {
-			made = ", " + w.OriginText(c.Species.Made)
+			made = ", " + v.originText(c.Origin)
+		} else if sp.Made.Key != "" {
+			made = ", " + v.originText(sp.Made)
 		}
-		p("  The %s, %s, %s%s.", c.Tok(), c.Species.Describe(), state, made)
+		p("  The %s, %s, %s%s.", tok(c.ID), sp.Describe(), state, made)
 	}
-	for _, l := range w.Legacies {
-		if !l.Transmitter() || l.State == history.Lost {
+	for _, l := range st.Remains {
+		if !transmitter(l) || l.State == "lost" {
 			continue
 		}
 		any = true
 		state := fmt.Sprintf("silent at %s", star(l.Star))
-		if l.Speaking() {
+		if speakingRemain(l) {
 			state = fmt.Sprintf("speaking from %s, %d listeners taken", star(l.Star), l.Listeners)
 			if l.Woken > 0 {
 				state += fmt.Sprintf(", %d things woken down it", l.Woken)
@@ -301,9 +239,9 @@ func write(p func(string, ...any), w *history.World, book *names.Book, full bool
 		}
 		made := ""
 		if l.Maker >= 0 {
-			made = fmt.Sprintf(", in the voice of the %s", w.Civs[l.Maker].Tok())
-		} else if l.Elder != nil {
-			made = fmt.Sprintf(", a legacy of %s", elderName(w, l))
+			made = fmt.Sprintf(", in the voice of the %s", tok(l.Maker))
+		} else if l.Elder >= 0 {
+			made = fmt.Sprintf(", a legacy of %s", v.elderName(l))
 		}
 		p("  A transmitter carrying a %s, %s%s.", l.Payload, state, made)
 	}
@@ -311,77 +249,78 @@ func write(p func(string, ...any), w *history.World, book *names.Book, full bool
 		p("  nothing")
 	}
 	p("")
-	lines(p, w)
+	v.lineage(p)
 	p("")
-	plagues(p, w)
+	v.plagues(p)
 	p("")
-	wars(p, w)
+	v.wars(p)
 	p("")
-	tellings(p, w, full)
+	v.tellings(p, full)
 	p("")
-	gazetteer(p, w, book)
+	v.gazetteer(p)
 	p("")
 	p("Legacies of the elder ages:")
-	for _, l := range w.Legacies {
+	for _, l := range st.Remains {
 		if l.Maker < 0 {
-			p("  %-10s %-12s %s, at %s, %s.", l.Kind, l.State, w.Describe(l), star(l.Star), elderName(w, l))
+			p("  %-10s %-12s %s, at %s, %s.", l.Kind, l.State, v.describe(l), star(l.Star), v.elderName(l))
 		}
 	}
 	p("")
 	p("Remains of this age:")
-	ruins := map[history.LegacyState]int{}
-	for _, l := range w.Legacies {
+	ruins := map[string]int{}
+	for _, l := range st.Remains {
 		if l.Maker >= 0 {
 			ruins[l.State]++
-			if l.State != history.Lost {
+			if l.State != "lost" {
 				carries := ""
 				if n := len(l.Testament); n > 0 {
 					carries = fmt.Sprintf(" It carries a telling of %d things.", n)
 				}
-				p("  %-10s %-12s %s, at %s.%s", l.Kind, l.State, w.Describe(l), star(l.Star), carries)
+				p("  %-10s %-12s %s, at %s.%s", l.Kind, l.State, v.describe(l), star(l.Star), carries)
 				if full {
-					for _, in := range l.Testament {
-						p("  %-10s %-12s   \"%s\"", "", "", in.Text)
+					for _, t := range v.walls[l.ID] {
+						p("  %-10s %-12s   \"%s\"", "", "", v.tell(v.civ(l.Maker), t))
 					}
 				}
 			}
 		}
 	}
-	p("  (%d more have crumbled)", ruins[history.Lost])
+	p("  (%d more have crumbled)", ruins["lost"])
 	p("")
 	kinds := map[string]int{}
-	for _, t := range w.Traces {
-		kinds[w.TraceName(t)]++
+	for _, t := range st.Traces {
+		kinds[v.traceName(t)]++
 	}
 	keys := make([]string, 0, len(kinds))
 	for k := range kinds {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
-	p("Traces left for whoever comes next: %d", len(w.Traces))
+	p("Traces left for whoever comes next: %d", len(st.Traces))
 	for _, k := range keys {
 		p("  %-28s %d", k, kinds[k])
 	}
 	p("")
 	p("Fates of all civilisations:")
-	for _, c := range w.Civs {
+	for _, c := range st.Civs {
+		sp := v.species(c)
 		into := ""
 		if c.Into != "" {
-			into = " Became " + w.IntoText(c) + "."
+			into = " Became " + v.intoText(c) + "."
 		}
 		if c.KnowsCycle {
 			into += " They knew the shape of the cycle."
 		}
 		if len(c.Miracles) > 0 {
 			var ms []string
-			for _, k := range keysOf2(c.Miracles) {
+			for _, k := range sortedStrings(c.Miracles) {
 				ms = append(ms, tech.Get(k).Name+" ("+c.Miracles[k]+")")
 			}
 			into += " Miracles: " + strings.Join(ms, ", ") + "."
 		}
 		if c.Named {
-			if !c.Species.Voiceless() {
-				into += " They called it " + word(c) + "."
+			if !sp.Voiceless() {
+				into += " They called it " + word(c.ID) + "."
 			}
 		}
 		if len(c.Taught) > 0 {
@@ -392,24 +331,24 @@ func write(p func(string, ...any), w *history.World, book *names.Book, full bool
 			}
 			sort.Strings(ks)
 			for _, k := range ks {
-				ts = append(ts, tech.Get(k).Name+" (the "+w.Civs[c.Taught[k]].Tok()+")")
+				ts = append(ts, tech.Get(k).Name+" (the "+tok(c.Taught[k])+")")
 			}
 			into += " Taught: " + strings.Join(ts, ", ") + "."
 		}
 		made := ""
-		if c.Species.Made.Key != "" {
-			made = " (" + w.OriginText(c.Species.Made) + ")"
+		if sp.Made.Key != "" {
+			made = " (" + v.originText(sp.Made) + ")"
 		} else if c.Origin.Key != "" {
-			made = " (" + w.OriginText(c.Origin) + ")"
+			made = " (" + v.originText(c.Origin) + ")"
 		}
 		kind := ""
-		if c.Species.Sub != species.Biological || c.Species.Mods != 0 {
-			kind = "; " + c.Species.Nature()
+		if sp.Sub != species.Biological || sp.Mods != 0 {
+			kind = "; " + sp.Nature()
 		}
-		if first := firstOf(w, c.Species); first != c {
-			kind += "; the " + first.Tok() + " by blood"
+		if first := st.Species[c.Species].First; first != c.ID {
+			kind += "; the " + tok(first) + " by blood"
 		}
-		kind += "; " + c.Morality.Word()
+		kind += "; " + moralityWord(c.Morality)
 		seat := ""
 		if c.Home != c.Cradle {
 			seat = ", later seated on " + star(c.Home)
@@ -418,12 +357,12 @@ func write(p func(string, ...any), w *history.World, book *names.Book, full bool
 		if c.Ruled > 0 {
 			ruled = fmt.Sprintf(" and %d peoples", c.Ruled)
 		}
-		p("  %-14s %-11s from %s (%s of a %s)%s%s, %s, lived %.2f Myr, peak %d systems%s, %s. They %s.%s", c.Tok(), c.Fate, star(c.Cradle), c.Species.World.Desc, w.G.Stars[c.Cradle].ClassName(), seat, made, year(c.Born), float64(c.Fell-c.Born)/1e6, c.Peak, ruled, tech.EraNames[c.Era], w.CauseText(c), into)
-		p("  %-14s %s%s. At the end: %s.", "", c.Species.Describe(), kind, levels(c))
+		p("  %-14s %-11s from %s (%s of a %s)%s%s, %s, lived %.2f Myr, peak %d systems%s, %s. They %s.%s", tok(c.ID), c.Fate, star(c.Cradle), sp.World.Desc, g.Stars[c.Cradle].ClassName(), seat, made, v.year(c.Born), float64(c.Fell-c.Born)/1e6, c.Peak, ruled, tech.EraNames[c.Era], v.causeText(c), into)
+		p("  %-14s %s%s. At the end: %s.", "", sp.Describe(), kind, v.levels(c))
 		if len(c.Record) > 0 {
 			var recs []string
 			for _, r := range c.Record {
-				recs = append(recs, w.RecordText(r))
+				recs = append(recs, v.recordText(r))
 			}
 			p("  %-14s filters: %s", "", strings.Join(recs, "; "))
 		}
@@ -431,51 +370,46 @@ func write(p func(string, ...any), w *history.World, book *names.Book, full bool
 			p("  %-14s scars: %s", "", strings.Join(scars, ", "))
 		}
 		if full {
-			var known []string
-			for k := range c.Known {
-				known = append(known, k)
-			}
-			sort.Strings(known)
-			p("  %-14s known: %s", "", strings.Join(known, " "))
+			p("  %-14s known: %s", "", strings.Join(c.Known, " "))
 		}
 	}
 }
 
-// lines is the family tree of every empire that broke: each people that
+// lineage is the family tree of every empire that broke: each people that
 // ended in a sundering or a shattering with its heirs, their heirs in
 // turn, and who holds the old seat now.
-func lines(p func(string, ...any), w *history.World) {
+func (v *view) lineage(p func(string, ...any)) {
 	p("Lines: the empires that broke, and their heirs.")
 	any := false
-	var tree func(c *history.Civ, depth int)
-	tree = func(c *history.Civ, depth int) {
+	var tree func(c *record.Civ, depth int)
+	tree = func(c *record.Civ, depth int) {
 		pad := strings.Repeat("    ", depth)
 		state := ""
 		switch {
-		case c.Active():
-			state = fmt.Sprintf("standing, %s", c.StiffWord())
-		case c.Stage == history.Remnant:
+		case active(c):
+			state = fmt.Sprintf("standing, %s", stiffWord(c))
+		case remnant(c):
 			state = "a remnant"
-		case c.Fate == history.Sundered:
-			state = fmt.Sprintf("sundered %s", year(c.Ended))
-		case c.Fate == history.Shattered:
-			state = fmt.Sprintf("shattered %s", year(c.Ended))
+		case c.Fate == "sundered":
+			state = fmt.Sprintf("sundered %s", v.year(c.Ended))
+		case c.Fate == "shattered":
+			state = fmt.Sprintf("shattered %s", v.year(c.Ended))
 		default:
-			state = fmt.Sprintf("%s %s: %s", c.Fate, year(c.Ended), w.CauseText(c))
+			state = fmt.Sprintf("%s %s: %s", c.Fate, v.year(c.Ended), v.causeText(c))
 		}
 		seat := ""
-		if o := w.Owner[c.Cradle]; o >= 0 && o != c.ID && w.Civs[o].Line != nil && contains(w.Civs[o].Line, c.ID) {
-			seat = fmt.Sprintf("; the old seat is held by the %s", w.Civs[o].Tok())
+		if o := v.held(c.Cradle); o >= 0 && o != c.ID && len(v.civ(o).Line) > 0 && contains(v.civ(o).Line, c.ID) {
+			seat = fmt.Sprintf("; the old seat is held by the %s", tok(o))
 		}
-		p("  %sThe %s (%s), %s%s.", pad, c.Tok(), year(c.Born), state, seat)
-		for _, h := range w.Civs {
+		p("  %sThe %s (%s), %s%s.", pad, tok(c.ID), v.year(c.Born), state, seat)
+		for _, h := range v.st.Civs {
 			if n := len(h.Line); n > 0 && h.Line[n-1] == c.ID {
 				tree(h, depth+1)
 			}
 		}
 	}
-	for _, c := range w.Civs {
-		if (c.Fate == history.Sundered || c.Fate == history.Shattered) && len(c.Line) == 0 {
+	for _, c := range v.st.Civs {
+		if (c.Fate == "sundered" || c.Fate == "shattered") && len(c.Line) == 0 {
 			any = true
 			tree(c, 0)
 		}
@@ -497,51 +431,51 @@ func contains(xs []int, v int) bool {
 // plagues lists every plague alive at the present, endemic or raging,
 // with its kind, its road so far and its toll, and every dead one that
 // took more than three peoples.
-func plagues(p func(string, ...any), w *history.World) {
+func (v *view) plagues(p func(string, ...any)) {
 	p("Plagues:")
 	any := false
-	for _, pl := range w.Plagues {
+	for _, pl := range v.st.Plagues {
 		if pl.Hosts == 0 && pl.Peoples <= 3 {
 			continue
 		}
 		any = true
 		kind := "of the body"
-		if pl.Kind == plague.Memetic {
+		if pl.Kind == "memetic" {
 			kind = "of the mind"
 		}
 		first := "nobody"
 		if pl.FirstHost >= 0 {
-			first = "the " + w.Civs[pl.FirstHost].Tok()
+			first = "the " + tok(pl.FirstHost)
 		}
 		if pl.Maker >= 0 {
-			first += fmt.Sprintf(", made by the %s", w.Civs[pl.Maker].Tok())
+			first += fmt.Sprintf(", made by the %s", tok(pl.Maker))
 		}
 		if pl.Rider >= 0 {
-			first += fmt.Sprintf("; it thinks, and is the %s", w.Civs[pl.Rider].Tok())
+			first += fmt.Sprintf("; it thinks, and is the %s", tok(pl.Rider))
 		}
 		state := "dead"
 		if pl.Hosts > 0 {
 			var in []string
-			for _, c := range w.Civs {
-				inf := c.Infections[pl.ID]
-				if !c.Active() || inf == nil {
+			for _, c := range v.st.Civs {
+				inf, ok := c.Infections[pl.ID]
+				if !active(c) || !ok {
 					continue
 				}
 				how := "raging"
 				switch {
 				case inf.Carrier:
 					how = "carried"
-				case w.Present-inf.Since > 1_000_000:
-					how = fmt.Sprintf("endemic these %s, and they no longer notice it", spanOf(w.Present-inf.Since))
+				case v.present-inf.Since > 1_000_000:
+					how = fmt.Sprintf("endemic these %s, and they no longer notice it", spanOf(v.present-inf.Since))
 				case inf.Contained:
 					how = "contained"
 				}
-				in = append(in, fmt.Sprintf("the %s (%s)", c.Tok(), how))
+				in = append(in, fmt.Sprintf("the %s (%s)", tok(c.ID), how))
 			}
 			state = "in " + strings.Join(in, ", ")
 		}
 		p("  %s, %s, contagion %.2f, lethality %.2f: born %s among %s, %s. Has been in %d peoples, at most %d at once; took %d worlds and %d peoples, made %d cults, was cured %s.",
-			upperFirst(pl.Tok()), kind, pl.Contagion, pl.Lethality, year(pl.Born), first, state, pl.Caught, pl.Peak, pl.Worlds, pl.Peoples, pl.Cults, times(pl.Cures))
+			upperFirst(plagueTok(pl.ID)), kind, pl.Contagion, pl.Lethality, v.year(pl.Born), first, state, pl.Caught, pl.Peak, pl.Worlds, pl.Peoples, pl.Cults, times(pl.Cures))
 	}
 	if !any {
 		p("  none alive, and none that took more than three peoples")
@@ -570,21 +504,21 @@ func upperFirst(s string) string {
 // wars lists the wars worth remembering: those that took a world or ended
 // a people, and every war fought more than once; then the pacts and the
 // promises broken.
-func wars(p func(string, ...any), w *history.World) {
+func (v *view) wars(p func(string, ...any)) {
 	p("Wars of the age:")
 	n := 0
-	for _, wr := range w.Wars {
+	for _, wr := range v.st.Wars {
 		moved := wr.Taken[0] + wr.Taken[1] + wr.Glassed[0] + wr.Glassed[1]
 		if moved == 0 && wr.Nth == 1 && wr.Result == "peace" {
 			continue
 		}
-		a, b := w.Civs[wr.Sides[0]], w.Civs[wr.Sides[1]]
-		name := wr.Tok() // a side's name for it, or "a war" where no side has a voice
+		a, b := wr.Sides[0], wr.Sides[1]
+		name := warTok(wr.ID) // a side's name for it, or "a war" where no side has a voice
 		nth := ""
 		if wr.Nth > 1 {
 			nth = fmt.Sprintf(", their %s", ordinalOf(wr.Nth))
 		}
-		result := w.WarResult(wr)
+		result := v.warResult(wr)
 		if !wr.Over {
 			result = "still fought"
 		}
@@ -592,10 +526,10 @@ func wars(p func(string, ...any), w *history.World) {
 		if wr.Over {
 			length = fmt.Sprintf(", %s", spanOf(wr.Ended-wr.Began))
 		}
-		p("  %s: the %s against the %s%s, over %s (%s%s). %s taken, %d burned; %s.", name, a.Tok(), b.Tok(), nth, w.WarCause(wr), year(wr.Began), length, worldsOf(wr.Taken[0]+wr.Taken[1]), wr.Glassed[0]+wr.Glassed[1], result)
+		p("  %s: the %s against the %s%s, over %s (%s%s). %s taken, %d burned; %s.", name, tok(a), tok(b), nth, v.warCause(wr), v.year(wr.Began), length, worldsOf(wr.Taken[0]+wr.Taken[1]), wr.Glassed[0]+wr.Glassed[1], result)
 		n++
 		if n >= 60 {
-			p("  (and %d more)", len(w.Wars)-n)
+			p("  (and %d more)", len(v.st.Wars)-n)
 			break
 		}
 	}
@@ -605,20 +539,20 @@ func wars(p func(string, ...any), w *history.World) {
 	p("")
 	p("Pacts sworn:")
 	n = 0
-	for _, pc := range w.Pacts {
+	for _, pc := range v.st.Pacts {
 		var names []string
 		for _, m := range pc.Members {
-			names = append(names, w.Civs[m].Tok())
+			names = append(names, tok(m))
 		}
 		against := "whoever came"
 		if pc.Target >= 0 {
-			against = "the " + w.Civs[pc.Target].Tok()
+			against = "the " + tok(pc.Target)
 		}
 		state := "still held"
 		if pc.Over {
-			state = "broken " + year(pc.Ended)
+			state = "broken " + v.year(pc.Ended)
 		}
-		p("  the %s, a pact of %s against %s (%s; %s).", strings.Join(names, " and the "), pc.Kind, against, year(pc.Formed), state)
+		p("  the %s, a pact of %s against %s (%s; %s).", strings.Join(names, " and the "), pc.Kind, against, v.year(pc.Formed), state)
 		n++
 	}
 	if n == 0 {
@@ -627,11 +561,11 @@ func wars(p func(string, ...any), w *history.World) {
 	p("")
 	p("Promises remembered:")
 	n = 0
-	for _, b := range w.Betrayals {
+	for _, b := range v.st.Betrayals {
 		if b.Weight <= 0 {
 			continue
 		}
-		p("  The %s %s the %s (%s).", w.Civs[b.By].Tok(), w.BetrayalText(b.Shape, b.Against), w.Civs[b.Against].Tok(), year(b.Year))
+		p("  The %s %s the %s (%s).", tok(b.By), v.betrayalText(b.Shape, b.Against), tok(b.Against), v.year(b.Year))
 		n++
 	}
 	if n == 0 {
@@ -639,10 +573,11 @@ func wars(p func(string, ...any), w *history.World) {
 	}
 }
 
-func fleetsOf(w *history.World, c *history.Civ) int {
+// roaming counts a nomad people's fleets in being.
+func (v *view) roaming(c *record.Civ) int {
 	n := 0
-	for _, x := range w.Expeditions {
-		if !x.Over && x.Kind == history.Roam && x.Owner == c.ID {
+	for _, x := range v.st.Fleets {
+		if !x.Over && x.Kind == "roam" && x.Owner == c.ID {
 			n++
 		}
 	}
@@ -673,7 +608,7 @@ func ordinalOf(n int) string {
 	return fmt.Sprintf("%dth", n)
 }
 
-func spanOf(y history.Year) string {
+func spanOf(y Year) string {
 	switch {
 	case y < 1000:
 		return "under a thousand years"
@@ -682,7 +617,7 @@ func spanOf(y history.Year) string {
 	}
 }
 
-func keysOf2(m map[string]string) []string {
+func sortedStrings(m map[string]string) []string {
 	var out []string
 	for k := range m {
 		out = append(out, k)
@@ -691,37 +626,76 @@ func keysOf2(m map[string]string) []string {
 	return out
 }
 
-func elderName(w *history.World, l *history.Legacy) string {
-	if l.Elder == nil {
+func (v *view) elderName(l *record.Remain) string {
+	if l.Elder < 0 {
 		return "no one remembered"
 	}
-	return l.Elder.Tok() + ", " + w.ElderPortrait(l.Elder)
+	return elderTok(l.Elder) + ", " + v.elderPortrait(v.elder(l.Elder))
 }
 
-// The tokens the view prints where the history has none of its own; the
-// names pass resolves them with everything else.
-func star(id int) string          { return fmt.Sprintf("{star:%d}", id) }
-func title(c *history.Civ) string { return fmt.Sprintf("{title:%d}", c.ID) }
-func word(c *history.Civ) string  { return fmt.Sprintf("{word:%d}", c.ID) }
+// sickWord is the portrait's line: what a people has, and for how long.
+func (v *view) sickWord(c *record.Civ) string {
+	var parts []string
+	for _, pid := range sortedIDs(c.Infections) {
+		inf := c.Infections[pid]
+		state := "raging"
+		switch {
+		case inf.Carrier:
+			state = "carried"
+		case inf.Contained:
+			state = "contained"
+		}
+		parts = append(parts, sprintf("sick with %s these %s, %s", plagueTok(pid), span(v.present-inf.Since), state))
+	}
+	return list(parts)
+}
 
-// firstOf is the first people of a blood, whose name the blood goes by.
-func firstOf(w *history.World, sp *species.Species) *history.Civ {
-	for _, c := range w.Civs {
-		if c.Species == sp {
-			return c
+// rideWord is the portrait's line for a parasite: what it rides.
+func (v *view) rideWord(c *record.Civ) string {
+	if c.Own < 0 {
+		return ""
+	}
+	var names []string
+	for _, h := range v.hostsOf(c) {
+		if h.Master == c.ID && !h.Vassal {
+			names = append(names, "the "+tok(h.ID))
 		}
 	}
-	return nil
+	if len(names) == 0 {
+		return "riding nobody"
+	}
+	return "riding " + list(names)
 }
 
-// Stats prints one line of numbers about a world, for tuning across seeds.
-func Stats(out io.Writer, w *history.World) {
+func sortedIDs[V any](m map[int]V) []int {
+	out := make([]int, 0, len(m))
+	for k := range m {
+		out = append(out, k)
+	}
+	sort.Ints(out)
+	return out
+}
+
+// hunted counts the hunts declared on a people by the shape of the hole.
+func (v *view) hunted(c *record.Civ) int {
+	n := 0
+	for _, wr := range v.st.Wars {
+		if wr.Hunt != nil && wr.Sides[1] == c.ID {
+			n++
+		}
+	}
+	return n
+}
+
+// Stats prints one line of numbers about a run, for tuning across seeds.
+func Stats(out io.Writer, r *record.Run) {
+	d, st := r.Dossier, r.State
 	var b [5]int
 	standing, remnants, knowers := 0, 0, 0
-	for _, c := range w.Civs {
+	for _, c := range st.Civs {
 		end := c.Fell
-		if c.Active() {
-			end = w.Present
+		if active(c) {
+			end = d.Present
 		}
 		lived := float64(end-c.Born) / 1e6
 		switch {
@@ -736,10 +710,10 @@ func Stats(out io.Writer, w *history.World) {
 		default:
 			b[4]++
 		}
-		if c.Active() {
+		if active(c) {
 			standing++
 		}
-		if c.Stage == history.Remnant {
+		if remnant(c) {
 			remnants++
 		}
 		if c.KnowsCycle {
@@ -748,7 +722,7 @@ func Stats(out io.Writer, w *history.World) {
 	}
 	miracles := map[string]int{}
 	whole := 0
-	for _, c := range w.Civs {
+	for _, c := range st.Civs {
 		for _, how := range c.Miracles {
 			miracles[how]++
 		}
@@ -756,43 +730,138 @@ func Stats(out io.Writer, w *history.World) {
 			whole++
 		}
 	}
-	ruins := map[history.LegacyState]int{}
-	conds := map[history.Condition]int{}
+	ruins := map[string]int{}
+	conds := map[string]int{}
 	nRuins := 0
-	for _, l := range w.Legacies {
+	for _, l := range st.Remains {
 		if l.Maker >= 0 {
 			ruins[l.State]++
 			nRuins++
-			if l.State == history.Buried {
+			if l.State == "undisturbed" {
 				conds[l.Cond]++
 			}
 		}
 	}
 	fmt.Fprintf(out, "%s seed %d: age %.1f Myr, fade %.0f Myr, fertility %.1f%%, %d civs (lived <0.5/<1/<3/<10/10+ Myr: %d/%d/%d/%d/%d), standing %d, remnants %d, knowers %d, whole tree %d, miracles born/leap/found/wielded %d/%d/%d/%d, transmitters %d, remains %d (mastered %d, wielded %d, sealed %d, unleashed %d, crumbled %d; still buried abandoned/derelict/wreck/ruin %d/%d/%d/%d), wall %.1f, capped %v\n",
-		w.G.Region.Code,
-		w.Seed, float64(w.Present-w.Cfg.Dawn)/1e6, float64(w.Cycle.Fade)/1e6, 100*w.FertilityNow(), len(w.Civs), b[0], b[1], b[2], b[3], b[4], standing, remnants, knowers, whole, miracles["born"], miracles["leap"], miracles["found"], miracles["wielded"], speaking(w),
-		nRuins, ruins[history.Mastered], ruins[history.Wielded], ruins[history.Sealed], ruins[history.Unleashed], ruins[history.Lost],
-		conds[history.Abandoned], conds[history.Derelict], conds[history.Wreck], conds[history.Ruin], w.Thin, w.Capped)
+		d.Place.Code,
+		d.Seed, float64(d.Present-d.Dawn)/1e6, float64(d.Cycle.Fade)/1e6, 100*d.Fertility, len(st.Civs), b[0], b[1], b[2], b[3], b[4], standing, remnants, knowers, whole, miracles["born"], miracles["leap"], miracles["found"], miracles["wielded"], d.Counts.Speaking,
+		nRuins, ruins["mastered"], ruins["wielded"], ruins["sealed"], ruins["unleashed"], ruins["lost"],
+		conds["abandoned"], conds["derelict"], conds["wreck"], conds["ruin"], d.Wall.Value, d.Capped)
 }
 
-// hunted counts the hunts declared on a people by the shape of the hole.
-func hunted(w *history.World, c *history.Civ) int {
-	n := 0
-	for _, wr := range w.Wars {
-		if wr.Gap != nil && wr.Sides[1] == c.ID {
-			n++
-		}
+// starDetail names a star with its class and what Earth knows of it.
+func (v *view) starDetail(s *galaxy.Star, id int) string {
+	d := fmt.Sprintf("%s (%s", star(id), s.ClassName())
+	if s.Real && s.Alt != "" {
+		d += ", " + s.Alt
 	}
-	return n
+	if s.Real && s.Mag < 6 && v.g.Sol >= 0 {
+		d += ", a naked-eye star from Earth"
+	}
+	return d + ")"
 }
 
-// speaking counts the transmitters that are live.
-func speaking(w *history.World) int {
-	n := 0
-	for _, l := range w.Legacies {
-		if l.Speaking() {
-			n++
+// systemLine describes a star's system for the legends.
+func (v *view) systemLine(id int) string {
+	sys := v.g.Sys[id]
+	name := star(id)
+	line := "  " + name + ": " + sys.Describe(name) + "."
+	if sys.Missed {
+		line += " The home world is one Earth's surveys never saw."
+	}
+	return line
+}
+
+// lawsInWords tells the laws of the place as a people living there would.
+func lawsInWords(g *galaxy.Galaxy) []string {
+	l := g.Law
+	var out []string
+	sp := galaxy.MeanSpacing(len(g.Stars), g.Radius, g.Thickness)
+	switch {
+	case l.Density > 8:
+		out = append(out, fmt.Sprintf("The stars stand close here, %.0f light years apart in this thinned field; no people is alone for long.", sp))
+	case l.Density > 2:
+		out = append(out, fmt.Sprintf("The stars stand closer than around the Sun, %.0f light years apart in this thinned field.", sp))
+	case l.Density < 0.3:
+		out = append(out, fmt.Sprintf("The stars are far apart, %.0f light years in this thinned field; a people that cannot cross that is alone.", sp))
+	default:
+		out = append(out, fmt.Sprintf("The stars stand about as they do around the Sun, %.0f light years apart in this thinned field.", sp))
+	}
+	switch {
+	case l.Youth > 8:
+		out = append(out, "The sky is full of giants: a star dies within sight every few thousand years, and the young suns burn hard.")
+	case l.Youth > 2.5:
+		out = append(out, "Young suns burn among the old and die young; the sky is never long without a new star.")
+	case l.Youth < 0.25:
+		out = append(out, "The sky is quiet and old; no star here will die for an age.")
+	}
+	switch {
+	case l.Metals > 0.2:
+		out = append(out, "The stars are rich in metal, and their worlds are heavy with it.")
+	case l.Metals < -0.8:
+		out = append(out, "The stars are ancient and poor in metal; worlds of rock are few, small and dry.")
+	case l.Metals < -0.35:
+		out = append(out, "The stars are poorer in metal than the Sun; worlds of rock are fewer.")
+	}
+	switch {
+	case l.Glare > 10:
+		out = append(out, "The heart of the galaxy fills the sky. Nothing keeps a thin skin for long; life that lasts lives underground or under ice.")
+	case l.Glare > 3:
+		out = append(out, "The sky is hard, and a biosphere on an open surface is a short-lived thing.")
+	case l.Glare < 0.5:
+		out = append(out, "The sky is soft and dark, the gentlest in the galaxy.")
+	}
+	if l.Crowd > 5 {
+		out = append(out, "Other stars pass close enough to shake the comets loose, again and again.")
+	}
+	switch {
+	case l.Exotic > 5:
+		out = append(out, "Dead and collapsed stars are near, and those who study them learn the deep physics early, and things that should not be learned.")
+	case l.Exotic > 2:
+		out = append(out, "A dead star bends the light nearby; those who study it learn the deep physics sooner.")
+	}
+	switch {
+	case l.R < 3:
+		// the arms do not reach here; the zone says it all
+	case l.Arm != nil:
+		out = append(out, fmt.Sprintf("This is %s: %s.", l.Arm.Name, l.Arm.Desc))
+	default:
+		out = append(out, "This is the space between the arms, where nothing is born and little dies.")
+	}
+	return out
+}
+
+// nearFeatures lists the catalogued things near the field, nearest first.
+func nearFeatures(g *galaxy.Galaxy, max int) []string {
+	var out []string
+	for _, nf := range g.Law.Near {
+		if nf.F.Kind == galaxy.Sky {
+			continue
+		}
+		if len(out) >= max {
+			break
+		}
+		d := nf.Dist * galaxy.LyPerKpc
+		where := fmt.Sprintf("%.0f ly", d)
+		if d < 1 {
+			where = "here"
+		}
+		desc := nf.F.Desc
+		if desc == "" {
+			desc = nf.F.Fact
+		}
+		out = append(out, fmt.Sprintf("%s (%s, %s): %s.", nf.F.Name, nf.F.Kind, where, desc))
+	}
+	return out
+}
+
+// skyFeatures names what lies beyond the galaxy.
+func skyFeatures(g *galaxy.Galaxy) string {
+	var names []string
+	for _, nf := range g.Law.Near {
+		if nf.F.Kind == galaxy.Sky {
+			names = append(names, nf.F.Name)
 		}
 	}
-	return n
+	return strings.Join(names, ", ")
 }

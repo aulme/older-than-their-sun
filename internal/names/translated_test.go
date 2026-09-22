@@ -356,7 +356,7 @@ func TestVoicelessNamed(t *testing.T) {
 	w := world(t, 3)
 	b := Of(w)
 	for _, c := range w.Civs {
-		rows := b.Rows(Object{"civ", c.ID})
+		rows := b.Rows(Object{Kind: "civ", ID: c.ID})
 		if b.Voice(c) == None {
 			metBy := false
 			for _, f := range w.Events {
@@ -380,17 +380,17 @@ func TestVoicelessNamed(t *testing.T) {
 				t.Errorf("civ %d speaks in translation and has no recipe for its own name: %+v", c.ID, self)
 			}
 		}
-		if c.Fate == history.Contracted && b.Voice(c) != None && len(b.Rows(Object{"title", c.ID})) == 0 {
+		if c.Fate == history.Contracted && b.Voice(c) != None && len(b.Rows(Object{Kind: "title", ID: c.ID})) == 0 {
 			t.Errorf("civ %d is a remnant with no title", c.ID)
 		}
 	}
 	for _, p := range w.Plagues {
-		if p.FirstHost >= 0 && b.Voice(w.Civs[p.FirstHost]) != None && len(b.Rows(Object{"plague", p.ID})) == 0 {
+		if p.FirstHost >= 0 && b.Voice(w.Civs[p.FirstHost]) != None && len(b.Rows(Object{Kind: "plague", ID: p.ID})) == 0 {
 			t.Errorf("plague %d has no name from its first host %d", p.ID, p.FirstHost)
 		}
 	}
 	for _, f := range w.Events {
-		if f.Kind == history.FWord && b.Voice(w.Civs[f.Subject]) != None && len(b.Rows(Object{"word", f.Subject})) == 0 {
+		if f.Kind == history.FWord && b.Voice(w.Civs[f.Subject]) != None && len(b.Rows(Object{Kind: "word", ID: f.Subject})) == 0 {
 			t.Errorf("civ %d reached in and has no word", f.Subject)
 		}
 	}

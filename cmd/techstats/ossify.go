@@ -6,7 +6,8 @@ import (
 	"sort"
 	"strings"
 
-	"worldgen/internal/history"
+	"worldgen/internal/legends"
+	"worldgen/internal/record"
 )
 
 // Ossification: how the old fall now that nobody dies of age. Facings of
@@ -33,15 +34,16 @@ type OssRec struct {
 	StandSet  int // of them at stiffness one or more
 }
 
-func flattenOss(w *history.World) OssRec {
-	r := OssRec{Seed: w.Seed, CivilWars: map[int]int{}, Shatters: map[int]int{}}
-	for _, c := range w.Civs {
-		r.Faced += c.Tally.OssFaced
-		r.Renewed += c.Tally.OssRenewed
-		r.Set += c.Tally.OssSet
-		r.Broke += c.Tally.OssBroke
-		r.StiffSum += c.Tally.OssStiff
-		if c.Active() {
+func flattenOss(w *world) OssRec {
+	r := OssRec{Seed: w.seed(), CivilWars: map[int]int{}, Shatters: map[int]int{}}
+	for _, c := range w.State.Civs {
+		t := c.Batch.Tally
+		r.Faced += t.OssFaced
+		r.Renewed += t.OssRenewed
+		r.Set += t.OssSet
+		r.Broke += t.OssBroke
+		r.StiffSum += t.OssStiff
+		if legends.Active(c) {
 			r.Standing++
 			if c.Ossified {
 				r.StandOss++
@@ -51,26 +53,26 @@ func flattenOss(w *history.World) OssRec {
 		}
 	}
 	seen := map[int]bool{}
-	for _, f := range w.Events {
+	for _, f := range w.Chronicle {
 		switch f.Kind {
-		case history.FSundered:
+		case record.FSundered:
 			if !seen[f.Subject] {
 				seen[f.Subject] = true
 				r.CivilWars[f.N]++
 			}
-		case history.FShattered:
+		case record.FShattered:
 			if !seen[f.Subject] {
 				seen[f.Subject] = true
 				r.Shatters[f.N]++
 			}
-		case history.FDarkAge:
+		case record.FDarkAge:
 			r.Depths = append(r.Depths, float64(f.N)/10)
-		case history.FReclaimed:
+		case record.FReclaimed:
 			r.Reclaimed++
 		}
 	}
-	for _, e := range w.Events {
-		if e.Kind == history.KKinMet {
+	for _, e := range w.Chronicle {
+		if e.Kind == record.KKinMet {
 			r.KinMeets++
 		}
 	}
@@ -142,12 +144,7 @@ func ossReport(out io.Writer, oss []OssRec, recs []Rec, seeds int) {
 		}
 		causes[k]++
 	}
-	var ks []string
-	for k := range causes {
-		ks = append(ks, k)
-	}
-	sort.Slice(ks, func(i, j int) bool { return causes[ks[i]] > causes[ks[j]] })
-	for _, k := range ks {
+	for _, k := range sortedByCount(causes) {
 		p("| %s | %d | %s |", k, causes[k], pct(causes[k], ended))
 	}
 }

@@ -1,6 +1,7 @@
 package history
 
 import (
+	"encoding/json"
 	"math/rand/v2"
 
 	"worldgen/internal/flow"
@@ -26,6 +27,17 @@ const (
 )
 
 func (k MoralKind) String() string { return [...]string{"amoral", "individual", "herd", "fixation"}[k] }
+
+// MarshalText writes the kind's key, for the record.
+func (k MoralKind) MarshalText() ([]byte, error) { return []byte(k.String()), nil }
+
+// MarshalJSON writes a morality as the record holds it.
+func (m Morality) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Kind   string `json:"kind"`
+		Object string `json:"object,omitempty"`
+	}{m.Kind.String(), m.Object})
+}
 
 // The objects of a fixation.
 const (

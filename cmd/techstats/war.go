@@ -7,8 +7,9 @@ import (
 	"os"
 	"sort"
 
-	"worldgen/internal/history"
-	"worldgen/internal/names"
+	"strconv"
+
+	"worldgen/internal/record"
 )
 
 // WarRec is one war, for wars.jsonl.
@@ -28,27 +29,58 @@ type WarRec struct {
 	Waning  bool    `json:"waning"` // began after the waning was declared
 }
 
-func flattenWars(w *history.World) []WarRec {
+func flattenWars(w *world) []WarRec {
 	var out []WarRec
-	book := names.Of(w)
-	for _, wr := range w.Wars {
-		a, b := w.Civs[wr.Sides[0]], w.Civs[wr.Sides[1]]
-		r := WarRec{Seed: w.Seed, A: book.Text(a.Tok()), B: book.Text(b.Tok()), PostA: posture(a), PostB: posture(b), Cause: book.Text(w.WarCause(wr)), Nth: wr.Nth,
-			Began: float64(wr.Began-w.Cfg.Dawn) / 1e6, Taken: wr.Taken[0] + wr.Taken[1], Glassed: wr.Glassed[0] + wr.Glassed[1],
-			Result: w.WarResult(wr), Waning: wr.Began >= w.Waning}
+	d := w.Dossier
+	for _, wr := range w.State.Wars {
+		a, b := w.civ(wr.Sides[0]), w.civ(wr.Sides[1])
+		r := WarRec{Seed: d.Seed, A: w.rd.Text("{civ:" + strconv.Itoa(a.ID) + "}"), B: w.rd.Text("{civ:" + strconv.Itoa(b.ID) + "}"), PostA: w.posture(a), PostB: w.posture(b), Cause: w.rd.WarCause(wr), Nth: wr.Nth,
+			Began: float64(wr.Began-d.Dawn) / 1e6, Taken: wr.Taken[0] + wr.Taken[1], Glassed: wr.Glassed[0] + wr.Glassed[1],
+			Result: w.rd.WarResult(wr), Waning: wr.Began >= d.Waning}
 		if wr.Over {
 			r.Length = float64(wr.Ended-wr.Began) / 1000
 		} else {
 			r.Result = "unfinished"
-			r.Length = float64(w.Present-wr.Began) / 1000
+			r.Length = float64(d.Present-wr.Began) / 1000
 		}
 		out = append(out, r)
 	}
 	return out
 }
 
-func posture(c *history.Civ) string {
-	for _, t := range c.Species.Traits {
+// WarBase is one world's denominators for the war rates the halving note
+// asks for (specs/notes/war-halving.md): the distinct pairs of peoples
+// that met, and the people-ticks lived.
+type WarBase struct {
+	Seed  uint64
+	Pairs int // distinct pairs that knew of each other
+	Ticks int // ticks lived, summed over every people
+	First int // first wars: the first between their two
+}
+
+func flattenWarBase(w *world) WarBase {
+	b := WarBase{Seed: w.seed()}
+	seen := map[[2]int]bool{}
+	for _, c := range w.State.Civs {
+		b.Ticks += c.Batch.Tally.Ticks
+		for _, o := range c.Knowledge.Met {
+			k := [2]int{min(c.ID, o), max(c.ID, o)}
+			if k[0] != k[1] && !seen[k] {
+				seen[k] = true
+				b.Pairs++
+			}
+		}
+	}
+	for _, wr := range w.State.Wars {
+		if wr.Nth == 1 {
+			b.First++
+		}
+	}
+	return b
+}
+
+func (w *world) posture(c *record.Civ) string {
+	for _, t := range w.rd.Species(c).Traits {
 		if t.Group == "stance" {
 			return t.Key
 		}
@@ -72,12 +104,20 @@ func writeWars(path string, wars []WarRec) error {
 }
 
 // warReport is the war and peace section of the report.
-func warReport(out io.Writer, recs []Rec, wars []WarRec, seeds int) {
+func warReport(out io.Writer, recs []Rec, wars []WarRec, bases []WarBase, seeds int) {
 	p := func(format string, args ...any) { fmt.Fprintf(out, format+"\n", args...) }
 	p("")
 	p("## War and peace")
 	p("")
 	p("%d wars over %d worlds, %.1f per world; %d began in the waning.", len(wars), seeds, float64(len(wars))/float64(seeds), count2(wars, func(r WarRec) bool { return r.Waning }))
+	pairs, ticks, first := 0, 0, 0
+	for _, b := range bases {
+		pairs, ticks, first = pairs+b.Pairs, ticks+b.Ticks, first+b.First
+	}
+	if pairs > 0 && ticks > 0 {
+		p("First wars per distinct pair that met: %.3f (%d first wars, %d pairs); wars per thousand people-ticks: %.2f (%d wars, %d thousand people-ticks). Read war counts through these, not the total (specs/notes/war-halving.md).",
+			float64(first)/float64(pairs), first, pairs, 1000*float64(len(wars))/float64(ticks), len(wars), ticks/1000)
+	}
 	p("")
 	p("### How wars end")
 	p("")
@@ -128,7 +168,7 @@ func warReport(out io.Writer, recs []Rec, wars []WarRec, seeds int) {
 	for _, k := range sortedKeys(byPost) {
 		rs := byPost[k]
 		var lives []float64
-		var t history.Tally
+		var t record.Tally
 		met, ruled, cap := 0, 0, 0
 		for _, r := range rs {
 			lives = append(lives, r.Lived)
@@ -162,7 +202,7 @@ func warReport(out io.Writer, recs []Rec, wars []WarRec, seeds int) {
 	for _, k := range sortedKeys(byHon) {
 		rs := byHon[k]
 		var lives []float64
-		var t history.Tally
+		var t record.Tally
 		for _, r := range rs {
 			lives = append(lives, r.Lived)
 			t.Pacts += r.Tally.Pacts

@@ -21,7 +21,9 @@ const sameHistoryDigest = "742802754e000f38bbb6461e9aac550df5b57f6829e73972fac30
 func historyDigest(w *World) string {
 	h := sha256.New()
 	for _, e := range w.Events {
-		fmt.Fprintln(h, e.String())
+		if !e.Silent() {
+			fmt.Fprintln(h, e.String()) // the told events; the silent kinds are the fold test's
+		}
 	}
 	return hex.EncodeToString(h.Sum(nil))
 }

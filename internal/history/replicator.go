@@ -91,7 +91,7 @@ func (w *World) consume(wr *War, c, e *Civ, t int) {
 	if w.Owner[t] >= 0 {
 		return // somebody else's now: a fleeing people's, or a rider's
 	}
-	w.Owner[t] = c.ID
+	w.setOwner(t, c.ID)
 	c.Systems = append(c.Systems, t)
 	c.Peak = max(c.Peak, len(c.Systems))
 	wr.Taken[i]++
@@ -130,7 +130,7 @@ func (w *World) noTerms(wr *War) bool {
 func (w *World) innate(c *Civ) {
 	for _, k := range c.Species.Profile().Innate {
 		if n := tech.Get(k); n != nil && !c.Known[k] {
-			c.Known[k] = true
+			w.know(c, k)
 			if n.Filter != "" {
 				c.Faced[n.Filter] = true
 			}

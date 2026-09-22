@@ -3,9 +3,11 @@ package main
 import (
 	"fmt"
 	"io"
+	"slices"
 	"sort"
 
-	"worldgen/internal/history"
+	"worldgen/internal/legends"
+	"worldgen/internal/record"
 )
 
 // Wisdom: where the level comes from, who came to understand whom and
@@ -25,24 +27,26 @@ type PairRec struct {
 	Gap       float64 // years between the first understanding of the pair and the second, on the second
 }
 
-func flattenPairs(w *history.World) []PairRec {
+func flattenPairs(w *world) []PairRec {
 	type key struct{ a, b int }
-	when := map[key]history.Fathoming{}
-	for _, f := range w.Fathomings {
+	when := map[key]record.Fathoming{}
+	for _, f := range w.State.Fathomings {
 		when[key{f.Who, f.Whom}] = f
 	}
 	var out []PairRec
-	for _, c := range w.Civs {
-		ids := make([]int, 0, len(c.FathomTried))
-		for eid := range c.FathomTried {
+	for _, c := range w.State.Civs {
+		k := c.Knowledge
+		ids := make([]int, 0, len(k.FathomTried))
+		for eid := range k.FathomTried {
 			ids = append(ids, eid)
 		}
 		sort.Ints(ids)
 		for _, eid := range ids {
-			since, e := c.FathomTried[eid], w.Civs[eid]
-			r := PairRec{Seed: w.Seed, Who: c.ID, Whom: eid, Diff: history.Difference(c, e), Fathomed: c.Fathomed[eid], Mutual: c.Fathomed[eid] && e.Fathomed[c.ID]}
-			end := w.Present
-			if !c.Living() {
+			since, e := k.FathomTried[eid], w.civ(eid)
+			fathomed := slices.Contains(k.Fathomed, eid)
+			r := PairRec{Seed: w.seed(), Who: c.ID, Whom: eid, Diff: k.Alien[eid], Fathomed: fathomed, Mutual: fathomed && slices.Contains(e.Knowledge.Fathomed, c.ID)}
+			end := w.Dossier.Present
+			if !legends.Living(c) {
 				end = c.Fell
 			}
 			if f, ok := when[key{c.ID, eid}]; ok && r.Fathomed {

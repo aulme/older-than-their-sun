@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"io"
 	"sort"
-
-	"worldgen/internal/history"
 )
 
 // Sightings: what saw fleets and how early, what was met in the dark,
@@ -46,36 +44,40 @@ type FieldRec struct {
 	Wielded, Mastered, Ruin int
 }
 
-func flattenSightings(w *history.World) (sights []SightRec, meets []MeetRec, fleets []FleetRec, fields FieldRec) {
-	for _, s := range w.Watch {
-		sights = append(sights, SightRec{Seed: w.Seed, Eye: s.Eye, Kind: s.Kind.String(), Warning: int(s.Arrive - s.Year), Speed: s.Speed, Feasible: s.Feasible, Intercept: s.Intercept >= 0})
+func flattenSightings(w *world) (sights []SightRec, meets []MeetRec, fleets []FleetRec, fields FieldRec) {
+	for _, s := range w.State.Sightings {
+		sights = append(sights, SightRec{Seed: w.seed(), Eye: s.Eye, Kind: s.Kind, Warning: int(s.Arrive - s.Year), Speed: s.Speed, Feasible: s.Feasible, Intercept: s.Intercept >= 0})
 	}
-	for _, m := range w.Meetings {
-		meets = append(meets, MeetRec{Seed: w.Seed, Won: m.Won, Broken: m.Broken, Lost: m.Lost})
+	for _, m := range w.State.Meetings {
+		meets = append(meets, MeetRec{Seed: w.seed(), Won: m.Won, Broken: m.Broken, Lost: m.Lost})
 	}
-	for _, x := range w.Expeditions {
-		if x.Kind != history.Campaign && x.Kind != history.Relief {
+	for _, x := range w.State.Fleets {
+		if x.Kind != "campaign" && x.Kind != "relief" {
 			continue
 		}
 		speed := x.Drive
 		if speed == 0 {
-			speed = w.Civs[x.Owner].Speed
+			speed = w.civ(x.Owner).Speed
 		}
-		fleets = append(fleets, FleetRec{Seed: w.Seed, Kind: x.Kind.String(), Speed: speed, Seen: len(x.Seen) > 0, Warning: int(x.Warning)})
+		fleets = append(fleets, FleetRec{Seed: w.seed(), Kind: x.Kind, Speed: speed, Seen: len(x.Seen) > 0, Warning: int(x.Warning)})
 	}
-	fields.Seed = w.Seed
-	fields.Fields, fields.Ships, fields.Adrift = history.FieldsOf(w)
-	for _, l := range w.Legacies {
-		if l.Kind != history.Field {
+	fields.Seed = w.seed()
+	for _, l := range w.State.Remains {
+		if l.Kind != "field" {
 			continue
 		}
+		fields.Fields++
+		fields.Ships += l.Wrecks + l.Derelicts
+		if l.Adrift {
+			fields.Adrift++
+		}
 		switch l.State {
-		case history.Wielded:
+		case "wielded":
 			fields.Wielded++
-		case history.Mastered:
+		case "mastered":
 			fields.Mastered++
 		}
-		if l.Cond == history.Ruin {
+		if l.Cond == "ruin" {
 			fields.Ruin++
 		}
 	}

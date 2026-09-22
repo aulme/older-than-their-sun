@@ -53,7 +53,7 @@ func (w *World) leaveField(loser *Civ, ships int, star int, at vec, adrift bool)
 				l.Wrecks += wrecks
 				l.Derelicts += derelicts
 				if derelicts > 0 {
-					l.Cond = Derelict
+					w.setCond(l, Derelict)
 				}
 				return l
 			}
@@ -62,7 +62,7 @@ func (w *World) leaveField(loser *Civ, ships int, star int, at vec, adrift bool)
 	l := &Legacy{ID: len(w.Legacies), Age: -1, Maker: loser.ID, Kind: Field, Star: star, Node: bestArt(loser), People: -1, Finder: -1, Source: -1, Plague: -1,
 		Wrecks: wrecks, Derelicts: derelicts, At: at, Adrift: adrift, Cond: Wreck, Hardy: hardyDead}
 	if derelicts > 0 {
-		l.Cond = Derelict
+		w.setCond(l, Derelict)
 	}
 	switch {
 	case adrift:
@@ -70,7 +70,7 @@ func (w *World) leaveField(loser *Civ, ships int, star int, at vec, adrift bool)
 	case w.Owner[star] >= 0:
 		l.Hardy = hardyLiving
 	}
-	w.Legacies = append(w.Legacies, l)
+	w.addLegacy(l)
 	w.testament(loser, l)
 	return l
 }
@@ -103,7 +103,7 @@ func (w *World) salvage(c *Civ, l *Legacy) {
 	if l.ships() > 0 {
 		n = l.Derelicts + l.Wrecks/wreckSalvage
 	}
-	l.Cond = Ruin
+	w.setCond(l, Ruin)
 	if n <= 0 {
 		w.event(KWieldFailed, c, nil, l.Star, P{"way": "hulls_ruin"}).Legacy = l.ID
 		return

@@ -7,7 +7,8 @@ import (
 	"sort"
 	"strings"
 
-	"worldgen/internal/history"
+	"worldgen/internal/legends"
+	"worldgen/internal/record"
 	"worldgen/internal/species"
 )
 
@@ -55,54 +56,56 @@ type KindRec struct {
 	DriftCures int
 }
 
-func flattenKinds(w *history.World) KindRec {
-	r := KindRec{Seed: w.Seed, Powers: map[string]int{}, Born: map[string]int{}}
-	for _, c := range w.Civs {
-		for _, k := range c.Species.Powers {
+func flattenKinds(w *world) KindRec {
+	r := KindRec{Seed: w.seed(), Powers: map[string]int{}, Born: map[string]int{}}
+	for _, c := range w.State.Civs {
+		sp := w.rd.Species(c)
+		for _, k := range sp.Powers {
 			r.Powers[k]++
 		}
-		r.Deepened += c.Tally.Deepened
-		r.Appeared += c.Tally.Appeared
-		r.Demands += c.Tally.Demands
-		r.Wakings += c.Tally.Wakings
-		r.Unmade += c.Tally.Unmade
-		r.Tithed += c.Tally.Tithed
-		r.Sleeps += c.Tally.Sleeps
-		if c.Active() && c.Asleep {
+		t := c.Batch.Tally
+		r.Deepened += t.Deepened
+		r.Appeared += t.Appeared
+		r.Demands += t.Demands
+		r.Wakings += t.Wakings
+		r.Unmade += t.Unmade
+		r.Tithed += t.Tithed
+		r.Sleeps += t.Sleeps
+		if legends.Active(c) && c.Asleep {
 			r.Asleep++
 		}
-		r.Eaten += c.Tally.Eaten
-		r.Consumed += c.Tally.Consumed
-		r.Hunts += c.Tally.Hunts
-		if c.Species.Is(species.Antimemetic) {
+		r.Eaten += t.Eaten
+		r.Consumed += t.Consumed
+		r.Hunts += t.Hunts
+		if sp.Is(species.Antimemetic) {
 			r.Antimem++
-			if !c.Active() {
+			if !legends.Active(c) {
 				r.AntimemEnd++
 			}
 		}
-		if c.Species.Is(species.Evolver) {
+		if sp.Is(species.Evolver) {
 			r.Evolvers++
-			r.Drifts += c.Tally.Drifts
-			r.DriftKyr += float64(c.Tally.Ticks) * float64(w.Cfg.Step) / 1000
+			r.Drifts += t.Drifts
+			r.DriftKyr += float64(t.Ticks) * float64(w.Dossier.Step) / 1000
 		}
 	}
-	for _, wr := range w.Wars {
-		if wr.Gap == nil {
+	for _, wr := range w.State.Wars {
+		if wr.Hunt == nil {
 			continue
 		}
 		r.HuntWorlds += wr.Taken[0]
 		if wr.Result == "hole_closed" {
 			r.HuntEmpty++
 		}
-		for _, b := range w.Battles {
+		for _, b := range w.State.Battles {
 			if b.Attacker == wr.Sides[0] && b.Defender == wr.Sides[1] && b.Year >= wr.Began && (b.Year <= wr.Ended || !wr.Over) {
 				r.HuntFound++
 				break
 			}
 		}
 	}
-	for _, l := range w.Legacies {
-		if !l.Transmitter() {
+	for _, l := range w.State.Remains {
+		if !(l.Kind == "threat" && l.People < 0) { // a transmitter
 			continue
 		}
 		if l.Age < 0 {
@@ -110,26 +113,26 @@ func flattenKinds(w *history.World) KindRec {
 		} else {
 			r.Elder++
 		}
-		if l.Payload == history.Seed {
+		if l.Payload == "seed" {
 			r.Seeds++
 		}
 		r.Listeners += l.Listeners
 		r.SeedsWoke += l.Woken
-		if l.Speaking() {
+		if l.State == "unleashed" {
 			r.Speaking++
 		}
 	}
 	gained := map[string]int{} // by the power's key
-	for _, f := range w.Events {
+	for _, f := range w.Chronicle {
 		switch f.Kind {
-		case history.FDemand:
-			if f.P["outcome"] == "left" {
+		case record.FDemand:
+			if f.Str("outcome") == "left" {
 				r.Left++
 			}
-		case history.FSevered:
+		case record.FSevered:
 			r.Severed++
-		case history.FDeepened:
-			gained[f.P["power"].(string)]++
+		case record.FDeepened:
+			gained[f.Str("power")]++
 		}
 	}
 	for _, pw := range species.Pool {

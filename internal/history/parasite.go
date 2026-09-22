@@ -76,7 +76,8 @@ func (w *World) wake(p *Plague, host *Civ) *Civ {
 	}
 	if p.Maker >= 0 && p.Made && w.Civs[p.Maker].Active() {
 		m := w.Civs[p.Maker]
-		nc.Master, nc.Vassal, nc.Seen = m.ID, true, m.Declines
+		w.setMaster(nc, m.ID, true)
+		nc.Seen = m.Declines
 		m.Ruled++
 		w.event(KMadeToThink, m, nc, -1, P{}).Plague = p.ID
 	}
@@ -106,8 +107,8 @@ func (w *World) bornRider(c *Civ) {
 // freed is a ridden people winning the contest: free, immune, and never
 // again quite the same.
 func (w *World) freed(h, rider *Civ) {
-	h.Master, h.Vassal = -1, false
-	h.Scars[ScarChains] = true
+	w.setMaster(h, -1, false)
+	w.scar(h, ScarChains)
 	rider.Tally.Risen++
 	way := "drug"
 	if rider.Has("mindrider") {
@@ -195,7 +196,7 @@ func (w *World) converted(rider, c *Civ, p *Plague, s int) {
 		return
 	}
 	w.loseSystem(c, s, "host", reason{})
-	w.Owner[s] = rider.ID
+	w.setOwner(s, rider.ID)
 	rider.Systems = append(rider.Systems, s)
 	rider.Peak = max(rider.Peak, len(rider.Systems))
 	f := w.told(FTaken, rider, c, s).with(P{"way": "host", "told": true, "species": c.Species.ID})
@@ -213,7 +214,7 @@ func (w *World) burn(c, rider *Civ) {
 		if !w.inReach(c, s) {
 			continue
 		}
-		w.Bio[s] = BioSimple
+		w.setBio(s, BioSimple)
 		w.loseSystem(rider, s, "burned_host", reason{})
 		w.fact(FBurned, c, rider, s).with(P{"way": "host", "told": true})
 		if wr := w.warBetween(c.ID, rider.ID); wr != nil {

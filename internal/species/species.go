@@ -180,11 +180,11 @@ type Species struct {
 // resolves (a people, the people it was made from, a remain, a plague);
 // -1 for none. The zero key is a cradle blood.
 type Making struct {
-	Key    string
-	By     int
-	From   int
-	Legacy int
-	Plague int
+	Key    string `json:"key"`
+	By     int    `json:"by"`
+	From   int    `json:"from"`
+	Legacy int    `json:"legacy"`
+	Plague int    `json:"plague"`
 }
 
 // Made is a making with no parties.
@@ -501,4 +501,47 @@ func DescribeTraits(keys []string) string {
 		parts = append(parts, byKey[k].Name)
 	}
 	return strings.Join(parts, ", ")
+}
+
+// ModKeys lists a species' modifiers by key, in the registry's order.
+func (s *Species) ModKeys() []string {
+	var out []string
+	for _, d := range s.Mods.Defs() {
+		out = append(out, d.Key)
+	}
+	return out
+}
+
+// Rebuild makes a species from the keys a record holds: the substrate,
+// the modifiers, the channel, the powers, the world and the traits, and
+// its making. The parent is set by the caller once every blood exists.
+// A key the registry lacks panics, since the record and the binary
+// disagree.
+func Rebuild(id int, sub string, mods []string, channel string, powers []string, world string, traits []string, made Making) *Species {
+	s := &Species{ID: id, Channel: channel, Made: made}
+	var ok bool
+	if s.Sub, ok = SubstrateByKey(sub); !ok {
+		panic("species: unknown substrate " + sub)
+	}
+	for _, k := range mods {
+		m, ok := ModByKey(k)
+		if !ok {
+			panic("species: unknown modifier " + k)
+		}
+		s.Mods |= m
+	}
+	if world != "" {
+		if s.World = ArchetypeByKey(world); s.World == nil {
+			panic("species: unknown world " + world)
+		}
+	}
+	for _, k := range traits {
+		t := byKey[k]
+		if t == nil {
+			panic("species: unknown trait " + k)
+		}
+		s.Traits = append(s.Traits, t)
+	}
+	s.Powers = append(s.Powers, powers...)
+	return s
 }

@@ -1,13 +1,13 @@
-package history
+package legends
 
 import (
+	"encoding/json"
 	"regexp"
 	"slices"
 	"strings"
 
-	"worldgen/internal/flow"
 	"worldgen/internal/galaxy"
-	"worldgen/internal/plague"
+	"worldgen/internal/record"
 	"worldgen/internal/species"
 	"worldgen/internal/tech"
 )
@@ -27,26 +27,26 @@ import (
 // parameters warSpanP writes. Kinds whose line depends on the parameters
 // have a function that picks the template.
 
-// Line is the chronicle's line for an event: the template with the
+// line is the chronicle's line for an event: the template with the
 // tokens in it, for the names pass to resolve. It may be more than one
 // line; an empty string is a kind the chronicle does not remark.
-func (w *World) Line(e *Event) string {
+func (v *view) line(e *record.Event) string {
 	tmpl, ok := lines[e.Kind]
 	if !ok {
 		if fn, ok := lineFns[e.Kind]; ok {
-			tmpl = fn(w, e)
+			tmpl = fn(v, e)
 		}
 	}
 	if tmpl == "" {
 		return ""
 	}
-	return w.render(e, tmpl)
+	return v.render(e, tmpl)
 }
 
 var placeholder = regexp.MustCompile(`\{(\^?)([A-Za-z_]+)(?::([A-Za-z_.0-9]+))?\}`)
 
 // render fills a template from an event.
-func (w *World) render(e *Event, tmpl string) string {
+func (v *view) render(e *record.Event, tmpl string) string {
 	return placeholder.ReplaceAllStringFunc(tmpl, func(m string) string {
 		parts := placeholder.FindStringSubmatch(m)
 		up, name, format := parts[1] == "^", parts[2], parts[3]
@@ -56,35 +56,38 @@ func (w *World) render(e *Event, tmpl string) string {
 		var out string
 		switch name {
 		case "S":
-			out = w.tokenOf(e.Subject, "civ", format)
+			out = v.tokenOf(e.Subject, "civ", format)
 		case "O":
-			out = w.tokenOf(e.Object, "civ", format)
+			out = v.tokenOf(e.Object, "civ", format)
 		case "T":
-			out = w.tokenOf(e.Star, "star", format)
+			out = v.tokenOf(e.Star, "star", format)
 		case "Q":
 			if format == "called" {
 				// the naming sentence: a voiceless people gives it no name
-				if e.Subject >= 0 && w.Civs[e.Subject].Species.Voiceless() {
+				if e.Subject >= 0 && v.species(v.civ(e.Subject)).Voiceless() {
 					return ""
 				}
 				return " They call it {plague:" + itoa(e.Plague) + "}."
 			}
-			out = w.tokenOf(e.Plague, "plague", format)
+			out = v.tokenOf(e.Plague, "plague", format)
 		case "L":
-			out = w.legacyOf(e, format)
+			out = v.legacyOf(e, format)
 		case "N":
-			out = w.format(e.N, format, e)
+			out = v.format(e.N, format, e)
 		case "warspan":
 			out = warSpan(e)
 		default:
-			v, ok := e.P[name]
+			x, ok := e.P[name]
 			if !ok {
 				return m
 			}
-			if format == "why" {
-				out = w.whyText(e, name)
-			} else {
-				out = w.format(v, format, e)
+			switch format {
+			case "why":
+				out = v.whyText(e, name)
+			case "term":
+				out = v.termName(v.term(e, name))
+			default:
+				out = v.format(x, format, e)
 			}
 		}
 		if up && strings.HasPrefix(out, "{") {
@@ -98,119 +101,115 @@ func (w *World) render(e *Event, tmpl string) string {
 }
 
 // tokenOf is a field's token, or what a formatter makes of the id.
-func (w *World) tokenOf(id int, kind, format string) string {
+func (v *view) tokenOf(id int, kind, format string) string {
 	switch format {
 	case "":
 		return "{" + kind + ":" + itoa(id) + "}"
 	case "system":
-		return w.systemLine(id)
+		return v.systemLine(id)
 	case "title":
 		return "{title:" + itoa(id) + "}"
 	case "word":
 		return "{word:" + itoa(id) + "}"
 	}
-	return w.format(id, format, nil)
+	return v.format(id, format, nil)
 }
 
 // legacyOf is the remain in an event as the line says it.
-func (w *World) legacyOf(e *Event, format string) string {
-	l := w.Legacies[e.Legacy]
+func (v *view) legacyOf(e *record.Event, format string) string {
+	l := v.remain(e.Legacy)
 	switch format {
 	case "makers":
 		return makersTok(l)
 	case "at":
 		// as it stood when the event captured it
-		ships, _ := e.P["ships"].(int)
-		adrift, _ := e.P["adrift"].(bool)
-		return w.describeAt(l, Condition(e.P["cond"].(int)), ships, adrift)
+		return v.describeAt(l, tables.conditions[e.Int("cond")].Key, e.Int("ships"), e.Bool("adrift"))
 	}
-	return w.legacyDesc(l)
+	return v.legacyDesc(l)
 }
 
 // format is a parameter as a line says it: a number, a word for a
 // number, a key's name, an id's token.
-func (w *World) format(v any, format string, e *Event) string {
+func (v *view) format(x any, format string, e *record.Event) string {
 	switch format {
 	case "civ", "star", "plague", "elder", "species", "makers":
-		return "{" + format + ":" + itoa(v.(int)) + "}"
+		return "{" + format + ":" + itoa(toInt(x)) + "}"
 	case "other":
-		if v.(int) == e.Subject {
+		if toInt(x) == e.Subject {
 			return "{civ:" + itoa(e.Object) + "}"
 		}
 		return "{civ:" + itoa(e.Subject) + "}"
 	case "ships":
-		return shipsWord(v.(int))
+		return shipsWord(toInt(x))
 	case "span":
-		return span(v.(Year))
+		return span(Year(toInt(x)))
 	case "systems":
-		return systems(v.(int))
+		return systems(toInt(x))
 	case "worlds":
-		return worlds(v.(int))
+		return worlds(toInt(x))
 	case "number":
-		return numberWord(v.(int))
+		return numberWord(toInt(x))
 	case "ordinal":
-		return ordinal(v.(int))
+		return ordinal(toInt(x))
 	case "depth":
-		return depthWord(v.(float64))
+		return depthWord(toFloat(x))
 	case "flow":
-		return flowWord(v.(flow.Kind))
+		return flowWord(flowKind(x.(string)))
 	case "flowkind":
-		return v.(flow.Kind).String()
+		return flowKind(x.(string)).String()
 	case "category":
-		return v.(flow.Category).Phrase()
+		return categoryPhrase(x.(string))
 	case "percent":
-		return percent(v.(float64))
+		return percent(toFloat(x))
 	case "share":
-		return shareWord(v.(int), e.P["total"].(int))
-	case "term":
-		return w.termName(v.(Term))
+		return shareWord(toInt(x), e.Int("total"))
 	case "node":
-		return tech.Get(v.(string)).Name
+		return tech.Get(x.(string)).Name
 	case "structure":
-		return tech.Structures[v.(string)].Name
+		return tech.Structures[x.(string)].Name
 	case "miracle":
-		return tables.miracleByKey[v.(string)].Term
+		return tables.miracles[x.(string)].Term
 	case "object":
-		return tables.miracleByKey[v.(string)].Object
+		return tables.miracles[x.(string)].Object
 	case "filter":
-		return filters[v.(string)].Name
+		return filterName(x.(string))
 	case "trait":
-		return species.Get(v.(string)).Name
+		return species.Get(x.(string)).Name
 	case "traits":
-		return species.DescribeTraits(v.([]string))
+		return species.DescribeTraits(toStrs(x))
 	case "source":
-		return w.sourceName(w.Sources[v.(int)])
+		return v.sourceName(v.source(toInt(x)))
 	case "named":
-		return "{source:" + itoa(v.(int)) + "}" // the object's proper name, a row of the names pass
+		return "{source:" + itoa(toInt(x)) + "}" // the object's proper name, a row of the names pass
 	case "colony":
-		return w.Species[v.(int)].Flavour().Colony
+		return v.sp[toInt(x)].Flavour().Colony
 	case "ship":
-		return w.Species[v.(int)].Flavour().Ship
+		return v.sp[toInt(x)].Flavour().Ship
 	case "betrayal":
-		return w.BetrayalText(v.(string), e.Object)
+		return v.betrayalText(x.(string), e.Object)
 	case "use":
-		return w.useName(e)
+		return v.useName(e)
 	case "maker":
-		return w.makerNameIf(w.Legacies[e.Legacy], v.(bool))
+		return v.makerNameIf(v.remain(e.Legacy), x.(bool))
 	case "drift":
-		return w.driftText(e)
+		return v.driftText(e)
 	case "portrait":
-		return strings.Join(w.PortraitLines(w.Species[v.(int)], e.P["powers"].([]string)), "\n")
+		return strings.Join(v.sp[toInt(x)].PortraitWith(e.Strs("powers")), "\n")
 	case "elder_portrait":
-		return w.ElderPortrait(w.Elder(v.(int)))
+		return v.elderPortrait(v.elder(toInt(x)))
 	case "knower":
-		return portraitText("knowers", v.(string))
+		return portraitText("knowers", x.(string))
 	case "ender":
-		return w.AgeEnder(w.Ages[v.(int)])
+		return v.ageEnder(v.st.Ages[toInt(x)])
 	case "feature":
 		for _, f := range galaxy.Features {
-			if f.Key == v.(string) {
+			if f.Key == x.(string) {
 				return f.Event
 			}
 		}
 		return ""
 	case "lifted":
-		switch v.(string) {
+		switch x.(string) {
 		case "sea":
 			return "put to sea"
 		case "sky":
@@ -218,36 +217,24 @@ func (w *World) format(v any, format string, e *Event) string {
 		}
 		return "make fire"
 	case "lines":
-		return strings.Join(v.([]string), "\n")
+		return strings.Join(toStrs(x), "\n")
 	}
-	switch x := v.(type) {
+	switch x := x.(type) {
 	case string:
 		return x
-	case int:
-		return itoa(x)
-	case Year:
-		return itoa(int(x))
-	case float64:
-		return sprintf("%"+format, x)
+	case json.Number:
+		if format == "" {
+			return x.String() // an integer, as the simulation counted it
+		}
+		f, _ := x.Float64()
+		return sprintf("%"+format, f)
 	case bool:
 		if x {
 			return "true"
 		}
 		return "false"
 	}
-	return sprintf("%v", v)
-}
-
-// Elder finds an elder by id.
-func (w *World) Elder(id int) *Elder {
-	for _, a := range w.Ages {
-		for _, e := range a.Elders {
-			if e.ID == id {
-				return e
-			}
-		}
-	}
-	return nil
+	return sprintf("%v", x)
 }
 
 // nodeNames is node keys as names.
@@ -260,190 +247,190 @@ func nodeNames(keys []string) []string {
 }
 
 // lines are the templates of the kinds whose line is one template.
-var lines = map[Kind]string{
-	KAgeDawn:     "The dawn of an age. Everywhere at once, things start to think.",
-	KElderRose:   "Somewhere, {elder:elder_portrait} rises.",
-	KAgeKnower:   "{line:knower}",
-	KAgeWaned:    "The age wanes. Nothing new rises, and what remains dwindles. What is left is swept up by {age:ender}.",
-	KElderLeft:   "It leaves {L}.",
-	KLifeComplex: "Complex life flourishes at {T}.",
-	KBurst:       "A gamma-ray burst near {T} sterilises {killed} living worlds within {radius:.0f} ly.",
-	KSupernova:   "{T} goes supernova. {killed} living worlds within 30 ly are sterilised.",
-	KStarSwelled: "{T} swells and dies, and the life on its worlds with it.",
-	KReason:      "[the {S}, {what}: {why:why}]",
-	KQuarry:      "The hunt of the {S} has a quarry now: the {O}.",
-	KVeiled:      "The {S} forget the {O}, and this time there is no learning them again.",
-	KLifted:      "The {S} of {T} {need:lifted}, to the bafflement of home. It never comes naturally to them.",
+var lines = map[record.Kind]string{
+	record.KAgeDawn:     "The dawn of an age. Everywhere at once, things start to think.",
+	record.KElderRose:   "Somewhere, {elder:elder_portrait} rises.",
+	record.KAgeKnower:   "{line:knower}",
+	record.KAgeWaned:    "The age wanes. Nothing new rises, and what remains dwindles. What is left is swept up by {age:ender}.",
+	record.KElderLeft:   "It leaves {L}.",
+	record.KLifeComplex: "Complex life flourishes at {T}.",
+	record.KBurst:       "A gamma-ray burst near {T} sterilises {killed} living worlds within {radius:.0f} ly.",
+	record.KSupernova:   "{T} goes supernova. {killed} living worlds within 30 ly are sterilised.",
+	record.KStarSwelled: "{T} swells and dies, and the life on its worlds with it.",
+	record.KReason:      "[the {S}, {what}: {why:why}]",
+	record.KQuarry:      "The hunt of the {S} has a quarry now: the {O}.",
+	record.KVeiled:      "The {S} forget the {O}, and this time there is no learning them again.",
+	record.KLifted:      "The {S} of {T} {need:lifted}, to the bafflement of home. It never comes naturally to them.",
 
-	FEnslaved:         "The {O} are enslaved by the {S}. They keep {T} and little else.",
-	KMasterGone:       "The {S}, who held the {O}, are gone. The question of freedom answers itself, one way or the other.",
-	FUplift:           "The {S} raise the {O} from the beasts of {T}. They are {traits:traits}, and grateful, for now.",
-	FBred:             "The {S} remake the {O} into the {into:civ}: {traits:traits}.",
-	KDebug:            "{text}",
-	KSystem:           "{T:system}",
-	KPortrait:         "{species:portrait}",
-	KBornMiracle:      "They are born to a miracle: {miracle:miracle}. What others will spend ages reaching for, they have from the first.",
-	KBornFailing:      "Their sun is already failing. They were born under a dying star.",
-	FShipLost:         "A {species:ship} of the {S} arrives at {T}, which every reading said was empty, and is never heard from again. The {O} were there.",
-	FZenith:           "The {S} enter their zenith: {N} systems, and no rival in sight.",
-	KReseated:         "What is left of the {S} gathers on {T}. It is home now.",
-	FFall:             "The {S} {cause:why}. What remains of them lives on {T} under {S:title}. Once they held {peak:systems}.",
-	KOutgrown:         "The {S} are gone. What they built at {T} thinks on without them, and calls itself the {O}: {traits:traits}.",
-	KForesaw:          "The {S} see {filter:filter} coming and step around it.",
-	KStarDead:         "{T} dies. Its worlds freeze.",
-	KFleetCaught:      "A fleet of the {S} at {T} is caught in it and is gone.",
-	KCannotLeave:      "The {S} cannot leave {T}; they are it.",
-	FLeftStar:         "The {S} leave {T} to {why:why}. {to:star} is home now, and always a little less than the one before.",
-	FDoom:             "The sun of the {S} is failing. {T} grows harsher with every century. They have, perhaps, {endure} thousand years.",
-	KStarKept:         "The {S} reach into {T} and hold it together. Their sun will fail, but not yet.",
-	KEndured:          "The {S} endure under the failing sun of {T} until they cannot. The last of them die looking up.",
-	KCentreFlared:     "The heart of the galaxy flares. For a century the sky is white, and every world in the field turns its face away.",
-	KSkyFeature:       "{feature:feature}",
-	KStayedHome:       "The {S} look hard at the {O}, and stay home.",
-	FAppeared:         "Another of the {S} is at {T}. Nothing was seen to cross.",
-	FTithed:           "Something is taken from every harvest of the {O} within reach of the {S}. Nobody agreed to it, and nothing can be found to refuse.",
-	KMirrored:         "The {S} speak to the {O}, and what answers is their own voice, older than they are. A cult of the signal grows among them and is never quite rooted out.",
-	KSlept:            "The {S} go still. There is nothing left they want, and nothing near them moves. They sleep.",
-	KTakenDear:        "The {S} take {T}, and lose half their fleet doing it.",
-	KLeftToGuns:       "The ships over {T} withdraw and leave it to its guns.",
-	KHeldBehindGuns:   "The ships of the {S} hold their ground over {T} behind its guns.",
-	KGunsSilent:       "The guns over {T} fall silent.",
-	KFleetBroken:      "The {S} break a fleet of the {O} at {T}.",
-	KFellBack:         "The fleet of the {S} falls back from {T}, and comes again.",
-	KSightMarked:      "The Sight shows the {S} something at {T} that nobody made in this age. They mean to go and see.",
-	KLurkerSeen:       "Surveyors of the {S} find {T} held by something that is not a people as they know one, and do not go closer.",
-	KFirstSurvey:      "The {S} send their first surveyors out: a ship of a few, bound for {T}, to see what the stars hold.",
-	KPicket:           "The {S} send a ship to {T} to sit and watch the sky toward the {O}.",
-	KRarityPassed:     "{^source:source} passes from the {S} to the {O}, as agreed.",
-	KSightingSold:     "The {S} sell the coming of the {owner:civ}'s fleet to the {O}, for {years:span} of {res:flowkind}.",
-	KOfferRefused:     "The {S} ask the {O} for {ask:term}, and are refused.",
-	FStrikeBought:     "The {S} pay the {seller:civ} {pay:term} to send {ask:term}.",
-	KTeachAgreed:      "The {S} agree to teach the {O} {node:node}, for {pay:term}.",
-	KBrokerAgreed:     "The {S}, who know both, will speak for the {O} to the {target:civ}, for {pay:term}.",
-	KWorkDone:         "The {S}'s work for the {O} is done.",
-	KTermDone:         "The {S}'s term at {T} is done, and the {O}'s fleet goes home.",
-	KHireEnded:        "The {S}, their hire ended, leave the war.",
-	FBoughtOff:        "The {S}, paid by the {O} to hold {T}, are paid more by the {buyer:civ}, and sell it.",
-	KSellsword:        "The {S} live by their fleet now. Others call them sellswords.",
-	FTaught:           "The {S} teach the {O} {node:node}, for {pay:term}.",
-	FTribute:          "The {S} yield to the {O} and pay tribute in {res:flow} for {for:span}, after {warspan}.",
-	KHanded:           "The {S} hand {T} to the {O}, as agreed.",
-	KBurnedForPay:     "The {S} burn the {work:structure} at {T}, as they were paid to, and go.",
-	KFindLeap:         "The {S}, who are wise, look hard at it and count what it would take of them, and do not try.",
-	FSealed:           "The {S} seal it, and post a watch, and the watch holds.",
-	KSealFailed:       "The {S} seal it. Someone opens it.",
-	KSignalPlague:     "The {S} hear the transmitter at {T}. Something comes down the signal with it and begins to move through their minds.{Q:called}",
-	KNewSignal:        "From {T} a new signal goes out, in the voice of the {S}.",
-	FHunt:             "The ledger of the {S} shows a hole around {T}: {losses} losses inside {radius:.0f} light years, and nothing in any record to say what took them. The council declares a hunt on the region.",
-	KHuntOn:           "The {S} are at war with something they can no longer name. What they have is the ledger, and the ledger says {T}.",
-	KHuntEmpty:        "The hunt of the {S} finds nothing at {T}, and nothing, and nothing. Whatever was there is not, and the ledger is closed.",
-	KDriftCured:       "What {Q} lived in is gone from under it: the {S} changed, and it did not change with them.",
-	KReliefSent:       "The {S} send {ships:ships} to stand with the {O} at {T}, {away:span} away.",
-	KArrivedLate:      "The fleet of the {S} arrives at {T} to find the war over.",
-	FRelief:           "A fleet of the {S} arrives at {T} to stand with the {O}.",
-	KFleetWasted:      "The fleet of the {S} wastes away at {T}, far from anything it could live on.",
-	KFleetStayed:      "The fleet of the {S} never comes home. At {T} its captains rule as their own people.",
-	KInterceptSent:    "The {S} send {ships:ships} from {T} to meet the fleet of the {O} in the dark.",
-	KSalvaged:         "The {S} crew what will fly of it: {ships:ships}, turned for {T}.",
-	KWentDark:         "The {S} let {use:use} go dark to keep {kept:category} fed.",
-	FWant:             "The {S} have gone without for a hundred thousand years. They call them the lean years.",
-	KGarrisoned:       "The {S} send {ships:ships} to hold {T}.",
-	KGathered:         "The {S} gather their ships at {T}.",
-	KGridRebuilt:      "The {S} rebuild the grid over {T}.",
-	KClaimForgot:      "Among the {S} the sundering has become a story told to children. Nobody speaks of the old realm as theirs any more.",
-	KRemade:           "The {S} are gone. What they made of themselves holds their worlds and calls itself the {O}: {traits:traits}.",
-	KMovedOn:          "The fleets of the {S} move on, to {T}.",
-	KPocketDimmed:     "The pocket star dims as the {S} move it. It gives {gives:.0f} now.",
-	KSingularityLoose: "The captive singularity at {T} gets loose in the taking.",
-	FVacuumHole:       "The hole in the vacuum at {T} has grown past holding. The star begins to go out.",
-	FRise:             "What the {O} grew for the table at {T} has been thinking for a long time. It rises, and calls itself the {S}: {traits:traits}.",
-	KCutting:          "The {S} give the {O} a cutting of {source:source}. It takes.",
-	FRenaissance:      "The {S} grow old and tired, and then, unexpectedly, young again. A renaissance.",
-	KSet:              "The {S} stop changing. Every year is like the last. It works, for a while.",
-	KMadeToThink:      "The {S} made {Q} to think, and it does. It answers to them, for now.",
-	FWoke:             "Something in {Q} has begun to think. At {T} it takes the {O} for its own, and calls itself the {S}.",
-	KBornRidden:       "The {S} have never known a time before {Q}. They grew up ridden.",
-	KRidden:           "{^Q} takes {T}. World by world, the {O} were ridden, and now they are.",
-	FWildfire:         "{^Q} is everywhere now.",
-	KRiderGone:        "The {S}, who rode the {O}, are gone. There is nothing left in them to fight.",
-	KSealedDoors:      "The {S} seal every door against {Q}.",
-	KQuarantineCreed:  "Twenty thousand years behind sealed doors, and the {S} no longer remember how to open them. It is a creed now.",
-	KCult:             "At {T} the believers in {Q} declare themselves a people: the {O}.",
-	KReservoirWoke:    "The {S} come to {T} and wake {Q} in its dead cities.",
-	KLeftBehind:       "{^source:source} is left behind at {T}.",
-	KWentDown:         "{^source:source} went down with the fleet, and lies at {T} for whoever finds it.",
-	KPursuit:          "The {S} turn everything they have toward {node:node}. It will take ages, and it may not come.",
-	KFellShort:        "The {S} come close to {node:node} and fall short. The work of ages goes for nothing.",
-	FCycle:            "The {S} find their place in the turn: the age dawned {dawned:.0f} million years ago, the galaxy is {fertility:percent} as fertile as it was then, and the next dawn is {next:.0f} million years away. They will not see it.",
-	FStars:            "The {S} reach the stars.",
-	KReplicating:      "At {T} the {S} have begun to make more of themselves out of what is there.",
-	KFirstShip:        "The yards at {T} launch their first ship for the {S}.",
-	KLaidUp:           "The {S} lay up {ships:ships} at {T}: the ships stay where they are, and nothing keeps them.",
-	KManned:           "The {S} man the ships at {T} again.",
-	KScoutSeen:        "The {S} see a ship of the {O} in their sky at {T}, looking, and do not forget it.",
-	FSlight:           "The {O} trade with the {partner:civ}, and take the {S}'s war on them as a wrong done to themselves.",
-	FReclaimed:        "The {S} call {T} restored to the realm.",
-	KRealmWhole:       "The {S} hold every world the {O} held. There is nothing left to claim, and they are the {S} that hold what the {O} held.",
-	KKinMet:           "The {S} and the {O}, both of the line of the {line:civ}, find each other again.",
-	FSevered:          "{T} is too far from {seat:star} for one mind to hold. What is there is the {O} now: of one blood with the {S}, and no longer one of them.",
-	KPortsOpened:      "The {S} open their ports to the {O} again.",
-	FEmbargo:          "The {S} have what the {O} want, and will not send it. The {O} call it an embargo.",
-	KTired:            "The {S} tire of the {O}, who take and send nothing back, and the trade between them ends.",
-	FCutOff:           "The {S} go dark when the {O} stop sending, with {why:why}.",
-	KWeaponBurned:     "The {S} burn {Q}, having nobody left to give it to.",
-	KWeaponLeaked:     "The programme that keeps {Q} is not kept well enough.",
-	FWaking:           "The {S} wake. {seat:star} and everything near it is theirs, and the {O} are on it.",
-	KStillAgain:       "The {S} go still again.",
-	KRiddenWar:        "The {S} are still there, and still themselves, mostly. They do what the {O} want now, and what they knew, the {O} know.",
-	FUnmade:           "The {S} unmake {T}, a world of the {O}. It is not there any more.",
-	KSlowTrade:        "Slow messages cross the dark between the {S} and the {O} for generations, and then trade.",
-	FBrokered:         "The {S}, who know both, speak for the {O} to the {to:civ}.",
-	KUnfathomed:       "The {S} forget how to speak to the {O}.",
-	KWaning:           "The age is waning. Few still rise, and those that stand are old.",
+	record.FEnslaved:         "The {O} are enslaved by the {S}. They keep {T} and little else.",
+	record.KMasterGone:       "The {S}, who held the {O}, are gone. The question of freedom answers itself, one way or the other.",
+	record.FUplift:           "The {S} raise the {O} from the beasts of {T}. They are {traits:traits}, and grateful, for now.",
+	record.FBred:             "The {S} remake the {O} into the {into:civ}: {traits:traits}.",
+	record.KDebug:            "{text}",
+	record.KSystem:           "{T:system}",
+	record.KPortrait:         "{species:portrait}",
+	record.KBornMiracle:      "They are born to a miracle: {miracle:miracle}. What others will spend ages reaching for, they have from the first.",
+	record.KBornFailing:      "Their sun is already failing. They were born under a dying star.",
+	record.FShipLost:         "A {species:ship} of the {S} arrives at {T}, which every reading said was empty, and is never heard from again. The {O} were there.",
+	record.FZenith:           "The {S} enter their zenith: {N} systems, and no rival in sight.",
+	record.KReseated:         "What is left of the {S} gathers on {T}. It is home now.",
+	record.FFall:             "The {S} {cause:why}. What remains of them lives on {T} under {S:title}. Once they held {peak:systems}.",
+	record.KOutgrown:         "The {S} are gone. What they built at {T} thinks on without them, and calls itself the {O}: {traits:traits}.",
+	record.KForesaw:          "The {S} see {filter:filter} coming and step around it.",
+	record.KStarDead:         "{T} dies. Its worlds freeze.",
+	record.KFleetCaught:      "A fleet of the {S} at {T} is caught in it and is gone.",
+	record.KCannotLeave:      "The {S} cannot leave {T}; they are it.",
+	record.FLeftStar:         "The {S} leave {T} to {why:why}. {to:star} is home now, and always a little less than the one before.",
+	record.FDoom:             "The sun of the {S} is failing. {T} grows harsher with every century. They have, perhaps, {endure} thousand years.",
+	record.KStarKept:         "The {S} reach into {T} and hold it together. Their sun will fail, but not yet.",
+	record.KEndured:          "The {S} endure under the failing sun of {T} until they cannot. The last of them die looking up.",
+	record.KCentreFlared:     "The heart of the galaxy flares. For a century the sky is white, and every world in the field turns its face away.",
+	record.KSkyFeature:       "{feature:feature}",
+	record.KStayedHome:       "The {S} look hard at the {O}, and stay home.",
+	record.FAppeared:         "Another of the {S} is at {T}. Nothing was seen to cross.",
+	record.FTithed:           "Something is taken from every harvest of the {O} within reach of the {S}. Nobody agreed to it, and nothing can be found to refuse.",
+	record.KMirrored:         "The {S} speak to the {O}, and what answers is their own voice, older than they are. A cult of the signal grows among them and is never quite rooted out.",
+	record.KSlept:            "The {S} go still. There is nothing left they want, and nothing near them moves. They sleep.",
+	record.KTakenDear:        "The {S} take {T}, and lose half their fleet doing it.",
+	record.KLeftToGuns:       "The ships over {T} withdraw and leave it to its guns.",
+	record.KHeldBehindGuns:   "The ships of the {S} hold their ground over {T} behind its guns.",
+	record.KGunsSilent:       "The guns over {T} fall silent.",
+	record.KFleetBroken:      "The {S} break a fleet of the {O} at {T}.",
+	record.KFellBack:         "The fleet of the {S} falls back from {T}, and comes again.",
+	record.KSightMarked:      "The Sight shows the {S} something at {T} that nobody made in this age. They mean to go and see.",
+	record.KLurkerSeen:       "Surveyors of the {S} find {T} held by something that is not a people as they know one, and do not go closer.",
+	record.KFirstSurvey:      "The {S} send their first surveyors out: a ship of a few, bound for {T}, to see what the stars hold.",
+	record.KPicket:           "The {S} send a ship to {T} to sit and watch the sky toward the {O}.",
+	record.KRarityPassed:     "{^source:source} passes from the {S} to the {O}, as agreed.",
+	record.KSightingSold:     "The {S} sell the coming of the {owner:civ}'s fleet to the {O}, for {years:span} of {res:flowkind}.",
+	record.KOfferRefused:     "The {S} ask the {O} for {ask:term}, and are refused.",
+	record.FStrikeBought:     "The {S} pay the {seller:civ} {pay:term} to send {ask:term}.",
+	record.KTeachAgreed:      "The {S} agree to teach the {O} {node:node}, for {pay:term}.",
+	record.KBrokerAgreed:     "The {S}, who know both, will speak for the {O} to the {target:civ}, for {pay:term}.",
+	record.KWorkDone:         "The {S}'s work for the {O} is done.",
+	record.KTermDone:         "The {S}'s term at {T} is done, and the {O}'s fleet goes home.",
+	record.KHireEnded:        "The {S}, their hire ended, leave the war.",
+	record.FBoughtOff:        "The {S}, paid by the {O} to hold {T}, are paid more by the {buyer:civ}, and sell it.",
+	record.KSellsword:        "The {S} live by their fleet now. Others call them sellswords.",
+	record.FTaught:           "The {S} teach the {O} {node:node}, for {pay:term}.",
+	record.FTribute:          "The {S} yield to the {O} and pay tribute in {res:flow} for {for:span}, after {warspan}.",
+	record.KHanded:           "The {S} hand {T} to the {O}, as agreed.",
+	record.KBurnedForPay:     "The {S} burn the {work:structure} at {T}, as they were paid to, and go.",
+	record.KFindLeap:         "The {S}, who are wise, look hard at it and count what it would take of them, and do not try.",
+	record.FSealed:           "The {S} seal it, and post a watch, and the watch holds.",
+	record.KSealFailed:       "The {S} seal it. Someone opens it.",
+	record.KSignalPlague:     "The {S} hear the transmitter at {T}. Something comes down the signal with it and begins to move through their minds.{Q:called}",
+	record.KNewSignal:        "From {T} a new signal goes out, in the voice of the {S}.",
+	record.FHunt:             "The ledger of the {S} shows a hole around {T}: {losses} losses inside {radius:.0f} light years, and nothing in any record to say what took them. The council declares a hunt on the region.",
+	record.KHuntOn:           "The {S} are at war with something they can no longer name. What they have is the ledger, and the ledger says {T}.",
+	record.KHuntEmpty:        "The hunt of the {S} finds nothing at {T}, and nothing, and nothing. Whatever was there is not, and the ledger is closed.",
+	record.KDriftCured:       "What {Q} lived in is gone from under it: the {S} changed, and it did not change with them.",
+	record.KReliefSent:       "The {S} send {ships:ships} to stand with the {O} at {T}, {away:span} away.",
+	record.KArrivedLate:      "The fleet of the {S} arrives at {T} to find the war over.",
+	record.FRelief:           "A fleet of the {S} arrives at {T} to stand with the {O}.",
+	record.KFleetWasted:      "The fleet of the {S} wastes away at {T}, far from anything it could live on.",
+	record.KFleetStayed:      "The fleet of the {S} never comes home. At {T} its captains rule as their own people.",
+	record.KInterceptSent:    "The {S} send {ships:ships} from {T} to meet the fleet of the {O} in the dark.",
+	record.KSalvaged:         "The {S} crew what will fly of it: {ships:ships}, turned for {T}.",
+	record.KWentDark:         "The {S} let {use:use} go dark to keep {kept:category} fed.",
+	record.FWant:             "The {S} have gone without for a hundred thousand years. They call them the lean years.",
+	record.KGarrisoned:       "The {S} send {ships:ships} to hold {T}.",
+	record.KGathered:         "The {S} gather their ships at {T}.",
+	record.KGridRebuilt:      "The {S} rebuild the grid over {T}.",
+	record.KClaimForgot:      "Among the {S} the sundering has become a story told to children. Nobody speaks of the old realm as theirs any more.",
+	record.KRemade:           "The {S} are gone. What they made of themselves holds their worlds and calls itself the {O}: {traits:traits}.",
+	record.KMovedOn:          "The fleets of the {S} move on, to {T}.",
+	record.KPocketDimmed:     "The pocket star dims as the {S} move it. It gives {gives:.0f} now.",
+	record.KSingularityLoose: "The captive singularity at {T} gets loose in the taking.",
+	record.FVacuumHole:       "The hole in the vacuum at {T} has grown past holding. The star begins to go out.",
+	record.FRise:             "What the {O} grew for the table at {T} has been thinking for a long time. It rises, and calls itself the {S}: {traits:traits}.",
+	record.KCutting:          "The {S} give the {O} a cutting of {source:source}. It takes.",
+	record.FRenaissance:      "The {S} grow old and tired, and then, unexpectedly, young again. A renaissance.",
+	record.KSet:              "The {S} stop changing. Every year is like the last. It works, for a while.",
+	record.KMadeToThink:      "The {S} made {Q} to think, and it does. It answers to them, for now.",
+	record.FWoke:             "Something in {Q} has begun to think. At {T} it takes the {O} for its own, and calls itself the {S}.",
+	record.KBornRidden:       "The {S} have never known a time before {Q}. They grew up ridden.",
+	record.KRidden:           "{^Q} takes {T}. World by world, the {O} were ridden, and now they are.",
+	record.FWildfire:         "{^Q} is everywhere now.",
+	record.KRiderGone:        "The {S}, who rode the {O}, are gone. There is nothing left in them to fight.",
+	record.KSealedDoors:      "The {S} seal every door against {Q}.",
+	record.KQuarantineCreed:  "Twenty thousand years behind sealed doors, and the {S} no longer remember how to open them. It is a creed now.",
+	record.KCult:             "At {T} the believers in {Q} declare themselves a people: the {O}.",
+	record.KReservoirWoke:    "The {S} come to {T} and wake {Q} in its dead cities.",
+	record.KLeftBehind:       "{^source:source} is left behind at {T}.",
+	record.KWentDown:         "{^source:source} went down with the fleet, and lies at {T} for whoever finds it.",
+	record.KPursuit:          "The {S} turn everything they have toward {node:node}. It will take ages, and it may not come.",
+	record.KFellShort:        "The {S} come close to {node:node} and fall short. The work of ages goes for nothing.",
+	record.FCycle:            "The {S} find their place in the turn: the age dawned {dawned:.0f} million years ago, the galaxy is {fertility:percent} as fertile as it was then, and the next dawn is {next:.0f} million years away. They will not see it.",
+	record.FStars:            "The {S} reach the stars.",
+	record.KReplicating:      "At {T} the {S} have begun to make more of themselves out of what is there.",
+	record.KFirstShip:        "The yards at {T} launch their first ship for the {S}.",
+	record.KLaidUp:           "The {S} lay up {ships:ships} at {T}: the ships stay where they are, and nothing keeps them.",
+	record.KManned:           "The {S} man the ships at {T} again.",
+	record.KScoutSeen:        "The {S} see a ship of the {O} in their sky at {T}, looking, and do not forget it.",
+	record.FSlight:           "The {O} trade with the {partner:civ}, and take the {S}'s war on them as a wrong done to themselves.",
+	record.FReclaimed:        "The {S} call {T} restored to the realm.",
+	record.KRealmWhole:       "The {S} hold every world the {O} held. There is nothing left to claim, and they are the {S} that hold what the {O} held.",
+	record.KKinMet:           "The {S} and the {O}, both of the line of the {line:civ}, find each other again.",
+	record.FSevered:          "{T} is too far from {seat:star} for one mind to hold. What is there is the {O} now: of one blood with the {S}, and no longer one of them.",
+	record.KPortsOpened:      "The {S} open their ports to the {O} again.",
+	record.FEmbargo:          "The {S} have what the {O} want, and will not send it. The {O} call it an embargo.",
+	record.KTired:            "The {S} tire of the {O}, who take and send nothing back, and the trade between them ends.",
+	record.FCutOff:           "The {S} go dark when the {O} stop sending, with {why:why}.",
+	record.KWeaponBurned:     "The {S} burn {Q}, having nobody left to give it to.",
+	record.KWeaponLeaked:     "The programme that keeps {Q} is not kept well enough.",
+	record.FWaking:           "The {S} wake. {seat:star} and everything near it is theirs, and the {O} are on it.",
+	record.KStillAgain:       "The {S} go still again.",
+	record.KRiddenWar:        "The {S} are still there, and still themselves, mostly. They do what the {O} want now, and what they knew, the {O} know.",
+	record.FUnmade:           "The {S} unmake {T}, a world of the {O}. It is not there any more.",
+	record.KSlowTrade:        "Slow messages cross the dark between the {S} and the {O} for generations, and then trade.",
+	record.FBrokered:         "The {S}, who know both, speak for the {O} to the {to:civ}.",
+	record.KUnfathomed:       "The {S} forget how to speak to the {O}.",
+	record.KWaning:           "The age is waning. Few still rise, and those that stand are old.",
 }
 
 // lineFns pick a template by the event's parameters.
-var lineFns = map[Kind]func(w *World, e *Event) string{
-	KLifeArose: func(w *World, e *Event) string {
-		st := w.G.Stars[e.Star]
-		st.Class = e.P["class"].(string)[0]
-		return "Life arises on the worlds of " + w.G.DescribeStar(&st, e.Star) + "."
+var lineFns = map[record.Kind]func(v *view, e *record.Event) string{
+	record.KLifeArose: func(v *view, e *record.Event) string {
+		st := v.g.Stars[e.Star]
+		st.Class = e.Str("class")[0]
+		return "Life arises on the worlds of " + v.g.DescribeStar(&st, e.Star) + "."
 	},
-	KElderFell: func(w *World, e *Event) string {
+	record.KElderFell: func(v *view, e *record.Event) string {
 		switch {
-		case e.P["late"].(bool):
+		case e.Bool("late"):
 			return "It ends, the last of its age, long after the others."
-		case e.P["remembered"].(bool):
+		case e.Bool("remembered"):
 			return "It is gone. Its works remain."
 		}
 		return "It ends."
 	},
-	KBirthright: func(w *World, e *Event) string {
+	record.KBirthright: func(v *view, e *record.Event) string {
 		var parts []string
-		for _, k := range e.P["blocks"].([]string) {
+		for _, k := range e.Strs("blocks") {
 			parts = append(parts, aptitudeText(k))
 		}
-		if cheap := nodeNames(e.P["cheap"].([]string)); len(cheap) > 0 {
+		if cheap := nodeNames(e.Strs("cheap")); len(cheap) > 0 {
 			parts = append(parts, "They take to "+list(cheap)+" as if born to it.")
 		}
-		if costly := nodeNames(e.P["costly"].([]string)); len(costly) > 0 {
+		if costly := nodeNames(e.Strs("costly")); len(costly) > 0 {
 			parts = append(parts, strings.ToUpper(list(costly)[:1])+list(costly)[1:]+" will come hard to them.")
 		}
 		return strings.Join(parts, " ")
 	},
-	FMet: func(w *World, e *Event) string {
-		way, _ := e.P["way"].(string)
-		switch e.P["how"] {
+	record.FMet: func(v *view, e *record.Event) string {
+		way := e.Str("way")
+		switch e.Str("how") {
 		case "signal":
-			if !e.P["told"].(bool) {
+			if !e.Bool("told") {
 				return ""
 			}
-			d := e.P["distance"].(float64)
+			d := e.Float("distance")
 			return sprintf("The {S} hear the {O} across %.0f light years: a signal, then a conversation %.0f years to the answer. Neither can reach the other yet.", d, 2*d)
 		case "noticed":
 			switch way {
 			case "unseen":
-				if e.P["hidden"].(bool) {
+				if e.Bool("hidden") {
 					return "The {S} find the {O}, who do not find them, and will not."
 				}
 				return "The {S} find the {O}. The {O} cannot hold them in mind, and do not know they were found."
@@ -472,42 +459,42 @@ var lineFns = map[Kind]func(w *World, e *Event) string{
 			return "The " + b + " meet the " + a + ", and seeing what they face, bend the knee. They are vassals now."
 		case "equals":
 			switch {
-			case e.Star >= 0 && e.P["heard"].(bool):
+			case e.Star >= 0 && e.Bool("heard"):
 				return "Ships of the {S} come upon the {O} at {T}, and the long conversation across the dark has a face at last."
 			case e.Star >= 0:
 				return "Ships of the {S} come upon the {O} at {T}."
-			case e.P["heard"].(bool):
+			case e.Bool("heard"):
 				return "The " + a + " and the " + b + ", who have heard each other for a long time, at last meet in the flesh."
-			case e.P["watched"].(bool):
+			case e.Bool("watched"):
 				return "The " + b + ", long watched from orbit, look up and find the " + a + "."
 			}
 			return "The " + a + " and the " + b + " find each other."
 		}
 		return ""
 	},
-	FArise: func(w *World, e *Event) string {
-		if host, ok := e.P["host"]; ok {
-			return sprintf("The {S} %s the {civ:%d}, at %s. They are {traits:traits}.", w.Civs[e.Subject].Species.Arising(), host, w.G.Sys[e.Star].HomeName(w.star(e.Star)))
+	record.FArise: func(v *view, e *record.Event) string {
+		if e.Has("host") {
+			return sprintf("The {S} %s the {civ:%d}, at %s. They are {traits:traits}.", v.species(v.civ(e.Subject)).Arising(), e.Int("host"), v.g.Sys[e.Star].HomeName(star(e.Star)))
 		}
-		if e.P["made"].(bool) {
+		if e.Bool("made") {
 			return ""
 		}
-		c := w.Civs[e.Subject]
-		st := w.G.Stars[e.Star]
-		st.Class = e.P["class"].(string)[0]
+		sp := v.species(v.civ(e.Subject))
+		st := v.g.Stars[e.Star]
+		st.Class = e.Str("class")[0]
 		prior := ""
-		if p := e.P["prior"].(int); p >= 0 {
+		if p := e.Int("prior"); p >= 0 {
 			prior = sprintf(", among the ruins of the {civ:%d}", p)
 		}
 		they := "They are {traits:traits}."
-		if e.P["shared"].(bool) {
+		if e.Bool("shared") {
 			they = "They are a people of the {species:species}."
 		}
 		return sprintf("The {S} %s %s, %s, around %s%s, %.0f ly from %s. %s",
-			c.Species.Arising(), w.G.Sys[e.Star].HomeName(w.star(e.Star)), c.Species.World.Desc, w.starDetail(&st, e.Star), prior, w.G.FromCentre(e.Star), w.G.Anchor(), they)
+			sp.Arising(), v.g.Sys[e.Star].HomeName(star(e.Star)), sp.World.Desc, v.starDetail(&st, e.Star), prior, v.g.FromCentre(e.Star), v.g.Anchor(), they)
 	},
-	KArrivalLost: func(w *World, e *Event) string {
-		switch e.P["why"] {
+	record.KArrivalLost: func(v *view, e *record.Event) string {
+		switch e.Str("why") {
 		case "held":
 			return "A {species:ship} of the {S} arrives at {T} to find the {O} already there."
 		case "taken":
@@ -515,17 +502,17 @@ var lineFns = map[Kind]func(w *World, e *Event) string{
 		}
 		return "A {species:ship} of the {S} reaches {T} on a guess and finds nothing there it can live on. What it learned is sent home. The ship is not."
 	},
-	FSettle: func(w *World, e *Event) string {
-		if e.P["first"].(bool) {
+	record.FSettle: func(v *view, e *record.Event) string {
+		if e.Bool("first") {
 			return "The {S} settle {T}, their first {species:colony} beyond {home:star}."
 		}
 		return "The {S} now hold {N} systems."
 	},
-	KBuilt: func(w *World, e *Event) string {
-		return tech.Structures[e.P["work"].(string)].Text
+	record.KBuilt: func(v *view, e *record.Event) string {
+		return tech.Structures[e.Str("work")].Text
 	},
-	KHomeLost: func(w *World, e *Event) string {
-		switch e.P["way"] {
+	record.KHomeLost: func(v *view, e *record.Event) string {
+		switch e.Str("way") {
 		case "was":
 			return "The {S} were {T}, and {T} is gone. What they held elsewhere dies with it."
 		case "queen":
@@ -533,30 +520,30 @@ var lineFns = map[Kind]func(w *World, e *Event) string{
 		}
 		return "The {S} have no queen to gather to when {T} is lost, and no seat. Every world of theirs is on its own."
 	},
-	FEnd: func(w *World, e *Event) string {
+	record.FEnd: func(v *view, e *record.Event) string {
 		switch {
-		case e.P["fate"] != "extinct":
+		case e.Str("fate") != "extinct":
 			return ""
-		case e.P["remnant"].(bool):
+		case e.Bool("remnant"):
 			return "The last of the {S} are gone from {T}. They {cause:why}."
 		}
 		return "The {S} {cause:why}. They held {peak:systems} at their height."
 	},
-	FDarkAge: func(w *World, e *Event) string {
-		if e.P["lost"].(int) > 0 {
+	record.FDarkAge: func(v *view, e *record.Event) string {
+		if e.Int("lost") > 0 {
 			return "The {S} {cause:why}. A dark age follows, and {depth:depth} of what they knew is forgotten. {lost} {species:colony}s go silent."
 		}
 		return "The {S} {cause:why}. A dark age follows, and {depth:depth} of what they knew is forgotten."
 	},
-	KFaced: func(w *World, e *Event) string {
-		key := e.P["filter"].(string) + "/" + e.P["outcome"].(string)
-		if way := e.P["way"].(string); way != "" {
+	record.KFaced: func(v *view, e *record.Event) string {
+		key := e.Str("filter") + "/" + e.Str("outcome")
+		if way := e.Str("way"); way != "" {
 			key += "/" + way
 		}
 		return facedLines[key]
 	},
-	KNamedItself: func(w *World, e *Event) string {
-		switch e.P["way"] {
+	record.KNamedItself: func(v *view, e *record.Event) string {
+		switch e.Str("way") {
 		case "eats":
 			return "What eats {T} calls itself the {S}, if it calls itself anything: {traits:traits}."
 		case "growth":
@@ -568,9 +555,9 @@ var lineFns = map[Kind]func(w *World, e *Event) string{
 		}
 		return "It calls itself the {S}, if it calls itself anything: {traits:traits}."
 	},
-	KBlast: func(w *World, e *Event) string { return blastLines[e.P["way"].(string)] },
-	KWallStage: func(w *World, e *Event) string {
-		switch e.P["stage"] {
+	record.KBlast: func(v *view, e *record.Event) string { return blastLines[e.Str("way")] },
+	record.KWallStage: func(v *view, e *record.Event) string {
+		switch e.Int("stage") {
 		case 1:
 			return "Something has changed in the field, and nobody in it can say what. Doors are used a little less carefully than they were."
 		case 2:
@@ -578,11 +565,11 @@ var lineFns = map[Kind]func(w *World, e *Event) string{
 		}
 		return "The wall is torn. What leaks through no longer needs a door."
 	},
-	KLeak: func(w *World, e *Event) string {
-		switch e.P["mechanism"] {
+	record.KLeak: func(v *view, e *record.Event) string {
+		switch e.Str("mechanism") {
 		case "shore":
 			word := "it"
-			if e.P["named"].(bool) {
+			if e.Bool("named") {
 				word = "{S:word}"
 			}
 			return "Some of the {S} begin to see " + word + " as a place, with a shore and a weather. That is never good; it means something is coming through."
@@ -591,46 +578,46 @@ var lineFns = map[Kind]func(w *World, e *Event) string{
 		}
 		return "Something speaks from {T} in no language, in a voice that did not cross space to get there. It came through."
 	},
-	KRoused: func(w *World, e *Event) string {
+	record.KRoused: func(v *view, e *record.Event) string {
 		if e.Object >= 0 {
 			return "Something came too close, and the {S} wake."
 		}
 		return "The {S} wake."
 	},
-	FWord: func(w *World, e *Event) string {
-		route := e.P["route"].(string)
+	record.FWord: func(v *view, e *record.Event) string {
+		route := e.Str("route")
 		t, ok := beneathNames[route]
 		if !ok {
 			return ""
 		}
-		if w.Civs[e.Subject].Species.Voiceless() {
+		if v.species(v.civ(e.Subject)).Voiceless() {
 			return beneathDesc[route] + " The {S} have no word for it, having no words."
 		}
 		return sprintf(t, "{S}", "{S:word}")
 	},
-	FDeepened: func(w *World, e *Event) string {
-		return capitalise(strings.ReplaceAll(species.PowerByKey(e.P["power"].(string)).Line, "{S}", "the {S}"))
+	record.FDeepened: func(v *view, e *record.Event) string {
+		return capitalise(strings.ReplaceAll(species.PowerByKey(e.Str("power")).Line, "{S}", "the {S}"))
 	},
-	FDefeat: func(w *World, e *Event) string {
-		if e.P["way"] == "withdrew" {
+	record.FDefeat: func(v *view, e *record.Event) string {
+		if e.Str("way") == "withdrew" {
 			return "The fleet of the {S} withdraws from {T} and turns for home."
 		}
 		return "The fleet of the {S} is broken at {T}."
 	},
-	KSightTurned: func(w *World, e *Event) string {
-		if e.P["outward"].(bool) {
+	record.KSightTurned: func(v *view, e *record.Event) string {
+		if e.Bool("outward") {
 			return "The {S} turn their precognition outward, to the stars nobody has visited."
 		}
 		return "The {S} turn their precognition back to their own borders."
 	},
-	FSurveyLost: func(w *World, e *Event) string {
-		if e.P["unseen"].(bool) {
+	record.FSurveyLost: func(v *view, e *record.Event) string {
+		if e.Bool("unseen") {
 			return "The surveyors of the {S} do not come back from {T}. What they sent before the end says the star is empty. The {O} are there."
 		}
 		return "The surveyors of the {S} do not come back from {T}. What they sent before the end says enough: the {O} are there."
 	},
-	FBetrayal: func(w *World, e *Event) string {
-		switch e.P["way"] {
+	record.FBetrayal: func(v *view, e *record.Event) string {
+		switch e.Str("way") {
 		case "broke":
 			return "The {S} {shape:betrayal}, and the {O} remember it."
 		case "absent":
@@ -644,47 +631,47 @@ var lineFns = map[Kind]func(w *World, e *Event) string{
 		}
 		return ""
 	},
-	FHire: func(w *World, e *Event) string {
+	record.FHire: func(v *view, e *record.Event) string {
 		against := ""
-		if e.P["against"].(int) >= 0 {
+		if e.Int("against") >= 0 {
 			against = " against the {against:civ}"
 		}
 		return "The {S} take the {O}'s {pay:term} to hold {T}" + against + "."
 	},
-	KBargain: func(w *World, e *Event) string {
-		if e.P["first"].(bool) {
+	record.KBargain: func(v *view, e *record.Event) string {
+		if e.Bool("first") {
 			return "The {S} and the {O} strike a bargain: {ask:term} for {pay:term}. It is the first of many."
 		}
 		return "The {S} and the {O} strike a bargain: {ask:term} for {pay:term}."
 	},
-	FFind: func(w *World, e *Event) string {
+	record.FFind: func(v *view, e *record.Event) string {
 		who := "The {S}"
-		if e.P["how"] == "survey" {
+		if e.Str("how") == "survey" {
 			who = "Surveyors of the {S}"
 		}
 		where := "beneath their own cities on {T}"
-		if !e.P["own"].(bool) {
+		if !e.Bool("own") {
 			where = "at {T}"
 		}
-		if e.P["how"] == "settle" {
+		if e.Str("how") == "settle" {
 			where += ", under the feet of the first colonists"
 		}
 		switch {
-		case e.P["elder"].(int) >= 0:
+		case e.Int("elder") >= 0:
 			return who + " find {L:at} " + where + ". It is older than their sun. They call its makers {elder:elder}."
-		case e.P["kin"] == 2:
+		case e.Int("kin") == 2:
 			return who + " find {L:at} " + where + ". It is their own, from before the dark age. Something in them remembers it."
-		case e.P["kin"] == 1:
+		case e.Int("kin") == 1:
 			return who + " find {L:at} " + where + ". The hands that made it were like their hands."
-		case !e.P["known"].(bool):
+		case !e.Bool("known"):
 			return who + " find {L:at} " + where + ". They do not know who the {O} were. They call them {L:makers}."
-		case e.P["ago"].(float64) < 0.1:
+		case e.Float("ago") < 0.1:
 			return who + " find {L:at} " + where + ", not long after the {O} left it."
 		}
 		return who + " find {L:at} " + where + ", {ago:.1f} million years after the {O} left it."
 	},
-	FMastered: func(w *World, e *Event) string {
-		switch e.P["way"] {
+	record.FMastered: func(v *view, e *record.Event) string {
+		switch e.Str("way") {
 		case "sleeper":
 			return "The {S} speak with what sleeps at {T}, and it answers, and they are changed but not ended. They are more than they were."
 		case "threat":
@@ -698,14 +685,14 @@ var lineFns = map[Kind]func(w *World, e *Event) string{
 		}
 		return "The {S} understand it. Understanding it, they understand everything that led to it."
 	},
-	KMasterFailed: func(w *World, e *Event) string {
-		if e.P["way"] == "ruin" {
+	record.KMasterFailed: func(v *view, e *record.Event) string {
+		if e.Str("way") == "ruin" {
 			return "The {S} pick over it for centuries and learn nothing. There is not enough left."
 		}
 		return "The {S} try to understand it and cannot."
 	},
-	KWieldFailed: func(w *World, e *Event) string {
-		switch e.P["way"] {
+	record.KWieldFailed: func(v *view, e *record.Event) string {
+		switch e.Str("way") {
 		case "ruin":
 			return "The {S} try to make it work. Nothing in it will ever work again."
 		case "bounty":
@@ -717,8 +704,8 @@ var lineFns = map[Kind]func(w *World, e *Event) string{
 		}
 		return "The {S} try to use it. It does not do what they thought."
 	},
-	KWielded: func(w *World, e *Event) string {
-		switch e.P["way"] {
+	record.KWielded: func(v *view, e *record.Event) string {
+		switch e.Str("way") {
 		case "bounty":
 			return "The {S} put it to use. It was made to be used, and it goes on doing what it did, for them now."
 		case "takeover":
@@ -730,8 +717,8 @@ var lineFns = map[Kind]func(w *World, e *Event) string{
 		}
 		return "The {S} learn to use it without understanding it. If it breaks, it will stay broken."
 	},
-	FUnleashed: func(w *World, e *Event) string {
-		switch e.P["way"] {
+	record.FUnleashed: func(v *view, e *record.Event) string {
+		switch e.Str("way") {
 		case "transmitter":
 			return "The transmitter at {T} speaks again."
 		case "gone":
@@ -753,26 +740,26 @@ var lineFns = map[Kind]func(w *World, e *Event) string{
 		}
 		return ""
 	},
-	KWieldedDropped: func(w *World, e *Event) string {
-		if e.P["way"] == "buried" {
+	record.KWieldedDropped: func(v *view, e *record.Event) string {
+		if e.Str("way") == "buried" {
 			return "What the {S} wielded of {known:maker} lies where they left it, on {T}."
 		}
 		return "What the {S} wielded of {known:maker} is broken, and nobody knows how to mend it."
 	},
-	FDrifted: func(w *World, e *Event) string {
-		if !e.P["told"].(bool) {
+	record.FDrifted: func(v *view, e *record.Event) string {
+		if !e.Bool("told") {
 			return ""
 		}
 		return "The {S} have changed again: {gained:drift}. Whoever knew them knew something else."
 	},
-	KFleetSent: func(w *World, e *Event) string {
-		if e.P["hunt"].(int) >= 0 {
+	record.KFleetSent: func(v *view, e *record.Event) string {
+		if e.Int("hunt") >= 0 {
 			return "The {S} send {ships:share} of their ships into the hole around {hunt:star}, where the ledger says something is: a fleet of {ships:ships} bound for {T}, {away:span} away."
 		}
 		return "The {S} send {ships:share} of their ships against the {O}: a fleet of {ships:ships} bound for {T}, {away:span} away."
 	},
-	KFleetArrived: func(w *World, e *Event) string {
-		switch e.P["way"] {
+	record.KFleetArrived: func(v *view, e *record.Event) string {
+		switch e.Str("way") {
 		case "hunt":
 			return "The hunting fleet of the {S} arrives at {T} and finds nothing there, which is what it was told it would find."
 		case "hired":
@@ -780,53 +767,53 @@ var lineFns = map[Kind]func(w *World, e *Event) string{
 		}
 		return "The fleet of the {S} arrives at {T}, {out:span} after it set out."
 	},
-	FIntercept: func(w *World, e *Event) string {
-		switch e.P["way"] {
+	record.FIntercept: func(v *view, e *record.Event) string {
+		switch e.Str("way") {
 		case "broken":
 			return "The {S} meet the fleet of the {O} between {T} and {far:star}, and break it. Nothing of it arrives."
 		case "turned":
 			return "The {S} meet the fleet of the {O} between {T} and {far:star}, and turn it back."
 		}
 		weaker := ""
-		if lost := e.P["lost"].(int); lost > 0 {
-			weaker = ", " + shareWord(lost, lost+e.P["left"].(int)) + " weaker"
+		if lost := e.Int("lost"); lost > 0 {
+			weaker = ", " + shareWord(lost, lost+e.Int("left")) + " weaker"
 		}
 		return "The fleet of the {S}, met in the dark between {T} and {far:star} by the {O}, goes on" + weaker + "."
 	},
-	KTakenOver: func(w *World, e *Event) string {
-		if e.P["own"].(bool) {
+	record.KTakenOver: func(v *view, e *record.Event) string {
+		if e.Bool("own") {
 			return "The {S} return to {T} and put their own old works there back to use."
 		}
 		return "The {S} find {L:at} at {T}, and put it back to work."
 	},
-	KJudged: func(w *World, e *Event) string {
-		f := w.Events[e.P["about"].(int)]
-		switch e.P["verdict"] {
+	record.KJudged: func(v *view, e *record.Event) string {
+		f := v.event(e.Int("about"))
+		switch e.Str("verdict") {
 		case "deed":
-			return "The {S} hear that the {O} " + w.deedOf(f) + ", and count it a deed."
+			return "The {S} hear that the {O} " + v.deedOf(f) + ", and count it a deed."
 		case "nothing":
-			return "The {S} hear that the {O} " + w.deedOf(f) + ", and count it no crime."
+			return "The {S} hear that the {O} " + v.deedOf(f) + ", and count it no crime."
 		}
 		return "The {S} hear what the {O} did, and call it a crime."
 	},
-	KReadWalls: func(w *World, e *Event) string {
-		if e.P["own"].(bool) {
+	record.KReadWalls: func(v *view, e *record.Event) string {
+		if e.Bool("own") {
 			return "In what they left at {T} the {S} read their own story in their own words, and remember."
 		}
 		return "What the {S} read in {L} at {T} is the telling of {known:maker}, and they have no other."
 	},
-	KBlamed: func(w *World, e *Event) string {
-		return "The {S} now tell that it was the {O} who " + w.blameOf(w.Civs[e.Subject], w.Events[e.P["about"].(int)]) + ". It was not."
+	record.KBlamed: func(v *view, e *record.Event) string {
+		return "The {S} now tell that it was the {O} who " + v.blameOf(v.civ(e.Subject), v.event(e.Int("about"))) + ". It was not."
 	},
-	KMyth: func(w *World, e *Event) string {
-		return "Among the {S}, " + w.mythOf(w.Civs[e.Subject], w.Events[e.P["about"].(int)], e.P["nameless"].(bool)) + " has become a story told to children."
+	record.KMyth: func(v *view, e *record.Event) string {
+		return "Among the {S}, " + v.mythOf(v.civ(e.Subject), v.event(e.Int("about")), e.Bool("nameless")) + " has become a story told to children."
 	},
-	KScapegoat: func(w *World, e *Event) string {
-		c := w.Civs[e.Subject]
+	record.KScapegoat: func(v *view, e *record.Event) string {
+		c := v.civ(e.Subject)
 		var deeds []string
-		facts := e.P["facts"].([]int)
+		facts := e.Ints("facts")
 		for _, id := range facts {
-			if d := w.blameOf(c, w.Events[id]); len(deeds) < 3 && !slices.Contains(deeds, d) {
+			if d := v.blameOf(c, v.event(id)); len(deeds) < 3 && !slices.Contains(deeds, d) {
 				deeds = append(deeds, d)
 			}
 		}
@@ -840,49 +827,50 @@ var lineFns = map[Kind]func(w *World, e *Event) string{
 		}
 		return "With the {O} for an enemy, the {S} tell their history over: it was the {O} who " + line + more + ". It was not."
 	},
-	KMorality: func(w *World, e *Event) string {
-		m := e.P["morality"].(Morality)
-		switch e.P["way"] {
+	record.KMorality: func(v *view, e *record.Event) string {
+		var m record.Morality
+		e.Obj("morality", &m)
+		switch e.Str("way") {
 		case "branch":
-			return "The {S} have gone their own way in what they count as wrong. " + m.Portrait()
+			return "The {S} have gone their own way in what they count as wrong. " + moralityPortrait(m)
 		case "church":
-			return "The church of the {S} teaches what is good, and it is one thing. " + m.Portrait()
+			return "The church of the {S} teaches what is good, and it is one thing. " + moralityPortrait(m)
 		case "taught":
-			return "The {S} were taught what the {O} call wrong. " + m.Portrait()
+			return "The {S} were taught what the {O} call wrong. " + moralityPortrait(m)
 		case "machine":
-			return "What the {S} hold good is what their makers were doing when they were outgrown. " + m.Portrait()
+			return "What the {S} hold good is what their makers were doing when they were outgrown. " + moralityPortrait(m)
 		}
-		return m.Portrait()
+		return moralityPortrait(m)
 	},
-	FExodus: func(w *World, e *Event) string {
+	record.FExodus: func(v *view, e *record.Event) string {
 		switch {
-		case e.P["way"] == "fled":
+		case e.Str("way") == "fled":
 			return "The {S} {why:why}. What got away is a fleet at {base:star}, and it is all of them now."
-		case e.P["why"] == "":
+		case e.Str("why") == "":
 			return "The {S} take to the sky. {T} is left empty behind them, and everything they are is in the fleets now."
 		}
 		return "The {S} take to the sky rather than {why:why}. {T} is left empty behind them."
 	},
-	KCarried: func(w *World, e *Event) string {
-		if e.P["way"] == "brought" {
+	record.KCarried: func(v *view, e *record.Event) string {
+		if e.Str("way") == "brought" {
 			return "The fleets of the {S} bring the {O} {node:node}."
 		}
 		return "The {S} learn {node:node} from the {O}, and carry it on."
 	},
-	FStripped: func(w *World, e *Event) string {
-		if e.P["home"].(bool) {
+	record.FStripped: func(v *view, e *record.Event) string {
+		if e.Bool("home") {
 			return "The horde of the {S} strips {T}, the home of the {O}, of its ships and its people."
 		}
 		return "The {S} strip {T} of its ships and its people. The horde grows."
 	},
-	FRest: func(w *World, e *Event) string {
-		if e.P["nomad"].(bool) {
+	record.FRest: func(v *view, e *record.Event) string {
+		if e.Bool("nomad") {
 			return "The {S} come to rest at {T}, and are nomads no longer. It was {why:why} that did it."
 		}
 		return "The {S}, refugees no longer, settle {T}. It is home now."
 	},
-	KObjectMade: func(w *World, e *Event) string {
-		switch e.P["how"] {
+	record.KObjectMade: func(v *view, e *record.Event) string {
+		switch e.Str("how") {
 		case "found":
 			return "The {S} put it to use. It is {object:object}: {source:source}, and it feeds them a swarm's worth."
 		case "born":
@@ -890,25 +878,25 @@ var lineFns = map[Kind]func(w *World, e *Event) string{
 		case "wield":
 			return "The {S} put it to use. It is {object:object}, and it feeds them a swarm's worth."
 		}
-		if e.P["object"] == "ember" {
+		if e.Str("object") == "ember" {
 			return "The {S} kindle an exotic energy source, {source:source}, and call it {source:named}. It gives what a swarm gives, and it is theirs to carry."
 		}
 		return "The {S} grow a self-sustaining food organism, {source:source}, and call it {source:named}. It feeds them, and it does not stop."
 	},
-	FManna: func(w *World, e *Event) string {
-		if e.P["way"] == "eat" {
+	record.FManna: func(v *view, e *record.Event) string {
+		if e.Str("way") == "eat" {
 			return "It thinks. The {S} eat it anyway."
 		}
 		return ""
 	},
-	KThrough: func(w *World, e *Event) string {
-		if e.P["burned"].(bool) {
+	record.KThrough: func(v *view, e *record.Event) string {
+		if e.Bool("burned") {
 			return "Something comes through the energy source at {T}. The {S} burn it off."
 		}
 		return "Something comes through the energy source at {T}, and what lived there is lost to it."
 	},
-	FFreed: func(w *World, e *Event) string {
-		switch e.P["way"] {
+	record.FFreed: func(v *view, e *record.Event) string {
+		switch e.Str("way") {
 		case "unthink":
 			return "The {S} learn to unthink the {O}. What was in their heads is gone, and they are free, and never again quite trust a new idea."
 		case "drug":
@@ -916,10 +904,10 @@ var lineFns = map[Kind]func(w *World, e *Event) string{
 		}
 		return ""
 	},
-	FPlague: func(w *World, e *Event) string {
-		road := e.P["road"].(string)
+	record.FPlague: func(v *view, e *record.Event) string {
+		road := e.Str("road")
 		switch {
-		case road == "born" && w.Plagues[e.Plague].Kind == plague.Memetic:
+		case road == "born" && v.plague(e.Plague).Kind == "memetic":
 			return "Something moves through the minds of the {S}.{Q:called}"
 		case road == "born":
 			return "Something moves through the worlds of the {S}.{Q:called}"
@@ -928,98 +916,98 @@ var lineFns = map[Kind]func(w *World, e *Event) string{
 		}
 		return ""
 	},
-	FCured: func(w *World, e *Event) string {
-		if e.P["unknowing"].(bool) {
+	record.FCured: func(v *view, e *record.Event) string {
+		if e.Bool("unknowing") {
 			return "The {S} are rid of {Q}, and never know it had begun to think."
 		}
 		return "The {S} are rid of {Q}."
 	},
-	FPlagueWorld: func(w *World, e *Event) string {
-		if e.P["home"].(bool) {
+	record.FPlagueWorld: func(v *view, e *record.Event) string {
+		if e.Bool("home") {
 			return ""
 		}
 		return "{^Q} empties {T}, a {species:colony} of the {S}. The cities are sealed and left."
 	},
-	FBelieved: func(w *World, e *Event) string {
+	record.FBelieved: func(v *view, e *record.Event) string {
 		switch {
-		case e.P["cult"].(bool):
+		case e.Bool("cult"):
 			return ""
-		case e.P["home"].(bool):
+		case e.Bool("home"):
 			return "{^Q} takes {T}. The {S} listen to it and are changed by it, and nobody there answers to anyone now."
 		}
 		return "{^Q} takes {T}, a {species:colony} of the {S}. Nobody there answers to them any more."
 	},
-	FRefused: func(w *World, e *Event) string {
-		if e.P["traded"].(bool) {
+	record.FRefused: func(v *view, e *record.Event) string {
+		if e.Bool("traded") {
 			return "The {S} stop the trade with the {O} for fear of {Q}, and hear nothing from them."
 		}
 		return "The {S} close their ears to the {O} for fear of {Q}."
 	},
-	KWallsPlague: func(w *World, e *Event) string {
+	record.KWallsPlague: func(v *view, e *record.Event) string {
 		maker := "someone"
-		if e.P["maker"].(int) >= 0 {
+		if e.Int("maker") >= 0 {
 			maker = "the {maker:civ}"
 		}
 		return "On the walls of " + maker + " {Q} is written, and the {S} read it."
 	},
-	KRelicWoke: func(w *World, e *Event) string {
-		if e.P["took"].(bool) {
+	record.KRelicWoke: func(v *view, e *record.Event) string {
+		if e.Bool("took") {
 			return "It does what it was made to do, to the {S}.{Q:called}"
 		}
 		return "It does what it was made to do, and finds nothing in the {S} to do it to."
 	},
-	KPactRefused: func(w *World, e *Event) string {
-		if e.P["against"].(int) >= 0 {
+	record.KPactRefused: func(v *view, e *record.Event) string {
+		if e.Int("against") >= 0 {
 			return "The {S} ask the {O} for a pact against the {against:civ}, and are refused."
 		}
 		return "The {S} ask the {O} for a pact, and are refused."
 	},
-	FPact: func(w *World, e *Event) string {
+	record.FPact: func(v *view, e *record.Event) string {
 		against := "whoever comes"
-		if e.P["against"].(int) >= 0 {
+		if e.Int("against") >= 0 {
 			against = "the {against:civ}"
 		}
 		return "The {S} and the {O} swear a pact of {pact} against " + against + "."
 	},
-	FHarness: func(w *World, e *Event) string {
-		if id, ok := e.P["source"]; ok {
-			return harnessLines[w.Sources[id.(int)].Key]
+	record.FHarness: func(v *view, e *record.Event) string {
+		if e.Has("source") {
+			return harnessLines[v.source(e.Int("source")).Key]
 		}
 		return ""
 	},
-	KRarityHad: func(w *World, e *Event) string {
-		s := w.Sources[e.P["source"].(int)]
-		if e.P["via"].(bool) {
+	record.KRarityHad: func(v *view, e *record.Event) string {
+		s := v.source(e.Int("source"))
+		if e.Bool("via") {
 			return "The {S} have the use of {source:source}, by the grace of the {O}."
 		}
 		return rarityLines[s.Key]
 	},
-	KCarriedOff: func(w *World, e *Event) string {
-		if e.P["fleet"].(int) >= 0 {
+	record.KCarriedOff: func(v *view, e *record.Event) string {
+		if e.Int("fleet") >= 0 {
 			return "The {S} carry off {source:source} with the fleet."
 		}
 		return "The {S} carry off {source:source} to {T}."
 	},
-	KNodeLearned: func(w *World, e *Event) string {
-		n := tech.Get(e.P["node"].(string))
+	record.KNodeLearned: func(v *view, e *record.Event) string {
+		n := tech.Get(e.Str("node"))
 		if n.Milestone && n.Text != "" {
 			return n.Text
 		}
 		return ""
 	},
-	KFleetSeen: func(w *World, e *Event) string {
-		switch e.P["eye"] {
-		case eyeWorks:
+	record.KFleetSeen: func(v *view, e *record.Event) string {
+		switch e.Str("eye") {
+		case "works":
 			return "From the {eye_work:structure} at {eye_star:star} the {S} see the fleet of the {O} coming, {out:span} out."
-		case eyeFleet:
+		case "fleet":
 			return "A fleet of the {S} in flight sees the fleet of the {O} coming toward {T}, {out:span} out."
-		case eyePicket:
+		case "picket":
 			return "The pickets of the {S} see the fleet of the {O} coming, {out:span} out."
 		}
 		return "The {S} see the fleet of the {O} coming, {out:span} out."
 	},
-	KUnrest: func(w *World, e *Event) string {
-		switch e.P["way"] {
+	record.KUnrest: func(v *view, e *record.Event) string {
+		switch e.Str("way") {
 		case "hive":
 			return "The {S} cannot split; a hive has no factions. The pressure goes elsewhere."
 		case "fleets":
@@ -1027,44 +1015,44 @@ var lineFns = map[Kind]func(w *World, e *Event) string{
 		}
 		return "Unrest among the {S} on {T}. It passes, this time."
 	},
-	FSundered: func(w *World, e *Event) string {
-		if !e.P["first"].(bool) {
+	record.FSundered: func(v *view, e *record.Event) string {
+		if !e.Bool("first") {
 			return ""
 		}
-		heirs := e.P["heirs"].([]int)
+		heirs := e.Ints("heirs")
 		var ns []string
 		for _, h := range heirs {
 			ns = append(ns, "the {civ:"+itoa(h)+"}")
 		}
 		seatLine := ""
-		if seat := e.P["seat"].(int); seat >= 0 {
+		if seat := e.Int("seat"); seat >= 0 {
 			seatLine = " The {civ:" + itoa(seat) + "} hold the old seat."
 		}
 		return "The {S} tear themselves in " + numberWord(len(heirs)) + ": " + listOf(ns) + ", each the true {S} by its own telling, each holding the others traitors." + seatLine
 	},
-	FShattered: func(w *World, e *Event) string {
-		if !e.P["first"].(bool) {
+	record.FShattered: func(v *view, e *record.Event) string {
+		if !e.Bool("first") {
 			return ""
 		}
 		var ns []string
-		stars := e.P["stars"].([]int)
-		for i, h := range e.P["shards"].([]int) {
+		stars := e.Ints("stars")
+		for i, h := range e.Ints("shards") {
 			ns = append(ns, "the {civ:"+itoa(h)+"} on {star:"+itoa(stars[i])+"}")
 		}
 		return "The {S} forget how to reach the stars. On " + numberWord(e.N) + " worlds " + numberWord(e.N) + " peoples wake up alone: " + listOf(ns) + "."
 	},
-	KWeaponMade: func(w *World, e *Event) string {
+	record.KWeaponMade: func(v *view, e *record.Event) string {
 		line := "The {S} breed a sickness for the {O}, and call it {Q} among themselves."
-		if e.P["memetic"].(bool) {
+		if e.Bool("memetic") {
 			line = "The {S} shape an idea to break the {O}, and call it {Q} among themselves."
 		}
-		if e.P["conscious"].(bool) {
+		if e.Bool("conscious") {
 			line += "\\nThey have made it to think."
 		}
 		return line
 	},
-	KBreakout: func(w *World, e *Event) string {
-		switch e.P["way"] {
+	record.KBreakout: func(v *view, e *record.Event) string {
+		switch e.Str("way") {
 		case "nothing":
 			return "It gets out, and finds nothing in the {S} to be in."
 		case "carrier":
@@ -1072,47 +1060,47 @@ var lineFns = map[Kind]func(w *World, e *Event) string{
 		}
 		return "It gets out. {^Q} is loose among the {S}, who made it."
 	},
-	FPoisoned: func(w *World, e *Event) string {
-		if e.P["took"].(bool) {
+	record.FPoisoned: func(v *view, e *record.Event) string {
+		if e.Bool("took") {
 			return "The {O} find {Q} was hidden in what the {S} sent them, and made for them."
 		}
 		return "The {O} catch the {S} trying to hide {Q} in what they sent. They take nothing from them again."
 	},
-	FDemand: func(w *World, e *Event) string {
+	record.FDemand: func(v *view, e *record.Event) string {
 		line := "The {S} make it known to the {O} that {T} is theirs, and the {O} are to leave it. The {O} "
 		switch {
-		case e.P["outcome"] == "left":
+		case e.Str("outcome") == "left":
 			return line + "go, and do not say why."
-		case e.P["home"].(bool):
+		case e.Bool("home"):
 			return line + "have nowhere to go; {seat:star} is home."
 		}
 		return line + "stay."
 	},
-	FWar: func(w *World, e *Event) string {
+	record.FWar: func(v *view, e *record.Event) string {
 		switch {
-		case e.P["hunt"].(bool):
+		case e.Bool("hunt"):
 			return ""
-		case e.P["unseen"].(bool):
+		case e.Bool("unseen"):
 			return "The {S} declare war on the {O}, over {cause:why}. The {O} will never know by whom."
-		case e.P["nth"].(int) > 1:
+		case e.Int("nth") > 1:
 			return "The {S} go to war with the {O} again, the {nth:ordinal} time, over {cause:why}."
 		}
 		return "The {S} declare war on the {O}, over {cause:why}."
 	},
-	FBurned: func(w *World, e *Event) string {
-		switch e.P["way"] {
+	record.FBurned: func(v *view, e *record.Event) string {
+		switch e.Str("way") {
 		case "unmade":
 			return "The {S} unmake {T}, a {species:colony} of the {O}. There is nothing left to glass."
 		case "glassed":
-			if !e.P["told"].(bool) {
+			if !e.Bool("told") {
 				return ""
 			}
 			return "The {S} glass {T}, a {species:colony} of the {O}."
 		}
 		return "The {S} burn {T} to be rid of what the {O} put there."
 	},
-	FTaken: func(w *World, e *Event) string {
-		switch e.P["way"] {
+	record.FTaken: func(v *view, e *record.Event) string {
+		switch e.Str("way") {
 		case "host":
 			return "{^Q} takes {T}, a {species:colony} of the {O}. It is a host-world of the {S} now."
 		case "host_war":
@@ -1120,21 +1108,21 @@ var lineFns = map[Kind]func(w *World, e *Event) string{
 		case "stripped":
 			return "The {S} take {T} from the {O} and strip it. Nothing that was there is left; what is there now is more of the {S}."
 		case "overrun":
-			if !e.P["told"].(bool) {
+			if !e.Bool("told") {
 				return ""
 			}
 			return "The {S} overrun {T}. Where the {O} were there is a nest."
 		}
 		switch {
-		case !e.P["told"].(bool):
+		case !e.Bool("told"):
 			return ""
-		case e.P["empty_sky"].(bool):
+		case e.Bool("empty_sky"):
 			return "The {S} take {T} from the {O}. There was nothing in its sky."
 		}
 		return "The {S} take {T} from the {O}."
 	},
-	FHomeBroken: func(w *World, e *Event) string {
-		switch e.P["way"] {
+	record.FHomeBroken: func(v *view, e *record.Event) string {
+		switch e.Str("way") {
 		case "unmade":
 			return "The {S} unmake {T}, homeworld of the {O}. It is not there any more."
 		case "shattered":
@@ -1144,8 +1132,8 @@ var lineFns = map[Kind]func(w *World, e *Event) string{
 		}
 		return "The {S} take {T}, and the queen of the {O} with it. A hive without its queen is only bodies, and the bodies stop."
 	},
-	FScoured: func(w *World, e *Event) string {
-		switch e.P["way"] {
+	record.FScoured: func(v *view, e *record.Event) string {
+		switch e.Str("way") {
 		case "hated":
 			return "The {S} scour {T} clean of the {O}. They were too different to be let live."
 		case "eater":
@@ -1157,8 +1145,8 @@ var lineFns = map[Kind]func(w *World, e *Event) string{
 		}
 		return ""
 	},
-	FYield: func(w *World, e *Event) string {
-		switch e.P["way"] {
+	record.FYield: func(v *view, e *record.Event) string {
+		switch e.Str("way") {
 		case "spared":
 			return "The {S} defeat the {O} and, having no use for a conquest, leave them be."
 		case "ceded":
@@ -1166,14 +1154,14 @@ var lineFns = map[Kind]func(w *World, e *Event) string{
 		}
 		return "The {O} yield to the {S}, who take {N:worlds} and want nothing more, after {warspan}."
 	},
-	KDefencesBroken: func(w *World, e *Event) string {
-		if e.P["outcome"] == "vassal" {
+	record.KDefencesBroken: func(v *view, e *record.Event) string {
+		if e.Str("outcome") == "vassal" {
 			return "The {S} break the last defences of {T}, and the {O} bend the knee. They are vassals now."
 		}
 		return "The {S} break the last defences of {T}."
 	},
-	KWarEnded: func(w *World, e *Event) string {
-		switch e.P["way"] {
+	record.KWarEnded: func(v *view, e *record.Event) string {
+		switch e.Str("way") {
 		case "hunt":
 			return "The hunt of the {S} ends, the will for it spent, after {warspan}. Nothing was found that could be named, and the {O} go on being there."
 		case "spent":
@@ -1181,12 +1169,12 @@ var lineFns = map[Kind]func(w *World, e *Event) string{
 		}
 		return "The {S} and the {O} stop fighting, both sides tired of it, after {warspan}. Neither ever understood what the other wanted, and nothing is signed."
 	},
-	FPeace: func(w *World, e *Event) string {
-		if e.P["way"] == "truce" {
+	record.FPeace: func(v *view, e *record.Event) string {
+		if e.Str("way") == "truce" {
 			return "The {S} sue the {O} for a truce, which is all they know how to ask for, after {warspan}. The fighting stops; nothing is settled."
 		}
 		terms := "Neither side is sure who won."
-		switch net := e.P["net"].(int); {
+		switch net := e.Int("net"); {
 		case net > 0:
 			terms = "The {S} keep what they took."
 		case net < 0:
@@ -1194,17 +1182,17 @@ var lineFns = map[Kind]func(w *World, e *Event) string{
 		}
 		return "The {S} and the {O} make peace, {why:why}, after {warspan}. " + terms
 	},
-	KYielded: func(w *World, e *Event) string {
-		if e.P["outcome"] == "vassal" {
+	record.KYielded: func(v *view, e *record.Event) string {
+		if e.Str("outcome") == "vassal" {
 			return "The {S} yield to the {O} and bend the knee, after {warspan}. They are vassals now."
 		}
 		return "The {S} yield to the {O}, after {warspan}."
 	},
-	FFathomed: func(w *World, e *Event) string {
-		how, mutual, wars := e.P["how"].(string), e.P["mutual"].(bool), e.P["wars"].(int)
-		ago := span(e.P["since"].(Year))
+	record.FFathomed: func(v *view, e *record.Event) string {
+		how, mutual, wars := e.Str("how"), e.Bool("mutual"), e.Int("wars")
+		ago := span(e.YearOf("since"))
 		switch {
-		case how == "kin" && mutual && !e.P["kin"].(bool):
+		case how == "kin" && mutual && !e.Bool("kin"):
 			return "The {S} and the {O}, of one blood, understand each other at once."
 		case how == "kin", how == "meeting":
 			return ""

@@ -184,7 +184,7 @@ func (w *World) primitives(old, young *Civ) bool {
 		old.Met[young.ID], young.Met[old.ID] = true, true
 		w.meeting(old, young, young.Home, "touch").with(P{"way": "scoured"})
 		w.fact(FScoured, old, young, young.Home).with(P{"way": "primitives"})
-		w.Bio[young.Home] = BioSimple
+		w.setBio(young.Home, BioSimple)
 		w.endCiv(young, Extinct, because("scoured_young").At(young.Home).By(old))
 		return true
 	case old.hostile() && !young.Has("swarming") && !young.Species.Is(species.Planetary) && young.treats() && w.R.Float64() < 0.3*(0.5+old.Dials.Greed):
@@ -268,7 +268,7 @@ func (w *World) encounter(a, b *Civ, watched, heard bool, at int) {
 
 func (w *World) enslave(m, s *Civ) {
 	m.Ruled++
-	s.Master, s.Vassal = m.ID, false
+	w.setMaster(s, m.ID, false)
 	s.Seen = m.Declines
 	s.Voyages = nil
 	delete(m.Wars, s.ID)
@@ -277,7 +277,7 @@ func (w *World) enslave(m, s *Civ) {
 	for _, x := range append([]int(nil), s.Systems...) {
 		if x != s.Home {
 			s.Systems = remove(s.Systems, x)
-			w.Owner[x] = m.ID
+			w.setOwner(x, m.ID)
 			m.Systems = append(m.Systems, x)
 		}
 	}
@@ -295,7 +295,7 @@ func (w *World) enslave(m, s *Civ) {
 
 func (w *World) vassal(m, s *Civ) {
 	m.Ruled++
-	s.Master, s.Vassal = m.ID, true
+	w.setMaster(s, m.ID, true)
 	s.Seen = m.Declines
 	delete(m.Wars, s.ID)
 	delete(s.Wars, m.ID)
@@ -345,11 +345,11 @@ func (w *World) uplift(c *Civ) {
 			sp.Made = species.MadeBy("uplifted", c.ID)
 			c.Uplifts++
 			nc := w.spawnCiv(t, sp, c.ID)
-			nc.Vassal = true
+			w.setMaster(nc, c.ID, true)
 			nc.Seen = c.Declines
 			for _, k := range knownOf(c) {
 				if w.R.Float64() < 0.5 {
-					nc.Known[k] = true
+					w.know(nc, k)
 				}
 			}
 			w.forget(nc, 0.3)

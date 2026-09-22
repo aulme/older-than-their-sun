@@ -6,8 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"worldgen/internal/history"
-	"worldgen/internal/names"
+	"strconv"
 	"worldgen/internal/plague"
 )
 
@@ -39,13 +38,12 @@ type PlagueRec struct {
 	Poisoned  int  // peoples it was put in by stealth
 }
 
-func flattenPlagues(w *history.World) []PlagueRec {
+func flattenPlagues(w *world) []PlagueRec {
 	var out []PlagueRec
-	book := names.Of(w)
-	for _, p := range w.Plagues {
+	for _, p := range w.State.Plagues {
 		out = append(out, PlagueRec{
-			Seed: w.Seed, Name: book.Text(p.Tok()), Kind: p.Kind.String(), Contagion: p.Contagion, Lethality: p.Lethality, Cause: p.Cause,
-			Born: float64(p.Born-w.Cfg.Dawn) / 1e6, Peak: p.Peak, Caught: p.Caught, Worlds: p.Worlds, Peoples: p.Peoples,
+			Seed: w.seed(), Name: w.rd.Text("{plague:" + strconv.Itoa(p.ID) + "}"), Kind: p.Kind, Contagion: p.Contagion, Lethality: p.Lethality, Cause: p.Cause,
+			Born: float64(p.Born-w.Dossier.Dawn) / 1e6, Peak: p.Peak, Caught: p.Caught, Worlds: p.Worlds, Peoples: p.Peoples,
 			Cults: p.Cults, Cures: p.Cures, Refusals: p.Refusals, Woken: p.Woken, Wildfire: p.Wildfire, Extinct: p.Extinct,
 			Made: p.Made, Maker: p.Maker, Rider: p.Rider, Poisoned: p.Poisonings,
 		})

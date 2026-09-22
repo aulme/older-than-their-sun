@@ -46,8 +46,8 @@ func (w *World) drift(c *Civ) {
 	sp := c.Species
 	if w.sharedSpecies(c) {
 		sp = sp.Branch() // the drift is this people's; its kin keep the shape they had
-		c.Species = sp
 		w.register(sp)
+		w.setSpecies(c, sp)
 	}
 	d, ok := w.driftOnce(c, sp)
 	if !ok {

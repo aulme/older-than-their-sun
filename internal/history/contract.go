@@ -41,6 +41,24 @@ type Term struct {
 	Fleet  int       // sighting: the fleet
 }
 
+// key is a term as the debug trace says it: its kind and what it names.
+func (t Term) key() string {
+	s := t.Kind.String()
+	switch t.Kind {
+	case mind.TermFlow:
+		s += ":" + t.Res.Symbol() + " " + sprintf("%.1f", t.Amount)
+	case mind.TermRarity, mind.TermAccess:
+		s += ":source " + itoa(t.Source)
+	case mind.TermTeach:
+		s += ":" + t.Node
+	case mind.TermGuard, mind.TermStrike, mind.TermDeliver:
+		s += ":" + sprintf("%.0f", t.Amount) + " at star " + itoa(t.Star)
+	case mind.TermBroker:
+		s += ":civ " + itoa(t.Target)
+	}
+	return s
+}
+
 // ContractState is where a contract is in its life.
 type ContractState uint8
 
@@ -984,7 +1002,7 @@ func (w *World) answerOffer(to, from *Civ, m *Message) {
 	if to.ID == k.Buyer {
 		gives, gets = k.Pay, k.Ask
 	}
-	what := "asked by the " + from.Tok() + " for " + w.termName(gives) + " for " + w.termName(gets)
+	what := "asked by the " + from.Tok() + " for " + gives.key() + " for " + gets.key()
 	if why := w.refuses(to, gives, from); why != "" {
 		k.State = Refused
 		if w.Cfg.TraceAI {
@@ -1442,7 +1460,7 @@ func (w *World) handOver(from, to *Civ, s int) {
 		w.goHome(g)
 	}
 	from.Systems = remove(from.Systems, s)
-	w.Owner[s] = to.ID
+	w.setOwner(s, to.ID)
 	to.Systems = append(to.Systems, s)
 	to.Peak = max(to.Peak, len(to.Systems))
 	keep := from.Works[:0]

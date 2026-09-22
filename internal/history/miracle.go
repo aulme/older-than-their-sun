@@ -22,7 +22,7 @@ import (
 // are not tired of this.
 func (w *World) gain(c *Civ, key, how string) {
 	if c.Miracles[key] == "" {
-		c.Miracles[key] = how
+		w.holdMiracle(c, key, how)
 		w.fact(FMiracle, c, nil, -1).with(P{"miracle": key, "how": how})
 	}
 	if causal[key] {
@@ -195,11 +195,11 @@ func (w *World) holdDiff(c *Civ) float64 {
 
 // loseMiracle takes a leapt or found miracle away, as a filter's price.
 func (w *World) loseMiracle(c *Civ, key string) {
-	delete(c.Known, key)
+	w.forgetNode(c, key)
 	keep := c.Wielded[:0]
 	for _, l := range c.Wielded {
 		if l.Level == "miracle" && l.Node == key {
-			l.State = Lost
+			w.setState(l, Lost)
 			continue
 		}
 		keep = append(keep, l)
@@ -227,19 +227,19 @@ func (w *World) remake(c *Civ, why reason) *Civ {
 	nc.Master = -1
 	for _, s := range worlds {
 		if s != home && w.Owner[s] < 0 {
-			w.Owner[s] = nc.ID
+			w.setOwner(s, nc.ID)
 			nc.Systems = append(nc.Systems, s)
 		}
 	}
 	nc.Peak = len(nc.Systems)
 	for _, k := range known {
 		if w.R.Float64() < 0.6 || tech.Get(k).Miracle {
-			nc.Known[k] = true
+			w.know(nc, k)
 		}
 	}
-	nc.Scars[ScarChanged] = true
+	w.scar(nc, ScarChanged)
 	if nc.Known["directed_evolution"] {
-		nc.Miracles["directed_evolution"] = "found"
+		w.holdMiracle(nc, "directed_evolution", "found")
 		nc.Faced["brood"] = true
 	}
 	w.recompute(nc)
@@ -255,7 +255,7 @@ func init() {
 			w.faced(c, "openline", "overcome", "", -1)
 		},
 		Scar: func(w *World, c *Civ) {
-			c.Scars[ScarOtherVoices] = true
+			w.scar(c, ScarOtherVoices)
 			c.Morale -= 1
 			w.tear(0.3)
 			w.faced(c, "openline", "scarred", "", -1)
@@ -281,11 +281,11 @@ func init() {
 		},
 		Scar: func(w *World, c *Civ) {
 			sp := c.Species.Branch() // the same people, no longer quite the same blood
-			c.Species = sp
 			w.register(sp)
+			w.setSpecies(c, sp)
 			t := species.Pick(w.R, "bio")
 			sp.Add(t.Key)
-			c.Scars[ScarChanged] = true
+			w.scar(c, ScarChanged)
 			w.faced(c, "brood", "scarred", "", -1).P["trait"] = t.Key
 		},
 		Decline: func(w *World, c *Civ) {
@@ -319,7 +319,7 @@ func init() {
 					}
 				}
 			}
-			c.Scars[ScarBurningSky] = true
+			w.scar(c, ScarBurningSky)
 			w.tear(0.3)
 			w.blast(s, 4, "unmaking_test", c, 1, -1)
 		},
@@ -364,7 +364,7 @@ func init() {
 			w.faced(c, "sight", "overcome", "", -1)
 		},
 		Scar: func(w *World, c *Civ) {
-			c.Scars[ScarFatalism] = true
+			w.scar(c, ScarFatalism)
 			c.Morale -= 1
 			w.tear(0.3)
 			w.faced(c, "sight", "scarred", "", -1)

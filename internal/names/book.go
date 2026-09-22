@@ -8,47 +8,60 @@ import (
 	"worldgen/internal/galaxy"
 	"worldgen/internal/history"
 	"worldgen/internal/plague"
+	"worldgen/internal/record"
 	"worldgen/internal/species"
 )
 
 // Object is a thing that can be named: a kind and the id the simulation
-// gave it.
-type Object struct {
-	Kind string `json:"kind"` // civ, star, plague, war, elder, legacy, source
-	ID   int    `json:"id"`
-}
+// gave it. Row is one name for one object by one culture, a row of the
+// state's names[]; Recipe how a translated name was made. The types are
+// the record's: the pass writes them and the view reads them.
+type (
+	Object = record.Object
+	Row    = record.Name
+	Recipe = record.Recipe
+	Voice  = record.Voice
+)
 
 // Human is the namer of a designation row.
-const Human = -2
+const Human = record.Human
 
-// Row is one name for one object by one culture.
-type Row struct {
-	Object Object       `json:"object"`
-	By     int          `json:"by"` // a people's id, or Human for the catalogue
-	Name   string       `json:"name"`
-	Mode   string       `json:"mode"` // transcribed, translated, designation, adopted
-	Tone   string       `json:"tone"` // self, stranger, friend, enemy, monster, sky, none
-	Coined history.Year `json:"coined"`
-	From   int          `json:"from"`            // the culture an adopted name was learned from, or -1
-	Gloss  string       `json:"gloss,omitempty"` // the meaning a transcribed name would also be given
-	Recipe Recipe       `json:"recipe,omitzero"` // how a translated name was made; empty for a transcription
+// The voices: none, transcribed or translated.
+const (
+	None        = record.None
+	Transcribed = record.Transcribed
+	Translated  = record.Translated
+)
+
+// Table is the names of one run as a reader resolves them: every row by
+// object, and what a thing with no row is called. The view builds one
+// from the state's names[] (FromRows); the pass builds one from the
+// record (Of) and answers the same questions.
+type Table struct {
+	rows map[Object][]Row
+	// what the fallbacks need of the world: a star's human label, whether
+	// a plague is of the mind, the first people of a blood
+	starLabel  func(id int) (string, bool)
+	memetic    func(id int) bool
+	speciesCiv func(id int) int
 }
 
-// Voice is how a culture names: none, transcribed or translated.
-type Voice string
-
-const (
-	None        Voice = "none"
-	Transcribed Voice = "transcribed"
-	Translated  Voice = "translated"
-)
+// FromRows builds a table from the state's rows. The fallbacks read the
+// state through the three functions; any may be nil.
+func FromRows(rows []Row, starLabel func(int) (string, bool), memetic func(int) bool, speciesCiv func(int) int) *Table {
+	t := &Table{rows: map[Object][]Row{}, starLabel: starLabel, memetic: memetic, speciesCiv: speciesCiv}
+	for _, r := range rows {
+		t.rows[r.Object] = append(t.rows[r.Object], r)
+	}
+	return t
+}
 
 // Book is the names of one run: every row the record entitles, and the
 // voice and phonology of every people. It is built once from the record
 // and answers the view.
 type Book struct {
+	*Table
 	w        *history.World
-	rows     map[Object][]Row
 	voice    map[int]Voice
 	phon     map[int]*Phonology
 	noticeOf map[int]map[string]float64
@@ -58,7 +71,23 @@ type Book struct {
 // Of builds the book of a world: the voices, the transcribed rows, the
 // designations, the adopted endonyms, then every translated row.
 func Of(w *history.World) *Book {
-	b := &Book{w: w, rows: map[Object][]Row{}, voice: map[int]Voice{}, phon: map[int]*Phonology{}, noticeOf: map[int]map[string]float64{}}
+	t := &Table{rows: map[Object][]Row{}}
+	t.starLabel = func(id int) (string, bool) {
+		if id >= 0 && id < len(w.G.Stars) {
+			return w.G.Stars[id].Name, true
+		}
+		return "", false
+	}
+	t.memetic = func(id int) bool { return id >= 0 && id < len(w.Plagues) && w.Plagues[id].Kind == plague.Memetic }
+	t.speciesCiv = func(id int) int {
+		for _, c := range w.Civs {
+			if c.Species.ID == id {
+				return c.ID
+			}
+		}
+		return -1
+	}
+	b := &Book{Table: t, w: w, voice: map[int]Voice{}, phon: map[int]*Phonology{}, noticeOf: map[int]map[string]float64{}}
 	for _, c := range w.Civs {
 		b.voice[c.ID] = VoiceOf(c.Species)
 	}
@@ -73,10 +102,10 @@ func Of(w *history.World) *Book {
 }
 
 // Rows lists an object's rows in the order they were coined.
-func (b *Book) Rows(o Object) []Row { return b.rows[o] }
+func (b *Table) Rows(o Object) []Row { return b.rows[o] }
 
 // All lists every row, by object kind, id and coining year.
-func (b *Book) All() []Row {
+func (b *Table) All() []Row {
 	var out []Row
 	keys := make([]Object, 0, len(b.rows))
 	for k := range b.rows {
@@ -197,7 +226,7 @@ func (b *Book) selfRows() {
 		}
 		p := b.phon[c.ID]
 		r := stream(w.Seed, itoa(c.ID), "civ", itoa(c.ID), "self")
-		b.add(Row{Object: Object{"civ", c.ID}, By: c.ID, Name: p.Word(r, 0), Mode: "transcribed", Tone: "self", Coined: c.Born, From: -1})
+		b.add(Row{Object: Object{Kind: "civ", ID: c.ID}, By: c.ID, Name: p.Word(r, 0), Mode: "transcribed", Tone: "self", Coined: c.Born, From: -1})
 	}
 }
 
@@ -213,7 +242,7 @@ func (b *Book) designations() {
 		if s.Proper() {
 			mode = "proper"
 		}
-		b.add(Row{Object: Object{"star", s.ID}, By: Human, Name: s.Name, Mode: mode, Tone: "none", Coined: 0, From: -1})
+		b.add(Row{Object: Object{Kind: "star", ID: s.ID}, By: Human, Name: s.Name, Mode: mode, Tone: "none", Coined: 0, From: -1})
 	}
 }
 
@@ -235,7 +264,7 @@ func (b *Book) factRows() {
 	b.indexPairs()
 	for _, c := range w.Civs {
 		if b.voice[c.ID] == Translated {
-			if row, ok := b.translate(c.ID, Object{"civ", c.ID}, "self", c.Born, b.selfProps(c)); ok {
+			if row, ok := b.translate(c.ID, Object{Kind: "civ", ID: c.ID}, "self", c.Born, b.selfProps(c)); ok {
 				b.add(row)
 			}
 		}
@@ -266,7 +295,7 @@ func (b *Book) starRow(by, star int, y history.Year) {
 	}
 	p := b.phon[by]
 	r := stream(b.w.Seed, itoa(by), "star", itoa(star), "self")
-	b.add(Row{Object: Object{"star", star}, By: by, Name: p.Word(r, 1+r.IntN(2)), Mode: "transcribed", Tone: "self", Coined: y, From: -1})
+	b.add(Row{Object: Object{Kind: "star", ID: star}, By: by, Name: p.Word(r, 1+r.IntN(2)), Mode: "transcribed", Tone: "self", Coined: y, From: -1})
 }
 
 // adopt is a people learning another's endonym at a meeting, as its
@@ -287,11 +316,11 @@ func (b *Book) adopt(by, other int, y history.Year) {
 	if b.voice[by] == Transcribed && b.voice[other] == Transcribed {
 		name = b.phon[by].Adopt(r, self)
 	}
-	b.add(Row{Object: Object{"civ", other}, By: by, Name: name, Mode: "adopted", Tone: "friend", Coined: y, From: other})
+	b.add(Row{Object: Object{Kind: "civ", ID: other}, By: by, Name: name, Mode: "adopted", Tone: "friend", Coined: y, From: other})
 }
 
 func (b *Book) selfName(id int) string {
-	for _, r := range b.rows[Object{"civ", id}] {
+	for _, r := range b.rows[Object{Kind: "civ", ID: id}] {
 		if r.By == id && r.Tone == "self" {
 			return r.Name
 		}
@@ -302,7 +331,7 @@ func (b *Book) selfName(id int) string {
 // Default is the debug view's one name for a thing: the human proper
 // name; else the earliest self row; else the earliest row of any tone;
 // else the designation; else the id.
-func (b *Book) Default(o Object) string {
+func (b *Table) Default(o Object) string {
 	rows := b.rows[o]
 	for _, r := range rows {
 		if r.By == Human && r.Mode == "proper" {
@@ -328,7 +357,7 @@ func (b *Book) Default(o Object) string {
 // enemy, an enemy at least a stranger); with no tone, its own name for
 // its own thing, else the endonym it adopted, else its exonym; else the
 // default.
-func (b *Book) By(o Object, by int, tone string) string {
+func (b *Table) By(o Object, by int, tone string) string {
 	order := []string{"self", "friend", "stranger", "sky", "enemy", "monster"}
 	switch tone {
 	case "monster":
@@ -367,11 +396,13 @@ func earliest(rows []Row, tone string) *Row {
 
 // fallback is what a thing with no name is called: a star by its
 // catalogue label, anything else by its kind and id.
-func (b *Book) fallback(o Object) string {
+func (b *Table) fallback(o Object) string {
 	switch o.Kind {
 	case "star":
-		if o.ID >= 0 && o.ID < len(b.w.G.Stars) {
-			return b.w.G.Stars[o.ID].Name
+		if b.starLabel != nil {
+			if label, ok := b.starLabel(o.ID); ok {
+				return label
+			}
 		}
 	case "war":
 		return "a war"
@@ -382,14 +413,14 @@ func (b *Book) fallback(o Object) string {
 	case "source":
 		return "nothing" // a voiceless maker calls its object nothing
 	case "plague":
-		if o.ID >= 0 && o.ID < len(b.w.Plagues) && b.w.Plagues[o.ID].Kind == plague.Memetic {
+		if b.memetic != nil && b.memetic(o.ID) {
 			return "a nameless idea"
 		}
 		return "a nameless sickness"
 	case "species":
-		for _, c := range b.w.Civs {
-			if c.Species.ID == o.ID {
-				return b.Default(Object{"civ", c.ID})
+		if b.speciesCiv != nil {
+			if c := b.speciesCiv(o.ID); c >= 0 {
+				return b.Default(Object{Kind: "civ", ID: c})
 			}
 		}
 	case "elder":
@@ -407,7 +438,7 @@ var tokenRe = regexp.MustCompile(`\{(\^?)([a-z]+):(-?\d+)(?:@(-?\d+)(?::([a-z]+)
 // to what it calls it in that regard (a telling's slant), {^kind:id}
 // with the first letter raised. Names may hold tokens themselves, so it
 // runs to a fixed point.
-func (b *Book) Text(s string) string {
+func (b *Table) Text(s string) string {
 	for range 4 {
 		if !strings.Contains(s, "{") {
 			return s
@@ -448,8 +479,8 @@ func atoi(s string) int {
 // Star is the view's name for a star, with the human label after an
 // alien name where the star has one and it is not a proper name:
 // "Ur-Kesh, HIP 56601 on human maps".
-func (b *Book) Star(s *galaxy.Star) string {
-	o := Object{"star", s.ID}
+func (b *Table) Star(s *galaxy.Star) string {
+	o := Object{Kind: "star", ID: s.ID}
 	name := b.Default(o)
 	if s.Real && s.Name != "" && name != s.Name {
 		return name + " (" + s.Name + " on human maps)"

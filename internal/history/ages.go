@@ -144,7 +144,7 @@ func (w *World) leaveLegacy(e *Elder, at Year) {
 				l.Portrait = "transmitter_silent"
 			} else {
 				l.Portrait = "transmitter_running"
-				l.State = Unleashed
+				w.setState(l, Unleashed)
 			}
 			if w.R.Float64() < w.Cfg.Tuning.Kinds.SeedShare {
 				l.Payload = Seed
@@ -162,7 +162,7 @@ func (w *World) leaveLegacy(e *Elder, at Year) {
 		l.Portrait = tables.portraits.Laws[w.R.IntN(len(tables.portraits.Laws))].Key
 		l.Node = "ftl"
 	}
-	w.Legacies = append(w.Legacies, l)
+	w.addLegacy(l)
 	e.Legacies = append(e.Legacies, l)
 	w.eventAt(at, KElderLeft, nil, nil, l.Star, P{"elder": e.ID}).Legacy = l.ID
 }
@@ -188,12 +188,12 @@ func (w *World) deepLife() {
 		switch w.Bio[i] {
 		case BioNone:
 			if s.Hab > 0 && w.R.Float64() < s.Hab*0.0015 {
-				w.Bio[i] = BioSimple
+				w.setBio(i, BioSimple)
 				w.event(KLifeArose, nil, nil, i, P{"class": string(s.Class)})
 			}
 		case BioSimple:
 			if w.R.Float64() < 0.012 {
-				w.Bio[i] = BioComplex
+				w.setBio(i, BioComplex)
 				w.event(KLifeComplex, nil, nil, i, P{})
 			}
 		}
@@ -217,7 +217,7 @@ func (w *World) sterilise(origin int, radius float64) int {
 	killed := 0
 	for _, s := range append(w.G.Near(origin, radius), origin) {
 		if s != w.G.Sol && w.Bio[s] != BioNone {
-			w.Bio[s] = BioNone
+			w.setBio(s, BioNone)
 			killed++
 		}
 	}
@@ -233,7 +233,7 @@ func (w *World) deepStars(from, to Year) {
 		}
 		if s.Massive() {
 			killed := w.sterilise(i, 30)
-			s.Kill()
+			w.killStar(s)
 			if killed > 0 {
 				w.event(KSupernova, nil, nil, i, P{"killed": killed})
 			}
@@ -241,8 +241,8 @@ func (w *World) deepStars(from, to Year) {
 		}
 		if w.Bio[i] != BioNone {
 			w.event(KStarSwelled, nil, nil, i, P{})
-			w.Bio[i] = BioNone
+			w.setBio(i, BioNone)
 		}
-		s.Kill()
+		w.killStar(s)
 	}
 }

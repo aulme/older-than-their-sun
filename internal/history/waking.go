@@ -205,7 +205,7 @@ func (w *World) unmake(c, e *Civ, s int) {
 	c.Tally.Taken++
 	c.LastUnmade = w.Now
 	w.tear(0.3)
-	w.Bio[s] = BioNone
+	w.setBio(s, BioNone)
 	w.told(FUnmade, c, e, s)
 	wasHome := s == e.Home
 	w.loseSystem(e, s, "unmade", because("unmade_by").By(c))

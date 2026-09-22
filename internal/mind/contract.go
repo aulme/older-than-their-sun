@@ -209,3 +209,17 @@ func TakesTribute(in TributeInput) bool {
 	}
 	return in.Fixation == "holding"
 }
+
+// MarshalText writes the kind's key.
+func (k TermKind) MarshalText() ([]byte, error) { return []byte(k.String()), nil }
+
+// UnmarshalText reads a kind by its key.
+func (k *TermKind) UnmarshalText(b []byte) error {
+	for x := TermFlow; x <= TermBroker; x++ {
+		if x.String() == string(b) {
+			*k = x
+			return nil
+		}
+	}
+	return fmt.Errorf("mind: unknown term kind %q", b)
+}

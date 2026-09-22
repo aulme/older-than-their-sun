@@ -40,7 +40,7 @@ func (w *World) name(c *Civ, key string) {
 	if c.Named {
 		return
 	}
-	c.Named = true
+	w.setNamed(c, true)
 	w.told(FWord, c, nil, -1).with(P{"route": key})
 }
 

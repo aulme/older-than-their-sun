@@ -1,9 +1,10 @@
 {
   "_": [
-    "The event vocabulary: one entry per kind of thing that happens. The simulation writes events of these kinds and nothing else, with the parameters declared here and no others; a fact is a kind with a sort and a weight, the ones a people can hold a tale of. Weight is how much a tale resists wear and how far news travels; sort is the moral shape from the subject's side. Meaning is one plain line for whoever reads a record; the chronicle lines the debug view prints are the view's (internal/history/lines.go).",
+    "The event vocabulary: one entry per kind of thing that happens. The simulation writes events of these kinds and nothing else, with the parameters declared here and no others; a fact is a kind with a sort and a weight, the ones a people can hold a tale of. Weight is how much a tale resists wear and how far news travels; sort is the moral shape from the subject's side. Meaning is one plain line for whoever reads a record; the chronicle lines the debug view prints are the view's (internal/legends/lines.go).",
     "A parameter ending in ? is optional; every other declared key is present on every event of the kind. Keys named in the meanings refer to the event's fields: subject and object are peoples, star, legacy (a remain) and plague are ids, n is a count. Kinds whose text parameters are still words (cause, desc, why, what, shape) are the lookups step's to key.",
     "Keys resolve: every key a parameter carries is a row of one of the tables in this directory, and a test walks them.",
-    "Every term here is a technical term: a phrase a reader who never saw this project understands or can search for, never a coinage."
+    "Every term here is a technical term: a phrase a reader who never saw this project understands or can search for, never a coinage.",
+    "The silent kinds, from civ_born on, are the durable changes the prose never remarked: a world passing to a master, a remain crumbling a step, a stage moving with a people's reach. They have no line in the view and no weight; they are there so that the chronicle is complete about the durable, and the fold test (internal/writer) rebuilds the state's durable fields from the chronicle alone. Their ids come after every told event's."
   ],
   "kinds": [
     {"kind": "arise", "sort": "deed", "weight": 3, "params": ["made", "shared", "prior", "species", "class", "traits", "host?"], "meaning": "A people arose at the star: made if built or bred by another (whose line tells it), of the blood species, shared if that blood had risen before, prior the people whose ruins it rose among or -1, class the star's class at the time, traits its blood's traits by key, as they stood; host the people it rides, for a rider."},
@@ -237,6 +238,36 @@
     {"kind": "slow_trade", "params": [], "meaning": "Slow messages crossed the dark between the subject and the object for generations, and then trade began."},
     {"kind": "unfathomed", "params": [], "meaning": "The subject, in a dark age, forgot how to speak to the object."},
     {"kind": "waning", "params": [], "meaning": "The age is waning: few still rise, and those that stand are old."},
-    {"kind": "star_dead", "params": [], "meaning": "The star died with life on its worlds and nobody's holdings there; its worlds froze."}
+    {"kind": "star_dead", "params": [], "meaning": "The star died with life on its worlds and nobody's holdings there; its worlds froze."},
+    {"kind": "civ_born", "params": ["species", "master", "powers"], "meaning": "A people came to be at its cradle star: of the blood species, under master (a people's id, or -1), with the powers its blood held at the time.", "silent": true},
+    {"kind": "world_held", "params": [], "meaning": "The people took the star into its holding.", "silent": true},
+    {"kind": "world_lost", "params": [], "meaning": "The people's holding of the star ended.", "silent": true},
+    {"kind": "bio", "params": ["bio"], "meaning": "Life on the star's worlds changed: bio is none, simple or complex.", "silent": true},
+    {"kind": "star_class", "params": ["class"], "meaning": "The star died into its remnant: class is W for a white dwarf, N for a neutron star or black hole.", "silent": true},
+    {"kind": "stage", "params": ["stage"], "meaning": "The people's stage moved: emergent, interstellar, zenith, remnant, dead.", "silent": true},
+    {"kind": "fate", "params": ["fate", "cause"], "meaning": "The people's fate was set at its fall or its end, with the cause, a key of causes.json.", "silent": true},
+    {"kind": "seat", "params": [], "meaning": "The people's seat moved to the star.", "silent": true},
+    {"kind": "node_held", "params": ["node"], "meaning": "The node came into the people's holding, by any road.", "silent": true},
+    {"kind": "node_lost", "params": ["node"], "meaning": "The people lost the node.", "silent": true},
+    {"kind": "scar", "params": ["scar"], "meaning": "The people took the scar.", "silent": true},
+    {"kind": "boon", "params": ["boon"], "meaning": "The people gained the boon.", "silent": true},
+    {"kind": "miracle_held", "params": ["miracle", "route"], "meaning": "The miracle came into the people's holding by the route: born, leap, found, wielded.", "silent": true},
+    {"kind": "miracle_lost", "params": ["miracle"], "meaning": "The miracle left the people's holding: an heir that wields no relic of it.", "silent": true},
+    {"kind": "master", "params": ["master", "vassal"], "meaning": "The people's master changed: master a people's id or -1 for free, vassal whether held as a vassal rather than a slave.", "silent": true},
+    {"kind": "sleep", "params": ["asleep"], "meaning": "The people went into the long sleep, or woke from it.", "silent": true},
+    {"kind": "line", "params": ["line"], "meaning": "The people's line was set at its birth: the peoples it came out of, oldest first.", "silent": true},
+    {"kind": "named", "params": ["named"], "meaning": "The people came to have a word for the state beneath, or lost it.", "silent": true},
+    {"kind": "remain_left", "params": ["kind", "state", "cond", "finder", "maker"], "meaning": "A remain came to be at the star: legacy is its id; kind, state and cond as left; finder and maker peoples or -1.", "silent": true},
+    {"kind": "remain_moved", "params": [], "meaning": "The remain (legacy) was put down at the star: a wielded thing buried where its holder sat, a work gone back to the substrate.", "silent": true},
+    {"kind": "remain_state", "params": ["state"], "meaning": "The remain's state changed: undisturbed, sealed, wielded, mastered, unleashed, lost.", "silent": true},
+    {"kind": "remain_cond", "params": ["cond"], "meaning": "The remain's condition changed: abandoned, derelict, wreck, ruin; decay downward, a repair upward.", "silent": true},
+    {"kind": "remain_finder", "params": ["finder"], "meaning": "The people that last acted on the remain changed.", "silent": true},
+    {"kind": "listened", "params": [], "meaning": "The transmitter (legacy) took the people: a listener more.", "silent": true},
+    {"kind": "war_opened", "params": ["war", "cause"], "meaning": "A war came to be between the subject and the object, declared or inherited: war its id, cause a key of causes.json's war causes.", "silent": true},
+    {"kind": "war_over", "params": ["war", "result"], "meaning": "The war ended with the result, a key of causes.json's war results.", "silent": true},
+    {"kind": "infected", "params": [], "meaning": "The people took the plague.", "silent": true},
+    {"kind": "cleared", "params": [], "meaning": "The people no longer has the plague: cured, or drifted out from under it.", "silent": true},
+    {"kind": "blood", "params": ["species", "powers"], "meaning": "The people's blood changed: a branch of its own, on a drift or a brood scar; species the new blood's id, with the powers it held.", "silent": true},
+    {"kind": "power_held", "params": ["power", "species"], "meaning": "The blood species of the people gained the power.", "silent": true}
   ]
 }

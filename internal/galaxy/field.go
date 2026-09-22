@@ -191,6 +191,9 @@ func GenerateAt(r *rand.Rand, rg Region, n int, radius, thickness float64) *Gala
 		g.Sys[i] = genSystem(r, s, s.cat, rocky, law.Metals)
 	}
 	g.index()
+	for i := range g.Stars {
+		g.Stars[i].Desig = Designation(&g.Stars[i])
+	}
 	return g
 }
 

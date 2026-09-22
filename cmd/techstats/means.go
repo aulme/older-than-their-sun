@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"worldgen/internal/flow"
-	"worldgen/internal/history"
 	"worldgen/internal/tech"
 )
 
@@ -261,7 +260,7 @@ func worksReport(out io.Writer, recs []Rec) {
 	p("")
 	p("| Node | Reached | With the grant | Without |")
 	p("|---|---|---|---|")
-	for _, k := range history.GrantedNodes {
+	for _, k := range grantedNodes {
 		reached, with := 0, 0
 		for _, r := range recs {
 			if !r.ever[k] {
@@ -280,3 +279,6 @@ func worksReport(out io.Writer, recs []Rec) {
 		p("| %s | %d | %d | %d |", tech.Get(k).Name, reached, with, reached-with)
 	}
 }
+
+// grantedNodes lists every node some natural rarity grants.
+var grantedNodes = []string{"causal_physics", "deep_time", "unmaking", "stellar_weapons", "exotic_matter", "transcendence"}

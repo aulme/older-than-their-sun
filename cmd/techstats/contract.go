@@ -5,7 +5,6 @@ import (
 	"io"
 	"sort"
 
-	"worldgen/internal/history"
 	"worldgen/internal/mind"
 )
 
@@ -33,25 +32,26 @@ type SellRec struct {
 	Taught           int
 }
 
-func flattenContracts(w *history.World) ([]ContractRec, []SellRec) {
+func flattenContracts(w *world) ([]ContractRec, []SellRec) {
 	var out []ContractRec
-	for _, k := range w.Contracts {
-		b, s := w.Civs[k.Buyer], w.Civs[k.Seller]
-		r := ContractRec{Seed: w.Seed, Ask: k.Ask.Kind.String(), Pay: k.Pay.Kind.String(), State: k.State.String(), By: "buyer",
+	for _, k := range w.State.Contracts {
+		b, s := w.civ(k.Buyer), w.civ(k.Seller)
+		r := ContractRec{Seed: w.seed(), Ask: k.Ask.Kind, Pay: k.Pay.Kind, State: k.State, By: "buyer",
 			Tribute: k.Tribute, BoughtOff: k.BoughtOff, Stars: b.Starfaring > 0 && s.Starfaring > 0}
 		if k.By == k.Seller {
 			r.By = "seller"
 		}
-		if k.State == history.Running {
-			r.Years = float64(w.Present - k.Formed)
+		if k.State == "running" {
+			r.Years = float64(w.Dossier.Present - k.Formed)
 		} else if k.Ended > 0 && k.Formed > 0 {
 			r.Years = float64(k.Ended - k.Formed)
 		}
 		out = append(out, r)
 	}
 	var sells []SellRec
-	for _, c := range w.Civs {
-		sells = append(sells, SellRec{Seed: w.Seed, Stars: c.Starfaring > 0, Sellsword: c.Sellsword, Hired: c.Tally.Hired, Sold: c.Tally.Sold, Broke: c.Tally.Broke, Tributes: c.Tally.Tributes, Taught: len(c.Taught)})
+	for _, c := range w.State.Civs {
+		t := c.Batch.Tally
+		sells = append(sells, SellRec{Seed: w.seed(), Stars: c.Starfaring > 0, Sellsword: c.Sellsword, Hired: t.Hired, Sold: t.Sold, Broke: t.Broke, Tributes: t.Tributes, Taught: len(c.Taught)})
 	}
 	return out, sells
 }

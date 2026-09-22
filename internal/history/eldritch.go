@@ -85,6 +85,7 @@ func (w *World) gainPower(c *Civ, p *species.Power) {
 	if !c.Species.AddPower(p.Key) {
 		return
 	}
+	w.gainedPower(c, p.Key)
 	c.Tally.Deepened++
 	w.stir(c)
 	w.told(FDeepened, c, nil, c.Home).with(P{"power": p.Key})
@@ -99,7 +100,7 @@ func (w *World) bring(c *Civ, p *species.Power, fire bool) {
 	switch {
 	case p.Node != "":
 		n := tech.Get(p.Node)
-		c.Known[n.Key] = true
+		w.know(c, n.Key)
 		how := "deepening"
 		if !fire {
 			how = "born"
@@ -194,7 +195,7 @@ func (w *World) mirrored(a, b *Civ) {
 		if w.R.Float64() >= t.Mirror {
 			continue
 		}
-		s.Scars[ScarSignal] = true
+		w.scar(s, ScarSignal)
 		s.Morale -= 1
 		w.event(KMirrored, s, m, -1, P{})
 		w.recompute(s)
@@ -208,7 +209,7 @@ func (w *World) sleep(c *Civ) {
 	if c.Asleep || !c.Active() {
 		return
 	}
-	c.Asleep = true
+	w.setAsleep(c, true)
 	c.Slept = w.Now
 	c.Tally.Sleeps++
 	c.Voyages = nil
@@ -227,7 +228,7 @@ func (w *World) rouse(c, by *Civ) {
 	if by == c {
 		by = nil // its own doing: the Find beneath its own cities
 	}
-	c.Asleep = false
+	w.setAsleep(c, false)
 	c.Tally.Wakings++
 	w.recompute(c)
 	w.event(KRoused, c, by, -1, P{})

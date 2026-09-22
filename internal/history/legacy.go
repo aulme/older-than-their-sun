@@ -45,12 +45,12 @@ func (w *World) leaveRuin(c *Civ, wk Work, kind string) {
 		// an inherited work goes back to the substrate, in whatever shape the ending left it
 		l := w.Legacies[wk.Legacy]
 		if w.R.Float64() < wr.Destroy {
-			l.State = Lost
+			w.setState(l, Lost)
 			return
 		}
-		l.State = Buried
-		l.Star = wk.Star
-		l.Cond = max(l.Cond, wr.Leave)
+		w.moveRemain(l, wk.Star)
+		w.setState(l, Buried)
+		w.setCond(l, max(l.Cond, wr.Leave))
 		return
 	}
 	st := tech.Structures[wk.Key]
@@ -59,7 +59,7 @@ func (w *World) leaveRuin(c *Civ, wk Work, kind string) {
 	}
 	l := &Legacy{ID: len(w.Legacies), Age: -1, Maker: c.ID, Kind: Structure, Star: wk.Star, Node: wk.Node, People: -1, Finder: -1, Source: -1, Plague: -1, Cond: wr.Leave, Hardy: st.Hardy}
 	l.Portrait = wk.Key
-	w.Legacies = append(w.Legacies, l)
+	w.addLegacy(l)
 	w.testament(c, l)
 }
 
@@ -80,7 +80,7 @@ func (w *World) leaveRelic(c *Civ, node string, star int) {
 		rk = tables.portraits.Relics[len(tables.portraits.Relics)-1]
 	}
 	l := &Legacy{ID: len(w.Legacies), Age: -1, Maker: c.ID, Kind: Artifact, Star: star, Node: node, People: -1, Finder: -1, Source: -1, Plague: -1, Cond: wr.Leave, Hardy: rk.Hardy, Portrait: rk.Key}
-	w.Legacies = append(w.Legacies, l)
+	w.addLegacy(l)
 	w.testament(c, l)
 }
 
@@ -113,9 +113,9 @@ func (w *World) tickLegacies() {
 		}
 		if w.chance(0.0004 * l.Hardy) {
 			if l.Cond == Ruin {
-				l.State = Lost
+				w.setState(l, Lost)
 			} else {
-				l.Cond++
+				w.setCond(l, l.Cond+1)
 			}
 		}
 	}
@@ -191,8 +191,8 @@ func (w *World) takeOver(c *Civ, star int) {
 		if l.Maker < 0 || l.Kind != Structure || l.Star != star || l.State != Buried || !c.Known[l.Node] || l.Cond > Derelict {
 			continue
 		}
-		l.State = Wielded
-		l.Finder = c.ID
+		w.setState(l, Wielded)
+		w.setFinder(l, c.ID)
 		key := tech.Get(l.Node).Structure()
 		c.Works = append(c.Works, Work{Key: key, Node: l.Node, Star: star, Legacy: l.ID})
 		c.Structures[key]++

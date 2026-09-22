@@ -231,11 +231,11 @@ func init() {
 	def(&Filter{
 		Key: "atomic",
 		Overcome: func(w *World, c *Civ) {
-			c.Boons[BoonUnity] = true
+			w.boon(c, BoonUnity)
 			w.faced(c, "atomic", "overcome", "", -1)
 		},
 		Scar: func(w *World, c *Civ) {
-			c.Scars[ScarAtomicTaboo] = true
+			w.scar(c, ScarAtomicTaboo)
 			w.faced(c, "atomic", "scarred", "", c.Home)
 		},
 		Decline: func(w *World, c *Civ) {
@@ -256,7 +256,7 @@ func init() {
 			w.faced(c, "overshoot", "overcome", "", c.Home)
 		},
 		Scar: func(w *World, c *Civ) {
-			c.Scars[ScarStewardship] = true
+			w.scar(c, ScarStewardship)
 			w.faced(c, "overshoot", "scarred", "", -1)
 		},
 		Decline: func(w *World, c *Civ) {
@@ -270,11 +270,11 @@ func init() {
 	def(&Filter{
 		Key: "machines",
 		Overcome: func(w *World, c *Civ) {
-			c.Boons[BoonAligned] = true
+			w.boon(c, BoonAligned)
 			w.faced(c, "machines", "overcome", "", -1)
 		},
 		Scar: func(w *World, c *Civ) {
-			c.Scars[ScarNoMachines] = true
+			w.scar(c, ScarNoMachines)
 			c.Locked["computation"] = true
 			w.faced(c, "machines", "scarred", "", -1)
 		},
@@ -293,7 +293,7 @@ func init() {
 			w.faced(c, "distance", "overcome", "", -1)
 		},
 		Scar: func(w *World, c *Civ) {
-			c.Scars[ScarCentralism] = true
+			w.scar(c, ScarCentralism)
 			w.faced(c, "distance", "scarred", "", c.Home)
 		},
 		Decline: func(w *World, c *Civ) {
@@ -321,7 +321,7 @@ func init() {
 			w.faced(c, "silence", "overcome", "", -1)
 		},
 		Scar: func(w *World, c *Civ) {
-			c.Scars[ScarMortality] = true
+			w.scar(c, ScarMortality)
 			w.faced(c, "silence", "scarred", "", -1)
 		},
 		Decline: func(w *World, c *Civ) {
@@ -331,11 +331,11 @@ func init() {
 	def(&Filter{
 		Key: "replication",
 		Overcome: func(w *World, c *Civ) {
-			c.Boons[BoonSwarm] = true
+			w.boon(c, BoonSwarm)
 			w.faced(c, "replication", "overcome", "", -1)
 		},
 		Scar: func(w *World, c *Civ) {
-			c.Scars[ScarNoSelfCopies] = true
+			w.scar(c, ScarNoSelfCopies)
 			w.faced(c, "replication", "scarred", "", -1)
 		},
 		Decline: func(w *World, c *Civ) {
@@ -361,14 +361,14 @@ func init() {
 			w.faced(c, "stellar", "overcome", "", c.Home)
 		},
 		Scar: func(w *World, c *Civ) {
-			c.Scars[ScarStarFear] = true
+			w.scar(c, ScarStarFear)
 			c.Locked["exotic"] = true
 			w.faced(c, "stellar", "scarred", "", c.Home)
 		},
 		Decline: func(w *World, c *Civ) {
 			w.faced(c, "stellar", "declined", "", c.Home)
 			w.loseSystem(c, c.Home, "wounded_star", because("star_broken"))
-			w.Bio[c.Home] = BioNone
+			w.setBio(c.Home, BioNone)
 			if len(c.Systems) == 0 || w.R.Float64() < 0.5 {
 				w.endCiv(c, Extinct, because("star_broken"))
 			} else {
@@ -382,7 +382,7 @@ func init() {
 			w.faced(c, "transcend", "overcome", "", -1)
 		},
 		Scar: func(w *World, c *Civ) {
-			c.Scars[ScarLeftBehind] = true
+			w.scar(c, ScarLeftBehind)
 			w.faced(c, "transcend", "scarred", "", -1)
 		},
 		Decline: func(w *World, c *Civ) {
@@ -404,7 +404,7 @@ func init() {
 			w.faced(c, "door", "overcome", "", -1)
 		},
 		Scar: func(w *World, c *Civ) {
-			c.Scars[ScarDoor] = true
+			w.scar(c, ScarDoor)
 			w.tear(0.3)
 			s := w.sleeperStar(c)
 			if s < 0 {
@@ -439,12 +439,11 @@ func init() {
 		Key: "revolt",
 		Overcome: func(w *World, c *Civ) {
 			m := w.Civs[c.Master]
-			c.Master = -1
-			c.Vassal = false
-			c.Scars[ScarChains] = true
+			w.setMaster(c, -1, false)
+			w.scar(c, ScarChains)
 			w.event(KFaced, c, m, -1, P{"filter": "revolt", "outcome": "overcome", "way": ""})
 			if !m.Living() && w.Owner[m.Home] < 0 {
-				w.Owner[m.Home] = c.ID
+				w.setOwner(m.Home, c.ID)
 				c.Systems = append(c.Systems, m.Home)
 				w.faced(c, "revolt", "overcome", "home", m.Home)
 			}
@@ -491,7 +490,7 @@ func init() {
 		Key:      "faith",
 		Overcome: func(w *World, c *Civ) {}, // most peoples manage it; the legends only note the ones that did not
 		Scar: func(w *World, c *Civ) {
-			c.Scars[ScarChurch] = true
+			w.scar(c, ScarChurch)
 			w.faced(c, "faith", "scarred", "", -1)
 			w.churchMorality(c)
 		},
