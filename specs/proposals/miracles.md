@@ -16,9 +16,9 @@ Point 2 is the budget nobody sees. Five new causal miracles at the present wear 
 
 ## Scope
 
-**In.** Eight new miracle rows and their filters. The three things on the list that are hazards, worlds or legacies rather than powers, placed where they belong. The wall budget.
+**In.** Eight new miracle rows and their filters. The wonders (unique, claimed, no route), the hazard, the event and the legacy form. The Remnant as a people under three rules. The wall budget.
 
-**Out.** The Remnant (below: its own proposal, unscheduled). Anything that needs a second galaxy state.
+**Out.** Uplift, cut. A second galaxy state, which nothing here needs.
 
 ## Design
 
@@ -36,7 +36,11 @@ Point 2 is the budget nobody sees. Five new causal miracles at the present wear 
 
 **The leviathan lure** — call a leviathan to a known place; it swallows what is there and delves back; a chance it comes to the caller's seat instead. *Causal.* The backfire is the filter, built in, which is the shape every miracle here should have. Needs the leviathans (below).
 
-**Mind control** — compel a people to make a chosen decision. This has to earn its row against `chorus`, which already takes a people at contact: memetic engineering is *a thought that takes root*, and this would be *one decision forced, from a distance, at will*. Different in kind, and a genuinely new lever because it reaches into the council rather than the disposition — which is the one thing `leaders.md` says a leader may never do, so it should be the miracle that can. *Filter:* a mind that has been in other minds.
+**Delusion** — not a decision forced, but the inputs to it corrupted: the victim decides freely, by its own procedure, on a picture of the world that is a lie. This is better than the compulsion it replaces on every count, and it is native to the model. `Civ.Intel` is what a people believes about each other people — the level seen with the noise of the seeing, the guard in the sky, the guns, the ships standing everywhere, the relief, where and when the look was taken, and whether a plague was raging in them — and it is exactly what the appraisal reads before the council strikes, scouts, watches or asks. `look()` already builds one with noise in it. A delusion is a look with a lie in it.
+
+So the deluded people attacks the strong believing them weak, cowers from the weak believing them strong, and quarantines a people that was never sick — that last being the sharpest, since a false `Sick` reaches the suspicion and quarantine machinery and turns a people against a neighbour without a shot. It never touches the council, which keeps `leaders.md`'s line intact: **the disposition and the picture may be moved; the procedure may not.** And it is better fiction, because nobody is a puppet — they are wrong, and they are wrong in their own voice.
+
+A deeper second form is available if wanted and should be decided separately: planting a false *tale*, which the telling already supports through `Blamed` and `scapegoat`. That is a lie about the past rather than about the present, and it is the one that survives the miracle's holder. *Filter:* a people that makes pictures for others stops being able to tell which of its own are its own.
 
 **Memetic camouflage**, read as: the anti-memetic stops being a species modifier and becomes a miracle held by the route `born`. This is a refactor of a subsystem that already exists (`antimemetic.go`, `gap.go`, `perceives`, `Antimemetic Resilience` on the tree) and not a new power, and it is the right shape — the anti-memetic is already the dominant fact about whoever holds it, and `born` is already a route. It also opens the routes the modifier could not have: a people that *finds* the anti-memetic, or wields it and loses it. Care needed, because every use of `perceives` is in the blast radius.
 
@@ -44,25 +48,37 @@ Point 2 is the budget nobody sees. Five new causal miracles at the present wear 
 
 **Uplift** — triple research, triple wisdom. It fits the frame and tells no story: it makes a people better at what it was already doing, and the spec already records what happens when a bonus has no shape (the cultural nodes on the tree gave everyone 2.4 Social and quadrupled lifetimes: inflation, not character). Uplift is also a thing that is *done to you by someone else*, which the model already has in `Uplifts` and `Sire`. Recommendation: not a row; if it is wanted, it is what a patron does.
 
-### The ones that are not miracles
+### Wonders: the ones that are not miracles
 
-Nobody leaps to a planet from a deep spine of the tree. These break rule 1, and each has a home that already exists.
+Nobody leaps to a planet from a deep spine of the tree, so these break rule 1. Three of them are one thing and want a name: **wonders** — unique, at most one per galaxy, placed at generation or left by an elder, **claimed rather than gained**, with no route into them at all. The word is already half in use for this: `species/generate.go` calls the deep pass that seeds past ages "where the wonders and the leftovers come from". The other two are not wonders either; they are a hazard and an event, and they already have homes.
 
-**Gehenna** is a **world**, at most one per galaxy, claimed rather than gained: a world nothing should live on, whose holder is wholly immune to it and to the same conditions everywhere, whose survival and military are lifted while it is held, whose tech prerequisites the world lacks are moot, rich in iron and energy so ships are cheap there, and — the part that matters — whose holder **knows how to make more**, as a construction project needing no tech, and wants to. It is the best thing on the list after the evil eye, because it is the only one that is an *engine*: it changes what its holder wants and gives it a programme. That makes it step 10's business, not a data row.
+**Gehenna** is a wonder and the best thing on the list after the evil eye, because it is the only one that is an *engine*. A world nothing should live on, whose holder is wholly immune to it and to the same conditions everywhere, whose survival and military are lifted while it is held, whose missing prerequisites are moot, rich in iron and energy so ships are cheap there — and whose holder **knows how to make more**, as a construction project needing no tech, and wants to. It changes what its holder wants and hands it a programme it can execute. That makes it step 10's business as much as this proposal's.
 
-**Eden** is the other world, and it is a wall where Gehenna is an engine: perfect, unattackable because nobody can bring themselves, immune to disease and to cosmic threat and to other miracles, enormous carrying capacity. Every clause is an immunity, and step 6's finding is that this galaxy's disease is stasis. Its one engine is the constraint — a people incapable of cruelty or deceit, growing vast, able to do nothing with it: a helpless paradise the galaxy orbits and cannot touch, and a prize that transforms whoever finally works out how to take it. Take Gehenna first; Eden needs that constraint to be real, and it collides with `Morality`, which already decides what a people counts as wrong.
+**Eden** is the other wonder, and its stasis is the point rather than the objection. It is the calm eye: perfect, unattackable because nobody can bring themselves, immune to disease, to cosmic threat and to other miracles, enormous in carrying capacity, and its people incapable of cruelty or deceit. Nothing else in this galaxy persists — that is the finding step 6 was written about, and every other mechanism in this plan exists to make things end. Eden is the one fixed point, and a fixed point is worth having precisely because everything around it moves: it is the thing every age's legends can agree on while agreeing on nothing else, the coordinate the rest of the record is read against. Past ages are myth in this model, one tick per rise and fall, so Eden can be in those myths too at almost no cost, which is what makes it *the* constant rather than this age's constant.
 
-**Leviathans** are a **cosmic hazard**, beside the sleepers, the transmitters and the elders: colossal things that surface out of the state beneath, swallow fleets, structures, moons or worlds, and delve back; sighted naturally almost never, and most often during a great battle. Cheap if they are an event at a battle, and they give the lure something to call.
+**Leviathans** are a **cosmic hazard**, beside the sleepers, the transmitters and the elders: colossal things that surface out of the state beneath, swallow fleets, structures, moons or worlds, and delve back; sighted naturally almost never, and most often during a great battle. Cheap as an event at a battle, and they give the lure something to call.
 
-**The mirror** is an **event**, not a power: a people finds an exact copy of itself on an identical world at a star that was not there, histories identical down to the individuals, each certain it is the real one. Nearly free — it clones a `Civ` and its telling, which `prune` already bounds — and it is the purest piece of dread on the list.
+**The mirror** is an **event**: a people finds an exact copy of itself on an identical world at a star that was not there, histories identical down to the individuals, each certain it is the real one. Nearly free — it clones a `Civ` and its telling, which `prune` already bounds — and the purest piece of dread on the list.
 
-**The fleet of the elders** is a **legacy**: a found thing, wielded, no upkeep, no crew, a fixed and very high military level, a chance to resist other miracles. That is exactly what the Find already does with wielded artifacts and what the fields already do with salvage. A form, not a miracle.
+**The fleet of the elders** is a **legacy form**: a found thing, wielded, no upkeep, no crew, a fixed and very high military level, a chance to resist other miracles. Exactly what the Find already does with wielded artifacts and the fields with salvage.
 
-**The Remnant** — a sealed volume where one or more peoples are still in a previous age, fully teched, holding miracles, unable to leave, the sky inside looking as it did then, nothing crossing outward and everything crossing inward — is the most evocative thing on the list and the most expensive by a wide margin. It needs a second galaxy state and a boundary rule on every mechanism that crosses space: reach, fleets, sightings, trade, tales, plagues, the Find. It is a proposal of its own. Written down here so it is not lost; not scheduled.
+### The Remnant, at a tenth of the cost I first put on it
+
+I costed it as a second galaxy state with a boundary rule on every mechanism that crosses space. It is not that. It is three rules on a people:
+
+- **It cannot leave its systems.** Nothing launches outward: no colony, no campaign, no scout. The model has the shape already — `Aloft` and `Rested` are states that change what a people may do with its ships, and `presenceCouncil` is the council of a people that does not launch.
+- **It can receive matter and cannot send it.** One condition in `sendGoods`. It may be traded *into*, and pays in the only thing that crosses: what it knows.
+- **It is born to the whole tree and one or more miracles.** `born` is already a route.
+
+The different sky is flavour, written once. What comes out of the three rules is better than what I imagined I was buying: a people of enormous knowledge, permanently harmless, that can be visited, learned from, besieged — and that can never retaliate anywhere but at home, where it is formidable. An oracle you may rob. That is a cost like the nomad's or the parasite's, not like a second galaxy, and it belongs in the stages.
 
 ### The wall budget
 
-Six of the eight new rows are causal. At the present rates that is roughly a tripling of what a miracle-holding galaxy does to the wall, and the wall is shared. Three ways to pay, and the choice should be deliberate: lower the wear per miracle so the total holds; keep the rates and accept a galaxy where the beneath leaks much more (sleepers waking, transmitters starting, every miracle's filter biting), which is a legitimate and interesting answer; or make the new causal ones rarer than the old. Measure first — what the wall reaches by the present, over the batch, before and after.
+**Decided: the wall ends up roughly where it is now.** The new rows pay for themselves rather than the galaxy paying for them.
+
+The arithmetic is not the obvious one, and it is worth writing down so the tuning is not done by guess. Miracles are **era-4 nodes on the tech tree**, each behind its own two prerequisites, so this is not a fixed pool being redistributed: more rows means more peoples whose spine happens to reach one, and holdings go up. Two other channels move with it — the `born` route, and elder artifacts, of which `miracleShare` says two in five stand for a miracle rather than an art, drawn from the miracle list.
+
+So it is one number solved by measurement, not by argument: take the batch, count **miracle-holdings summed over the age** and the wall at the present before and after the new rows, and set the new causal ones' wear so the second matches the first. If the holdings rise more than the wear can absorb without making the new miracles trivially thin, the fallback is the other lever — make the new causal ones harder to reach rather than cheaper to hold.
 
 ## Implementation notes
 
@@ -70,21 +86,22 @@ Six of the eight new rows are causal. At the present rates that is roughly a tri
 - **The evil eye waits for step 7.** Before the per-people streams it is a rewrite of every call site; after them it is a wrapper on two streams.
 - **The barrier** is the only one that needs a design pass of its own before it is costed: `Near`, the hops, the lines, the interception and the blast rules all have to ask it.
 - **Memetic camouflage** is a refactor with a wide blast radius (`perceives` is called from everywhere) and no new behaviour; it should not be bundled with the new rows.
-- Leviathans and the mirror are events; Gehenna and Eden are worlds placed at generation; the elder fleet is a legacy form. None of them is a miracle row and none should be filed as one.
+- Leviathans are a hazard and the mirror an event; Gehenna and Eden are wonders placed at generation; the elder fleet is a legacy form; the Remnant is a people. None of them is a miracle row and none should be filed as one.
+- **Delusion writes `Intel`**, which is a struct `look()` already builds; the work is the choosing of the lie, not the writing of it.
 
 ## Open questions
 
 1. **How many is too many?** Eight to sixteen halves what each one means. A defensible answer is that the new ones are rarer — found and wielded rather than born and leapt — so a galaxy still holds about as many miracles as it does now, spread over more kinds.
 2. **Which way to pay for the wall** (above). It wants the measurement before the argument.
-3. **Does mind control reach the council or only the disposition?** Reaching the council is the whole point and is also the first thing in the model that overrides a people's decision procedure. `leaders.md` deliberately refuses that power to a leader; giving it to a miracle is consistent, but it is the line being crossed on purpose.
-4. **Is Eden's constraint real enough to carry it?** If incapable of cruelty or deceit does not actually stop it doing anything it wants to do, Eden is a pile of immunities and should wait.
+3. **Does delusion also plant false tales, or only false looks?** The false look is this stage's work and is bounded. The false tale outlives its planter and reaches the grudges, the monster reckoning and the dials, which is a much larger thing to let loose.
+4. **Does Eden appear in the myths of every past age, or only stand in this one?** Every age is the stronger claim and nearly free, since past ages are one tick each; it is also a commitment that Eden is older than anything and was never made.
 5. **Does Gehenna's conversion drive belong to step 10's tuning?** It is a programme that makes its holder expand for a reason that is not conquest, which is the sort of thing that step's arc wants, and the sort of thing that step's gate would notice.
 
 ## Stages
 
-1. **The cheap rows and their filters**: the evil eye, echoes, empathy, skip. *Gate:* each observed held, used and failed at; the wall measured before and after.
-2. **The hazards and the events**: leviathans, the lure, the mirror, the elder fleet as a legacy form. *Gate:* a leviathan sighted at a battle; a lure that backfired; a mirror pair both believing themselves real.
-3. **The worlds**: Gehenna, then Eden if its constraint survives question 4. *Gate:* a Gehenna holder observed converting a second world; the arc measures of step 10 not degraded.
+1. **The cheap rows and their filters**: the evil eye, echoes, empathy, skip, delusion. *Gate:* each observed held, used and failed at; a deluded people observed striking or sparing on a picture that was false; the wall measured before and after and the wear solved so it lands where it started.
+2. **The hazards and the events**: leviathans, the lure, the mirror, the elder fleet as a legacy form. *Gate:* a leviathan sighted at a battle; a lure that backfired onto its caller's seat; a mirror pair both believing themselves real.
+3. **The wonders and the Remnant**: Gehenna, Eden, and the Remnant's three rules. *Gate:* a Gehenna holder observed converting a second world and its wanting measurable in the dials; Eden present, untaken and named in the myths of an earlier age; a Remnant people traded into, taught from, and never once launching.
 4. **The barrier**, after its own design pass. *Gate:* a corridor closed and routed around in the record.
 
-Unscheduled: memetic camouflage as a refactor; the Remnant as its own proposal.
+Unscheduled: memetic camouflage as a refactor, which has a wide blast radius and no new behaviour.
