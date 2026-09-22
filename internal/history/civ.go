@@ -185,10 +185,14 @@ func insertCivStep(after string, s civStep) {
 }
 
 func (w *World) tickCivs() {
+	phaseR := w.R // what the phase draws outside any people's turn
 	for _, c := range w.Civs {
 		if !c.Living() {
 			continue
 		}
+		// a people's turn draws from the people's own stream, so what one
+		// people does cannot renumber another's history; see streams.go
+		w.R = w.civStream(c)
 		if c.Stage == Remnant {
 			w.tickRemnant(c)
 			w.wear(c) // a remnant's memory goes the same way as everything else of theirs
@@ -239,6 +243,7 @@ func (w *World) tickCivs() {
 			w.forgive(c)
 		}
 	}
+	w.R = phaseR
 	if w.count(0.1) > 0 {
 		w.contacts()
 	}

@@ -28,21 +28,21 @@ func newWorld(seed uint64, cfg Config) *World {
 	if cfg.Tuning == nil {
 		cfg.Tuning = mind.Default()
 	}
-	var src rand.Source = rand.NewPCG(seed, seed^0x9E3779B97F4A7C15)
-	var draws *drawCount
+	w := &World{Cfg: cfg, Seed: seed, factsAt: map[int][]int{}, streams: map[string]*rand.Rand{}}
 	if cfg.Profile {
 		// under -phases only: what each step draws, which is what says
 		// whether it could ever be run beside another people's
-		draws = &drawCount{src: src}
-		src = draws
+		w.draws = &drawCount{}
 	}
-	r := rand.New(src)
 	rg, err := galaxy.RegionByName(cfg.Region)
 	if err != nil {
 		rg, _ = galaxy.RegionByName("sol")
 	}
-	g := galaxy.GenerateAt(r, rg, cfg.Stars, cfg.Radius, cfg.Thickness)
-	w := &World{Cfg: cfg, Seed: seed, G: g, R: r, Law: g.Law, Hazard: g.Law.Hazard(), factsAt: map[int][]int{}, draws: draws}
+	// the field is the galaxy stream's alone, so it is the same field
+	// whatever any mechanic of the age is set to (streams.go)
+	w.R = w.stream("galaxy")
+	g := galaxy.GenerateAt(w.R, rg, cfg.Stars, cfg.Radius, cfg.Thickness)
+	w.G, w.Law, w.Hazard = g, g.Law, g.Law.Hazard()
 	n := len(g.Stars)
 	w.Bio = make([]BioState, n)
 	w.Owner = make([]int, n)
@@ -53,9 +53,16 @@ func newWorld(seed uint64, cfg Config) *World {
 	if g.Sol >= 0 {
 		w.setBio(g.Sol, BioSimple)
 	}
+	for i := range g.Stars {
+		if g.Stars[i].Hab > 0 {
+			w.habitable++ // the decline index's denominator does not move
+		}
+	}
 	w.Sources, w.sourcesAt = naturalSources(g)
 	w.Reservoir = map[int]*Reservoir{}
+	w.R = w.stream("cycle")
 	w.makeCycle()
+	w.R = w.stream("age")
 	w.phases = []phase{
 		{"life", (*World).life},
 		{"cosmic", (*World).cosmic},
@@ -70,24 +77,27 @@ func newWorld(seed uint64, cfg Config) *World {
 		{"expeditions", (*World).tickExpeditions},
 		{"objects", (*World).tickObjects},
 		{"legacies", (*World).tickLegacies},
+		{"decline", (*World).tickDecline}, // before the hazard, so the hazard reads the index of its own tick
 		{"hazard", (*World).updateHazard},
 	}
 	return w
 }
 
-// drawCount is the random source with a tally of what has been drawn
-// from it. It wraps the source rather than the calls, so no draw can
-// escape it, and it is only in the stream under -phases, where the
-// count is what is wanted; the numbers it hands out are the source's
-// own, so a counted run is the same history as an uncounted one.
-type drawCount struct {
+// drawCount is the tally of what every stream has drawn. Each stream
+// wraps its source rather than its calls, so no draw can escape the
+// count, and the wrapping is only there under -phases, where the count
+// is what is wanted; the numbers handed out are the source's own, so a
+// counted run is the same history as an uncounted one.
+type drawCount struct{ n uint64 }
+
+type counted struct {
 	src rand.Source
-	n   uint64
+	d   *drawCount
 }
 
-func (d *drawCount) Uint64() uint64 {
-	d.n++
-	return d.src.Uint64()
+func (c *counted) Uint64() uint64 {
+	c.d.n++
+	return c.src.Uint64()
 }
 
 // phase is one stage of the tick. The tick is the ordered list of them: a
@@ -115,6 +125,7 @@ func (w *World) runPhases() {
 	w.Ticks++
 	if !w.Cfg.Profile {
 		for _, p := range w.phases {
+			w.R = w.stream(p.Name) // a phase's draws are that phase's; see streams.go
 			p.Run(w)
 		}
 		return
@@ -126,6 +137,7 @@ func (w *World) runPhases() {
 	}
 	for _, p := range w.phases {
 		start := time.Now()
+		w.R = w.stream(p.Name)
 		p.Run(w)
 		w.phaseTime[p.Name] += time.Since(start)
 	}
@@ -182,24 +194,28 @@ func (w *World) runAge() {
 		if cfg.Sample != nil {
 			cfg.Sample(w)
 		}
-		active := w.risingCount()
+		d := w.Decline // the decline phase has run: the index is this tick's
 		f := w.fertility()
 		if (y-cfg.Dawn)%1_000_000 == 0 {
 			if w.Cfg.Debug {
 				all := w.activeCount()
-				w.event(KDebug, nil, nil, -1, P{"text": sprintf("[debug: %d active, %d of them rising, %d remnants, fertility %.2f, hazard %.2f, wall %.2f]", all, active, len(w.Civs)-all-w.deadCount(), f, w.Hazard, w.Thin)})
+				w.event(KDebug, nil, nil, -1, P{"text": sprintf("[debug: %d active, %d of them rising, %d remnants, decline %.2f, fertility %.2f, hazard %.2f, wall %.2f]", all, d.RisingNow, len(w.Civs)-all-w.deadCount(), d.Index, f, w.Hazard, w.Thin)})
 			}
 			if w.Cfg.Profile {
 				w.profileLine()
 			}
 		}
-		if w.Waning == 0 && (cfg.FineActive == 0 || active <= cfg.FineActive) && f < cfg.FineFertility {
+		if w.Waning == 0 && d.Crossed != 0 {
 			w.Waning = y
-			w.event(KWaning, nil, nil, -1, P{})
+			w.Decline.AtWaning = d.Index
+			w.event(KWaning, nil, nil, -1, P{"index": d.Index, "held": d.Held, "rising": d.Rising, "births": d.Births})
 		}
-		if !ended && (cfg.EndActive == 0 || active <= cfg.EndActive) && f < w.Cycle.Ends {
+		// the end: the index, or the fertility floor until the force
+		// lands and takes the floor with it (decline.md stage 3)
+		if !ended && (d.Fell != 0 || f < w.Cycle.Ends) {
 			ended = true
-			stopAt = y + Year(w.R.Float64()*float64(cfg.Linger))
+			w.Decline.ByIndex = d.Fell != 0 // and the rest fell through to the floor
+			stopAt = y + Year(w.stream("age").Float64()*float64(cfg.Linger))
 		}
 		if ended && y >= stopAt {
 			break
@@ -235,21 +251,6 @@ func (w *World) activeCount() int {
 	n := 0
 	for _, c := range w.Civs {
 		if c.Active() {
-			n++
-		}
-	}
-	return n
-}
-
-// risingCount is the peoples still rising: active, and their ways not
-// yet set. Few still rise, and those that stand are old: that is the
-// waning. The default config sets no bar on it (FineActive and EndActive
-// zero), since under ossification the count never falls: the sky ends
-// the age.
-func (w *World) risingCount() int {
-	n := 0
-	for _, c := range w.Civs {
-		if c.Active() && !c.Ossified && c.Stiff < 1 {
 			n++
 		}
 	}

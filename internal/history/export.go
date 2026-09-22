@@ -34,6 +34,13 @@ func (w *World) exportDossier(at string, r *record.Run) *record.Dossier {
 		Cycle:     record.Cycle{Period: w.Cycle.Period, Fade: w.Cycle.Fade, Surges: w.Cycle.Surges, Floor: w.Cycle.Floor, Ends: w.Cycle.Ends},
 		Fertility: w.FertilityNow(), NextDawn: w.NextSurge(), Hazard: w.Hazard,
 		Wall: record.Wall{Value: w.Thin, Stage: w.thinStage()},
+		Decline: record.Decline{
+			Index: w.Decline.Index, Held: w.Decline.Held, Rising: w.Decline.Rising, Births: w.Decline.Births,
+			HeldNow: w.Decline.HeldNow, RisingNow: w.Decline.RisingNow, BirthsNow: w.Decline.BirthsNow,
+			PeakHeld: w.Decline.PeakHeld, PeakRising: w.Decline.PeakRising, PeakBirths: w.Decline.PeakBirths,
+			PeakHeldAt: w.Decline.PeakHeldAt, AtWaning: w.Decline.AtWaning,
+			Crossed: w.Decline.Crossed, Fell: w.Decline.Fell, ByIndex: w.Decline.ByIndex,
+		},
 	}
 	l := g.Law
 	p := record.Place{

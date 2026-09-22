@@ -237,7 +237,7 @@
     {"kind": "yielded", "params": ["outcome", "war", "years", "gone", "short"], "meaning": "The subject yielded to the object and was ridden, made a vassal, or enslaved, after years of war and the worlds gone; the taking is its own fact."},
     {"kind": "slow_trade", "params": [], "meaning": "Slow messages crossed the dark between the subject and the object for generations, and then trade began."},
     {"kind": "unfathomed", "params": [], "meaning": "The subject, in a dark age, forgot how to speak to the object."},
-    {"kind": "waning", "params": [], "meaning": "The age is waning: few still rise, and those that stand are old."},
+    {"kind": "waning", "params": ["index", "held", "rising", "births"], "meaning": "The age is waning: the decline index has stood at the waning bar. The parameters are the index and its three terms, each the present against the age's own height, so the line can say what it read."},
     {"kind": "star_dead", "params": [], "meaning": "The star died with life on its worlds and nobody's holdings there; its worlds froze."},
     {"kind": "civ_born", "params": ["species", "master", "powers"], "meaning": "A people came to be at its cradle star: of the blood species, under master (a people's id, or -1), with the powers its blood held at the time.", "silent": true},
     {"kind": "world_held", "params": [], "meaning": "The people took the star into its holding.", "silent": true},

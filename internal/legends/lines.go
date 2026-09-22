@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"regexp"
 	"slices"
+	"sort"
 	"strings"
 
 	"worldgen/internal/galaxy"
@@ -386,11 +387,27 @@ var lines = map[record.Kind]string{
 	record.KSlowTrade:        "Slow messages cross the dark between the {S} and the {O} for generations, and then trade.",
 	record.FBrokered:         "The {S}, who know both, speak for the {O} to the {to:civ}.",
 	record.KUnfathomed:       "The {S} forget how to speak to the {O}.",
-	record.KWaning:           "The age is waning. Few still rise, and those that stand are old.",
 }
 
 // lineFns pick a template by the event's parameters.
 var lineFns = map[record.Kind]func(v *view, e *record.Event) string{
+	// The waning says what it read. The three terms are the present
+	// against the age's own height — what is held, what is still rising,
+	// what is being born — and the line names the two that have fallen
+	// furthest, rather than claiming the same thing of every age.
+	record.KWaning: func(v *view, e *record.Event) string {
+		held, rising, births := e.Float("held"), e.Float("rising"), e.Float("births")
+		said := []struct {
+			term float64
+			say  string
+		}{
+			{held, "of everything the age ever held, " + partWord(1-held) + " is dark"},
+			{rising, partWord(rising) + " of the peoples that once rose still rise"},
+			{births, "new peoples arise at " + partWord(births) + " of the rate they did"},
+		}
+		sort.SliceStable(said, func(i, j int) bool { return said[i].term < said[j].term })
+		return "The age is waning: " + said[0].say + ", and " + said[1].say + "."
+	},
 	record.KLifeArose: func(v *view, e *record.Event) string {
 		st := v.g.Stars[e.Star]
 		st.Class = e.Str("class")[0]

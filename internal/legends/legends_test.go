@@ -23,11 +23,15 @@ import (
 // It was re-pinned at the optimisation step, where a party that is the
 // teller and the subject of its clause began to say "we" where it said
 // "us" ({OS} and the reflexives in telling.go); that moved 840 lines of
-// this seed and nothing else.
+// this seed and nothing else. It was re-pinned again at step 7, where
+// the one random source became a stream per phase and per people, the
+// decline index took over the waning and the end (and the waning's line
+// began to say what it read), and the wearing went to every fourth
+// tick: every history was renumbered once.
 // A step that must not change what the view prints keeps it green; one
 // that changes the view or the history on purpose re-pins it and says
 // so in its commit.
-const sameLegendsDigest = "f1fbd1e85a6b5e119c7dbab28258b8f43f767546460984bcad2a5be5b7f16236"
+const sameLegendsDigest = "5bdadbd50f9d0b751d798120f829a83b127e6ebadca7aa66bbc50163e6093fff"
 
 // run is seed 5 at 200 stars, written to a directory and read back, so
 // that the view is tested on the files alone.

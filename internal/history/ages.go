@@ -49,6 +49,7 @@ func (w *World) elderMiracle() string {
 // with a cosmic event to sweep up what is left. The current age's surge is
 // the last one and belongs to the engine.
 func (w *World) runAges() {
+	w.R = w.stream("ages") // the myth is its own stream; see streams.go
 	surges := w.Cycle.Surges
 	elders := 0
 	for i, s := range surges[:len(surges)-1] {
@@ -135,7 +136,9 @@ func (w *World) leaveLegacy(e *Elder, at Year) {
 			// a dormant replicator people: machines that sleep in the rubble until something settles too close
 			l.Node = "self_replication"
 			l.Portrait = "rubble"
-			if p := w.replicatorAt(s, species.Machine, Origin{Key: "rubble", By: -1, From: -1, Legacy: l.ID, Plague: -1}, true); p != nil {
+			if p := w.layAncient(s, func() *Civ {
+				return w.replicatorAt(s, species.Machine, Origin{Key: "rubble", By: -1, From: -1, Legacy: l.ID, Plague: -1}, true)
+			}); p != nil {
 				l.People = p.ID
 			}
 		} else {
@@ -154,7 +157,9 @@ func (w *World) leaveLegacy(e *Elder, at Year) {
 		l.Kind = Sleeper
 		w.Now = at
 		l.Portrait = "withdrawn"
-		if p := w.sleeperAt(s, Origin{Key: "withdrawn", By: -1, From: -1, Legacy: l.ID, Plague: -1}); p != nil {
+		if p := w.layAncient(s, func() *Civ {
+			return w.sleeperAt(s, Origin{Key: "withdrawn", By: -1, From: -1, Legacy: l.ID, Plague: -1})
+		}); p != nil {
 			l.People = p.ID
 		}
 	default:
@@ -167,12 +172,29 @@ func (w *World) leaveLegacy(e *Elder, at Year) {
 	w.eventAt(at, KElderLeft, nil, nil, l.Star, P{"elder": e.ID}).Legacy = l.ID
 }
 
+// layAncient lays a sleeper or a dormant replicator at a star, unless
+// something ancient is already there. Two ancient things do not share a
+// star, and the reason is the record rather than the fiction: ariseAt
+// strips whoever holds the star, and the myth's legacies are left in the
+// years the elders fell, which this pass does not walk in order. So the
+// second sleeper would take the first one's world in a year before the
+// first was born, and the chronicle would lose a world that had not yet
+// been held. The legacy is left either way; it simply has no people in
+// it, which every caller already allows for.
+func (w *World) layAncient(star int, lay func() *Civ) *Civ {
+	if w.Owner[star] >= 0 {
+		return nil
+	}
+	return lay()
+}
+
 // legacyNode returns the tech node an artifact or structure stands for.
 func (l *Legacy) node() *tech.Node { return tech.Get(l.Node) }
 
 // runDeep is the substrate-only pass over the interregna and earlier ages:
 // life arising, gamma-ray bursts, scheduled star deaths.
 func (w *World) runDeep() {
+	w.R = w.stream("deep") // the deep pass is its own; see streams.go
 	w.dt = float64(w.Cfg.DeepStep) / 1000
 	for y := w.Cfg.DeepStart; y < w.Cfg.Dawn; y += w.Cfg.DeepStep {
 		w.Now = y

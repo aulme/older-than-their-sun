@@ -59,7 +59,32 @@ type Dossier struct {
 	NextDawn  Year    `json:"next_dawn"`
 	Hazard    float64 `json:"hazard"`
 	Wall      Wall    `json:"wall"`
+	Decline   Decline `json:"decline"`
 	Counts    Counts  `json:"counts"`
+}
+
+// Decline is the decline index at the present, its three terms, the
+// age's own running peaks and the absolute numbers the terms are shares
+// of. Every term is relative, against the peak the age itself reached,
+// because an age that never had a height has not fallen from one; the
+// absolute numbers are here beside them for a reader comparing two
+// galaxies, which the relative reading hides.
+type Decline struct {
+	Index      float64 `json:"index"`  // 0 at the height, 1 with nothing standing: the mean of the three terms
+	Held       float64 `json:"held"`   // habitable systems held, over the highest that share has been
+	Rising     float64 `json:"rising"` // peoples still rising, over the highest that count has been
+	Births     float64 `json:"births"` // peoples born per Myr, over the highest that rate has been
+	HeldNow    float64 `json:"held_now"`
+	RisingNow  int     `json:"rising_now"`
+	BirthsNow  float64 `json:"births_now"`
+	PeakHeld   float64 `json:"peak_held"`
+	PeakRising int     `json:"peak_rising"`
+	PeakBirths float64 `json:"peak_births"`
+	PeakHeldAt Year    `json:"peak_held_at"` // when the held share was highest: the age's height
+	AtWaning   float64 `json:"at_waning"`    // the index at the moment the waning was declared
+	Crossed    Year    `json:"crossed"`      // when the index first stood at the waning bar; 0 for never
+	Fell       Year    `json:"fell"`         // and at the end bar
+	ByIndex    bool    `json:"by_index"`     // the age ended on the index rather than falling through to the fertility floor
 }
 
 // Config is what the run was asked for, besides the seed.

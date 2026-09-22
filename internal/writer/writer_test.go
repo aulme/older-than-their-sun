@@ -62,7 +62,10 @@ func TestUntil(t *testing.T) {
 	if !bytes.Equal(a, b) {
 		t.Fatal("-until at the present is not the plain run")
 	}
+	// on a tick boundary: the age is walked in steps from the dawn, so
+	// -until stops at the first tick at or after the year given
 	until := plain.Dossier.Present / 2
+	until -= until % plain.Dossier.Step
 	early := Run(generate(7, 120, until), "sol")
 	if !early.Dossier.Truncated || early.Dossier.Present != until {
 		t.Fatalf("truncated %v, present %d, want %d", early.Dossier.Truncated, early.Dossier.Present, until)

@@ -137,6 +137,28 @@ func depthWord(d float64) string {
 	return "most"
 }
 
+// partWord says a fraction in the register the legends use rather than
+// as a number.
+func partWord(x float64) string {
+	switch {
+	case x < 0.02:
+		return "almost none"
+	case x < 0.08:
+		return "a twentieth"
+	case x < 0.15:
+		return "a tenth"
+	case x < 0.25:
+		return "a fifth"
+	case x < 0.4:
+		return "a third"
+	case x < 0.6:
+		return "half"
+	case x < 0.9:
+		return "most"
+	}
+	return "almost all"
+}
+
 func percent(x float64) string {
 	if x < 0.01 {
 		return "less than a hundredth"

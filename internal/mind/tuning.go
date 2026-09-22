@@ -50,6 +50,7 @@ type Tuning struct {
 	Slight    SlightTuning
 	Refuse    RefuseTuning
 	Ossify    OssifyTuning
+	Decline   DeclineTuning
 	Kinds     KindsTuning
 	Plague    plague.Tuning // the plagues' own numbers, kept here so one table tunes everything
 }
@@ -389,6 +390,18 @@ type RefuseTuning struct {
 
 // OssifyTuning: how a people's ways set, and when that comes for it. See
 // history's ossify.go for the growth table these feed and the filter.
+// DeclineTuning: the decline index and what it declares. See
+// specs/proposals/decline.md. The bars come from the eight ages sampled
+// at step 6: the index at today's waning declaration is 0.21 to 0.58 and
+// at today's present 0.47 to 0.80, so these reproduce roughly today's age
+// before the force is added, and are tuned with it.
+type DeclineTuning struct {
+	BirthWindow float64 // the births term's window, in million years
+	WaningBar   float64 // the index at or over which the waning is declared, held for HoldMyr
+	EndBar      float64 // and the end
+	HoldMyr     float64 // how long a bar must hold before it is believed, in million years
+}
+
 type OssifyTuning struct {
 	Base         float64 // stiffness per thousand years for a lone cradle world under a fresh sky
 	PerWorld     float64 // the size term: 1 + worlds times this
@@ -548,6 +561,7 @@ func Default() *Tuning {
 			DepthBase: 0.1, DepthStiff: 0.3, DepthPrior: 0.1, DepthNoise: 0.1, DepthMin: 0.1, DepthMax: 0.8, Shards: 8,
 			GrudgeDecay: 0.995, GrudgeFloor: 0.05, HeirGrudge: 0.25, HeldGrudge: 0.5, SunderGrudge: 3, KinLoyalty: 2, KinLine: 0.5,
 		},
+		Decline: DeclineTuning{BirthWindow: 2, WaningBar: 0.35, EndBar: 0.55, HoldMyr: 1},
 		Kinds: KindsTuning{
 			Appear: 0.0005, Deepen: 0.0005, Tithe: 0.1, TitheGrudge: 0.01, TitheHazard: 0.01, WoundWear: 0.001, Mirror: 0.5, MirrorWis: 2,
 			WakingBase: -1, WakingMil: 0.5, WakingYoung: 1, Demand: 3, UnmakeRest: 3000, HeedGap: 0.1, HeedMeek: 0.5, HeedProud: 0.5, HeedGrudge: 0.2,

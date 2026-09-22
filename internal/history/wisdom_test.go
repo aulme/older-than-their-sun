@@ -31,10 +31,13 @@ func pair(t *testing.T, seed uint64, a, b *species.Species, wa, wb float64) (w *
 	return
 }
 
-// pass is a thousand years of the retries for both.
+// pass is a thousand years of the retries for both, each on its own
+// people's stream, which is what the civs phase does (streams.go).
 func pass(w *World, c, e *Civ) {
 	w.Now += 1000
+	w.R = w.civStream(c)
 	w.fathoming(c)
+	w.R = w.civStream(e)
 	w.fathoming(e)
 }
 

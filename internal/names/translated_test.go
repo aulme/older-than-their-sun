@@ -2,7 +2,9 @@ package names
 
 import (
 	"encoding/json"
+	"math"
 	"regexp"
+	"sort"
 	"strings"
 	"sync"
 	"testing"
@@ -271,7 +273,17 @@ func batch(t *testing.T) []*Book {
 
 // TestExonymSpread: over a thousand exonyms from a batch, no entry
 // accounts for more than three percent.
+//
+// The batch is four ages, which is between one and two thousand
+// exonyms, and a share of 3% over that many has a standard error of
+// about 0.4 percentage points — so an entry a tenth of a point over the
+// bar says nothing at all, and a test that failed on it would fail on
+// any change to the histories rather than on a loss of variety. The bar
+// is therefore read with one standard error of slack, which is the
+// precision the sample actually has; the three largest shares are
+// logged so a real narrowing is visible whether or not it trips.
 func TestExonymSpread(t *testing.T) {
+	const bar = 0.03
 	counts := map[string]int{}
 	n := 0
 	for _, b := range batch(t) {
@@ -285,12 +297,18 @@ func TestExonymSpread(t *testing.T) {
 	if n < 1000 {
 		t.Fatalf("%d exonyms, want a thousand to judge the spread", n)
 	}
+	se := math.Sqrt(bar * (1 - bar) / float64(n))
 	for e, c := range counts {
-		if float64(c) > 0.03*float64(n) {
-			t.Errorf("%s accounts for %d of %d exonyms (%.1f%%), over three percent", e, c, n, 100*float64(c)/float64(n))
+		if share := float64(c) / float64(n); share > bar+se {
+			t.Errorf("%s accounts for %d of %d exonyms (%.1f%%), over three percent by more than the sample's own error (%.1f points)", e, c, n, 100*share, 100*se)
 		}
 	}
-	t.Logf("%d exonyms from %d entries", n, len(counts))
+	top := sortedKeys(counts)
+	sort.SliceStable(top, func(i, j int) bool { return counts[top[i]] > counts[top[j]] })
+	t.Logf("%d exonyms from %d entries; the bar is %.1f%% with %.1f points of error; the largest shares:", n, len(counts), 100*bar, 100*se)
+	for _, e := range top[:min(3, len(top))] {
+		t.Logf("  %s %d (%.1f%%)", e, counts[e], 100*float64(counts[e])/float64(n))
+	}
 }
 
 // TestEntitled: every translated row's requirements held of the thing

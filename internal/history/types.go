@@ -502,13 +502,17 @@ type Config struct {
 	Dawn      Year // the current age dawns; the engine runs from here
 	DeepStep  Year
 	Step      Year // the tick of the current age, dawn to present; every rate is per thousand years
-	// the waning: declared when this few are still rising (zero for no bar) and fertility is this low
-	FineActive    int
-	FineFertility float64
-	// the present: stop when this few are still rising (zero for no bar) and fertility is
-	// below a threshold drawn per world between EndFertilityLow and EndFertility, then
-	// linger a while
-	EndActive       int
+	// The waning is declared from the decline index (decline.go), which
+	// reads what is held, what is still rising and what is being born,
+	// each against the age's own height. The fertility clock it replaced
+	// governed who is born and said nothing about who was standing.
+	//
+	// The present: the index's end bar, or the fertility floor below —
+	// a threshold drawn per world between EndFertilityLow and
+	// EndFertility — whichever comes first, and then a linger. The floor
+	// stays until the force lands (specs/proposals/decline.md stage 3),
+	// because until something takes worlds from the old, an age the
+	// index does not end runs to MaxFades.
 	EndFertility    float64
 	EndFertilityLow float64
 	Linger          Year
@@ -519,7 +523,15 @@ type Config struct {
 	// tale is compounded over the gap, so a tale wears as often as it
 	// did; what changes is that it can only do so on the ticks its
 	// people is due, and the peoples are staggered so no tick bears
-	// them all. 0 means 1. See specs/plan.md, step 6.
+	// them all. 0 means 1.
+	//
+	// It is 4, settled at step 6 and set at step 7. Asked of the wearing
+	// on its own, with the feedback cut (wearcadence_test.go), a telling
+	// put through every fourth tick comes out within 1% of one put
+	// through every tick, and the draws fall by three quarters. It is
+	// taken because it is nearly free, not because it is the saving: the
+	// wearing is most of what the lore phase draws and only about a
+	// fifth of what it costs.
 	WearEvery int
 	// Sample, when set, is called once a tick after the phases have
 	// run, for a measurement that wants the state of the galaxy as the
@@ -538,10 +550,10 @@ func DefaultConfig() Config {
 		Stars: 400, Radius: 150, Thickness: 40,
 		DeepStart: -galaxy.Age, Dawn: 0,
 		DeepStep: 10_000_000, Step: 1_000,
-		FineActive: 0, FineFertility: 0.5,
-		EndActive: 0, EndFertility: 0.2, EndFertilityLow: 0.05, Linger: 2_000_000,
-		MaxFades: 8,
-		Tuning:   mind.Default(),
+		EndFertility: 0.2, EndFertilityLow: 0.05, Linger: 2_000_000,
+		MaxFades:  8,
+		WearEvery: 4,
+		Tuning:    mind.Default(),
 	}
 }
 
@@ -569,6 +581,10 @@ type World struct {
 	regardSeen []uint32
 	regardGen  uint32
 
+	// the random streams, one per phase and one per people; see streams.go
+	streams map[string]*rand.Rand
+	civR    []*rand.Rand // a people's own stream, by id
+
 	phaseTime  map[string]time.Duration
 	stepTime   map[string]time.Duration // under -phases: what each civ step cost
 	stepDraws  map[string]uint64        // under -phases: what each civ step drew from the RNG
@@ -576,6 +592,11 @@ type World struct {
 	Bio        []BioState
 	Owner      []int // civ id owning each star, -1 if none
 	Hazard     float64
+	Decline    Decline // the decline index, read once a tick; see decline.go
+	habitable  int     // stars with a habitable world: the index's denominator, fixed at the field
+	bornMark   int     // the first people inside the births window, walked forward and never back
+	overWaning Year    // when the index last came up to the waning bar; 0 while it is under
+	overEnd    Year
 	Thin       float64 // how worn the wall between this and the state beneath is; see beneath.go
 	ThinStage  int
 	Civs       []*Civ

@@ -130,10 +130,17 @@ func TestSalvage(t *testing.T) {
 	if g := w.guardAt(c, c.Home); g == nil || g.Ships != 5 {
 		t.Fatalf("the salvage did not land in the guard: %+v", g)
 	}
+	// The wearing is a step of the people's turn, so it draws from the
+	// people's stream. It is a roll of about two in five a thousand
+	// years, so the check is at ten thousand and not at three: at three
+	// a passing build fails one run in five whenever the draws move,
+	// which is a trap for every later step and not a measure of
+	// anything.
+	w.R = w.civStream(c)
 	for i := 0; i < 40 && c.Salvage > 0; i++ {
 		w.salvageWorn(c)
-		if i == 2 && c.Salvage == 4 {
-			t.Error("nothing of the salvage was lost in three thousand years")
+		if i == 9 && c.Salvage == 4 {
+			t.Error("nothing of the salvage was lost in ten thousand years")
 		}
 	}
 	if c.Salvage != 0 || c.SalvageTaken != 0 {

@@ -45,7 +45,30 @@ Conventions:
 | `next_dawn` | year | when the galaxy will wake again |
 | `hazard` | number | the galactic hazard |
 | `wall` | Wall | the wall between this and what is beneath it |
+| `decline` | Decline | the decline index at the present, and what it was read from |
 | `counts` | Counts | the numbers the aftermath's header prints |
+
+### Decline
+
+Every term is against the age's own running peak, never an absolute: an age that never had a height has not fallen from one. The absolute numbers are beside them for a reader comparing two galaxies, which the relative reading hides. See `specs/proposals/decline.md`.
+
+| field | type | meaning |
+|---|---|---|
+| `index` | number | 0 at the height, 1 with nothing standing: the mean of the three terms |
+| `held` | number | habitable systems held by living peoples, over the highest that share has been |
+| `rising` | number | peoples active, not ossified and not yet set, over the highest that count has been |
+| `births` | number | peoples born per million years in the window, over the highest that rate has been |
+| `held_now` | number | habitable systems held, of all habitable systems |
+| `rising_now` | int | peoples still rising, now |
+| `births_now` | number | peoples born per million years, now |
+| `peak_held` | number | the highest the held share has been |
+| `peak_rising` | int | the highest the rising count has been |
+| `peak_births` | number | the highest the birth rate has been |
+| `peak_held_at` | year | when the held share was highest: the age's height |
+| `at_waning` | number | the index at the moment the waning was declared |
+| `crossed` | year | when the index first stood at the waning bar; 0 for never |
+| `fell` | year | and at the end bar |
+| `by_index` | bool | the age ended on the index rather than falling through to the fertility floor, which stays until the force lands |
 
 ### Config
 
