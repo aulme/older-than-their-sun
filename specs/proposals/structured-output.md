@@ -1,6 +1,6 @@
 # Structured output: the state, the chronicle and the tellings as records, the words in lookups, a codex for whoever narrates
 
-**Status:** In Progress (2026-09-22). Stages 1 (events), 2 (lookups) and 3 (the writer and the view) implemented; stage 4 (the codex) as `specs/plan.md` orders it (step 8). Independent of `decline.md` and `galaxy-in-motion.md`; **follows `names.md` stage 1**, whose record shape this proposal serialises (the adjustments are marked "names:" below).
+**Status:** In Progress (2026-09-22). Stages 1 (events), 2 (lookups) and 3 (the writer and the view) implemented; stage 4 (the codex) as `specs/plan.md` orders it (step 13, after every proposal that changes what the fiction is). Independent of `decline.md` and `galaxy-in-motion.md`; **follows `names.md` stage 1**, whose record shape this proposal serialises (the adjustments are marked "names:" below).
 **Last updated:** 2026-09-22
 
 ## Problem

@@ -1,6 +1,6 @@
 # Leaders: named figures, where they stand, and what their loss costs
 
-**Status:** Draft (2026-09-22). Depends on `continuity.md` (the succession filter reads it, and a leader's span reads lifespan) and on `specs/plan.md` step 7 for the streams. Read by `empires.md`, whose conquest wave is a leader.
+**Status:** Draft (2026-09-22). Depends on `continuity.md` (the succession filter reads it, and a leader's span reads lifespan) and on `specs/plan.md` step 7 for the streams. Read by `empires.md`, whose conquest wave is a leader; by `art.md`, whose arts are about leaders and whose contentment answers to their loss; and by `miracles.md`, whose delusion is built to respect the line drawn here — it corrupts a people's picture of the world and never its decision procedure.
 **Last updated:** 2026-09-22
 
 ## Problem
@@ -13,7 +13,7 @@ Real conquest waves — Macedon, the Mongols, the Rashidun — are the standard 
 
 **In.** A named leader as a state a people can be in; where the leader physically is; what their presence does; their temperament; their death; the succession filter that follows it; the crazed immortal.
 
-**Out.** The conditions that make a conquest wave, and the galaxy's response to one (`empires.md`). Lifespan and continuity themselves (`continuity.md`).
+**Out.** The conditions that make a conquest wave, and the galaxy's response to one (`empires.md`). Lifespan and continuity themselves (`continuity.md`). What is made about a leader, and what their death does to a people's contentment (`art.md`).
 
 ## Design
 

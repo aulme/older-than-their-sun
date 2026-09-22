@@ -1,6 +1,6 @@
 # Execution plan: the open proposals, in order
 
-**Status:** In progress, 2026-09-22. Steps 1 to 6 done, and the first optimisation pass after step 5. Replanned at step 6's end, when the sharpening's measurements and a design round on the arc of the age added three proposals and moved decline's force into one of them; `art.md` added the same day and placed last of the mechanisms, immediately before the codex that renders it.
+**Status:** In progress, 2026-09-22. Steps 1 to 6 done, and the first optimisation pass after step 5. Replanned at step 6's end, when the sharpening's measurements and a design round on the arc of the age added three proposals and moved decline's force into one of them; `art.md` and `miracles.md` added the same day and placed last of the mechanisms, before the codex that renders them.
 **Source proposals:** `names.md` (2 stages, done), `structured-output.md` (4 stages, one left), `decline.md` (3 stages, sharpened at step 6; its stage 3 moved to `empires.md`), `continuity.md`, `leaders.md`, `empires.md`, `art.md` and `miracles.md` (drafts, not yet sharpened), `galaxy-in-motion.md` (5 stages, not scheduled). Each proposal's Design section is the specification; its Stages section is the unit of work here. Where this plan and a proposal differ on order, this plan wins.
 
 The previous plan, which built Simulation v2, is `specs/done/plan.md`; its protocol for running a step in a fresh session applies here unchanged (read this file, then the step's proposal sections and code; check the ledger and `git log`; build; write the ledger entry).
@@ -19,7 +19,7 @@ flowchart TD
   C --> L[9 leaders and succession]
   L --> E[10 the cycle of empires, and decline's force]
   E --> R[11 art and contentment]
-  R --> M[12 miracles]
+  R --> M[12 miracles and wonders]
   M --> S4[13 codex]
   S4 --> A[14 absorb]
   S3 -.-> G2[galaxy stage 2: cell index, unscheduled]
@@ -61,6 +61,8 @@ flowchart TD
 **Galaxy in motion** is not scheduled: its own notes say stage 4 waits on a decision that the whole galaxy is what the game wants, and stages 1, 3 and 5 change the histories. Its stage 2 (the cell index replacing `Near`'s scan, no behaviour change, "pays now") can be taken any time after step 5 as an optimisation step, alongside the optimisation notes in `specs/done/plan.md`; it is drawn dotted above.
 
 **Seven regenerations of the reference batch**, at steps 1, 7, 8, 9, 10, 11 and 12, and none in between any pair. Each of the last six is one proposal's worth of behaviour change landing at once; a step that finds it needs a second has found a change it did not mean to make. Within a step, the intermediate tuning is measured against itself and not against the batch, which is what the streams are for — the batch is re-pinned once, when the step lands.
+
+**The proposal chain, and what reads what.** `continuity.md` is the foundation: `leaders.md` reads it for the succession filter's difficulty and a leader's span, `empires.md` reads both for the conquest wave's fragility, `art.md` reads continuity again (an art is a memory that does not wear) and pushes on `empires.md`'s shared quantities rather than adding its own, and `miracles.md` hands `empires.md` one wonder whose holder acquires a programme. Two lines are drawn across the whole chain and every later proposal keeps them: **the disposition and the picture may be moved, the decision procedure may not** (`leaders.md`, kept by `art.md`'s hearth and by `miracles.md`'s delusion, which corrupts a people's `Intel` and never its council); and **mechanisms cohere by pushing on a few shared quantities** (`empires.md` — overreach, spentness, what is remembered against the holder, continuity, and contentment as the fifth). Nothing in the chain adds a population number, because `art.md` settles that the organic yield of a people's holdings already is one.
 
 **Why the new work is five proposals and not one.** Continuity, leaders, the cycle, art and the miracles are each a coherent unit with its own gate, and each is large; bundled they would be a single step nobody could review or roll back. Split the other way — a proposal per mechanism — and the count of regenerations goes up with it, since every one of them shifts the histories. Five is the smallest split where each step is gateable and each regeneration pays for a whole design rather than a mechanism.
 

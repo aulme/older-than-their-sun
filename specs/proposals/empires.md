@@ -1,6 +1,6 @@
 # The cycle of empires: consolidation, shattering, and the force decline needs
 
-**Status:** Draft (2026-09-22). Depends on `continuity.md` and `leaders.md`, and carries **`decline.md`'s stage 3** — the force — which moved here because the lever decline specified and the separatism specified here are the same check with two outcomes.
+**Status:** Draft (2026-09-22). Depends on `continuity.md` and `leaders.md`; read afterwards by `art.md` and `miracles.md`, which push on its quantities rather than adding their own. and carries **`decline.md`'s stage 3** — the force — which moved here because the lever decline specified and the separatism specified here are the same check with two outcomes.
 **Last updated:** 2026-09-22
 
 ## Problem
@@ -29,6 +29,8 @@ Mechanisms cohere when they push on a few shared numbers rather than each carryi
 - **Spentness** — how degraded a world or source is. New; this is what makes each peak lower than the last.
 - **What is remembered against the holder** — grudge and the monster reckoning. Exists.
 - **Continuity** — `continuity.md`. The wall and the hazard remain as they are.
+
+Two later proposals push on the same numbers and are named here so this one does not build them twice. `art.md` makes **contentment** a fifth shared quantity with teeth in both directions, and hands this proposal a contraction lever with no shot fired: the hearth's upkeep scales with population, so a large realm pays more to stay content out of the income that buys its expansion, and a core fed by its provinces' tribute carries a population its own land cannot and starves when the tribute stops. It also settles what population *is* — the organic yield of the holdings — which means the war damage below is population damage with no second mechanism. `miracles.md` hands it Gehenna, a wonder whose holder acquires a programme and expands for a reason that is not conquest.
 
 ### Separatism, and the quiet going
 

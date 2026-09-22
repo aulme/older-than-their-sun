@@ -1,6 +1,6 @@
 # Art and contentment: what a people makes, and what it is content with
 
-**Status:** Draft (2026-09-22). Depends on `specs/plan.md` step 10 for the circumstances art is about, on `continuity.md` (an art is a memory that does not wear, which is a continuity mechanism) and on `leaders.md` (a leader is one of the things art is about). Read by the codex step, which renders it.
+**Status:** Draft (2026-09-22). Depends on `specs/plan.md` step 10 for the circumstances art is about, on `continuity.md` (an art is a memory that does not wear, which is a continuity mechanism) and on `leaders.md` (a leader is one of the things art is about). Read by `miracles.md`, which follows it, and by the codex step, which renders both.
 **Last updated:** 2026-09-22
 
 ## Problem
@@ -98,7 +98,7 @@ Less art when set, plus art gives contentment, plus contentment holds a realm to
 - **Measure before building**: over step 10's batch, what share of peoples ever make an art, arts per people at the present, and the distribution of fit. A fit that is nearly always 0 or nearly always 1 means the tag vocabulary is wrong, and that is cheaper to find before the rest.
 - `Civ.circumstance()` computed once per people per tick and held, like the summaries step 7 stops re-summing.
 - `Provenance` gains `made`. `prune` must not drop a people's own arts ahead of its inherited tales; the rank rule needs a term for it.
-- The tellings need one new shape, which is step 12's to write.
+- The tellings need one new shape, which is the codex step's to write.
 - `flow` gains a category and uses, which is what it is for; art itself is not a commodity and does not gain a `Kind`.
 - `DirectionInput` gains one term, and `Direction.Why()` one reason. Both are pure and testable in `mind` without a world.
 

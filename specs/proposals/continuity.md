@@ -1,6 +1,6 @@
 # Continuity: how long a people lasts, and how much of its past reaches its present
 
-**Status:** Draft (2026-09-22). The foundation the leaders and empires proposals both read. Depends on `specs/plan.md` step 7 (the random stream per people) for anything it can be tuned against.
+**Status:** Draft (2026-09-22). The foundation the leaders and empires proposals both read, and `art.md` after them (an art is a memory that does not wear, which makes art a continuity term). Depends on `specs/plan.md` step 7 (the random stream per people) for anything it can be tuned against.
 **Last updated:** 2026-09-22
 
 ## Problem
@@ -15,7 +15,7 @@ Meanwhile the step-6 sampling found a galaxy where peoples stand unchanged for t
 
 **In.** A lifespan on the species and the tech and conditions that move it; a derived continuity on the people; `memory()` rewired to read it; continuity as an input to ossification and to the depth of a dark age; the archive as a structure; the deathlessness cluster — the `uploading` filter that does not exist, and what a people becomes when it passes.
 
-**Out.** Leaders (`leaders.md`). Anything about who holds what (`empires.md`). Population: there is none, and this proposal does not add one.
+**Out.** Leaders (`leaders.md`). Anything about who holds what (`empires.md`). Population, which `art.md` settles: there is no population *field*, but the organic yield of a people's holdings is its carrying capacity and over a thousand-year tick it is filled, so population is already computed and neither proposal adds one.
 
 ## Design
 
