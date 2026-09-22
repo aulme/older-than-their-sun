@@ -1,0 +1,60 @@
+{
+  "_": [
+    "The condition of a remain, and what a loss does to the works at a star. The simulation reads the ladder's order, the find adjustments and the wreckage tables; the view reads the words.",
+    "conditions: the ladder from whole to ruin, in order: key; text (how a remain in that condition is said, {desc} the remain); find (what the condition adds to the difficulty of the Find, negative easier).",
+    "traces: how a world was lost, keyed: what the star keeps of it for whoever comes next; {colony} and {ship} are the blood's words for a colony and a ship, {C} the people. losses: what a loss of each kind does to the works there: destroy the share destroyed, leave the condition of the rest; a kind with no row takes the default.",
+    "Every term here is a technical term: a phrase a reader who never saw this project understands or can search for, never a coinage."
+  ],
+  "conditions": [
+    {"key": "abandoned", "text": "{desc}, abandoned but whole", "find": -1},
+    {"key": "derelict", "text": "{desc}, derelict", "find": 0},
+    {"key": "wreck", "text": "the wreck of {desc}", "find": 1.5},
+    {"key": "ruin", "text": "the ruin of {desc}", "find": 3}
+  ],
+  "traces": [
+    {"key": "abandoned", "text": "abandoned {colony}"},
+    {"key": "absorbed", "text": "absorbed world"},
+    {"key": "burned_cradle", "text": "burned cradle"},
+    {"key": "dead_cities", "text": "dead cities"},
+    {"key": "frozen", "text": "frozen world"},
+    {"key": "glassed", "text": "glassed world"},
+    {"key": "host", "text": "host-world"},
+    {"key": "quarantined", "text": "quarantined dead cities"},
+    {"key": "scoured", "text": "scoured world"},
+    {"key": "silent", "text": "silent world"},
+    {"key": "stripped", "text": "stripped world"},
+    {"key": "transformed", "text": "transformed world"},
+    {"key": "unmade", "text": "unmade world"},
+    {"key": "believes", "text": "world that believes"},
+    {"key": "wounded_star", "text": "wounded star"},
+    {"key": "empty_cradle", "text": "empty cradle of the {C}"},
+    {"key": "horde", "text": "stripped by the horde"},
+    {"key": "burned_host", "text": "burned host-world"},
+    {"key": "burned", "text": "burned world"},
+    {"key": "risen", "text": "risen world"},
+    {"key": "overrun", "text": "overrun {colony}"},
+    {"key": "reclaimed", "text": "reclaimed {colony}"},
+    {"key": "conquered", "text": "conquered {colony}"},
+    {"key": "ceded", "text": "ceded {colony}"},
+    {"key": "derelict_ship", "text": "derelict {ship}"},
+    {"key": "silent_machinery", "text": "silent machinery"}
+  ],
+  "losses": [
+    {"key": "abandoned", "destroy": 0.1, "leave": "abandoned"},
+    {"key": "absorbed", "destroy": 0.5, "leave": "derelict"},
+    {"key": "burned_cradle", "destroy": 1, "leave": "ruin"},
+    {"key": "dead_cities", "destroy": 0.3, "leave": "derelict"},
+    {"key": "frozen", "destroy": 0.6, "leave": "wreck"},
+    {"key": "glassed", "destroy": 0.7, "leave": "wreck"},
+    {"key": "host", "destroy": 0.3, "leave": "derelict"},
+    {"key": "quarantined", "destroy": 0.15, "leave": "abandoned"},
+    {"key": "scoured", "destroy": 1, "leave": "ruin"},
+    {"key": "silent", "destroy": 0.2, "leave": "abandoned"},
+    {"key": "stripped", "destroy": 1, "leave": "ruin"},
+    {"key": "transformed", "destroy": 0.2, "leave": "abandoned"},
+    {"key": "unmade", "destroy": 1, "leave": "ruin"},
+    {"key": "believes", "destroy": 0.1, "leave": "abandoned"},
+    {"key": "wounded_star", "destroy": 1, "leave": "ruin"}
+  ],
+  "default": {"destroy": 0.3, "leave": "derelict"}
+}

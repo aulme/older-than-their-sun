@@ -1,7 +1,6 @@
 package history
 
 import (
-	"strings"
 	"testing"
 
 	"worldgen/internal/plague"
@@ -39,8 +38,8 @@ func TestMachinesDeclineMakesAPeople(t *testing.T) {
 		case c.DarkAges == 1 && c.Active():
 		case !c.Active() && c.Fate == Transformed && len(w.Civs) == before+1:
 			nc := w.Civs[before]
-			if nc.Species.Sub != species.Machine || nc.Species.Made == "" || !nc.Active() || nc.Home != star {
-				t.Fatalf("run %d: what the decline made is %s (%s), made %q, active %v at %d", i, nc.Tok(), nc.Species.Sub, nc.Species.Made, nc.Active(), nc.Home)
+			if nc.Species.Sub != species.Machine || nc.Species.Made.Key == "" || !nc.Active() || nc.Home != star {
+				t.Fatalf("run %d: what the decline made is %s (%s), made %v, active %v at %d", i, nc.Tok(), nc.Species.Sub, nc.Species.Made, nc.Active(), nc.Home)
 			}
 		default:
 			t.Fatalf("run %d: the decline left %s active %v, fate %v, dark ages %d, civs %d to %d", i, c.Tok(), c.Active(), c.Fate, c.DarkAges, before, len(w.Civs))
@@ -87,7 +86,7 @@ func TestReplicatorNoTerms(t *testing.T) {
 	starfaring(w, e)
 	r.Met[e.ID], e.Met[r.ID] = true, true
 	r.Fathomed[e.ID], e.Fathomed[r.ID] = true, true
-	wr := w.declare(e, r, "a test")
+	wr := w.declare(e, r, because("border"))
 	if wr == nil {
 		t.Fatal("no war")
 	}
@@ -114,7 +113,7 @@ func TestReplicatorNoTerms(t *testing.T) {
 // the war it woke to is spent.
 func TestSleeperWakes(t *testing.T) {
 	w := newTestWorld(t, 53, 40)
-	s := w.sleeperAt(0, "a test")
+	s := w.sleeperAt(0, species.Made("door"))
 	if s == nil || !s.Asleep || !s.Species.HasPower("sleep") || !s.Species.Is(species.Planetary) || !s.Species.Is(species.Unconscious) {
 		t.Fatalf("the sleeper: %v", s)
 	}
@@ -191,8 +190,8 @@ func TestTransmitterPayloads(t *testing.T) {
 		t.Fatalf("nothing woke: civs %d to %d, woken %d", civs, len(w.Civs), l.Woken)
 	}
 	nc := w.Civs[civs]
-	if nc.Species.Sub != species.Parasite || !nc.Has("mindrider") || !strings.Contains(nc.Origin, "came down the signal") || b.Master != nc.ID {
-		t.Fatalf("what woke: %s, %s, origin %q, rides %v", nc.Tok(), nc.Species.Describe(), nc.Origin, b.Master == nc.ID)
+	if nc.Species.Sub != species.Parasite || !nc.Has("mindrider") || nc.Origin.Key != "signal" || b.Master != nc.ID {
+		t.Fatalf("what woke: %s, %s, origin %v, rides %v", nc.Tok(), nc.Species.Describe(), nc.Origin, b.Master == nc.ID)
 	}
 	an := spawnAt(w, 3, fixedWith(species.Biological, species.Unconscious, nil, "defensive", "practical"))
 	starfaring(w, an)

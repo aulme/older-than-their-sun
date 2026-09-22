@@ -131,7 +131,7 @@ func (w *World) setShed(c *Civ, uses []flow.Use, a flow.Allocation) bool {
 		first := a.Dormant[0]
 		for i := range uses {
 			if uses[i].Key == first {
-				w.event(KWentDark, c, nil, -1, P{"use": first, "name": uses[i].Name, "kept": c.Order[0]})
+				w.useParams(c, first, w.event(KWentDark, c, nil, -1, P{"use": first, "kept": c.Order[0]}))
 				break
 			}
 		}
@@ -223,7 +223,7 @@ func (w *World) uses(c *Civ) []flow.Use {
 		if cat == flow.Fields && !p.Can(species.Fields) {
 			cat = flow.Works
 		}
-		out = append(out, flow.Use{Key: k, Name: n.Name, Cat: cat, Era: n.Era, Need: need})
+		out = append(out, flow.Use{Key: k, Cat: cat, Era: n.Era, Need: need})
 	}
 	learned := func(k string) Year {
 		if y, ok := c.Learned[k]; ok {
@@ -290,4 +290,55 @@ func (c *Civ) working(k string) bool { return !c.Shed[k] }
 func (c *Civ) starved(k string, now Year) bool {
 	since, ok := c.DormantSince[k]
 	return ok && now-since >= envelopeGrace*1000
+}
+
+// useParams is what a use's line needs to name it, captured on the
+// event when it goes dark: a fleet's kind and where it is or is bound, a
+// ship's target, a dock's star and whether it breeds, a word's flow and
+// creditor, a programme's plague. A node or a work needs nothing beyond
+// its key.
+func (w *World) useParams(c *Civ, key string, e *Event) {
+	p := e.P
+	switch {
+	case hasPrefix(key, "weapon:"):
+		e.Plague = c.Weapons[key[len("weapon:"):]].Plague
+	case hasPrefix(key, "fleet:"):
+		x := w.Expeditions[atoi(key[len("fleet:"):])]
+		what := "fleet"
+		switch x.Kind {
+		case Survey:
+			what = "surveyors"
+		case Scout:
+			what = "scout"
+			if x.Picket {
+				what = "picket"
+			}
+		case Intercept:
+			what = "interceptors"
+		case Guard:
+			what = "guard"
+		case Roam:
+			what = "horde"
+		}
+		p["what"] = what
+		if x.Base >= 0 {
+			p["star"], p["based"] = x.Base, true
+		} else {
+			p["star"], p["based"] = x.Star, false
+		}
+	case hasPrefix(key, "ship:"):
+		p["what"], p["star"] = "ship", c.Voyages[atoi(key[len("ship:"):])].Target
+	case hasPrefix(key, "dock:"):
+		p["what"], p["star"] = "yards", atoi(key[len("dock:"):])
+		if c.Known["living_ships"] {
+			p["what"] = "grounds"
+		}
+	case hasPrefix(key, "word:"):
+		k := w.Contracts[atoi(key[len("word:"):])]
+		for i, t := range k.terms() {
+			if g, r := k.giver(i); g == c.ID && t.Kind == mind.TermFlow {
+				p["what"], p["flow"], p["to"] = "owed", t.Res, r
+			}
+		}
+	}
 }

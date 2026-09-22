@@ -1,0 +1,13 @@
+{
+  "_": [
+    "The boons a people carries: what a filter overcome well leaves behind. The simulation reads the key; the view reads name and desc.",
+    "boons: one row per boon: key; name (how the legends say it); desc (what it is in the world).",
+    "Every term here is a technical term: a phrase a reader who never saw this project understands or can search for, never a coinage."
+  ],
+  "boons": [
+    {"key": "aligned", "name": "aligned minds", "desc": "aligned minds: the thinking machines a people made stayed its own, and think with it"},
+    {"key": "swarm", "name": "swarm industry", "desc": "swarm industry: the self-replicating machines a people made stayed in hand, and build for it"},
+    {"key": "unity", "name": "unity forged in the atomic age", "desc": "unity forged in the atomic age: the people that came through the bomb without using it is one people after"},
+    {"key": "communion", "name": "communion with something older", "desc": "communion with something older: the people talked to an elder thing and was answered"}
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "_": [
+    "The kinds of people: what a people is made of (its substrate) and how it is shaped (its modifiers), and the powers an eldritch people draws in place of a tree. The numbers of each kind are the registry in the species package; this file holds its words.",
+    "substrates and modifiers: key (the registry's), portrait (the sentence a portrait opens with), arising (how the legends say the people came to be; absent for 'arise on'), flavour (what the people calls a colony, a ship and a station; a modifier's override the substrate's).",
+    "powers: one row per power, in the pool's order: key, name, domain (the tech domain it counts as a level in), weight in the draw, node (the miracle it stands for) or filter (the filter it brings without one), line (the chronicle's line for the deepening; {S} the people), sense (the portrait's phrase).",
+    "Every term here is a technical term: a phrase a reader who never saw this project understands or can search for, never a coinage."
+  ],
+  "substrates": [
+    {"key": "biological", "flavour": {"colony": "colony", "ship": "colony ship", "station": "station"}},
+    {"key": "machine", "portrait": "They are machines, and do not remember who built them.", "arising": "wake on", "flavour": {"colony": "node", "ship": "probe", "station": "array"}},
+    {"key": "eldritch", "portrait": "They are made of nothing that has a name: not flesh, not machine, and no one who has looked can say what.", "arising": "are first noticed on", "flavour": {"colony": "presence", "ship": "second presence", "station": "locus"}},
+    {"key": "parasite", "portrait": "They are a parasite, and need the bodies of others to think and to build.", "arising": "first ride on", "flavour": {"colony": "host-world", "ship": "carrier", "station": "hive"}}
+  ],
+  "modifiers": [
+    {"key": "planetary", "portrait": "They are one mind, spread through the living substance of their world.", "flavour": {"colony": "graft", "ship": "spore-ark", "station": "living moon"}},
+    {"key": "hive", "portrait": "They are one mind."},
+    {"key": "unconscious", "portrait": "There is no one inside; they only act as if."},
+    {"key": "replicator", "portrait": "They make more of themselves out of whatever they find.", "flavour": {"colony": "growth", "ship": "spore", "station": "mass"}},
+    {"key": "antimemetic", "portrait": "Nothing that has met them remembers it."},
+    {"key": "evolver", "portrait": "They shape their own flesh, and breed what they need instead of building it.", "flavour": {"colony": "brood", "ship": "vacuum-whale", "station": "grown moon"}}
+  ],
+  "powers": [
+    {"key": "thought", "name": "the long thought", "domain": "society", "weight": 10, "line": "{S} have begun to think about something, and the thinking will take an age."},
+    {"key": "presence", "name": "a second presence", "domain": "propulsion", "weight": 10, "line": "There is another of {S} now, at a star nothing was seen to cross to."},
+    {"key": "reach", "name": "the wide reach", "domain": "propulsion", "weight": 8, "line": "{S} can feel further than they could."},
+    {"key": "door", "name": "the door in it", "domain": "exotic", "weight": 6, "node": "ftl", "line": "There is a door in {S} now, and things pass through it without a ship."},
+    {"key": "sight", "name": "the sight", "domain": "exotic", "weight": 7, "node": "foresight", "line": "{S} have begun to see every star within their reach as if it were under them."},
+    {"key": "voice", "name": "the voice", "domain": "computation", "weight": 7, "node": "ansible", "line": "{S} have begun to speak, and the speaking crosses any distance at once."},
+    {"key": "unmaking", "name": "the unmaking", "domain": "weapons", "weight": 5, "node": "unmaking", "line": "{S} have learned to end a world without touching it."},
+    {"key": "shell", "name": "the shell", "domain": "weapons", "weight": 8, "line": "{S} have grown a shell, and nothing that comes for them gets in."},
+    {"key": "tithe", "name": "the tithe", "domain": "industry", "weight": 7, "line": "{S} have begun to take a share of every harvest within their reach. Nobody agreed to it."},
+    {"key": "sleep", "name": "the long sleep", "domain": "biology", "weight": 8, "line": "{S} have learned to sleep, and will sleep when there is nothing left they want."},
+    {"key": "mirror", "name": "the mirror", "domain": "society", "weight": 7, "line": "{S} have begun to answer every message in the sender's own voice."},
+    {"key": "hunger", "name": "the hunger", "domain": "biology", "weight": 6, "filter": "overshoot", "line": "{S} have begun to grow."},
+    {"key": "making", "name": "the making", "domain": "industry", "weight": 7, "line": "{S} have begun to build."},
+    {"key": "wound", "name": "the wound", "domain": "exotic", "weight": 5, "line": "There is a wound in {S}, and what is underneath everything is open there."}
+  ]
+}

@@ -11,67 +11,9 @@ import (
 // elder civilisations with a portrait instead of traits, and legacies left
 // on the substrate for the current age to find.
 
-var elderPortraits = []string{
-	"something that thought in the convection cells of a red giant",
-	"a mind spread through the magnetic field of a nebula",
-	"a people who lived in the dark between stars and never saw a sun up close",
-	"a single organism the size of a moon, slow as geology",
-	"a civilisation of machines whose makers were already a myth to them",
-	"a chorus that existed only while it was being sung",
-	"something that used stars the way others use fire",
-	"a species that kept its dead and let them vote",
-	"a swarm that thought only while falling into a gravity well",
-	"minds that ran on the decay of heavy elements and were therefore very patient",
-	"a people who folded themselves into a smaller dimension to save on entropy",
-	"a thing that was mostly a question",
-}
-
-var ageEnders = []string{
-	"a beacon that spoke to every mind still listening",
-	"a wave of self-copying machines let loose by someone with no successors to stop it",
-	"a passage through a dense arm, and a rain of supernovae on worlds already half empty",
-	"a war between the last two powers, fought over nothing either still needed",
-	"a long silence, in which the remaining few forgot each other",
-	"the slow failure of everything that had been built to outlast its builders",
-}
-
-var ageKnowers = []string{
-	"It learned that the galaxy had done this before, and would again.",
-	"It counted the dead ages and knew its own for what it was.",
-	"It measured the fading and built accordingly, for no one.",
-}
-
-var structureDescs = []string{
-	"a star that was moved, and the trail it left",
-	"a black hole set in a ring of black metal",
-	"a hollowed sun, lit from inside",
-	"a corridor of darkness where no light crosses",
-	"a world with a machined core that still hums",
-	"a lattice of threads around a dead star",
-	"a moon that is a single instrument, tuned to something",
-}
-
-var artifactDescs = []string{
-	"a seed of grey metal that is warm to the touch",
-	"a lens that shows the sky as it will be",
-	"an engine with no fuel and no moving parts",
-	"a library written in the arrangement of atoms",
-	"a weapon shaped like a musical instrument",
-	"a door that opens onto the same room",
-	"a cradle for something that was never put in it",
-}
-
-// law legacies are places where the state beneath shows through; the
-// first is special (see mindDead).
-var lawDescs = []string{
-	"a region where minds do not work",
-	"a standing signal that repeats one number",
-	"a corridor along which ships arrive before they leave",
-	"a volume where light arrives before it is sent",
-	"a shore where the sky is thin, and things are seen in it that are not there",
-	"a drift of dust that is in the same place wherever you go",
-	"a star whose light is always a day old, from any distance",
-}
+// The portraits of the elders, their ages' enders, what they learned and
+// what they left are data/portraits.json; the record keeps the key drawn.
+// The first law is special (see mindDead): its variant in the table.
 
 // artifact nodes: which discoveries an elder artifact can stand for
 var artifactNodes = []string{
@@ -115,7 +57,7 @@ func (w *World) runAges() {
 		w.eventAt(age.Start, KAgeDawn, nil, nil, -1, P{"age": i})
 		nElders := 3 + w.R.IntN(4)
 		for j := 0; j < nElders; j++ {
-			e := &Elder{ID: elders, Age: i, Portrait: elderPortraits[w.R.IntN(len(elderPortraits))]}
+			e := &Elder{ID: elders, Age: i, Portrait: tables.portraits.Elders[w.R.IntN(len(tables.portraits.Elders))].Key}
 			elders++
 			// the earlier in the age, the likelier to rise: fertility is falling
 			span := float64(age.End - age.Start)
@@ -124,7 +66,7 @@ func (w *World) runAges() {
 			age.Elders = append(age.Elders, e)
 			w.eventAt(e.Rose, KElderRose, nil, nil, -1, P{"elder": e.ID})
 			if w.R.Float64() < 0.2 {
-				w.eventAt(e.Rose+Year(float64(e.Fell-e.Rose)*0.6), KAgeKnower, nil, nil, -1, P{"elder": e.ID, "line": w.R.IntN(len(ageKnowers))})
+				w.eventAt(e.Rose+Year(float64(e.Fell-e.Rose)*0.6), KAgeKnower, nil, nil, -1, P{"elder": e.ID, "line": tables.portraits.Knowers[w.R.IntN(len(tables.portraits.Knowers))].Key})
 			}
 			nLeg := 2 + w.R.IntN(5)
 			for k := 0; k < nLeg; k++ {
@@ -137,7 +79,7 @@ func (w *World) runAges() {
 			late := e.Fell > age.End
 			w.eventAt(e.Fell, KElderFell, nil, nil, -1, P{"elder": e.ID, "late": late, "remembered": !late && w.R.Float64() < 0.35})
 		}
-		age.Ender = ageEnders[w.R.IntN(len(ageEnders))]
+		age.Ender = tables.portraits.Enders[w.R.IntN(len(tables.portraits.Enders))].Key
 		w.eventAt(age.End, KAgeWaned, nil, nil, -1, P{"age": i})
 	}
 }
@@ -164,7 +106,7 @@ func (w *World) leaveLegacy(e *Elder, at Year) {
 	x := w.R.Float64()
 	switch {
 	case x < 0.1:
-		w.leaveBounty(l, w.R.IntN(len(bounties)))
+		w.leaveBounty(l, w.R.IntN(len(tables.portraits.Bounties)))
 	case x < 0.5:
 		l.Kind = Artifact
 		if w.R.Float64() < miracleShare {
@@ -172,11 +114,11 @@ func (w *World) leaveLegacy(e *Elder, at Year) {
 		} else {
 			l.Node = artifactNodes[w.R.IntN(len(artifactNodes))]
 		}
-		l.Desc = artifactDescs[w.R.IntN(len(artifactDescs))]
+		l.Portrait = tables.portraits.Artifacts[w.R.IntN(len(tables.portraits.Artifacts))].Key
 	case x < 0.72:
 		l.Kind = Structure
 		l.Node = structureNodes[w.R.IntN(len(structureNodes))]
-		l.Desc = structureDescs[w.R.IntN(len(structureDescs))]
+		l.Portrait = tables.portraits.Structures[w.R.IntN(len(tables.portraits.Structures))].Key
 		if !w.G.Stars[s].Dead() && w.R.Float64() < 0.5 {
 			// structures like dead stars
 			for _, t := range w.G.Near(s, 40) {
@@ -192,16 +134,16 @@ func (w *World) leaveLegacy(e *Elder, at Year) {
 		if w.R.Float64() < 0.5 {
 			// a dormant replicator people: machines that sleep in the rubble until something settles too close
 			l.Node = "self_replication"
-			l.Desc = "machines that sleep in the rubble of " + w.star(s)
-			if p := w.replicatorAt(s, species.Machine, "left in the rubble of "+w.star(s)+" by "+e.Portrait, true); p != nil {
+			l.Portrait = "rubble"
+			if p := w.replicatorAt(s, species.Machine, Origin{Key: "rubble", By: -1, From: -1, Legacy: l.ID, Plague: -1}, true); p != nil {
 				l.People = p.ID
 			}
 		} else {
 			l.Node = "memetics"
 			if w.R.Float64() < 0.5 {
-				l.Desc = "a transmitter at " + w.star(s) + ", silent"
+				l.Portrait = "transmitter_silent"
 			} else {
-				l.Desc = "a transmitter at " + w.star(s) + " that has never stopped"
+				l.Portrait = "transmitter_running"
 				l.State = Unleashed
 			}
 			if w.R.Float64() < w.Cfg.Tuning.Kinds.SeedShare {
@@ -211,13 +153,13 @@ func (w *World) leaveLegacy(e *Elder, at Year) {
 	case x < 0.94:
 		l.Kind = Sleeper
 		w.Now = at
-		l.Desc = "something that withdrew into the dark near " + w.star(s) + " and went still"
-		if p := w.sleeperAt(s, "something of "+e.Portrait+" that withdrew into the dark and went still"); p != nil {
+		l.Portrait = "withdrawn"
+		if p := w.sleeperAt(s, Origin{Key: "withdrawn", By: -1, From: -1, Legacy: l.ID, Plague: -1}); p != nil {
 			l.People = p.ID
 		}
 	default:
 		l.Kind = Law
-		l.Desc = lawDescs[w.R.IntN(len(lawDescs))]
+		l.Portrait = tables.portraits.Laws[w.R.IntN(len(tables.portraits.Laws))].Key
 		l.Node = "ftl"
 	}
 	w.Legacies = append(w.Legacies, l)

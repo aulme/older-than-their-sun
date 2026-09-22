@@ -21,21 +21,17 @@ import (
 // wake, transmitters start, the miracles' own filters bite harder. Nobody
 // in the field is told this. The reader is.
 
-// causal miracles are the ones that reach into the state.
-var causal = map[string]bool{"ftl": true, "ansible": true, "foresight": true, "unmaking": true}
-
-// wear per thousand years of holding each causal miracle
-var wear = map[string]float64{"ftl": 0.0015, "ansible": 0.001, "foresight": 0.0005, "unmaking": 0.001}
-
-// naming: what each miracle's holders say about the state when they first
-// reach into it. The people's word is the %s.
-var beneathNames = map[string]string{
-	"ftl":       "Whatever the ships pass through, nobody is in it. From inside, the crossing has no duration: one moment here, the next there. The ones who tried to stay awake for it did not come back as one person. The %s call it %s and do not look at it.",
-	"ansible":   "The Voice does not cross space; it goes under it. The %s call what it goes under %s. The speakers do not hear it. Anyone who begins to hear it is taken off the line.",
-	"foresight": "The Sight is not a looking forward. It is a leaning on something under time, where before and after are one thing. The %s call it %s, and the ones who lean too hard do not come back up.",
-	"unmaking":  "What the Unmaking does is not destruction. Matter is put back the way it was before it was matter. The %s have a word for that state, %s, and it is a word they say once.",
-	"wound":     "There is a place in the %s where the wall is not. They call what shows through it %s, and it is the only thing they are afraid of.",
-}
+// causal miracles are the ones that reach into the state, and wear is
+// what holding each does to the wall per thousand years: data/miracles.json.
+var causal, wear = func() (map[string]bool, map[string]float64) {
+	c, w := map[string]bool{}, map[string]float64{}
+	for _, m := range tables.miracles {
+		if m.Causal {
+			c[m.Key], w[m.Key] = true, m.Wear
+		}
+	}
+	return c, w
+}()
 
 // name is a people reaching into the state for the first time: the fact
 // the names pass coins its word from, once. An heir has its line's word
@@ -80,20 +76,18 @@ func (w *World) tickBeneath() {
 
 // thinStage: 0 whole, 1 worn, 2 thin, 3 torn.
 func (w *World) thinStage() int {
-	switch {
-	case w.Thin >= 5:
-		return 3
-	case w.Thin >= 2:
-		return 2
-	case w.Thin >= 0.5:
-		return 1
+	rows := tables.wall
+	for i := len(rows) - 1; i > 0; i-- {
+		if w.Thin >= rows[i].From {
+			return rows[i].Stage
+		}
 	}
 	return 0
 }
 
 // ThinWord says how the wall stands.
 func (w *World) ThinWord() string {
-	return []string{"whole", "worn", "thin", "torn"}[w.thinStage()]
+	return tables.wall[w.thinStage()].Word
 }
 
 // leak: something comes through, somewhere.

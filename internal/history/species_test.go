@@ -26,8 +26,8 @@ func TestHeirsShareBlood(t *testing.T) {
 		if nc.Tok() == c.Tok() || nc.Tok() == speciesTok(c.Species) {
 			t.Fatalf("an heir is named %q, its parent %q", nc.Tok(), c.Tok())
 		}
-		if nc.Origin == "" || len(w.Species) != 1 || c.Species.ID != 0 {
-			t.Fatalf("origin %q, %d species in the world", nc.Origin, len(w.Species))
+		if nc.Origin.Key == "" || len(w.Species) != 1 || c.Species.ID != 0 {
+			t.Fatalf("origin %v, %d species in the world", nc.Origin, len(w.Species))
 		}
 		if w.kinship(nc, &Legacy{Maker: c.ID}) != 2 {
 			t.Fatal("an heir should find the old people's works its own")

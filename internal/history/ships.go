@@ -251,11 +251,7 @@ func (w *World) dockUses(c *Civ) []flow.Use {
 		if rate <= 0 {
 			continue
 		}
-		name := "the yards at " + w.star(star)
-		if c.Known["living_ships"] {
-			name = "the breeding grounds at " + w.star(star)
-		}
-		out = append(out, flow.Use{Key: "dock:" + itoa(star), Name: name, Cat: cat, Era: 3, Need: w.keepOf(c).Scale(dockWork * rate)})
+		out = append(out, flow.Use{Key: "dock:" + itoa(star), Cat: cat, Era: 3, Need: w.keepOf(c).Scale(dockWork * rate)})
 	}
 	return out
 }

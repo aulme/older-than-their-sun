@@ -7,11 +7,9 @@ package species
 // faced as the waking: history's waking.go); outside it it does nothing.
 // Numbers small, no society, makes nothing, and a taken home is the end.
 var planetary = &ModDef{Mod: Planetary, Cradle: "ocean", CradleOdds: 0.6, Entry: Entry{
-	Key:      "planetary",
-	Portrait: "They are one mind, spread through the living substance of their world.",
-	Flavour:  Flavour{"graft", "spore-ark", "living moon"},
-	Legacy:   Draw{Base: 4.0 / 86, Tilts: map[string]float64{"evolver": 0}, Skip: []string{"way"}},
-	Draws:    Draw{Base: 1.0 / 25, Tilts: map[string]float64{"hive": 3, "unconscious": 2, "replicator": 0.1, "evolver": 0.5, "nomadic": 0.05}, Skip: []string{"org"}},
+	Key:    "planetary",
+	Legacy: Draw{Base: 4.0 / 86, Tilts: map[string]float64{"evolver": 0}, Skip: []string{"way"}},
+	Draws:  Draw{Base: 1.0 / 25, Tilts: map[string]float64{"hive": 3, "unconscious": 2, "replicator": 0.1, "evolver": 0.5, "nomadic": 0.05}, Skip: []string{"org"}},
 	Profile: Profile{
 		Mil: -1, Sur: 1, Soc: 2,
 		Wis:           1,   // slow, and whole

@@ -1,0 +1,30 @@
+{
+  "_": [
+    "How a people or a blood came to be when it did not arise: the key a people's origin and a blood's making carry, and the parties. The view renders the text: {C} the people that made it (by), {S} the people it was made from, {L} the remain, {T} the remain's star, {E} the remain's elder, {P} the plague.",
+    "origins: one row per key: text; desc; parties (which ids the text names).",
+    "Every term here is a technical term: a phrase a reader who never saw this project understands or can search for, never a coinage."
+  ],
+  "origins": [
+    {"key": "rubble", "text": "left in the rubble of {T} by {E}", "desc": "a dormant replicator left by an elder in the rubble of a star", "parties": "legacy"},
+    {"key": "withdrawn", "text": "something of {E} that withdrew into the dark and went still", "desc": "a sleeper: an elder thing gone still", "parties": "legacy"},
+    {"key": "copies", "text": "the machines of the {C}, copying themselves", "desc": "a swarm loose from its makers", "parties": "civ"},
+    {"key": "door", "text": "what came through the door of the {C}", "desc": "a sleeper that came through a people's door", "parties": "civ"},
+    {"key": "breakout", "text": "what got out of {L}", "desc": "a swarm that got out of a remain", "parties": "legacy"},
+    {"key": "woke_in", "text": "a mind that woke in {L}", "desc": "a machine mind that woke in a remain", "parties": "legacy"},
+    {"key": "bred", "text": "what the {C} bred", "desc": "a brood loose from its makers", "parties": "civ"},
+    {"key": "manna_loose", "text": "the Manna of the {C}, loose", "desc": "a Manna that got loose and thought", "parties": "civ"},
+    {"key": "heirs", "text": "heirs of the {C}", "desc": "an heir of a sundered or shattered people", "parties": "civ"},
+    {"key": "cut", "text": "cut from the {C}", "desc": "a people cut from another by the demand", "parties": "civ"},
+    {"key": "lost_fleet", "text": "the fleet of the {C} that never came home", "desc": "a fleet that stayed where it was sent", "parties": "civ"},
+    {"key": "woke", "text": "woke in {P}", "desc": "a blood that woke in a plague: a conscious plague's rider", "parties": "plague"},
+    {"key": "woke_thing", "text": "something that woke in {P}", "desc": "a conscious plague that woke as a people", "parties": "plague"},
+    {"key": "signal", "text": "something that came down the signal from {T}", "desc": "a rider that came down a transmitter's signal", "parties": "legacy"},
+    {"key": "rider", "text": "a rider born with the {C}", "desc": "a rider born with its host", "parties": "civ"},
+    {"key": "believers", "text": "the believers in {P}, once of the {C}", "desc": "a cult of a memetic plague, once a world of another people", "parties": "plague,civ"},
+    {"key": "built", "text": "built by the {C}", "desc": "a machine successor built by its makers", "parties": "civ"},
+    {"key": "uplifted", "text": "uplifted by the {C}", "desc": "a blood raised from the beasts of a world", "parties": "civ"},
+    {"key": "bred_from", "text": "bred by the {C} from the {S}", "desc": "a blood bred by a master from its slaves", "parties": "civ,from"},
+    {"key": "remade", "text": "what the {C} made of themselves", "desc": "a blood a people remade itself into", "parties": "civ"},
+    {"key": "table", "text": "grown for the table of the {C}", "desc": "a blood grown for the table that rose", "parties": "civ"}
+  ]
+}

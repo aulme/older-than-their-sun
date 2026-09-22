@@ -1,0 +1,20 @@
+{
+  "_": [
+    "The works: what a node lets a people raise at a star. The simulation reads every number; the view reads the text.",
+    "structures: one row per work: key and name; node (the discovery that unlocks it); the levels it gives (mil, sur, soc); upkeep per tick and cat (the category it is fed under); per (star: one per star; belt: one per belt; absent: two per people, one per star); hardy (a multiplier on decay once abandoned, less is hardier); guns it stands in its star's sky, modern (one more per weapons era beyond the node's), repair (its guns remade while the world is held); dug (raised at every world, never by the pick); watch (light years it sees a fleet in flight); max per people (0 is the usual two). text is its raising ({M} the people, {M} the star); remain what is left of it once abandoned ({M} the makers).",
+    "Every term here is a technical term: a phrase a reader who never saw this project understands or can search for, never a coinage."
+  ],
+  "structures": [
+    {"key": "ansible", "node": "ansible", "name": "ansible net", "text": "The {S} link {T} to home without delay.", "soc": 1.5, "upkeep": {"E": 2}, "cat": "mind", "hardy": 0.9, "remain": "a relay of the {M}"},
+    {"key": "arcology", "node": "closed_ecologies", "name": "arcology", "text": "The {S} seal a city at {T} against everything outside it.", "sur": 1, "upkeep": {"E": 1}, "cat": "fields", "hardy": 1.2, "remain": "a sealed city of the {M}"},
+    {"key": "collectors", "node": "orbital_habitats", "name": "collectors", "text": "The {S} ring {T} with collectors, and live on its light.", "upkeep": {"M": 1}, "cat": "works", "per": "star", "hardy": 0.5, "watch": 2, "remain": "the collectors of the {M}"},
+    {"key": "defences", "node": "defence_grid", "name": "defence grid", "text": "The {S} ring {T} with guns that watch the sky.", "upkeep": {"E": 1, "M": 1}, "cat": "arms", "hardy": 0.7, "guns": 3, "modern": true, "repair": true, "watch": 12, "remain": "the guns of the {M}"},
+    {"key": "dyson", "node": "dyson", "name": "Dyson swarm", "text": "The {S} enclose {T} in a swarm of collectors. The star dims from outside.", "sur": 0.5, "upkeep": {"M": 2}, "cat": "works", "per": "star", "hardy": 0.3, "watch": 15, "remain": "the swarm of the {M}"},
+    {"key": "lifter", "node": "star_lifting", "name": "star lifter", "text": "The {S} set a lifter on {T} and take the star itself for metal.", "upkeep": {"M": 3}, "cat": "works", "per": "star", "hardy": 0.4, "watch": 2, "remain": "the lifter of the {M}"},
+    {"key": "mine", "node": "orbital_habitats", "name": "mines", "text": "The {S} put mines in the belt at {T}.", "upkeep": {"E": 1}, "cat": "works", "per": "belt", "hardy": 1.4, "watch": 0.5, "remain": "the mines of the {M}"},
+    {"key": "observatory", "node": "orbital_habitats", "name": "observatory", "text": "The {S} hang mirrors across {T}, a telescope with a baseline of light-hours. Little moves within forty light years that they do not see.", "upkeep": {"E": 1}, "cat": "mind", "hardy": 0.6, "watch": 40, "max": 1, "remain": "the mirrors of the {M}"},
+    {"key": "shipyard", "node": "orbital_habitats", "name": "shipyard", "text": "Yards turn above {T}, building ships for the {S}.", "upkeep": {"E": 1, "M": 1}, "cat": "arms", "hardy": 1.6, "watch": 3, "remain": "the yards of the {M}"},
+    {"key": "silos", "node": "orbital_weapons", "name": "silos", "text": "The {S} dig silos at {T}: nukes on rockets, aimed at the sky.", "upkeep": {"M": 0.5}, "cat": "arms", "hardy": 1.8, "guns": 2, "dug": true, "remain": "the silos of the {M}"},
+    {"key": "tap", "node": "stellar_engineering", "name": "accretion tap", "text": "The {S} ring the dead star at {T} with a tap and draw on what falls in.", "upkeep": {"E": 1, "M": 2}, "cat": "works", "per": "star", "hardy": 0.4, "watch": 2, "remain": "the tap of the {M}, still ringing the dead star"}
+  ]
+}

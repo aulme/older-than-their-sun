@@ -37,7 +37,7 @@ func TestSlightSized(t *testing.T) {
 	w, a, b, p := circle(t, 1, species.Fixed("conqueror"))
 	q := spawnAt(w, 3, species.Fixed("cooperative"))
 	q.Income = flow.Income{10, 10, 10}
-	wr := w.declare(a, b, "conquest")
+	wr := w.declare(a, b, because("border"))
 	if wr == nil {
 		t.Fatal("no war")
 	}
@@ -53,7 +53,7 @@ func TestSlightSized(t *testing.T) {
 	// dependence doubles it
 	w2, a2, b2, p2 := circle(t, 2, species.Fixed("conqueror"))
 	p2.Dependent = map[int]bool{b2.ID: true}
-	w2.declare(a2, b2, "conquest")
+	w2.declare(a2, b2, because("conquest"))
 	if got := p2.Grudge[a2.ID]; got < 0.26 || got > 0.27 {
 		t.Errorf("a dependent partner's slight is %.2f, want 0.27", got)
 	}
@@ -70,7 +70,7 @@ func TestSlightSized(t *testing.T) {
 // only one fact is written.
 func TestSlightRepeats(t *testing.T) {
 	w, a, b, p := circle(t, 3, species.Fixed("conqueror"))
-	wr := w.declare(a, b, "conquest")
+	wr := w.declare(a, b, because("border"))
 	first := p.Grudge[a.ID]
 	p.From = map[int]flow.Income{}
 	for range 5 {
@@ -162,7 +162,7 @@ func TestOffenceInTheWorld(t *testing.T) {
 		in := mind.AnswerInput{Posture: p.posture(), Mil: 3, ProposerMil: 3, Dials: p.Dials, Wis: 10, ProposerGrudge: p.Grudge[a.ID], Target: true, Believed: 3}
 		return mind.AnswerPact(in, w.Cfg.Tuning).Score < mind.AnswerPact(mind.AnswerInput{Posture: p.posture(), Mil: 3, ProposerMil: 3, Dials: p.Dials, Wis: 10, Target: true, Believed: 3}, w.Cfg.Tuning).Score
 	}
-	w.declare(a, b, "conquest")
+	w.declare(a, b, because("border"))
 	w.endWar(w.Wars[0], "peace")
 	if p.Grudge[a.ID] <= 0 {
 		t.Fatal("no grudge from the slight")
@@ -170,7 +170,7 @@ func TestOffenceInTheWorld(t *testing.T) {
 	if !cold() {
 		t.Error("the slighted people answers the attacker's pact as warmly as before")
 	}
-	w.declare(a, b, "the old quarrel")
+	w.declare(a, b, because("border"))
 	if p.Grudge[a.ID] < 0.26 {
 		t.Errorf("the second war left a grudge of %.2f, want two slights", p.Grudge[a.ID])
 	}
@@ -183,9 +183,9 @@ func TestSourceSlight(t *testing.T) {
 	star := 3
 	b.Systems = append(b.Systems, star)
 	w.Owner[star] = b.ID
-	s := w.addSource(&Source{Key: "diamond", Name: "a diamond moon at X", Star: star, Rarity: true, Grants: []string{"exotic_matter"}, Holder: b.ID, Carried: -1, Legacy: -1})
+	s := w.addSource(&Source{Key: "diamond", Star: star, Rarity: true, Grants: []string{"exotic_matter"}, Holder: b.ID, Carried: -1, Legacy: -1})
 	_ = s
-	wr := w.declare(a, b, "conquest")
+	wr := w.declare(a, b, because("border"))
 	before := p.Grudge[a.ID]
 	w.sourceSlight(wr, a, b, star)
 	if got := p.Grudge[a.ID] - before; got < 0.29 || got > 0.31 {

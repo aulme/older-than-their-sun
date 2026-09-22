@@ -26,40 +26,39 @@ const magnetarReach = 30
 // the systems and the catalogue, and draws nothing.
 func naturalRarities(g *galaxy.Galaxy) []*Source {
 	var out []*Source
-	at := func(i int, key, name string, s Source) {
-		s.Key, s.Name, s.Star, s.Kind = key, name, i, CosmicSource
+	at := func(i int, key string, s Source) {
+		s.Key, s.Star, s.Kind = key, i, CosmicSource
 		s.Rarity = s.Yield == (flow.Income{}) // a companion burned for fuel is a source like any other
 		out = append(out, &s)
 	}
 	for i := range g.Stars {
 		st := &g.Stars[i]
 		sys := g.Sys[i]
-		name := "{star:" + itoa(i) + "}"
 		switch {
-		case st.Class == 'N' && (st.Remnant == "black hole" || st.Remnant == "the great hole"):
-			at(i, "horizon", "the horizon at "+name, Source{Grants: []string{"causal_physics", "deep_time"}})
+		case st.Class == 'N' && (st.Remnant == "black_hole" || st.Remnant == "great_hole"):
+			at(i, "horizon", Source{Grants: []string{"causal_physics", "deep_time"}})
 		case st.Class == 'N' && st.Remnant == "magnetar":
-			at(i, "beam", "the beam of "+name, Source{Radius: magnetarReach, Grants: []string{"unmaking"}, Levels: [3]float64{0.5, 0, 0}})
+			at(i, "beam", Source{Radius: magnetarReach, Grants: []string{"unmaking"}, Levels: [3]float64{0.5, 0, 0}})
 		case st.Class == 'N':
-			at(i, "heavy_star", "the heavy star at "+name, Source{Grants: []string{"stellar_weapons"}})
+			at(i, "heavy_star", Source{Grants: []string{"stellar_weapons"}})
 		case st.Class == 'W':
-			at(i, "diamond", "the diamond star at "+name, Source{Levels: [3]float64{0, 0, 0.5}})
+			at(i, "diamond", Source{Levels: [3]float64{0, 0, 0.5}})
 		}
 		switch sys.Comp {
-		case "a white dwarf companion":
-			at(i, "dwarf_companion", "the small white companion of "+name, Source{Levels: [3]float64{0, 0, 0.3}})
-		case "a brown dwarf companion":
-			at(i, "brown_companion", "the brown dwarf beside "+name, Source{Yield: flow.Income{flow.E: 2}, Needs: []string{"fusion"}, Rarity: false})
+		case "white_dwarf":
+			at(i, "dwarf_companion", Source{Levels: [3]float64{0, 0, 0.3}})
+		case "brown_dwarf":
+			at(i, "brown_companion", Source{Yield: flow.Income{flow.E: 2}, Needs: []string{"fusion"}, Rarity: false})
 		}
 		if sys.Disc != "" {
-			at(i, "dust", "the dust of "+name, Source{Levels: [3]float64{0, 0, 0.3}})
+			at(i, "dust", Source{Levels: [3]float64{0, 0, 0.3}})
 		}
 		if sys.Home >= 0 && sys.Planets[sys.Home].Moons > 0 {
-			at(i, "moon", "the moon of "+name, Source{Levels: [3]float64{0, 0, 0.3}})
+			at(i, "moon", Source{Levels: [3]float64{0, 0, 0.3}})
 		}
 	}
 	ranged := func(f *galaxy.Feature, key string, s Source) {
-		s.Key, s.Name, s.Star, s.Feature, s.Radius, s.Kind, s.Rarity = key, f.Name, -1, f, f.Radius, CosmicSource, true
+		s.Key, s.Star, s.Feature, s.Radius, s.Kind, s.Rarity = key, -1, f, f.Radius, CosmicSource, true
 		out = append(out, &s)
 	}
 	// a catalogued black hole is a horizon only as the star it is, which
@@ -68,7 +67,7 @@ func naturalRarities(g *galaxy.Galaxy) []*Source {
 	for _, f := range galaxy.Features {
 		switch f.Kind {
 		case galaxy.BlackHole:
-			if f.Name == "Sagittarius A*" {
+			if f.Key == "sagittarius_a_star" {
 				ranged(f, "heart", Source{Grants: []string{"transcendence"}})
 			}
 		case galaxy.Magnetar:
@@ -84,52 +83,16 @@ func naturalRarities(g *galaxy.Galaxy) []*Source {
 	return out
 }
 
-// rarityLines are what a people says when it first has a rarity, by key.
-// %s is the people; a second %s, where there is one, is the source's name.
-var rarityLines = map[string]string{
-	"horizon":         "The %s hold %s now. What falls in comes out as understanding: the deep physics come cheap to them.",
-	"beam":            "The %s live under %s. Its flares light their sky, and they learn from it how to unmake.",
-	"heavy_star":      "The %s hold %s. Its skin is metal a mile deep, and its weight is a lesson in stellar weapons.",
-	"beacon":          "The %s hold a star within reach of %s. They steer by its ticking, and their ships go further for it.",
-	"diamond":         "The %s hold %s. It is a diamond the size of a world, and they are never done singing about it.",
-	"colours":         "The %s live in %s. The sky is a painting, and the painting hides them.",
-	"ash":             "The %s hold a star in %s. The matter there was made in a death, and some of it is not on any table.",
-	"heart":           "The %s hold a star within reach of %s. Everything falls toward it, and so does thought.",
-	"dwarf_companion": "The %s hold %s. It is a thing of great value that does nothing, which is what makes it valuable.",
-	"dust":            "The %s hold %s. At dusk the whole sky is a ring, and they put it on their flags.",
-	"moon":            "The %s hold %s. The tides and the calendar are its, and the songs.",
-}
-
-// rarityFrames are what a rarity is called in a gazetteer note.
-var rarityFrames = map[string]string{
-	"horizon": "a horizon", "beam": "the beam", "heavy_star": "the heavy star", "beacon": "a beacon", "diamond": "the diamond star",
-	"colours": "the colours", "ash": "the ash", "heart": "the Heart", "dwarf_companion": "a white companion", "brown_companion": "a brown dwarf",
-	"dust": "a ring of dust", "moon": "a moon of its own",
-}
-
 // RarityFrame is what a rarity of a key is called in a note.
 func RarityFrame(key string) string {
-	if f, ok := rarityFrames[key]; ok {
-		return f
+	if s := tables.sourceByKey[key]; s != nil && s.Frame != "" {
+		return s.Frame
 	}
 	return key
 }
 
 // GrantedNodes lists every node some natural rarity grants, for the batch.
 var GrantedNodes = []string{"causal_physics", "deep_time", "unmaking", "stellar_weapons", "exotic_matter", "transcendence"}
-
-// harnessLines are what a people says when it first harnesses a source
-// kind worth a line. %s is the people; the second %s the source's name.
-var harnessLines = map[string]string{
-	"belt":            "The %s begin to work %s: ice and iron, by the shipload.",
-	"brown_companion": "The %s burn %s for fuel: a star that never lit, lit at last.",
-	"giant":           "The %s skim %s for fuel. The small suns of their fusion plants never go out now.",
-	"terraformed":     "The %s bring %s to life. It feeds them.",
-	"heavy":           "The %s dig %s and find it rich in what splits.",
-	"nebula":          "The %s grow their food in the gas of %s itself.",
-	"doomed_giant":    "The %s catch the light of %s. It will not shine long, and they know it.",
-	"comets":          "The %s harvest %s, and eat ice older than their sun.",
-}
 
 // firstHarness is the line and the deed for the first source of a kind a
 // people harnesses; the kinds with no line in the table pass in silence.
@@ -142,8 +105,8 @@ func (w *World) firstHarness(c *Civ, s *Source) {
 		return
 	}
 	c.Harnessed[s.Key] = true
-	if line, ok := harnessLines[s.Key]; !ok || line == "" {
-		return
+	if row := tables.sourceByKey[s.Key]; row == nil || !row.Harness {
+		return // the kinds not worth a line pass in silence
 	}
 	w.fact(FHarness, c, nil, max(s.Star, c.Home)).with(P{"source": s.ID})
 }
@@ -245,7 +208,7 @@ func (w *World) rare(c *Civ) bool {
 		case x.via >= 0 && matters:
 			w.event(KRarityHad, c, w.Civs[x.via], -1, P{"source": s.ID, "via": true})
 		case x.via < 0:
-			if line := rarityLines[s.Key]; line != "" && (s.Star != c.Cradle || matters) {
+			if row := tables.sourceByKey[s.Key]; row != nil && row.Remark && (s.Star != c.Cradle || matters) {
 				w.event(KRarityHad, c, nil, -1, P{"source": s.ID, "via": false})
 			}
 		}
@@ -413,7 +376,7 @@ func (w *World) wieldRarity(c *Civ, l *Legacy) {
 	if l.Source >= 0 {
 		s = w.Sources[l.Source]
 	} else {
-		s = w.addSource(&Source{Key: "artifact", Name: l.Desc, Kind: ElderSource, Star: c.Home, Mobile: true, Rarity: true, Legacy: l.ID, Holder: -1, Carried: -1})
+		s = w.addSource(&Source{Key: "artifact", Kind: ElderSource, Star: c.Home, Mobile: true, Rarity: true, Legacy: l.ID, Holder: -1, Carried: -1})
 		if l.Maker >= 0 {
 			s.Kind = MadeSource
 		}
@@ -439,30 +402,16 @@ func (w *World) wieldRarity(c *Civ, l *Legacy) {
 	}
 }
 
-// bounties are the elder rarities: things still doing what they were made
-// to do, for whoever puts them to use. Immobile; the yield goes to whoever
-// holds the star once somebody has worked out how.
-var bounties = []struct {
-	Key, Desc string
-	Yield     flow.Income
-	Levels    [3]float64
-	Wear      Year
-}{
-	{"lattice", "a lattice that turns starlight to metal, still turning", flow.Income{flow.M: 6}, [3]float64{}, 0},
-	{"sea", "a sea that has been growing since before the age", flow.Income{flow.O: 6}, [3]float64{}, 0},
-	{"battery", "a battery the size of a moon, a tenth full", flow.Income{flow.E: 6}, [3]float64{}, 1_000_000},
-	{"seam", "a seam of a metal that is not on the table", flow.Income{flow.M: 4}, [3]float64{0.5, 0, 0}, 0},
-	{"garden", "a garden that tends itself, under a roof of something clear", flow.Income{flow.O: 4}, [3]float64{0, 0.5, 0}, 0},
-	{"mirror", "a mirror in orbit that never lost its polish", flow.Income{flow.E: 4}, [3]float64{}, 0},
-	{"ring", "a ring of black metal around a dead star, still warm", flow.Income{flow.E: 8}, [3]float64{}, 0},
-}
+// The bounties, the elder rarities still doing what they were made to
+// do, are data/portraits.json; immobile, the yield goes to whoever holds
+// the star once somebody has worked out how.
 
 // leaveBounty makes an elder legacy a bounty with its source.
 func (w *World) leaveBounty(l *Legacy, i int) {
-	b := bounties[i]
+	b := tables.portraits.Bounties[i]
 	l.Kind = Bounty
-	l.Desc = b.Desc
-	s := w.addSource(&Source{Key: "bounty:" + b.Key, Name: b.Desc, Kind: ElderSource, Star: l.Star, Yield: b.Yield, Levels: b.Levels, Rarity: true, Legacy: l.ID, Holder: -1, Carried: -1, Wear: b.Wear})
+	l.Portrait = b.Key
+	s := w.addSource(&Source{Key: "bounty:" + b.Key, Kind: ElderSource, Star: l.Star, Yield: b.Yield, Levels: b.Levels, Rarity: true, Legacy: l.ID, Holder: -1, Carried: -1, Wear: b.Wear})
 	l.Source = s.ID
 }
 

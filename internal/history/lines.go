@@ -21,7 +21,7 @@ import (
 // A template's placeholders are the event's fields as tokens, {S} the
 // subject and {O} the object (a people's token, the article in the
 // template), {T} the star, {Q} the plague, {L} the remain's description,
-// {N} the count; a parameter by name, {cause}; and a parameter through a
+// {N} the count; a parameter by name, {cause:why}; and a parameter through a
 // formatter, {ships:ships}, {far:star}, {radius:.0f}. {^x} raises the
 // first letter. {warspan} is the war's length and cost from the four
 // parameters warSpanP writes. Kinds whose line depends on the parameters
@@ -74,7 +74,11 @@ func (w *World) render(e *Event, tmpl string) string {
 			if !ok {
 				return m
 			}
-			out = w.format(v, format, e)
+			if format == "why" {
+				out = w.whyText(e, name)
+			} else {
+				out = w.format(v, format, e)
+			}
 		}
 		if up && strings.HasPrefix(out, "{") {
 			return "{^" + out[1:] // a token raised: the names pass raises the name
@@ -103,10 +107,17 @@ func (w *World) tokenOf(id int, kind, format string) string {
 
 // legacyOf is the remain in an event as the line says it.
 func (w *World) legacyOf(e *Event, format string) string {
-	if format == "makers" {
-		return makersTok(w.Legacies[e.Legacy])
+	l := w.Legacies[e.Legacy]
+	switch format {
+	case "makers":
+		return makersTok(l)
+	case "at":
+		// as it stood when the event captured it
+		ships, _ := e.P["ships"].(int)
+		adrift, _ := e.P["adrift"].(bool)
+		return w.describeAt(l, Condition(e.P["cond"].(int)), ships, adrift)
 	}
-	return w.Legacies[e.Legacy].Desc
+	return w.legacyDesc(l)
 }
 
 // format is a parameter as a line says it: a number, a word for a
@@ -151,24 +162,40 @@ func (w *World) format(v any, format string, e *Event) string {
 	case "structure":
 		return tech.Structures[v.(string)].Name
 	case "miracle":
-		return miracleNames[v.(string)]
+		return tables.miracleByKey[v.(string)].Name
 	case "object":
-		return objectNames[v.(string)]
+		return tables.miracleByKey[v.(string)].Object
 	case "filter":
 		return filters[v.(string)].Name
 	case "trait":
 		return species.Get(v.(string)).Name
+	case "traits":
+		return species.DescribeTraits(v.([]string))
 	case "source":
-		return w.Sources[v.(int)].Name
+		return w.sourceName(w.Sources[v.(int)])
+	case "colony":
+		return w.Species[v.(int)].Flavour().Colony
+	case "ship":
+		return w.Species[v.(int)].Flavour().Ship
+	case "betrayal":
+		return w.BetrayalText(v.(string), e.Object)
+	case "use":
+		return w.useName(e)
+	case "maker":
+		return w.makerNameIf(w.Legacies[e.Legacy], v.(bool))
+	case "drift":
+		return w.driftText(e)
 	case "portrait":
-		return w.Elder(v.(int)).Portrait
+		return strings.Join(w.PortraitLines(w.Species[v.(int)], e.P["powers"].([]string)), "\n")
+	case "elder_portrait":
+		return w.ElderPortrait(w.Elder(v.(int)))
 	case "knower":
-		return ageKnowers[v.(int)]
+		return portraitText("knowers", v.(string))
 	case "ender":
-		return w.Ages[v.(int)].Ender
+		return w.AgeEnder(w.Ages[v.(int)])
 	case "feature":
 		for _, f := range galaxy.Features {
-			if f.Name == v.(string) {
+			if f.Key == v.(string) {
 				return f.Event
 			}
 		}
@@ -226,7 +253,7 @@ func nodeNames(keys []string) []string {
 // lines are the templates of the kinds whose line is one template.
 var lines = map[Kind]string{
 	KAgeDawn:     "The dawn of an age. Everywhere at once, things start to think.",
-	KElderRose:   "Somewhere, {elder:portrait} rises.",
+	KElderRose:   "Somewhere, {elder:elder_portrait} rises.",
 	KAgeKnower:   "{line:knower}",
 	KAgeWaned:    "The age wanes. Nothing new rises, and what remains dwindles. What is left is swept up by {age:ender}.",
 	KElderLeft:   "It leaves {L}.",
@@ -234,30 +261,30 @@ var lines = map[Kind]string{
 	KBurst:       "A gamma-ray burst near {T} sterilises {killed} living worlds within {radius:.0f} ly.",
 	KSupernova:   "{T} goes supernova. {killed} living worlds within 30 ly are sterilised.",
 	KStarSwelled: "{T} swells and dies, and the life on its worlds with it.",
-	KReason:      "[the {S}, {what}: {why}]",
+	KReason:      "[the {S}, {what}: {why:why}]",
 	KQuarry:      "The hunt of the {S} has a quarry now: the {O}.",
 	KVeiled:      "The {S} forget the {O}, and this time there is no learning them again.",
 	KLifted:      "The {S} of {T} {need:lifted}, to the bafflement of home. It never comes naturally to them.",
 
 	FEnslaved:         "The {O} are enslaved by the {S}. They keep {T} and little else.",
 	KMasterGone:       "The {S}, who held the {O}, are gone. The question of freedom answers itself, one way or the other.",
-	FUplift:           "The {S} raise the {O} from the beasts of {T}. They are {desc}, and grateful, for now.",
-	FBred:             "The {S} remake the {O} into the {into:civ}: {desc}.",
+	FUplift:           "The {S} raise the {O} from the beasts of {T}. They are {traits:traits}, and grateful, for now.",
+	FBred:             "The {S} remake the {O} into the {into:civ}: {traits:traits}.",
 	KDebug:            "{text}",
 	KSystem:           "{T:system}",
-	KPortrait:         "{lines:lines}",
+	KPortrait:         "{species:portrait}",
 	KBornMiracle:      "They are born to a miracle: {miracle:miracle}. What others will spend ages reaching for, they have from the first.",
 	KBornFailing:      "Their sun is already failing. They were born under a dying star.",
-	FShipLost:         "A {ship} of the {S} arrives at {T}, which every reading said was empty, and is never heard from again. The {O} were there.",
+	FShipLost:         "A {species:ship} of the {S} arrives at {T}, which every reading said was empty, and is never heard from again. The {O} were there.",
 	FZenith:           "The {S} enter their zenith: {N} systems, and no rival in sight.",
 	KReseated:         "What is left of the {S} gathers on {T}. It is home now.",
-	FFall:             "The {S} {cause}. What remains of them lives on {T} under {S:title}. Once they held {peak:systems}.",
-	KOutgrown:         "The {S} are gone. What they built at {T} thinks on without them, and calls itself the {O}: {desc}.",
+	FFall:             "The {S} {cause:why}. What remains of them lives on {T} under {S:title}. Once they held {peak:systems}.",
+	KOutgrown:         "The {S} are gone. What they built at {T} thinks on without them, and calls itself the {O}: {traits:traits}.",
 	KForesaw:          "The {S} see {filter:filter} coming and step around it.",
 	KStarDead:         "{T} dies. Its worlds freeze.",
 	KFleetCaught:      "A fleet of the {S} at {T} is caught in it and is gone.",
 	KCannotLeave:      "The {S} cannot leave {T}; they are it.",
-	FLeftStar:         "The {S} leave {T} to {why}. {to:star} is home now, and always a little less than the one before.",
+	FLeftStar:         "The {S} leave {T} to {why:why}. {to:star} is home now, and always a little less than the one before.",
 	FDoom:             "The sun of the {S} is failing. {T} grows harsher with every century. They have, perhaps, {endure} thousand years.",
 	KStarKept:         "The {S} reach into {T} and hold it together. Their sun will fail, but not yet.",
 	KEndured:          "The {S} endure under the failing sun of {T} until they cannot. The last of them die looking up.",
@@ -309,18 +336,18 @@ var lines = map[Kind]string{
 	KFleetStayed:      "The fleet of the {S} never comes home. At {T} its captains rule as their own people.",
 	KInterceptSent:    "The {S} send {ships:ships} from {T} to meet the fleet of the {O} in the dark.",
 	KSalvaged:         "The {S} crew what will fly of it: {ships:ships}, turned for {T}.",
-	KWentDark:         "The {S} let {name} go dark to keep {kept:category} fed.",
+	KWentDark:         "The {S} let {use:use} go dark to keep {kept:category} fed.",
 	FWant:             "The {S} have gone without for a hundred thousand years. They call them the lean years.",
 	KGarrisoned:       "The {S} send {ships:ships} to hold {T}.",
 	KGathered:         "The {S} gather their ships at {T}.",
 	KGridRebuilt:      "The {S} rebuild the grid over {T}.",
 	KClaimForgot:      "Among the {S} the sundering has become a story told to children. Nobody speaks of the old realm as theirs any more.",
-	KRemade:           "The {S} are gone. What they made of themselves holds their worlds and calls itself the {O}: {desc}.",
+	KRemade:           "The {S} are gone. What they made of themselves holds their worlds and calls itself the {O}: {traits:traits}.",
 	KMovedOn:          "The fleets of the {S} move on, to {T}.",
 	KPocketDimmed:     "The pocket star dims as the {S} move it. It gives {gives:.0f} now.",
 	KSingularityLoose: "The captive singularity at {T} gets loose in the taking.",
 	FVacuumHole:       "The hole in the vacuum at {T} has grown past holding. The star begins to go out.",
-	FRise:             "What the {O} grew for the table at {T} has been thinking for a long time. It rises, and calls itself the {S}: {desc}.",
+	FRise:             "What the {O} grew for the table at {T} has been thinking for a long time. It rises, and calls itself the {S}: {traits:traits}.",
 	KCutting:          "The {S} give the {O} a cutting of {source:source}. It takes.",
 	FRenaissance:      "The {S} grow old and tired, and then, unexpectedly, young again. A renaissance.",
 	KSet:              "The {S} stop changing. Every year is like the last. It works, for a while.",
@@ -353,7 +380,7 @@ var lines = map[Kind]string{
 	KPortsOpened:      "The {S} open their ports to the {O} again.",
 	FEmbargo:          "The {S} have what the {O} want, and will not send it. The {O} call it an embargo.",
 	KTired:            "The {S} tire of the {O}, who take and send nothing back, and the trade between them ends.",
-	FCutOff:           "The {S} go dark when the {O} stop sending, with {why}.",
+	FCutOff:           "The {S} go dark when the {O} stop sending, with {why:why}.",
 	KWeaponBurned:     "The {S} burn {Q}, having nobody left to give it to.",
 	KWeaponLeaked:     "The programme that keeps {Q} is not kept well enough.",
 	FWaking:           "The {S} wake. {seat:star} and everything near it is theirs, and the {O} are on it.",
@@ -383,7 +410,10 @@ var lineFns = map[Kind]func(w *World, e *Event) string{
 		return "It ends."
 	},
 	KBirthright: func(w *World, e *Event) string {
-		parts := append([]string(nil), e.P["blocks"].([]string)...)
+		var parts []string
+		for _, k := range e.P["blocks"].([]string) {
+			parts = append(parts, aptitudeText(k))
+		}
 		if cheap := nodeNames(e.P["cheap"].([]string)); len(cheap) > 0 {
 			parts = append(parts, "They take to "+list(cheap)+" as if born to it.")
 		}
@@ -448,7 +478,7 @@ var lineFns = map[Kind]func(w *World, e *Event) string{
 	},
 	FArise: func(w *World, e *Event) string {
 		if host, ok := e.P["host"]; ok {
-			return sprintf("The {S} %s the {civ:%d}, at %s. They are {desc}.", w.Civs[e.Subject].Species.Arising(), host, w.G.Sys[e.Star].HomeName(w.star(e.Star)))
+			return sprintf("The {S} %s the {civ:%d}, at %s. They are {traits:traits}.", w.Civs[e.Subject].Species.Arising(), host, w.G.Sys[e.Star].HomeName(w.star(e.Star)))
 		}
 		if e.P["made"].(bool) {
 			return ""
@@ -460,7 +490,7 @@ var lineFns = map[Kind]func(w *World, e *Event) string{
 		if p := e.P["prior"].(int); p >= 0 {
 			prior = sprintf(", among the ruins of the {civ:%d}", p)
 		}
-		they := "They are {desc}."
+		they := "They are {traits:traits}."
 		if e.P["shared"].(bool) {
 			they = "They are a people of the {species:species}."
 		}
@@ -470,24 +500,20 @@ var lineFns = map[Kind]func(w *World, e *Event) string{
 	KArrivalLost: func(w *World, e *Event) string {
 		switch e.P["why"] {
 		case "held":
-			return "A {ship} of the {S} arrives at {T} to find the {O} already there."
+			return "A {species:ship} of the {S} arrives at {T} to find the {O} already there."
 		case "taken":
-			return "A {ship} of the {S} arrives at {T} to find it already taken. It is never heard from again."
+			return "A {species:ship} of the {S} arrives at {T} to find it already taken. It is never heard from again."
 		}
-		return "A {ship} of the {S} reaches {T} on a guess and finds nothing there it can live on. What it learned is sent home. The ship is not."
+		return "A {species:ship} of the {S} reaches {T} on a guess and finds nothing there it can live on. What it learned is sent home. The ship is not."
 	},
 	FSettle: func(w *World, e *Event) string {
 		if e.P["first"].(bool) {
-			return "The {S} settle {T}, their first {colony} beyond {home:star}."
+			return "The {S} settle {T}, their first {species:colony} beyond {home:star}."
 		}
 		return "The {S} now hold {N} systems."
 	},
 	KBuilt: func(w *World, e *Event) string {
-		st := tech.Structures[e.P["work"].(string)]
-		if st.Key == "shipyard" {
-			return sprintf(st.Text, "{T}", "{S}")
-		}
-		return sprintf(st.Text, "{S}", "{T}")
+		return tech.Structures[e.P["work"].(string)].Text
 	},
 	KHomeLost: func(w *World, e *Event) string {
 		switch e.P["way"] {
@@ -503,15 +529,15 @@ var lineFns = map[Kind]func(w *World, e *Event) string{
 		case e.P["fate"] != "extinct":
 			return ""
 		case e.P["remnant"].(bool):
-			return "The last of the {S} are gone from {T}. They {cause}."
+			return "The last of the {S} are gone from {T}. They {cause:why}."
 		}
-		return "The {S} {cause}. They held {peak:systems} at their height."
+		return "The {S} {cause:why}. They held {peak:systems} at their height."
 	},
 	FDarkAge: func(w *World, e *Event) string {
 		if e.P["lost"].(int) > 0 {
-			return "The {S} {cause}. A dark age follows, and {depth:depth} of what they knew is forgotten. {lost} {colony}s go silent."
+			return "The {S} {cause:why}. A dark age follows, and {depth:depth} of what they knew is forgotten. {lost} {species:colony}s go silent."
 		}
-		return "The {S} {cause}. A dark age follows, and {depth:depth} of what they knew is forgotten."
+		return "The {S} {cause:why}. A dark age follows, and {depth:depth} of what they knew is forgotten."
 	},
 	KFaced: func(w *World, e *Event) string {
 		key := e.P["filter"].(string) + "/" + e.P["outcome"].(string)
@@ -523,15 +549,15 @@ var lineFns = map[Kind]func(w *World, e *Event) string{
 	KNamedItself: func(w *World, e *Event) string {
 		switch e.P["way"] {
 		case "eats":
-			return "What eats {T} calls itself the {S}, if it calls itself anything: {desc}."
+			return "What eats {T} calls itself the {S}, if it calls itself anything: {traits:traits}."
 		case "growth":
-			return "What is at {T} now is a growth that eats worlds, and it calls itself the {S}, if it calls itself anything: {desc}."
+			return "What is at {T} now is a growth that eats worlds, and it calls itself the {S}, if it calls itself anything: {traits:traits}."
 		case "called":
-			return "It is called the {S}, by those who have to call it something: {desc}."
+			return "It is called the {S}, by those who have to call it something: {traits:traits}."
 		case "mind":
-			return "It calls itself the {S}: {desc}."
+			return "It calls itself the {S}: {traits:traits}."
 		}
-		return "It calls itself the {S}, if it calls itself anything: {desc}."
+		return "It calls itself the {S}, if it calls itself anything: {traits:traits}."
 	},
 	KBlast: func(w *World, e *Event) string { return blastLines[e.P["way"].(string)] },
 	KWallStage: func(w *World, e *Event) string {
@@ -593,7 +619,7 @@ var lineFns = map[Kind]func(w *World, e *Event) string{
 	FBetrayal: func(w *World, e *Event) string {
 		switch e.P["way"] {
 		case "broke":
-			return "The {S} {shape}, and the {O} remember it."
+			return "The {S} {shape:betrayal}, and the {O} remember it."
 		case "absent":
 			return "The {O} call on the {S}, who do not come."
 		case "separate":
@@ -632,17 +658,17 @@ var lineFns = map[Kind]func(w *World, e *Event) string{
 		}
 		switch {
 		case e.P["elder"].(int) >= 0:
-			return who + " find {desc} " + where + ". It is older than their sun. They call its makers {elder:elder}."
+			return who + " find {L:at} " + where + ". It is older than their sun. They call its makers {elder:elder}."
 		case e.P["kin"] == 2:
-			return who + " find {desc} " + where + ". It is their own, from before the dark age. Something in them remembers it."
+			return who + " find {L:at} " + where + ". It is their own, from before the dark age. Something in them remembers it."
 		case e.P["kin"] == 1:
-			return who + " find {desc} " + where + ". The hands that made it were like their hands."
+			return who + " find {L:at} " + where + ". The hands that made it were like their hands."
 		case !e.P["known"].(bool):
-			return who + " find {desc} " + where + ". They do not know who the {O} were. They call them {L:makers}."
+			return who + " find {L:at} " + where + ". They do not know who the {O} were. They call them {L:makers}."
 		case e.P["ago"].(float64) < 0.1:
-			return who + " find {desc} " + where + ", not long after the {O} left it."
+			return who + " find {L:at} " + where + ", not long after the {O} left it."
 		}
-		return who + " find {desc} " + where + ", {ago:.1f} million years after the {O} left it."
+		return who + " find {L:at} " + where + ", {ago:.1f} million years after the {O} left it."
 	},
 	FMastered: func(w *World, e *Event) string {
 		switch e.P["way"] {
@@ -716,15 +742,15 @@ var lineFns = map[Kind]func(w *World, e *Event) string{
 	},
 	KWieldedDropped: func(w *World, e *Event) string {
 		if e.P["way"] == "buried" {
-			return "What the {S} wielded of {maker} lies where they left it, on {T}."
+			return "What the {S} wielded of {known:maker} lies where they left it, on {T}."
 		}
-		return "What the {S} wielded of {maker} is broken, and nobody knows how to mend it."
+		return "What the {S} wielded of {known:maker} is broken, and nobody knows how to mend it."
 	},
 	FDrifted: func(w *World, e *Event) string {
 		if !e.P["told"].(bool) {
 			return ""
 		}
-		return "The {S} have changed again: {what}. Whoever knew them knew something else."
+		return "The {S} have changed again: {gained:drift}. Whoever knew them knew something else."
 	},
 	KFleetSent: func(w *World, e *Event) string {
 		if e.P["hunt"].(int) >= 0 {
@@ -758,7 +784,7 @@ var lineFns = map[Kind]func(w *World, e *Event) string{
 		if e.P["own"].(bool) {
 			return "The {S} return to {T} and put their own old works there back to use."
 		}
-		return "The {S} find {desc} at {T}, and put it back to work."
+		return "The {S} find {L:at} at {T}, and put it back to work."
 	},
 	KJudged: func(w *World, e *Event) string {
 		f := w.Events[e.P["about"].(int)]
@@ -774,7 +800,7 @@ var lineFns = map[Kind]func(w *World, e *Event) string{
 		if e.P["own"].(bool) {
 			return "In what they left at {T} the {S} read their own story in their own words, and remember."
 		}
-		return "What the {S} read in {L} at {T} is the telling of {maker}, and they have no other."
+		return "What the {S} read in {L} at {T} is the telling of {known:maker}, and they have no other."
 	},
 	KBlamed: func(w *World, e *Event) string {
 		return "The {S} now tell that it was the {O} who " + w.blameOf(w.Civs[e.Subject], w.Events[e.P["about"].(int)]) + ". It was not."
@@ -818,11 +844,11 @@ var lineFns = map[Kind]func(w *World, e *Event) string{
 	FExodus: func(w *World, e *Event) string {
 		switch {
 		case e.P["way"] == "fled":
-			return "The {S} {why}. What got away is a fleet at {base:star}, and it is all of them now."
+			return "The {S} {why:why}. What got away is a fleet at {base:star}, and it is all of them now."
 		case e.P["why"] == "":
 			return "The {S} take to the sky. {T} is left empty behind them, and everything they are is in the fleets now."
 		}
-		return "The {S} take to the sky rather than {why}. {T} is left empty behind them."
+		return "The {S} take to the sky rather than {why:why}. {T} is left empty behind them."
 	},
 	KCarried: func(w *World, e *Event) string {
 		if e.P["way"] == "brought" {
@@ -838,7 +864,7 @@ var lineFns = map[Kind]func(w *World, e *Event) string{
 	},
 	FRest: func(w *World, e *Event) string {
 		if e.P["nomad"].(bool) {
-			return "The {S} come to rest at {T}, and are nomads no longer. It was {why} that did it."
+			return "The {S} come to rest at {T}, and are nomads no longer. It was {why:why} that did it."
 		}
 		return "The {S}, refugees no longer, settle {T}. It is home now."
 	},
@@ -884,8 +910,8 @@ var lineFns = map[Kind]func(w *World, e *Event) string{
 			return "Something moves through the minds of the {S}. They call it {Q}."
 		case road == "born":
 			return "Something moves through the worlds of the {S}. They call it {Q}."
-		case e.Object >= 0 && roads[road].Phrase != "":
-			return "{^Q} comes to the {S} " + sprintf(roads[road].Phrase, "{O}") + "."
+		case e.Object >= 0 && roadPhrases[road] != "":
+			return "{^Q} comes to the {S} " + roadPhrases[road] + "."
 		}
 		return ""
 	},
@@ -899,7 +925,7 @@ var lineFns = map[Kind]func(w *World, e *Event) string{
 		if e.P["home"].(bool) {
 			return ""
 		}
-		return "{^Q} empties {T}, a {colony} of the {S}. The cities are sealed and left."
+		return "{^Q} empties {T}, a {species:colony} of the {S}. The cities are sealed and left."
 	},
 	FBelieved: func(w *World, e *Event) string {
 		switch {
@@ -908,7 +934,7 @@ var lineFns = map[Kind]func(w *World, e *Event) string{
 		case e.P["home"].(bool):
 			return "{^Q} takes {T}. The {S} listen to it and are changed by it, and nobody there answers to anyone now."
 		}
-		return "{^Q} takes {T}, a {colony} of the {S}. Nobody there answers to them any more."
+		return "{^Q} takes {T}, a {species:colony} of the {S}. Nobody there answers to them any more."
 	},
 	FRefused: func(w *World, e *Event) string {
 		if e.P["traded"].(bool) {
@@ -944,7 +970,7 @@ var lineFns = map[Kind]func(w *World, e *Event) string{
 	},
 	FHarness: func(w *World, e *Event) string {
 		if id, ok := e.P["source"]; ok {
-			return sprintf(harnessLines[w.Sources[id.(int)].Key], "{S}", "{source:source}")
+			return harnessLines[w.Sources[id.(int)].Key]
 		}
 		return ""
 	},
@@ -953,7 +979,7 @@ var lineFns = map[Kind]func(w *World, e *Event) string{
 		if e.P["via"].(bool) {
 			return "The {S} have the use of {source:source}, by the grace of the {O}."
 		}
-		return sprintf(rarityLines[s.Key], "{S}", "{source:source}")
+		return rarityLines[s.Key]
 	},
 	KCarriedOff: func(w *World, e *Event) string {
 		if e.P["fleet"].(int) >= 0 {
@@ -964,14 +990,14 @@ var lineFns = map[Kind]func(w *World, e *Event) string{
 	KNodeLearned: func(w *World, e *Event) string {
 		n := tech.Get(e.P["node"].(string))
 		if n.Milestone && n.Text != "" {
-			return sprintf(n.Text, "{S}")
+			return n.Text
 		}
 		return ""
 	},
 	KFleetSeen: func(w *World, e *Event) string {
 		switch e.P["eye"] {
 		case eyeWorks:
-			return "From the {eye_name} at {eye_star:star} the {S} see the fleet of the {O} coming, {out:span} out."
+			return "From the {eye_work:structure} at {eye_star:star} the {S} see the fleet of the {O} coming, {out:span} out."
 		case eyeFleet:
 			return "A fleet of the {S} in flight sees the fleet of the {O} coming toward {T}, {out:span} out."
 		case eyePicket:
@@ -1054,28 +1080,28 @@ var lineFns = map[Kind]func(w *World, e *Event) string{
 		case e.P["hunt"].(bool):
 			return ""
 		case e.P["unseen"].(bool):
-			return "The {S} declare war on the {O}, over {cause}. The {O} will never know by whom."
+			return "The {S} declare war on the {O}, over {cause:why}. The {O} will never know by whom."
 		case e.P["nth"].(int) > 1:
-			return "The {S} go to war with the {O} again, the {nth:ordinal} time, over {cause}."
+			return "The {S} go to war with the {O} again, the {nth:ordinal} time, over {cause:why}."
 		}
-		return "The {S} declare war on the {O}, over {cause}."
+		return "The {S} declare war on the {O}, over {cause:why}."
 	},
 	FBurned: func(w *World, e *Event) string {
 		switch e.P["way"] {
 		case "unmade":
-			return "The {S} unmake {T}, a {colony} of the {O}. There is nothing left to glass."
+			return "The {S} unmake {T}, a {species:colony} of the {O}. There is nothing left to glass."
 		case "glassed":
 			if !e.P["told"].(bool) {
 				return ""
 			}
-			return "The {S} glass {T}, a {colony} of the {O}."
+			return "The {S} glass {T}, a {species:colony} of the {O}."
 		}
 		return "The {S} burn {T} to be rid of what the {O} put there."
 	},
 	FTaken: func(w *World, e *Event) string {
 		switch e.P["way"] {
 		case "host":
-			return "{^Q} takes {T}, a {colony} of the {O}. It is a host-world of the {S} now."
+			return "{^Q} takes {T}, a {species:colony} of the {O}. It is a host-world of the {S} now."
 		case "host_war":
 			return "The {O} of {T} are riders now. The {S} wear them."
 		case "stripped":
@@ -1153,7 +1179,7 @@ var lineFns = map[Kind]func(w *World, e *Event) string{
 		case net < 0:
 			terms = "The {O} keep what they took."
 		}
-		return "The {S} and the {O} make peace, {why}, after {warspan}. " + terms
+		return "The {S} and the {O} make peace, {why:why}, after {warspan}. " + terms
 	},
 	KYielded: func(w *World, e *Event) string {
 		if e.P["outcome"] == "vassal" {
@@ -1235,9 +1261,9 @@ var facedLines = map[string]string{
 	"chorus/declined":      "The thought of the {S} gets loose. From {T} it goes out to whoever will hear it.",
 	"sight/overcome":       "The {S} see how it ends, and go on anyway.",
 	"sight/scarred":        "The {S} see how it ends. A fatalism settles on them that never lifts.",
-	"vial/scarred":         "Something gets out of the vial among the {S} and is burned with the building. They keep the craft and never use it, and go no further with it.",
-	"waking/overcome":      "The {S} hide in the deep places while {what} passes over them. It does not notice.",
-	"waking/scarred":       "The {S} lose every world near {what} but their own.",
+	"containment/scarred":  "Something gets out of the vial among the {S} and is burned with the building. They keep the craft and never use it, and go no further with it.",
+	"waking/overcome":      "The {S} hide in the deep places while the {waker:civ} passes over them. It does not notice.",
+	"waking/scarred":       "The {S} lose every world near the {waker:civ} but their own.",
 }
 
 // blastLines are the lines of the blasts, by way.
@@ -1254,4 +1280,88 @@ var blastLines = map[string]string{
 	"manna_grown":     "What the {S} grew for the table at {T} gets out, and eats.",
 	"unmaking_test":   "The first test of the {T}' Unmaking takes a world with it.",
 	"unmaking_inward": "Everything around {T} stops being matter for a while.",
+}
+
+// harnessLines are what a people says when it first harnesses a source
+// kind worth a line, by the source's key.
+var harnessLines = map[string]string{
+	"belt":            "The {S} begin to work {source:source}: ice and iron, by the shipload.",
+	"brown_companion": "The {S} burn {source:source} for fuel: a star that never lit, lit at last.",
+	"giant":           "The {S} skim {source:source} for fuel. The small suns of their fusion plants never go out now.",
+	"terraformed":     "The {S} bring {source:source} to life. It feeds them.",
+	"heavy":           "The {S} dig {source:source} and find it rich in what splits.",
+	"nebula":          "The {S} grow their food in the gas of {source:source} itself.",
+	"doomed_giant":    "The {S} catch the light of {source:source}. It will not shine long, and they know it.",
+	"comets":          "The {S} harvest {source:source}, and eat ice older than their sun.",
+}
+
+// rarityLines are what a people says when it first has a rarity, by key.
+var rarityLines = map[string]string{
+	"horizon":         "The {S} hold {source:source} now. What falls in comes out as understanding: the deep physics come cheap to them.",
+	"beam":            "The {S} live under {source:source}. Its flares light their sky, and they learn from it how to unmake.",
+	"heavy_star":      "The {S} hold {source:source}. Its skin is metal a mile deep, and its weight is a lesson in stellar weapons.",
+	"beacon":          "The {S} hold a star within reach of {source:source}. They steer by its ticking, and their ships go further for it.",
+	"diamond":         "The {S} hold {source:source}. It is a diamond the size of a world, and they are never done singing about it.",
+	"colours":         "The {S} live in {source:source}. The sky is a painting, and the painting hides them.",
+	"ash":             "The {S} hold a star in {source:source}. The matter there was made in a death, and some of it is not on any table.",
+	"heart":           "The {S} hold a star within reach of {source:source}. Everything falls toward it, and so does thought.",
+	"dwarf_companion": "The {S} hold {source:source}. It is a thing of great value that does nothing, which is what makes it valuable.",
+	"dust":            "The {S} hold {source:source}. At dusk the whole sky is a ring, and they put it on their flags.",
+	"moon":            "The {S} hold {source:source}. The tides and the calendar are its, and the songs.",
+}
+
+// roadPhrases say how a plague came, by its road; {O} is the giver.
+var roadPhrases = map[string]string{
+	"goods":      "with the goods of the {O}",
+	"trade":      "along the trade with the {O}",
+	"occupation": "with the taking of worlds from the {O}",
+	"settling":   "from the worlds of the {O} nearby",
+	"fleet":      "with the ships of the {O}",
+	"landing":    "with the first landing of the {O}",
+	"message":    "in a message from the {O}",
+	"signal":     "on the signals of the {O}",
+	"poison":     "hidden in the goods of the {O}",
+	"whisper":    "hidden in a message from the {O}",
+}
+
+// naming: what each miracle's holders say about the state when they first
+// reach into it. The people's word is the %s.
+var beneathNames = map[string]string{
+	"ftl":       "Whatever the ships pass through, nobody is in it. From inside, the crossing has no duration: one moment here, the next there. The ones who tried to stay awake for it did not come back as one person. The %s call it %s and do not look at it.",
+	"ansible":   "The Voice does not cross space; it goes under it. The %s call what it goes under %s. The speakers do not hear it. Anyone who begins to hear it is taken off the line.",
+	"foresight": "The Sight is not a looking forward. It is a leaning on something under time, where before and after are one thing. The %s call it %s, and the ones who lean too hard do not come back up.",
+	"unmaking":  "What the Unmaking does is not destruction. Matter is put back the way it was before it was matter. The %s have a word for that state, %s, and it is a word they say once.",
+	"wound":     "There is a place in the %s where the wall is not. They call what shows through it %s, and it is the only thing they are afraid of.",
+}
+
+// numberWord is a small count in words.
+func numberWord(n int) string {
+	if n >= 0 && n < len(numberWords) {
+		return numberWords[n]
+	}
+	return sprintf("%d", n)
+}
+
+var numberWords = []string{"no", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"}
+
+// listOf joins names with commas and an and.
+func listOf(ns []string) string {
+	switch len(ns) {
+	case 0:
+		return ""
+	case 1:
+		return ns[0]
+	}
+	out := ""
+	for i, n := range ns {
+		switch {
+		case i == 0:
+			out = n
+		case i == len(ns)-1:
+			out += " and " + n
+		default:
+			out += ", " + n
+		}
+	}
+	return out
 }

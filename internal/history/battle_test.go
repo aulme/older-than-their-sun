@@ -40,7 +40,7 @@ func guns(w *World, c *Civ, key string, star int) {
 // with the war declared.
 func campaignAt(w *World, c, e *Civ, star, n int) *Expedition {
 	w.guardAt(c, c.Home).Ships += n
-	w.declare(c, e, "a test")
+	w.declare(c, e, because("border"))
 	x := w.launch(c, Campaign, e, star, n)
 	x.Base = star
 	return x
@@ -199,7 +199,7 @@ func TestMuster(t *testing.T) {
 	if w.launch(c, Campaign, e, e.Home, 3) != nil {
 		t.Fatal("three ships sailed from guards of two and two")
 	}
-	w.muster(c, e, e.Home, "a test", 3)
+	w.muster(c, e, e.Home, because("border"), 3)
 	m := c.Muster
 	if m == nil || m.Star != colony || m.Ships != 3 || c.Tally.Musters != 1 {
 		t.Fatalf("muster %+v", m)
@@ -244,7 +244,7 @@ func TestMuster(t *testing.T) {
 	w.addGuard(c, colony, 2)
 	w.addGuard(e, e.Home, 3)
 	c.Intel[e.ID] = &Intel{Mil: 6, Ships: 3, Total: 3, Star: e.Home, Year: w.Now, Sick: -1}
-	w.muster(c, e, e.Home, "a test", 3)
+	w.muster(c, e, e.Home, because("border"), 3)
 	w.guardAt(e, e.Home).Ships = 30
 	c.Intel[e.ID].Ships = 30
 	w.musterStep(c)
@@ -257,7 +257,7 @@ func TestMuster(t *testing.T) {
 // drains will twice as fast; one with a fleet at a base half as fast.
 func TestNoFleetDrainsDouble(t *testing.T) {
 	w, c, e, colony := twoPeoples(t, 58)
-	wr := w.declare(c, e, "a test")
+	wr := w.declare(c, e, because("border"))
 	wr.Will = [2]float64{5, 5}
 	w.drain(wr, 0)
 	if d := 5 - wr.Will[0]; d < 0.0999 || d > 0.1001 {

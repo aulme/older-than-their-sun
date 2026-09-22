@@ -146,7 +146,7 @@ func TestTimetable(t *testing.T) {
 	w, c, e := watcher(t, 64)
 	place(w, e.Home, 4, 0, 0) // four light years: the whole line inside the world's watch, so seen as it leaves
 	w.guardAt(e, e.Home).Ships = 3
-	w.declare(e, c, "a test")
+	w.declare(e, c, because("border"))
 	x := w.launch(e, Campaign, c, c.Home, 3)
 	if x == nil {
 		t.Fatal("no fleet")
@@ -219,7 +219,7 @@ func TestMeetInDark(t *testing.T) {
 		c.Systems = append(c.Systems, colony)
 		w.addGuard(c, colony, 4)
 		c.Known["slow_interstellar"], e.Known["slow_interstellar"] = true, true
-		w.declare(e, c, "a test")
+		w.declare(e, c, because("border"))
 		x := flight(w, e, Campaign, c.ID, e.Home, c.Home, vec{5, 0, 0}, vec{0, 0, 0}, 2)
 		w.timetable(x)
 		w.tickExpeditions()

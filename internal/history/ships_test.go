@@ -134,7 +134,7 @@ func TestHordeThins(t *testing.T) {
 	w, c := starfarer(t, 46)
 	c.Species = species.Fixed("nomadic", "cooperative")
 	w.guardAt(c, c.Home).Ships = 200
-	if !w.takeSky(c, "") {
+	if !w.takeSky(c, reason{}) {
 		t.Fatal("did not take to the sky")
 	}
 	if n := w.ships(c); n != 200 {
@@ -147,7 +147,7 @@ func TestHordeThins(t *testing.T) {
 	if n := w.ships(c); n > 60 || n < 8 {
 		t.Errorf("a horde with nothing to graze has %d ships after 20 kyr, want about 24", n)
 	}
-	if len(c.Record) == 0 || c.Record[len(c.Record)-1] != "took to the sky" {
+	if len(c.Record) == 0 || c.Record[len(c.Record)-1].Kind != "sky" {
 		t.Errorf("record %v", c.Record)
 	}
 }
@@ -175,7 +175,7 @@ func TestFleetsMerge(t *testing.T) {
 	c.Mil, e.Mil = 6, 2
 	w.addGuard(e, e.Home, 2)
 	before := w.ships(e)
-	w.declare(c, e, "a test")
+	w.declare(c, e, because("border"))
 	x = w.launch(c, Campaign, e, e.Home, 3)
 	if x == nil || w.guardAt(c, c.Home).Ships != 2 {
 		t.Fatalf("the campaign took %v; guard %d", x != nil, w.guardAt(c, c.Home).Ships)

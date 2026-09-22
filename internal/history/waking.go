@@ -160,7 +160,7 @@ func (w *World) demand(c, e *Civ, worlds []int) bool {
 	}
 	f.with(P{"outcome": "left", "home": false, "seat": e.Home})
 	for _, s := range worlds {
-		w.loseSystem(e, s, "abandoned "+e.Species.Flavour().Colony, "")
+		w.loseSystem(e, s, "abandoned", reason{})
 	}
 	w.place(f)
 	delete(c.demanded, e.ID)
@@ -174,7 +174,7 @@ func (w *World) demand(c, e *Civ, worlds []int) bool {
 func (w *World) waking(c, e *Civ, worlds []int) {
 	t := &w.Cfg.Tuning.Kinds
 	if w.warBetween(c.ID, e.ID) == nil {
-		if w.declare(c, e, "the waking") == nil {
+		if w.declare(c, e, because("waking")) == nil {
 			return
 		}
 	}
@@ -182,7 +182,7 @@ func (w *World) waking(c, e *Civ, worlds []int) {
 	c.Tally.Wakings++
 	w.told(FWaking, c, e, worlds[0]).with(P{"seat": c.Home}).N = len(worlds)
 	w.blastWorlds = append([]int(nil), worlds...)
-	w.blastWhat = "the " + c.Tok()
+	w.blastRef = because("waker").By(c)
 	adj := t.WakingBase + t.WakingMil*c.Mil
 	if e.Reach < 12 {
 		adj += t.WakingYoung
@@ -196,7 +196,7 @@ func (w *World) waking(c, e *Civ, worlds []int) {
 // running; the wall wears.
 func (w *World) unmake(c, e *Civ, s int) {
 	if w.warBetween(c.ID, e.ID) == nil {
-		if w.declare(c, e, "the unmaking") == nil {
+		if w.declare(c, e, because("unmaking")) == nil {
 			return
 		}
 	}
@@ -208,7 +208,7 @@ func (w *World) unmake(c, e *Civ, s int) {
 	w.Bio[s] = BioNone
 	w.told(FUnmade, c, e, s)
 	wasHome := s == e.Home
-	w.loseSystem(e, s, "unmade world", sprintf("were unmade by the %s", c.Tok()))
+	w.loseSystem(e, s, "unmade", because("unmade_by").By(c))
 	if wr != nil && !wr.Over {
 		i := wr.side(c.ID)
 		wr.Taken[i]++
@@ -227,23 +227,23 @@ func (c *Civ) launches() bool { return c.Species.Profile().Can(species.Launches)
 
 func init() {
 	def(&Filter{
-		Key: "waking", Name: "the waking", Levels: []string{"sur"}, Diff: 5, Repeat: true, Domain: "propulsion",
+		Key: "waking",
 		Overcome: func(w *World, c *Civ) {
-			w.faced(c, "waking", "overcome", "", -1).with(P{"what": w.blastWhat})
+			w.faced(c, "waking", "overcome", "", -1).with(P{"waker": w.blastRef.by})
 		},
 		Scar: func(w *World, c *Civ) {
 			for _, s := range w.blastWorlds {
 				if s != c.Home {
-					w.loseSystem(c, s, "silent world", "")
+					w.loseSystem(c, s, "silent", reason{})
 				}
 			}
-			w.faced(c, "waking", "scarred", "", -1).with(P{"what": w.blastWhat})
+			w.faced(c, "waking", "scarred", "", -1).with(P{"waker": w.blastRef.by})
 		},
 		Decline: func(w *World, c *Civ) {
 			homeHit := contains(w.blastWorlds, c.Home)
 			for _, s := range w.blastWorlds {
 				if s != c.Home {
-					w.loseSystem(c, s, "silent world", sprintf("were unmade by %s", w.blastWhat))
+					w.loseSystem(c, s, "silent", because("unmade_by").Of(w.blastRef))
 				}
 			}
 			if !c.Active() {
@@ -251,12 +251,12 @@ func init() {
 			}
 			if homeHit {
 				if len(c.Systems) > 1 && c.Reach >= 12 {
-					w.leaveHome(c, "flee "+w.blastWhat)
+					w.leaveHome(c, because("flee").Of(w.blastRef))
 				} else {
-					w.loseSystem(c, c.Home, "silent world", sprintf("were unmade by %s", w.blastWhat))
+					w.loseSystem(c, c.Home, "silent", because("unmade_by").Of(w.blastRef))
 				}
 			} else {
-				w.contract(c, sprintf("withdrew to %s after %s took their worlds", w.star(c.Home), w.blastWhat))
+				w.contract(c, because("withdrew").At(c.Home).Of(w.blastRef))
 			}
 		},
 	})

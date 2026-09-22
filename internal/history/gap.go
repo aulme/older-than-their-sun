@@ -101,7 +101,7 @@ func (w *World) deduce(c *Civ) {
 		return
 	}
 	gap := &Gap{Gap: g, Star: w.nearestStar(g.X, g.Y, stars), Since: w.Now, Struck: map[int]bool{}}
-	wr := w.declare(c, e, "the hole in the ledger")
+	wr := w.declare(c, e, because("ledger_hole"))
 	if wr == nil {
 		return
 	}
@@ -267,7 +267,7 @@ func (w *World) huntStep(c *Civ) {
 			wr.Gap.Empty = w.Now
 		case float64(w.Now-wr.Gap.Empty)/1000 >= w.Cfg.Tuning.Kinds.HuntEmpty:
 			w.event(KHuntEmpty, c, nil, wr.Gap.Star, P{"war": wr.ID})
-			w.endWar(wr, "the hole closed")
+			w.endWar(wr, "hole_closed")
 			continue
 		}
 		if !w.hasFleetAgainst(c, e) && w.chance(w.Cfg.Tuning.Council.Cadence) {

@@ -45,7 +45,7 @@ type eye struct {
 	r     float64     // its plain radius in light years
 	fleet *Expedition // a fleet in flight, moving with it
 	kind  string
-	name  string // the structure's name when a work is the eye
+	name  string // the structure's key when a work is the eye
 }
 
 // Sighting is one people's sight of one fleet in flight.
@@ -60,7 +60,7 @@ type Sighting struct {
 	Mil                float64 // the level seen, with noise
 	Speed              float64 // years per light year, exact
 	Eye                string  // the kind of eye
-	EyeName            string  // the work, for the telling
+	EyeName            string  // the work's key, for the telling
 	EyeStar            int     // where the eye was; -1 for a fleet
 	Feasible           bool    // a meeting point existed against a fleet worth meeting
 	Intercept          int     // the interceptor sent, or -1
@@ -96,7 +96,7 @@ func (w *World) eyes(o *Civ) []eye {
 				continue
 			}
 			if st := tech.Structures[wk.Key]; st.Watch > e.r {
-				e.r, e.kind, e.name = st.Watch, eyeWorks, st.Name
+				e.r, e.kind, e.name = st.Watch, eyeWorks, wk.Key
 			}
 		}
 		return e
@@ -324,7 +324,7 @@ func (w *World) fleetSeen(x *Expedition, o *Civ, s *Sighting) {
 	c := w.Civs[x.Owner]
 	switch {
 	case x.Kind == Campaign && x.Target == o.ID:
-		w.eventAt(s.Year, KFleetSeen, o, c, x.Star, P{"fleet": x.ID, "eye": s.Eye, "eye_name": s.EyeName, "eye_star": s.EyeStar, "out": x.Arrive - s.Year})
+		w.eventAt(s.Year, KFleetSeen, o, c, x.Star, P{"fleet": x.ID, "eye": s.Eye, "eye_work": s.EyeName, "eye_star": s.EyeStar, "out": x.Arrive - s.Year})
 		o.Focus[tech.Weapons] = max(o.Focus[tech.Weapons], 3)
 		o.Summoned = true
 		if wr := w.warBetween(c.ID, o.ID); wr != nil {

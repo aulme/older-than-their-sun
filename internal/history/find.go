@@ -85,10 +85,10 @@ func (w *World) discover(c *Civ, l *Legacy, how string) {
 	// what the finder can say of the makers: an elder's, its own line's,
 	// its own blood's, a people it knows of, or nobody it can place (whose
 	// name for them is then a row of the names pass)
-	p := P{"how": how, "desc": l.Describe(), "kin": w.kinship(c, l), "elder": -1, "known": true, "ago": 0.0, "own": l.Star == c.Home}
+	p := P{"how": how, "cond": int(l.Cond), "ships": l.ships(), "adrift": l.Adrift, "kin": w.kinship(c, l), "elder": -1, "known": true, "ago": 0.0, "own": l.Star == c.Home}
 	switch {
 	case l.Elder != nil:
-		p["elder"], p["desc"] = l.Elder.ID, l.Desc
+		p["elder"] = l.Elder.ID
 	case p["kin"] == 0:
 		m := w.Civs[l.Maker]
 		p["ago"] = float64(w.Now-m.Fell) / 1e6
@@ -118,7 +118,7 @@ func (w *World) discover(c *Civ, l *Legacy, how string) {
 	if !c.Species.Profile().Can(species.Researches) {
 		a.Master = 0 // no tree to master it into: it wields what it finds, or seals it
 	}
-	w.explain(c, "weighing what to do with "+l.Describe(), a)
+	w.explain(c, "weighing what to do with "+w.Describe(l), a)
 	pick := a.Pick(w.R.Float64())
 	// whichever way the die falls, a wise people asks whether it can
 	// before it tries
@@ -183,7 +183,7 @@ func (w *World) attemptMaster(c *Civ, l *Legacy) {
 	diff := w.masterDiff(c, l)
 	if c.level("mil", "sur", "soc")+w.R.NormFloat64()*1.5 >= diff {
 		l.State = Mastered
-		c.Record = append(c.Record, "mastered a legacy of "+w.makerName(c, l))
+		c.Record = append(c.Record, Record{Kind: "mastered", Legacy: l.ID, Known: w.knowsMaker(c, l)})
 		f := w.toldL(FMastered, c, l)
 		if l.Kind == Sleeper {
 			c.Boons[BoonCommunion] = true
@@ -240,7 +240,7 @@ func (w *World) attemptWield(c *Civ, l *Legacy) {
 	if l.Kind == Bounty {
 		if c.Sur+w.R.NormFloat64()*1.5 >= 2.5+c.traitDiff("find") {
 			w.useBounty(c, l)
-			c.Record = append(c.Record, "put a bounty of "+w.makerName(c, l)+" to use")
+			c.Record = append(c.Record, Record{Kind: "bounty", Legacy: l.ID, Known: w.knowsMaker(c, l)})
 			w.event(KWielded, c, nil, l.Star, P{"way": "bounty"}).Legacy = l.ID
 			return
 		}
@@ -252,7 +252,7 @@ func (w *World) attemptWield(c *Civ, l *Legacy) {
 		// hulls: crewed, or not; nothing in a field gets loose
 		if c.Mil+w.R.NormFloat64()*1.5 >= diff {
 			l.State = Wielded
-			c.Record = append(c.Record, "crewed the wrecks of "+w.makerName(c, l))
+			c.Record = append(c.Record, Record{Kind: "crewed", Legacy: l.ID, Known: w.knowsMaker(c, l)})
 			w.salvage(c, l)
 		} else {
 			w.event(KWieldFailed, c, nil, l.Star, P{"way": "hulls"}).Legacy = l.ID
@@ -264,7 +264,7 @@ func (w *World) attemptWield(c *Civ, l *Legacy) {
 		if l.Maker >= 0 && l.Cond == Wreck {
 			l.Cond = Derelict // repaired, after a fashion
 		}
-		c.Record = append(c.Record, "wielded a legacy of "+w.makerName(c, l))
+		c.Record = append(c.Record, Record{Kind: "wielded", Legacy: l.ID, Known: w.knowsMaker(c, l)})
 		if l.Kind == Structure && l.Maker >= 0 && (contains(c.Systems, l.Star) || (w.Owner[l.Star] < 0 && w.canLive(c, l.Star))) {
 			if !contains(c.Systems, l.Star) {
 				w.settle(c, l.Star)
@@ -324,7 +324,7 @@ func (w *World) attemptWield(c *Civ, l *Legacy) {
 func (w *World) attemptSeal(c *Civ, l *Legacy) {
 	if c.Soc+w.R.NormFloat64()*1.5 >= 3+c.traitDiff("find")+min(l.condAdj(), 0) {
 		l.State = Sealed
-		c.Record = append(c.Record, "sealed a legacy of "+w.makerName(c, l))
+		c.Record = append(c.Record, Record{Kind: "sealed", Legacy: l.ID, Known: w.knowsMaker(c, l)})
 		w.toldL(FSealed, c, l)
 		return
 	}
@@ -335,7 +335,7 @@ func (w *World) attemptSeal(c *Civ, l *Legacy) {
 // unleash is the failure: the legacy acts on its own terms.
 func (w *World) unleash(c *Civ, l *Legacy) {
 	l.State = Unleashed
-	c.Record = append(c.Record, "unleashed a legacy of "+w.makerName(c, l))
+	c.Record = append(c.Record, Record{Kind: "unleashed", Legacy: l.ID, Known: w.knowsMaker(c, l)})
 	f := w.toldL(FUnleashed, c, l).with(P{"way": ""})
 	switch l.Kind {
 	case Sleeper, Threat:
@@ -352,14 +352,14 @@ func (w *World) unleash(c *Civ, l *Legacy) {
 		w.rouse(p, c)
 	case Structure:
 		if l.Maker >= 0 {
-			w.blast(l.Star, 3, "the failure of "+l.Desc, "failure", nil, 1)
+			w.blast(l.Star, 3, "failure", nil, 1, l.ID)
 		} else {
-			w.blast(l.Star, 12, "the failure of "+l.Desc, "failure_old", nil, 2)
+			w.blast(l.Star, 12, "failure_old", nil, 2, l.ID)
 		}
 	case Law:
 		w.tear(0.6)
 		f.P["way"] = "law"
-		w.blast(l.Star, 5, "a broken law", "law", nil, 3)
+		w.blast(l.Star, 5, "law", nil, 3, l.ID)
 	case Artifact:
 		n := l.node()
 		if n.Miracle && objectForms[n.Key] != nil {
@@ -375,15 +375,15 @@ func (w *World) unleash(c *Civ, l *Legacy) {
 		switch n.Domain {
 		case tech.Industry, tech.Weapons:
 			f.P["way"] = "replicator"
-			if nc := w.replicatorAt(l.Star, species.Machine, "what got out of "+l.Desc, false); nc != nil {
-				w.event(KNamedItself, nc, nil, l.Star, P{"way": "called", "desc": nc.Species.Describe()})
+			if nc := w.replicatorAt(l.Star, species.Machine, Origin{Key: "breakout", By: -1, From: -1, Legacy: l.ID, Plague: -1}, false); nc != nil {
+				w.event(KNamedItself, nc, nil, l.Star, P{"way": "called", "traits": nc.Species.TraitKeys()})
 			}
 		case tech.Computation:
 			f.P["way"] = "mind"
 			sp := species.GenerateWith(w.R, w.G.Stars[l.Star].Mult, w.G.Sys[l.Star].Arch, species.Machine, 0)
-			if nc := w.ariseAt(l.Star, sp, "a mind that woke in "+l.Desc); nc != nil {
+			if nc := w.ariseAt(l.Star, sp, Origin{Key: "woke_in", By: -1, From: -1, Legacy: l.ID, Plague: -1}); nc != nil {
 				nc.Origin = sp.Made
-				w.event(KNamedItself, nc, nil, l.Star, P{"way": "mind", "desc": sp.Describe()})
+				w.event(KNamedItself, nc, nil, l.Star, P{"way": "mind", "traits": sp.TraitKeys()})
 			}
 		case tech.Exotic, tech.Propulsion:
 			w.makeTransmitter(l.Star, -1, true)
@@ -411,10 +411,10 @@ func (w *World) dropWielded(c *Civ, p float64) {
 		if w.R.Float64() < 0.5 {
 			l.State = Buried
 			l.Star = c.Home
-			w.event(KWieldedDropped, c, nil, c.Home, P{"way": "buried", "maker": w.makerName(c, l)}).Legacy = l.ID
+			w.event(KWieldedDropped, c, nil, c.Home, P{"way": "buried", "known": w.knowsMaker(c, l)}).Legacy = l.ID
 		} else {
 			l.State = Lost
-			w.event(KWieldedDropped, c, nil, -1, P{"way": "broken", "maker": w.makerName(c, l)}).Legacy = l.ID
+			w.event(KWieldedDropped, c, nil, -1, P{"way": "broken", "known": w.knowsMaker(c, l)}).Legacy = l.ID
 		}
 		if l.Source >= 0 {
 			s := w.Sources[l.Source]

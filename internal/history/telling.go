@@ -225,21 +225,23 @@ func pronoun(us bool) string {
 // name, a miracle, a shape of betrayal, from the event's parameters.
 func (w *World) what(e *Event) string {
 	switch e.Kind {
-	case FDarkAge, FFall, FEnd, FWar:
-		return e.P["cause"].(string)
+	case FDarkAge, FFall, FEnd:
+		return w.whyText(e, "cause")
+	case FWar:
+		return w.WarCause(w.Wars[e.P["war"].(int)])
 	case FBetrayal:
-		return e.P["shape"].(string)
+		return w.BetrayalText(e.P["shape"].(string), e.Object)
 	case FCutOff, FLeftStar, FShattered:
-		return e.P["why"].(string)
+		return w.whyText(e, "why")
 	case FPact:
 		return e.P["pact"].(string)
 	case FOvercome, FScarred, FDeclined:
 		return filters[e.P["filter"].(string)].Name
 	case FMiracle:
-		return miracleNames[e.P["miracle"].(string)]
+		return tables.miracleByKey[e.P["miracle"].(string)].Name
 	case FHarness:
 		if id, ok := e.P["source"]; ok {
-			return w.Sources[id.(int)].Name
+			return w.sourceName(w.Sources[id.(int)])
 		}
 		return "the " + tech.Structures[e.P["work"].(string)].Name + " at " + w.star(e.Star)
 	case FBrokered:
@@ -265,9 +267,9 @@ func (w *World) what(e *Event) string {
 	case FDemand:
 		return e.P["outcome"].(string)
 	case FShipLost:
-		return e.P["ship"].(string)
+		return w.Species[e.P["species"].(int)].Flavour().Ship
 	case FDrifted:
-		return e.P["what"].(string)
+		return w.driftText(e)
 	}
 	return ""
 }
@@ -448,7 +450,7 @@ func (w *World) remainName(f *Event) string {
 	if f.Legacy < 0 {
 		return "something"
 	}
-	return w.Legacies[f.Legacy].Desc
+	return w.legacyDesc(w.Legacies[f.Legacy])
 }
 
 // mythParty is the party mythOf names, if it names one: -1 when the
@@ -551,7 +553,7 @@ func (w *World) blameOf(c *Civ, f *Event) string {
 	case FSurveyLost:
 		return "took the surveyors at " + w.star(f.Star)
 	case FShipLost:
-		return "took the " + f.P["ship"].(string) + " at " + w.star(f.Star)
+		return "took the " + w.Species[f.P["species"].(int)].Flavour().Ship + " at " + w.star(f.Star)
 	case FDefeat:
 		return "broke the fleet at " + w.star(f.Star)
 	case FCaught:
@@ -575,7 +577,7 @@ func (w *World) deedOf(f *Event) string {
 	case FEnslaved:
 		return "took the " + w.Civs[f.Object].Tok()
 	case FBetrayal:
-		return f.P["shape"].(string)
+		return w.BetrayalText(f.P["shape"].(string), f.Object)
 	case FStripped:
 		return "stripped " + w.star(f.Star)
 	case FUnleashed:

@@ -87,7 +87,7 @@ func (w *World) consume(wr *War, c, e *Civ, t int) {
 	if g := w.guardAt(e, t); g != nil {
 		g.Over = true
 	}
-	w.loseSystem(e, t, "stripped world", sprintf("were consumed by the %s", c.Tok()))
+	w.loseSystem(e, t, "stripped", because("consumed_by").By(c))
 	if w.Owner[t] >= 0 {
 		return // somebody else's now: a fleeing people's, or a rider's
 	}
@@ -143,7 +143,7 @@ func (w *World) innate(c *Civ) {
 // last), and the new people holds it. Never at Sol: the nearest star
 // instead. The species is made, with the story's fixed parts and the
 // rest rolled; sp.Made says how.
-func (w *World) ariseAt(star int, sp *species.Species, made string) *Civ {
+func (w *World) ariseAt(star int, sp *species.Species, made Origin) *Civ {
 	if star == w.G.Sol {
 		for _, s := range w.G.Near(star, 40) {
 			if s != w.G.Sol {
@@ -154,7 +154,7 @@ func (w *World) ariseAt(star int, sp *species.Species, made string) *Civ {
 	}
 	if o := w.Owner[star]; o >= 0 {
 		h := w.Civs[o]
-		w.loseSystem(h, star, "stripped world", sprintf("were consumed by what woke at %s", w.star(star)))
+		w.loseSystem(h, star, "stripped", because("consumed_woke").At(star))
 		if w.Owner[star] >= 0 {
 			return nil // a rider or a fleeing people holds it still
 		}
@@ -165,7 +165,7 @@ func (w *World) ariseAt(star int, sp *species.Species, made string) *Civ {
 
 // replicatorAt is a replicator people arising at a star: of the body
 // given, dormant or awake. Dormant, it sleeps until disturbed.
-func (w *World) replicatorAt(star int, sub species.Substrate, made string, dormant bool) *Civ {
+func (w *World) replicatorAt(star int, sub species.Substrate, made Origin, dormant bool) *Civ {
 	sp := species.GenerateWith(w.R, w.G.Stars[star].Mult, w.G.Sys[star].Arch, sub, species.Replicator)
 	c := w.ariseAt(star, sp, made)
 	if c == nil {

@@ -45,8 +45,8 @@ func TestCivilWarDeals(t *testing.T) {
 				t.Errorf("the %s hold no claim on %s", h.Tok(), w.star(s))
 			}
 		}
-		if len(h.Line) != 1 || h.Line[0] != c.ID || h.Origin == "" {
-			t.Errorf("the %s: line %v, origin %q", h.Tok(), h.Line, h.Origin)
+		if len(h.Line) != 1 || h.Line[0] != c.ID || h.Origin.Key == "" {
+			t.Errorf("the %s: line %v, origin %v", h.Tok(), h.Line, h.Origin)
 		}
 		if x.Grudge[h.ID] != 1 || x.Truce[h.ID] != x.Truce[c.ID] || !x.Met[h.ID] {
 			t.Errorf("the stranger's grudge on the %s is %g, truce %d, met %v", h.Tok(), x.Grudge[h.ID], x.Truce[h.ID], x.Met[h.ID])
@@ -139,7 +139,7 @@ func TestShatter(t *testing.T) {
 	w, c := realm(t, 42, 12)
 	x := spawnAt(w, 30, species.Fixed("cooperative", "defensive"))
 	x.Grudge[c.ID] = 2
-	w.shatter(c, "forgot", nil)
+	w.shatter(c, because("ossified"), nil)
 	shards := w.Civs[2:]
 	if len(shards) != 8 || c.Fate != Shattered {
 		t.Fatalf("%d shards, fate %s", len(shards), c.Fate)
@@ -170,14 +170,14 @@ func TestShatter(t *testing.T) {
 	}
 	// a dark age shatters only when the forgetting takes the stars
 	w, c = realm(t, 43, 3)
-	w.darkAge(c, "fell")
+	w.darkAge(c, because("ossified"))
 	if (c.Fate == Shattered) != (c.Reach < 10) {
 		t.Errorf("reach %.0f after the dark age, fate %s", c.Reach, c.Fate)
 	}
 	// one world cannot shatter
 	w, c = realm(t, 44, 1)
 	c.Known = map[string]bool{}
-	w.darkAge(c, "fell")
+	w.darkAge(c, because("ossified"))
 	if c.Fate == Shattered || !c.Active() {
 		t.Error("a one-world people shattered or ended")
 	}
@@ -236,7 +236,7 @@ func TestClaimsFade(t *testing.T) {
 // meet and skip the council; a feud keeps the council.
 func TestKinMeet(t *testing.T) {
 	w, c := realm(t, 47, 12)
-	w.shatter(c, "forgot", nil)
+	w.shatter(c, because("ossified"), nil)
 	a, b := w.Civs[1], w.Civs[2]
 	for _, x := range []*Civ{a, b} {
 		x.Reach, x.Speed = 60, 20

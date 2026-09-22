@@ -19,11 +19,11 @@ import (
 // Muster is a campaign gathering at a holding: the council's standing
 // order until the guard there has the ships, or the odds go.
 type Muster struct {
-	Star   int // where the ships gather
-	Ships  int // the campaign's ships
-	Target int // the enemy
-	World  int // the world the campaign is for
-	Cause  string
+	Star   int    // where the ships gather
+	Ships  int    // the campaign's ships
+	Target int    // the enemy
+	World  int    // the world the campaign is for
+	Cause  reason // why the war will be declared when the fleet is gathered
 	Since  Year
 }
 
@@ -172,7 +172,7 @@ func (w *World) guardWith(c *Civ, star, n int) *Expedition {
 // muster orders a campaign of n ships to gather at the holding nearest
 // its target, declaring the war if none runs: the guards nearest the
 // holding send what they have until the count is covered.
-func (w *World) muster(c, e *Civ, world int, cause string, n int) {
+func (w *World) muster(c, e *Civ, world int, cause reason, n int) {
 	star, _ := w.nearest(c, world)
 	c.Muster = &Muster{Star: star, Ships: n, Target: e.ID, World: world, Cause: cause, Since: w.Now}
 	c.Tally.Musters++

@@ -36,7 +36,7 @@ type Star struct {
 	Alt      string  // another designation
 	Mag      float64 // apparent magnitude from Earth; 99 if not visible or not real
 	Note     string  // giant, supergiant, white dwarf, brown dwarf, subdwarf
-	Remnant  string  // for class N: neutron star, magnetar, black hole
+	Remnant  string  // for class N, a key: neutron_star, magnetar, black_hole, great_hole; RemnantWords say them
 	cat      *CatStar
 }
 
@@ -80,6 +80,12 @@ func (s *Star) Kill() {
 	s.Failing = false
 }
 
+// RemnantWords say what a dead star's remnant key is.
+var RemnantWords = map[string]string{"neutron_star": "neutron star", "magnetar": "magnetar", "black_hole": "black hole", "great_hole": "the great hole"}
+
+// CompanionWords say what a system's companion key is.
+var CompanionWords = map[string]string{"white_dwarf": "a white dwarf companion", "brown_dwarf": "a brown dwarf companion"}
+
 // ClassName describes the star's class and multiplicity: "K-class binary".
 func (s *Star) ClassName() string {
 	m := map[int]string{1: "star", 2: "binary", 3: "trinary"}[s.Mult]
@@ -88,7 +94,7 @@ func (s *Star) ClassName() string {
 		return "white dwarf"
 	case 'N':
 		if s.Remnant != "" {
-			return s.Remnant
+			return RemnantWords[s.Remnant]
 		}
 		return "stellar remnant"
 	}

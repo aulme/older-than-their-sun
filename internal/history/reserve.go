@@ -54,30 +54,14 @@ func (w *World) reservations(c *Civ) []flow.Use {
 		if x.Ships == 0 {
 			continue
 		}
-		cat, what := flow.Arms, "the fleet"
-		switch x.Kind {
-		case Survey:
-			cat, what = flow.Road, "the surveyors"
-		case Scout:
-			what = "the scout"
-			if x.Picket {
-				what = "the picket"
-			}
-		case Intercept:
-			what = "the interceptors"
-		case Guard:
-			what = "the guard"
-		case Roam:
-			what = "the horde's fleet"
+		cat := flow.Arms
+		if x.Kind == Survey {
+			cat = flow.Road
 		}
-		name := what + " bound for " + w.star(x.Star)
-		if x.Base >= 0 {
-			name = what + " at " + w.star(x.Base)
-		}
-		out = append(out, flow.Use{Key: "fleet:" + itoa(x.ID), Name: name, Cat: cat, Era: 3, Need: w.fleetReservation(c, x.Ships), Flight: true})
+		out = append(out, flow.Use{Key: "fleet:" + itoa(x.ID), Cat: cat, Era: 3, Need: w.fleetReservation(c, x.Ships), Flight: true})
 	}
-	for i, v := range c.Voyages {
-		out = append(out, flow.Use{Key: "ship:" + itoa(i), Name: "the colony ship bound for " + w.star(v.Target), Cat: flow.Road, Era: 3, Need: w.shipReservation(c), Flight: true})
+	for i := range c.Voyages {
+		out = append(out, flow.Use{Key: "ship:" + itoa(i), Cat: flow.Road, Era: 3, Need: w.shipReservation(c), Flight: true})
 	}
 	return append(out, w.dockUses(c)...)
 }
@@ -90,7 +74,7 @@ func (w *World) works(c *Civ) []flow.Use {
 		if st == nil {
 			continue
 		}
-		out = append(out, flow.Use{Key: wk.key(), Name: "the " + st.Name + " at " + w.star(wk.Star), Cat: st.Cat, Era: tech.Get(st.Node).Era, Need: w.bend(c, st.Upkeep)})
+		out = append(out, flow.Use{Key: wk.key(), Cat: st.Cat, Era: tech.Get(st.Node).Era, Need: w.bend(c, st.Upkeep)})
 	}
 	return out
 }

@@ -32,7 +32,7 @@ func listenRange(era int) float64 { return 25 + float64(era)*10 }
 // The payload is drawn here and never changes.
 func (w *World) makeTransmitter(star, maker int, live bool) *Legacy {
 	l := &Legacy{ID: len(w.Legacies), Age: -1, Maker: maker, Kind: Threat, Star: star, Node: "memetics", People: -1, Finder: -1, Source: -1, Plague: -1, Cond: Abandoned}
-	l.Desc = "a transmitter at " + w.star(star)
+	l.Portrait = "transmitter"
 	if w.R.Float64() < w.Cfg.Tuning.Kinds.SeedShare {
 		l.Payload = Seed
 	}
@@ -145,7 +145,7 @@ func (w *World) corrupted(c *Civ, l *Legacy) {
 
 func init() {
 	def(&Filter{
-		Key: "beacon", Name: "the Signal", Levels: []string{"soc"}, Diff: 5.5, Repeat: true, Domain: "society",
+		Key: "beacon",
 		Overcome: func(w *World, c *Civ) {
 			w.faced(c, "beacon", "overcome", "", w.transmitter.Star)
 		},
@@ -162,13 +162,13 @@ func init() {
 			l.Listeners++
 			if w.R.Float64() < 0.3 {
 				home := c.Home
-				w.endCiv(c, Transformed, sprintf("heard the transmitter at %s and were changed by it", w.star(l.Star)))
-				c.Into = "a cult of the signal"
+				w.endCiv(c, Transformed, because("transmitter_changed").At(l.Star))
+				c.Into = "cult"
 				w.makeTransmitter(home, c.ID, true)
 				w.event(KNewSignal, c, nil, home, P{})
 				return
 			}
-			w.endCiv(c, Extinct, sprintf("listened to the transmitter at %s", w.star(l.Star)))
+			w.endCiv(c, Extinct, because("transmitter_listened").At(l.Star))
 		},
 	})
 }

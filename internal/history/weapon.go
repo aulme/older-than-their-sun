@@ -27,11 +27,11 @@ type Weapon struct {
 
 // ScarVial is the horror of the vial: the craft above is closed and what
 // is held is never used.
-const ScarVial = "a horror of the vial"
+const ScarVial = "vial"
 
 func init() {
 	def(&Filter{
-		Key: "containment", Name: "the Vial", Levels: []string{"sur"}, Diff: 4, Repeat: true, Domain: "biology",
+		Key: "containment",
 		Adjust: func(w *World, c *Civ) (levels []string, diff float64, domain string) {
 			n := w.craftLearned(c)
 			if n == nil {
@@ -46,7 +46,7 @@ func init() {
 		Scar: func(w *World, c *Civ) {
 			if !c.Scars[ScarVial] {
 				c.Scars[ScarVial] = true
-				w.faced(c, "vial", "scarred", "", -1)
+				w.faced(c, "containment", "scarred", "", -1)
 			}
 		},
 		Decline: func(w *World, c *Civ) {
@@ -185,8 +185,7 @@ func (w *World) weaponUses(c *Civ) []flow.Use {
 	var out []flow.Use
 	for _, k := range sortedKeys(c.Weapons) {
 		n := tech.Get(k)
-		p := w.Plagues[c.Weapons[k].Plague]
-		out = append(out, flow.Use{Key: "weapon:" + k, Name: "the programme that keeps " + p.Tok(), Cat: flow.Arms, Era: n.Era, Need: w.needOf(c, n)})
+		out = append(out, flow.Use{Key: "weapon:" + k, Cat: flow.Arms, Era: n.Era, Need: w.needOf(c, n)})
 	}
 	return out
 }
@@ -294,10 +293,10 @@ func (w *World) poisoned(c, e *Civ, p *Plague, took bool) {
 	if w.allied(c, e) {
 		w.breakPacts(c, e)
 	}
-	w.betray(c, e, "poisoned the "+e.Tok(), "poisoned", 1)
+	w.betray(c, e, "poisoned", "poisoned", 1)
 	e.resent(c.ID, max(0, 3-e.Grudge[c.ID]))
 	if e.Free() && !e.Wars[c.ID] && !e.Has("pacifist") {
-		w.declare(e, c, "the poisoning")
+		w.declare(e, c, because("poisoning"))
 	}
 }
 

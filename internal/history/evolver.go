@@ -49,14 +49,14 @@ func (w *World) drift(c *Civ) {
 		c.Species = sp
 		w.register(sp)
 	}
-	what := w.driftOnce(c, sp)
-	if what == "" {
+	d, ok := w.driftOnce(c, sp)
+	if !ok {
 		return
 	}
 	c.Drifts++
 	c.Tally.Drifts++
 	w.recompute(c)
-	w.told(FDrifted, c, nil, c.Home).with(P{"what": what, "told": w.R.Float64() < 0.3 || c.Drifts == 1})
+	w.told(FDrifted, c, nil, c.Home).with(P{"gained": d.gained, "lost": d.lost, "world": d.world, "told": w.R.Float64() < 0.3 || c.Drifts == 1})
 	w.driftCure(c)
 }
 
@@ -70,10 +70,17 @@ func (w *World) sharedSpecies(c *Civ) bool {
 	return false
 }
 
+// A drift is what a change of shape did: the trait gained, the one lost,
+// and whether the worlds held made it.
+type drift struct {
+	gained, lost string
+	world        bool
+}
+
 // driftOnce is one change of shape: a world's trait taken if one is
-// owed, else a trait of a drawn group gained, lost or replaced; "" when
-// the draw found nothing to change. It says what changed.
-func (w *World) driftOnce(c *Civ, sp *species.Species) string {
+// owed, else a trait of a drawn group gained, lost or replaced; false
+// when the draw found nothing to change. It says what changed.
+func (w *World) driftOnce(c *Civ, sp *species.Species) (drift, bool) {
 	k := &w.Cfg.Tuning.Kinds
 	// a world held long enough offers its trait first
 	var owed []string
@@ -90,17 +97,16 @@ func (w *World) driftOnce(c *Civ, sp *species.Species) string {
 		}
 	}
 	// gain is a trait taken on: in place of its opposite if the shape has one
-	gain := func(t *species.Trait, how string) string {
+	gain := func(t *species.Trait, world bool) (drift, bool) {
 		if o := opposites[t.Key]; o != "" && sp.Has(o) {
-			old := species.Get(o)
 			sp.Replace(o, t.Key)
-			return "where they were " + old.Name + " they are " + t.Name + how
+			return drift{gained: t.Key, lost: o, world: world}, true
 		}
 		sp.Add(t.Key)
-		return "they are " + t.Name + " now" + how
+		return drift{gained: t.Key, world: world}, true
 	}
 	if len(owed) > 0 && w.R.Float64() < 0.5 {
-		return gain(species.Get(owed[w.R.IntN(len(owed))]), ", as the worlds they hold made them")
+		return gain(species.Get(owed[w.R.IntN(len(owed))]), true)
 	}
 	group := driftGroups[w.R.IntN(len(driftGroups))]
 	have := sp.Of(group)
@@ -109,27 +115,27 @@ func (w *World) driftOnce(c *Civ, sp *species.Species) string {
 	case len(have) > 0 && (roll < 0.3 || full && roll < 0.5):
 		old := have[w.R.IntN(len(have))]
 		sp.Remove(old.Key)
-		return "they are no longer " + old.Name
+		return drift{lost: old.Key}, true
 	case len(have) > 0 && (roll < 0.6 || full):
 		old := have[w.R.IntN(len(have))]
 		t := species.PickFor(w.R, group, sp)
 		if t == nil {
-			return ""
+			return drift{}, false
 		}
 		if o := opposites[t.Key]; o != "" && sp.Has(o) && o != old.Key {
 			sp.Remove(o)
 		}
 		sp.Replace(old.Key, t.Key)
-		return "where they were " + old.Name + " they are " + t.Name
+		return drift{gained: t.Key, lost: old.Key}, true
 	default:
 		if group == "world" {
-			return "" // a world's trait comes only from a world held
+			return drift{}, false // a world's trait comes only from a world held
 		}
 		t := species.PickFor(w.R, group, sp)
 		if t == nil {
-			return ""
+			return drift{}, false
 		}
-		return gain(t, "")
+		return gain(t, false)
 	}
 }
 

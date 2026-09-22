@@ -51,14 +51,14 @@ func (w *World) spawn(home int, sp *species.Species, maker int, host *Civ) *Civ 
 		}
 	}
 	w.recompute(c)
-	arose := w.told(FArise, c, nil, home).with(P{"made": maker >= 0, "shared": shared, "prior": prior, "species": sp.ID, "class": string(st.Class), "desc": sp.Describe()})
+	arose := w.told(FArise, c, nil, home).with(P{"made": maker >= 0, "shared": shared, "prior": prior, "species": sp.ID, "class": string(st.Class), "traits": sp.TraitKeys()})
 	if host != nil {
 		arose.P["host"] = host.ID
 	} else if maker < 0 {
 		w.event(KSystem, c, nil, home, P{})
 	}
 	if !shared {
-		w.event(KPortrait, c, nil, -1, P{"lines": sp.Portrait()})
+		w.event(KPortrait, c, nil, -1, P{"species": sp.ID, "powers": append([]string(nil), sp.Powers...)})
 	}
 	w.bornMorality(c)
 	w.birthright(c)
@@ -104,7 +104,7 @@ func (w *World) newCiv(home int, sp *species.Species, maker int) *Civ {
 		Charted: map[int]Year{home: w.Now}, Marked: map[int]bool{},
 		Sire: maker, Fathomed: map[int]bool{}, FathomTried: map[int]Year{},
 		Infections: map[int]*Infection{}, Immune: map[int]bool{}, Suspect: map[int]bool{}, Closed: map[int]bool{},
-		Own: -1, Weapons: map[string]*Weapon{}, Barred: map[int]bool{},
+		Own: -1, Weapons: map[string]*Weapon{}, Barred: map[int]bool{}, FallEvent: -1, EndEvent: -1,
 		LastDark: -1 << 40, foeNow: -1,
 	}
 	w.Civs = append(w.Civs, c)
@@ -242,29 +242,29 @@ func (w *World) arrivals(c *Civ) {
 			keep = append(keep, v)
 			continue
 		}
-		t, ship := v.Target, c.Species.Flavour().Ship
+		t, ship := v.Target, c.Species.ID
 		switch {
 		case w.Owner[t] == c.ID:
 			// settled already by another ship
 		case w.Owner[t] >= 0 && w.Civs[w.Owner[t]].Active() && !w.perceives(c, w.Civs[w.Owner[t]]):
 			// a world of something the people cannot hold in mind: the ship is a loss with no doer on its ledger
 			o := w.Civs[w.Owner[t]]
-			w.trace(t, "derelict "+ship, c.ID)
-			w.fact(FShipLost, c, o, t).with(P{"ship": ship})
+			w.trace(t, "derelict_ship", c)
+			w.fact(FShipLost, c, o, t).with(P{"species": ship})
 			c.Morale -= 0.2
 			w.chart(c, t, "ship")
 		case w.Owner[t] >= 0 && w.Civs[w.Owner[t]].Active():
-			w.trace(t, "derelict "+ship, c.ID)
-			w.event(KArrivalLost, c, w.Civs[w.Owner[t]], t, P{"ship": ship, "why": "held"})
+			w.trace(t, "derelict_ship", c)
+			w.event(KArrivalLost, c, w.Civs[w.Owner[t]], t, P{"species": ship, "why": "held"})
 			w.chart(c, t, "ship")
 		case w.Owner[t] >= 0:
-			w.trace(t, "derelict "+ship, c.ID)
-			w.event(KArrivalLost, c, nil, t, P{"ship": ship, "why": "taken"})
+			w.trace(t, "derelict_ship", c)
+			w.event(KArrivalLost, c, nil, t, P{"species": ship, "why": "taken"})
 			w.chart(c, t, "ship")
 		case !w.canLive(c, t):
 			c.Tally.BlindLost++
-			w.trace(t, "derelict "+ship, c.ID)
-			w.event(KArrivalLost, c, nil, t, P{"ship": ship, "why": "barren"})
+			w.trace(t, "derelict_ship", c)
+			w.event(KArrivalLost, c, nil, t, P{"species": ship, "why": "barren"})
 			w.chart(c, t, "ship")
 		default:
 			w.settle(c, t)
@@ -280,9 +280,9 @@ func (w *World) settle(c *Civ, t int) {
 	w.holdWorld(c, t)
 	switch n := len(c.Systems); {
 	case c.colonies == 1:
-		w.factN(FSettle, c, nil, t, n).with(P{"first": true, "colony": c.Species.Flavour().Colony, "home": c.Home})
+		w.factN(FSettle, c, nil, t, n).with(P{"first": true, "species": c.Species.ID, "home": c.Home})
 	case n == 5 || n == 10 || n == 20 || n == 40:
-		w.factN(FSettle, c, nil, t, n).with(P{"first": false, "colony": c.Species.Flavour().Colony, "home": c.Home})
+		w.factN(FSettle, c, nil, t, n).with(P{"first": false, "species": c.Species.ID, "home": c.Home})
 	}
 	w.afterHold(c, t)
 }
@@ -328,7 +328,7 @@ func (w *World) canLive(c *Civ, t int) bool {
 // mindDead is true inside a "region where minds do not work" law.
 func (w *World) mindDead(t int) bool {
 	for _, l := range w.Legacies {
-		if l.Kind == Law && l.Desc == lawDescs[0] && l.State != Mastered && w.G.Dist(l.Star, t) <= 8 {
+		if l.Kind == Law && l.variant() == "mind_dead" && l.State != Mastered && w.G.Dist(l.Star, t) <= 8 {
 			return true
 		}
 	}
@@ -557,19 +557,19 @@ func (w *World) raise(c *Civ, key, node string, s int) {
 
 func (w *World) tickRemnant(c *Civ) {
 	if w.chance(0.00003) {
-		w.endCiv(c, Extinct, "faded away, the last of them unremarked")
+		w.endCiv(c, Extinct, because("faded"))
 	}
 }
 
 // loseSystem removes a star from a civilisation and leaves a trace. A living
 // civilisation with no worlds left is extinct; cause says why.
-func (w *World) loseSystem(c *Civ, s int, kind string, cause string) {
+func (w *World) loseSystem(c *Civ, s int, kind string, cause reason) {
 	if !contains(c.Systems, s) {
 		return
 	}
 	c.Systems = remove(c.Systems, s)
 	w.Owner[s] = -1
-	w.trace(s, kind, c.ID)
+	w.trace(s, kind, c)
 	delete(c.Guns, s)
 	delete(c.GridBroken, s)
 	if c.Muster != nil && c.Muster.Star == s {
@@ -598,8 +598,8 @@ func (w *World) loseSystem(c *Civ, s int, kind string, cause string) {
 	}
 	c.Works = keep
 	if c.Stage != Dead && len(c.Systems) == 0 && !c.Aloft && !w.rides(c) {
-		if cause == "" {
-			cause = "lost their last world"
+		if cause.none() {
+			cause = because("last_world")
 		}
 		if c.Active() && w.flee(c, s, cause) {
 			return // what is mobile rides with the fleet
@@ -620,9 +620,9 @@ func (w *World) loseSystem(c *Civ, s int, kind string, cause string) {
 // the seat moves to the nearest, unless the people cannot move (a world
 // that is the mind, dead with it), or is a hive of one queen (dead with
 // her), or a hive of no queen (every world its own people).
-func (w *World) seatLost(c *Civ, cause string) {
-	if cause == "" {
-		cause = "lost " + w.star(c.Home)
+func (w *World) seatLost(c *Civ, cause reason) {
+	if cause.none() {
+		cause = because("lost_home").At(c.Home)
 	}
 	switch {
 	case !c.Species.Profile().Can(species.Reseats):
@@ -630,7 +630,7 @@ func (w *World) seatLost(c *Civ, cause string) {
 		w.endCiv(c, Extinct, cause)
 	case c.Has("onequeen"):
 		w.event(KHomeLost, c, nil, c.Home, P{"way": "queen"})
-		w.endCiv(c, Extinct, cause+", and their queen with it")
+		w.endCiv(c, Extinct, cause).P["queen"] = true
 	case c.Has("noqueen") && len(c.Systems) > 1:
 		w.event(KHomeLost, c, nil, c.Home, P{"way": "noqueen"})
 		c.Home = c.Systems[0]
@@ -658,13 +658,13 @@ func (w *World) reseat(c *Civ) {
 }
 
 // contract shrinks a civilisation to its home (or one world) as a remnant.
-func (w *World) contract(c *Civ, cause string) {
+func (w *World) contract(c *Civ, cause reason) {
 	keep := c.Home
 	if !contains(c.Systems, keep) && len(c.Systems) > 0 {
 		keep = w.pick(c.Systems)
 	}
 	if c.Aloft {
-		w.rest(c, "the end of the road")
+		w.rest(c, because("road_end"))
 		if c.Aloft { // nowhere to rest: the fleets drift on as a remnant
 			for _, x := range w.fleets(c) {
 				x.Over = true
@@ -675,24 +675,25 @@ func (w *World) contract(c *Civ, cause string) {
 	}
 	for _, s := range append([]int(nil), c.Systems...) {
 		if s != keep {
-			w.loseSystem(c, s, "abandoned "+c.Species.Flavour().Colony, "")
+			w.loseSystem(c, s, "abandoned", reason{})
 		}
 	}
-	fell := w.unplaced(FFall, c, nil, keep).with(P{"cause": cause, "peak": c.Peak})
-	c.Stage, c.Fate, c.Cause, c.Ended = Remnant, Contracted, cause, w.Now
+	fell := w.unplaced(FFall, c, nil, keep).with(P{"peak": c.Peak}).with(cause.params("cause"))
+	c.Stage, c.Fate, c.Cause, c.Ended = Remnant, Contracted, cause.key, w.Now
+	c.FallEvent = fell.ID
 	c.Fell = w.Now
 	c.FellDependent = len(c.Dependent) > 0
 	c.Voyages = nil
-	w.endWars(c, "the fall of a side")
+	w.endWars(c, "fall")
 	c.Wars = map[int]bool{}
 	w.dropWielded(c, 0.5)
 	w.place(fell)
 }
 
 // endCiv finishes a civilisation as extinct or transformed. Systems become traces.
-func (w *World) endCiv(c *Civ, f Fate, cause string) {
+func (w *World) endCiv(c *Civ, f Fate, cause reason) *Event {
 	if c.Stage == Dead {
-		return
+		return nil
 	}
 	wasRemnant := c.Stage == Remnant
 	c.Stage = Dead
@@ -701,24 +702,23 @@ func (w *World) endCiv(c *Civ, f Fate, cause string) {
 	}
 	for _, s := range append([]int(nil), c.Systems...) {
 		if f == Extinct {
-			w.loseSystem(c, s, "dead cities", "")
+			w.loseSystem(c, s, "dead_cities", reason{})
 		} else {
-			w.loseSystem(c, s, "transformed world", "")
+			w.loseSystem(c, s, "transformed", reason{})
 		}
 	}
-	if wasRemnant {
-		cause = c.Cause + ", and long after " + cause
-	}
-	c.Fate, c.Cause, c.Ended = f, cause, w.Now
+	c.Fate, c.Cause, c.Ended = f, cause.key, w.Now
 	if !wasRemnant {
 		c.Fell = w.Now
 		c.FellDependent = len(c.Dependent) > 0
 	}
 	c.Voyages = nil
-	w.endWars(c, "the fall of a side")
+	w.endWars(c, "fall")
 	c.Wars = map[int]bool{}
 	w.dropWielded(c, 1)
-	w.told(FEnd, c, nil, c.Home).with(P{"cause": cause, "fate": f.String(), "remnant": wasRemnant, "peak": c.Peak})
+	end := w.told(FEnd, c, nil, c.Home).with(P{"fate": f.String(), "remnant": wasRemnant, "peak": c.Peak}).with(cause.params("cause"))
+	c.EndEvent = end.ID
+	return end
 }
 
 // darkAge is the one dark age, whoever calls it: a share of the tree
@@ -728,7 +728,7 @@ func (w *World) endCiv(c *Civ, f Fate, cause string) {
 // with everything else. Nothing is fatal here; a people that keeps
 // falling forgets more each time until the forgetting takes the stars,
 // and then it shatters (sunder.go).
-func (w *World) darkAge(c *Civ, why string) {
+func (w *World) darkAge(c *Civ, why reason) {
 	if !c.Active() {
 		return
 	}
@@ -740,7 +740,7 @@ func (w *World) darkAge(c *Civ, why string) {
 	w.reset(c)
 	c.Renewed = w.Now
 	if w.wreck == nil {
-		w.wreck = &defaultWreckage
+		w.wreck = &tables.defaultWr
 		defer func() { w.wreck = nil }()
 	}
 	forgotten := w.forget(c, depth*c.Species.Profile().Forgets) // a mind that is backed up forgets less
@@ -760,12 +760,12 @@ func (w *World) darkAge(c *Civ, why string) {
 	if slices.Contains(forgotten, resilience) {
 		w.veil(c) // the records that checked themselves are gone, and what they held with them
 	}
-	f := w.unplaced(FDarkAge, c, nil, c.Home).with(P{"cause": why, "depth": depth, "colony": c.Species.Flavour().Colony})
+	f := w.unplaced(FDarkAge, c, nil, c.Home).with(P{"depth": depth, "species": c.Species.ID}).with(why.params("cause"))
 	f.N = int(depth*10 + 0.5)
 	lost := 0
 	for _, s := range append([]int(nil), c.Systems...) {
 		if s != c.Home && w.R.Float64() < depth {
-			w.loseSystem(c, s, "abandoned "+c.Species.Flavour().Colony, "")
+			w.loseSystem(c, s, "abandoned", reason{})
 			lost++
 		}
 	}
@@ -897,11 +897,11 @@ func (c *Civ) expandMul(w *World) float64 {
 // makers knew and no memory of who built them.
 func (w *World) machinePeople(c *Civ) *Civ {
 	sp := species.GenerateWith(w.R, w.G.Stars[c.Home].Mult, c.Species.World.Key, species.Machine, 0)
-	sp.Made = "built by the " + c.Tok()
+	sp.Made = species.MadeBy("built", c.ID)
 	worlds := append([]int(nil), c.Systems...)
 	known := knownOf(c)
 	home := c.Home
-	w.endCiv(c, Transformed, "built a mind that outgrew them")
+	w.endCiv(c, Transformed, because("outgrown"))
 	nc := w.spawnCiv(home, sp, -1)
 	nc.Master = -1
 	for _, s := range worlds {
@@ -917,8 +917,8 @@ func (w *World) machinePeople(c *Civ) *Civ {
 		}
 	}
 	w.recompute(nc)
-	c.Into = "the " + nc.Tok()
-	w.event(KOutgrown, c, nc, c.Home, P{"desc": sp.Describe()})
+	c.Into, c.IntoCivs = "people", []int{nc.ID}
+	w.event(KOutgrown, c, nc, c.Home, P{"traits": sp.TraitKeys()})
 	w.machineMorality(nc, c)
 	w.inherit(nc, c, 0)
 	return nc

@@ -185,7 +185,7 @@ func (w *World) primitives(old, young *Civ) bool {
 		w.meeting(old, young, young.Home, "touch").with(P{"way": "scoured"})
 		w.fact(FScoured, old, young, young.Home).with(P{"way": "primitives"})
 		w.Bio[young.Home] = BioSimple
-		w.endCiv(young, Extinct, sprintf("were scoured from %s by the %s before they had looked up", w.star(young.Home), old.Tok()))
+		w.endCiv(young, Extinct, because("scoured_young").At(young.Home).By(old))
 		return true
 	case old.hostile() && !young.Has("swarming") && !young.Species.Is(species.Planetary) && young.treats() && w.R.Float64() < 0.3*(0.5+old.Dials.Greed):
 		old.Met[young.ID], young.Met[old.ID] = true, true
@@ -342,7 +342,7 @@ func (w *World) uplift(c *Civ) {
 		if w.Bio[t] == BioComplex && w.Owner[t] < 0 && t != w.G.Sol {
 			sp := species.Generate(w.R, w.G.Stars[t].Mult)
 			sp.Add("uplifted")
-			sp.Made = "uplifted by the " + c.Tok()
+			sp.Made = species.MadeBy("uplifted", c.ID)
 			c.Uplifts++
 			nc := w.spawnCiv(t, sp, c.ID)
 			nc.Vassal = true
@@ -356,7 +356,7 @@ func (w *World) uplift(c *Civ) {
 			w.recompute(nc)
 			at := w.slot() // the raising is told before the morality it gives, and recorded after
 			w.upliftMorality(nc, c)
-			w.fill(at, w.unplaced(FUplift, c, nc, t).with(P{"desc": sp.Describe()}))
+			w.fill(at, w.unplaced(FUplift, c, nc, t).with(P{"traits": sp.TraitKeys()}))
 			w.inherit(nc, c, 1)
 			return
 		}
@@ -367,12 +367,12 @@ func (w *World) uplift(c *Civ) {
 func (w *World) breed(m, s *Civ) {
 	sp := s.Species.Branch()
 	sp.Add("bred")
-	sp.Made = "bred by the " + m.Tok() + " from the " + s.Tok()
+	sp.Made = species.Making{Key: "bred_from", By: m.ID, From: s.ID, Legacy: -1, Plague: -1}
 	home := s.Home
-	w.endCiv(s, Transformed, sprintf("were bred by the %s into something else", m.Tok()))
-	s.Into = "the " + speciesTok(sp)
+	w.endCiv(s, Transformed, because("bred_into").By(m))
+	s.Into, s.IntoCivs = "species", []int{sp.ID}
 	nc := w.spawnCiv(home, sp, m.ID)
 	nc.Seen = m.Declines
-	w.fact(FBred, m, s, home).with(P{"into": nc.ID, "desc": sp.Describe()})
+	w.fact(FBred, m, s, home).with(P{"into": nc.ID, "traits": sp.TraitKeys()})
 	w.inherit(nc, s, 1)
 }

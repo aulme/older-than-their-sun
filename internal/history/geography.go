@@ -23,14 +23,13 @@ func (w *World) flares() {
 	if !w.chance(0.00002 * w.Law.Glare) {
 		return
 	}
-	w.event(KCentreFlared, nil, nil, -1, P{})
-	origin := 0
-	w.blastAll("the flaring of the centre", -1.5)
-	_ = origin
+	flare := w.event(KCentreFlared, nil, nil, -1, P{})
+	w.blastAll(because("flare").Blast(flare.ID), -1.5)
 }
 
-// blastAll applies a cosmic filter to every civilisation in the field.
-func (w *World) blastAll(what string, adj float64) {
+// blastAll applies a cosmic filter to every civilisation in the field;
+// what is the flare, as a cause reads.
+func (w *World) blastAll(what reason, adj float64) {
 	for _, c := range w.Civs {
 		if !c.Living() {
 			continue
@@ -44,7 +43,7 @@ func (w *World) blastAll(what string, adj float64) {
 			continue
 		}
 		w.blastWorlds = append([]int(nil), c.Systems...)
-		w.blastWhat = what
+		w.blastRef = what
 		w.face(c, "cosmic", adj)
 	}
 }
@@ -70,7 +69,7 @@ func (w *World) skyEvents() {
 		if y < w.Cfg.Dawn {
 			continue
 		}
-		w.eventAt(y, KSkyFeature, nil, nil, -1, P{"feature": f.Name})
+		w.eventAt(y, KSkyFeature, nil, nil, -1, P{"feature": f.Key})
 	}
 }
 

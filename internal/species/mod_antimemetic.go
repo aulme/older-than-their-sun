@@ -10,10 +10,9 @@ package species
 // the shape of the hole its losses leave: see history's antimemetic.go
 // and gap.go.
 var antimemetic = &ModDef{Mod: Antimemetic, Entry: Entry{
-	Key:      "antimemetic",
-	Portrait: "Nothing that has met them remembers it.",
-	Legacy:   Draw{Base: 0},
-	Draws:    Draw{Base: 1.0 / 200},
+	Key:    "antimemetic",
+	Legacy: Draw{Base: 0},
+	Draws:  Draw{Base: 1.0 / 200},
 	Profile: Profile{
 		Cannot: Believes, // nothing about it can be in a mind, its own ideas included: no memetic plague takes
 	},

@@ -24,7 +24,7 @@ type Plague struct {
 	ID          int
 	Born        Year
 	FirstHost   int    // the people it was born in
-	Cause       string // what the birth reads as, for the batch: clean, dirt, siege, dark age, relic
+	Cause       string // what the birth reads as, for the batch: clean, dirt, siege, dark_age, relic, born_rider, signal, made, breakout
 	Hosts       int    // peoples that have it now
 	Peak        int    // the most at once
 	Caught      int    // peoples that have had it, in all
@@ -62,31 +62,31 @@ type Reservoir struct {
 }
 
 // road is one channel a plague travels: its weight, the kind that takes
-// it, whether the giver is blamed, and the line's phrase with %s the giver.
+// it, and whether the giver is blamed; the line's phrase is the view's
+// (roadPhrases).
 type road struct {
 	Weight float64
 	Kind   plague.Kind
 	Crime  bool
-	Phrase string
 }
 
 var roads = map[string]road{
-	"born":       {0, plague.Biological, false, ""},
-	"goods":      {1, plague.Biological, true, "with the goods of the %s"},
-	"trade":      {0.3, plague.Biological, true, "along the trade with the %s"},
-	"occupation": {1, plague.Biological, true, "with the taking of worlds from the %s"},
-	"settling":   {0.3, plague.Biological, true, "from the worlds of the %s nearby"},
-	"fleet":      {0.5, plague.Biological, true, "with the ships of the %s"},
-	"landing":    {0.5, plague.Biological, true, "with the first landing of the %s"},
-	"message":    {1, plague.Memetic, false, "in a message from the %s"},
-	"signal":     {0.1, plague.Memetic, false, "on the signals of the %s"},
-	"reservoir":  {0, plague.Biological, false, ""},
-	"walls":      {0, plague.Memetic, false, ""},
-	"belief":     {0, plague.Memetic, false, ""},
-	"poison":     {1, plague.Biological, false, "hidden in the goods of the %s"},
-	"whisper":    {1, plague.Memetic, false, "hidden in a message from the %s"},
-	"ridden":     {0, plague.Biological, false, ""},
-	"loose":      {0, plague.Biological, false, ""},
+	"born":       {0, plague.Biological, false},
+	"goods":      {1, plague.Biological, true},
+	"trade":      {0.3, plague.Biological, true},
+	"occupation": {1, plague.Biological, true},
+	"settling":   {0.3, plague.Biological, true},
+	"fleet":      {0.5, plague.Biological, true},
+	"landing":    {0.5, plague.Biological, true},
+	"message":    {1, plague.Memetic, false},
+	"signal":     {0.1, plague.Memetic, false},
+	"reservoir":  {0, plague.Biological, false},
+	"walls":      {0, plague.Memetic, false},
+	"belief":     {0, plague.Memetic, false},
+	"poison":     {1, plague.Biological, false},
+	"whisper":    {1, plague.Memetic, false},
+	"ridden":     {0, plague.Biological, false},
+	"loose":      {0, plague.Biological, false},
 }
 
 // catchMul is what a trait does to catching: the short-lived and the
@@ -237,7 +237,7 @@ func causeOf(f plague.Factors) string {
 	case f.Sieged > 0:
 		return "siege"
 	case f.Dark:
-		return "dark age"
+		return "dark_age"
 	case f.Shed || f.Taken:
 		return "dirt"
 	}
@@ -474,42 +474,42 @@ func (w *World) worldLost(c *Civ, p *Plague, s int) {
 	}
 	if p.Kind == plague.Biological {
 		w.Reservoir[s] = &Reservoir{Plague: p.ID, Until: w.Now + Year(p.Contagion*t.ReservoirMyr*1e6)}
-		f := w.unplaced(FPlagueWorld, c, nil, s).with(P{"home": home, "colony": c.Species.Flavour().Colony})
+		f := w.unplaced(FPlagueWorld, c, nil, s).with(P{"home": home, "species": c.Species.ID})
 		f.Plague = p.ID
 		switch {
 		case home && len(c.Systems) == 1:
 			p.Peoples++
 			w.place(f)
-			w.endCiv(c, Extinct, "sickened and died of "+p.Tok())
+			w.endCiv(c, Extinct, because("plague_died").Plague(p.ID))
 		case home:
 			p.Peoples++
 			w.place(f)
-			w.loseSystem(c, s, "quarantined dead cities", "")
-			w.contract(c, "were hollowed out by "+p.Tok())
+			w.loseSystem(c, s, "quarantined", reason{})
+			w.contract(c, because("plague_hollowed").Plague(p.ID))
 		default:
-			w.loseSystem(c, s, "quarantined dead cities", "")
+			w.loseSystem(c, s, "quarantined", reason{})
 			w.place(f)
 		}
 		return
 	}
 	cult := w.R.Float64() < t.CultChance
-	f := w.unplaced(FBelieved, c, nil, s).with(P{"home": home, "cult": cult, "colony": c.Species.Flavour().Colony})
+	f := w.unplaced(FBelieved, c, nil, s).with(P{"home": home, "cult": cult, "species": c.Species.ID})
 	f.Plague = p.ID
 	if home {
 		p.Peoples++
-		w.endCiv(c, Transformed, "listened to "+p.Tok()+" and were changed by it")
-		c.Into = "something that believed"
+		w.endCiv(c, Transformed, because("plague_changed").Plague(p.ID))
+		c.Into = "believed"
 		if cult {
 			w.place(f)
 			nc := w.cult(c, p, s)
-			c.Into = "the " + nc.Tok()
+			c.Into, c.IntoCivs = "people", []int{nc.ID}
 			f.Object = nc.ID
 			return
 		}
 		w.place(f)
 		return
 	}
-	w.loseSystem(c, s, "world that believes", "")
+	w.loseSystem(c, s, "believes", reason{})
 	if cult {
 		w.place(f)
 		nc := w.cult(c, p, s)
@@ -524,7 +524,7 @@ func (w *World) worldLost(c *Civ, p *Plague, s int) {
 // schism's branch is made.
 func (w *World) cult(c *Civ, p *Plague, s int) *Civ {
 	nc := w.spawnCiv(s, c.Species, -1)
-	nc.Origin = "the believers in " + p.Tok() + ", once of the " + c.Tok()
+	nc.Origin = species.Making{Key: "believers", By: c.ID, From: -1, Legacy: -1, Plague: p.ID}
 	nc.Master = -1
 	for k := range c.Known {
 		nc.Known[k] = true

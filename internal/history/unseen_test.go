@@ -60,7 +60,7 @@ func TestEvolverDrifts(t *testing.T) {
 func reaching(w *World, c *Civ) {
 	starfaring(w, c)
 	c.Known["slow_interstellar"] = true
-	w.addSource(&Source{Key: "well", Name: "a well", Kind: CosmicSource, Star: c.Home, Yield: flow.Income{1000, 1000, 1000}, Holder: -1, Carried: -1, Legacy: -1})
+	w.addSource(&Source{Key: "well", Kind: CosmicSource, Star: c.Home, Yield: flow.Income{1000, 1000, 1000}, Holder: -1, Carried: -1, Legacy: -1})
 	w.recompute(c)
 }
 
@@ -115,7 +115,7 @@ func TestUnseenFleets(t *testing.T) {
 	w.addGuard(c, c.Home, 6)
 	w.addGuard(x, x.Home, 20)
 	x.Met[c.ID] = true
-	if wr := w.declare(x, c, "a test"); wr == nil {
+	if wr := w.declare(x, c, because("border")); wr == nil {
 		t.Fatal("no war")
 	}
 	f := w.launch(x, Campaign, c, c.Home, 10)
@@ -210,7 +210,7 @@ func TestWarBecomesHunt(t *testing.T) {
 	w, c, x := antimemeticPair(t, 64, 1, 2)
 	w.learn(c, tech.Get(resilience), false)
 	c.Met[x.ID], x.Met[c.ID] = true, true
-	wr := w.declare(c, x, "a test")
+	wr := w.declare(c, x, because("border"))
 	if wr == nil || wr.Gap != nil {
 		t.Fatalf("the war with the node: %v", wr)
 	}

@@ -1,0 +1,24 @@
+{
+  "_": [
+    "The miracles: the powers apart from the tree, each the dominant fact about whoever holds it. The simulation reads causal and wear (what holding the miracle does to the wall between this and the state beneath) and the objects' forms; the view reads the words.",
+    "miracles: one row per miracle, keyed by its node: name (how the legends say it); desc; causal marks the ones that reach into the state beneath, with wear (what holding it thins the wall by, per thousand years); object is the name of the thing the two object miracles make, and forms the shapes it can take (key, desc, weight in the draw, yield, levels), in the order the code draws them. routes: the ways a people comes to hold a miracle, as Civ.Miracles records them.",
+    "Every term here is a technical term: a phrase a reader who never saw this project understands or can search for, never a coinage."
+  ],
+  "miracles": [
+    {"key": "ansible", "name": "the Voice, minds that speak across any distance", "causal": true, "wear": 0.001, "desc": "the Voice: minds that speak across any distance, by going under space rather than across it"},
+    {"key": "directed_evolution", "name": "the Flesh, a body for every world", "desc": "the Flesh: a body for every world, the people's own flesh remade at will"},
+    {"key": "ftl", "name": "the Door, a way between the stars faster than light", "causal": true, "wear": 0.0015, "desc": "the Door: a way between the stars faster than light, through the state beneath; a crossing has no duration from inside"},
+    {"key": "unmaking", "name": "the Unmaking, the end of matter at any distance", "causal": true, "wear": 0.001, "desc": "the Unmaking: the end of matter at any distance that can be seen; matter put back the way it was before it was matter"},
+    {"key": "chorus", "name": "the Chorus, thought that takes root in any mind", "desc": "the Chorus: a thought that takes root in any mind that hears it"},
+    {"key": "foresight", "name": "the Sight, knowledge of what is coming", "causal": true, "wear": 0.0005, "desc": "the Sight: knowledge of what is coming, by leaning on something under time"},
+    {"key": "ember", "name": "the Ember, a fire that should not burn", "forms": [{"desc": "a pocket star", "key": "pocket_star", "weight": 1, "yield": {"E": 8}}, {"desc": "a captive singularity", "key": "singularity", "weight": 1, "yield": {"E": 8}}, {"desc": "a tap into a hotter place", "key": "hot_tap", "levels": [0, -0.5, 0], "weight": 1, "yield": {"E": 8}}, {"desc": "a hole in the vacuum", "key": "vacuum_hole", "weight": 1, "yield": {"E": 8}}], "object": "the Ember", "desc": "the Ember: a fire that should not burn, made once and carried; an object, with a form and a price"},
+    {"key": "manna", "name": "the Manna, a thing that feeds them and does not stop", "forms": [{"desc": "a mould that grows on anything", "key": "mould", "weight": 1, "yield": {"O": 6}}, {"desc": "a mat of flesh that is the floor of every city", "key": "mat", "weight": 1, "yield": {"O": 6}}, {"desc": "a brood of something like insects", "key": "brood", "weight": 1, "yield": {"O": 6}}, {"desc": "a kelp the oceans are full of", "key": "kelp", "weight": 1, "yield": {"O": 6}}, {"desc": "a fungus that eats stone", "key": "fungus", "weight": 1, "yield": {"M": 1, "O": 6}}], "object": "the Manna", "desc": "the Manna: a thing that feeds them and does not stop, grown once and given as cuttings; an object, with a form"}
+  ],
+  "routes": [
+    {"key": "born", "desc": "the species was born to it: no tree beneath it, no filter on it"},
+    {"key": "leap", "desc": "a conscious leap from a deep spine of the tree"},
+    {"key": "found", "desc": "found in what an earlier people left, and mastered"},
+    {"key": "wielded", "desc": "held by wielding a found thing, for as long as the thing lasts"},
+    {"key": "deepening", "desc": "an eldritch people's own deepening"}
+  ]
+}

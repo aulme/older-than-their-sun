@@ -3,6 +3,7 @@ package species
 import (
 	"strings"
 
+	"worldgen/data"
 	"worldgen/internal/mind"
 )
 
@@ -86,9 +87,9 @@ func ModByKey(key string) (Mod, bool) {
 // Flavour is what a people calls the things it builds. An entry leaves a
 // field empty to take the substrate's word.
 type Flavour struct {
-	Colony  string
-	Ship    string
-	Station string
+	Colony  string `json:"colony,omitempty"`
+	Ship    string `json:"ship,omitempty"`
+	Station string `json:"station,omitempty"`
 }
 
 // Draw is an entry's place in the chain of rolls under one setting.
@@ -102,9 +103,9 @@ type Draw struct {
 // Entry is what a substrate and a modifier have in common.
 type Entry struct {
 	Key      string
-	Portrait string   // the sentence the portrait opens with; "" for the plain case
-	Arising  string   // how the legends say it arose; "" for the plain case
-	Flavour  Flavour  // vocabulary; empty fields fall back to the substrate's
+	Portrait string   // the sentence the portrait opens with, from data/kinds.json; "" for the plain case
+	Arising  string   // how the legends say it arose, from the file; "" for the plain case
+	Flavour  Flavour  // vocabulary, from the file; empty fields fall back to the substrate's
 	Legacy   Draw     // the numbers that reproduce the old kind table, kept for a test
 	Draws    Draw     // the proposal's first setting: what the generator draws with
 	Own      []string // trait groups only a people with this entry rolls
@@ -293,10 +294,72 @@ var Substrates = []*SubstrateDef{biological, machine, eldritch, parasite}
 // Mods is the registry of modifiers in the order the chain rolls them.
 var Mods = []*ModDef{planetary, hive, unconscious, replicator, antimemetic, evolver}
 
+// kindsFile is the shape of data/kinds.json: the words of each entry
+// and each power; the numbers stay with the entries here.
+type kindsFile struct {
+	Substrates []kindText  `json:"substrates"`
+	Modifiers  []kindText  `json:"modifiers"`
+	Powers     []powerText `json:"powers"`
+}
+
+type kindText struct {
+	Key      string  `json:"key"`
+	Portrait string  `json:"portrait,omitempty"`
+	Arising  string  `json:"arising,omitempty"`
+	Flavour  Flavour `json:"flavour"`
+}
+
+// powerText is a power's row: its words and its plain numbers; what it
+// grants is a profile, and stays in Go.
+type powerText struct {
+	Key    string  `json:"key"`
+	Name   string  `json:"name"`
+	Domain string  `json:"domain"`
+	Weight float64 `json:"weight"`
+	Node   string  `json:"node,omitempty"`
+	Filter string  `json:"filter,omitempty"`
+	Line   string  `json:"line"`
+	Sense  string  `json:"sense,omitempty"`
+}
+
 func init() {
 	for i, d := range Substrates {
 		if d.Sub != Substrate(i) {
 			panic("species: substrate registry out of order at " + d.Key)
 		}
+	}
+	var f kindsFile
+	data.Load("kinds.json", &f)
+	read := func(what string, rows []kindText, entries []*Entry) {
+		if len(rows) != len(entries) {
+			panic("species: the file's " + what + " are not the code's")
+		}
+		for i, r := range rows {
+			e := entries[i]
+			if r.Key != e.Key {
+				panic("species: the file's " + what + " " + r.Key + " is not the code's " + e.Key)
+			}
+			e.Portrait, e.Arising, e.Flavour = r.Portrait, r.Arising, r.Flavour
+		}
+	}
+	var subs, mods []*Entry
+	for _, d := range Substrates {
+		subs = append(subs, &d.Entry)
+	}
+	for _, d := range Mods {
+		mods = append(mods, &d.Entry)
+	}
+	read("substrates", f.Substrates, subs)
+	read("modifiers", f.Modifiers, mods)
+	if len(f.Powers) != len(Pool) {
+		panic("species: the file's powers are not the code's")
+	}
+	for i, r := range f.Powers {
+		p := Pool[i]
+		if r.Key != p.Key {
+			panic("species: the file's power " + r.Key + " is not the code's " + p.Key)
+		}
+		p.Name, p.Domain, p.Weight, p.Node, p.Filter, p.Line, p.Sense = r.Name, r.Domain, r.Weight, r.Node, r.Filter, r.Line, r.Sense
+		powerByKey[p.Key] = p
 	}
 }

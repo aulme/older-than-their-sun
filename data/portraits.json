@@ -1,0 +1,91 @@
+{
+  "_": [
+    "The portraits: what the elder ages and their remains look like, keyed. The simulation stores the key it drew (an elder's portrait, an age's ender, a remain's portrait); the view renders the text. In a text, {T} is the remain's star, {M} its makers, {node} the name of the art it stands for.",
+    "elders: what an elder civilisation was. enders: what swept up an age's remains. knowers: what an elder learned of the cycle. structures, artifacts, laws: what an elder remain of each kind looks like; a law's variant is the key the simulation reads to know what the law does (mind_dead is the one that stops minds within reach). relics: what the current age leaves of an art when a people forgets or falls, with hardy (a multiplier on decay); the miracle relic is what is left of a miracle. bounties: elder things still doing what they were made for, with the yield, the levels and the wear (years before the bounty is spent, 0 for never). threats, sleepers, fields: what a threat, a sleeper and a field of wrecks look like.",
+    "Every term here is a technical term: a phrase a reader who never saw this project understands or can search for, never a coinage."
+  ],
+  "elders": [
+    {"key": "red_giant", "text": "something that thought in the convection cells of a red giant"},
+    {"key": "nebula_field", "text": "a mind spread through the magnetic field of a nebula"},
+    {"key": "dark_between", "text": "a people who lived in the dark between stars and never saw a sun up close"},
+    {"key": "moon_organism", "text": "a single organism the size of a moon, slow as geology"},
+    {"key": "orphan_machines", "text": "a civilisation of machines whose makers were already a myth to them"},
+    {"key": "chorus", "text": "a chorus that existed only while it was being sung"},
+    {"key": "star_users", "text": "something that used stars the way others use fire"},
+    {"key": "voting_dead", "text": "a species that kept its dead and let them vote"},
+    {"key": "falling_swarm", "text": "a swarm that thought only while falling into a gravity well"},
+    {"key": "decay_minds", "text": "minds that ran on the decay of heavy elements and were therefore very patient"},
+    {"key": "folded", "text": "a people who folded themselves into a smaller dimension to save on entropy"},
+    {"key": "question", "text": "a thing that was mostly a question"}
+  ],
+  "enders": [
+    {"key": "beacon", "text": "a beacon that spoke to every mind still listening"},
+    {"key": "replicators", "text": "a wave of self-copying machines let loose by someone with no successors to stop it"},
+    {"key": "dense_arm", "text": "a passage through a dense arm, and a rain of supernovae on worlds already half empty"},
+    {"key": "last_war", "text": "a war between the last two powers, fought over nothing either still needed"},
+    {"key": "silence", "text": "a long silence, in which the remaining few forgot each other"},
+    {"key": "slow_failure", "text": "the slow failure of everything that had been built to outlast its builders"}
+  ],
+  "knowers": [
+    {"key": "done_before", "text": "It learned that the galaxy had done this before, and would again."},
+    {"key": "counted", "text": "It counted the dead ages and knew its own for what it was."},
+    {"key": "measured", "text": "It measured the fading and built accordingly, for no one."}
+  ],
+  "structures": [
+    {"key": "moved_star", "text": "a star that was moved, and the trail it left"},
+    {"key": "ringed_hole", "text": "a black hole set in a ring of black metal"},
+    {"key": "hollow_sun", "text": "a hollowed sun, lit from inside"},
+    {"key": "dark_corridor", "text": "a corridor of darkness where no light crosses"},
+    {"key": "machined_core", "text": "a world with a machined core that still hums"},
+    {"key": "thread_lattice", "text": "a lattice of threads around a dead star"},
+    {"key": "instrument_moon", "text": "a moon that is a single instrument, tuned to something"}
+  ],
+  "artifacts": [
+    {"key": "warm_seed", "text": "a seed of grey metal that is warm to the touch"},
+    {"key": "future_lens", "text": "a lens that shows the sky as it will be"},
+    {"key": "fuelless_engine", "text": "an engine with no fuel and no moving parts"},
+    {"key": "atomic_library", "text": "a library written in the arrangement of atoms"},
+    {"key": "instrument_weapon", "text": "a weapon shaped like a musical instrument"},
+    {"key": "same_room_door", "text": "a door that opens onto the same room"},
+    {"key": "empty_cradle", "text": "a cradle for something that was never put in it"}
+  ],
+  "laws": [
+    {"key": "mind_dead", "text": "a region where minds do not work", "variant": "mind_dead"},
+    {"key": "one_number", "text": "a standing signal that repeats one number", "variant": "signal"},
+    {"key": "early_ships", "text": "a corridor along which ships arrive before they leave", "variant": "early_arrival"},
+    {"key": "early_light", "text": "a volume where light arrives before it is sent", "variant": "early_light"},
+    {"key": "thin_shore", "text": "a shore where the sky is thin, and things are seen in it that are not there", "variant": "thin_shore"},
+    {"key": "same_dust", "text": "a drift of dust that is in the same place wherever you go", "variant": "same_dust"},
+    {"key": "old_light", "text": "a star whose light is always a day old, from any distance", "variant": "old_light"}
+  ],
+  "relics": [
+    {"key": "vault", "text": "a vault of the {M}", "hardy": 0.4},
+    {"key": "archives", "text": "the archives of the {M}", "hardy": 1},
+    {"key": "engine", "text": "an engine of the {M}", "hardy": 0.8},
+    {"key": "machine", "text": "a machine of the {M} that no one dares to switch off", "hardy": 0.8},
+    {"key": "workshop", "text": "the last workshop of the {M}", "hardy": 1.3},
+    {"key": "miracle", "text": "what the {M} left of {node}", "hardy": 0.5}
+  ],
+  "bounties": [
+    {"key": "lattice", "text": "a lattice that turns starlight to metal, still turning", "yield": {"M": 6}},
+    {"key": "sea", "text": "a sea that has been growing since before the age", "yield": {"O": 6}},
+    {"key": "battery", "text": "a battery the size of a moon, a tenth full", "wear": 1000000, "yield": {"E": 6}},
+    {"key": "seam", "text": "a seam of a metal that is not on the table", "levels": [0.5, 0, 0], "yield": {"M": 4}},
+    {"key": "garden", "text": "a garden that tends itself, under a roof of something clear", "levels": [0, 0.5, 0], "yield": {"O": 4}},
+    {"key": "mirror", "text": "a mirror in orbit that never lost its polish", "yield": {"E": 4}},
+    {"key": "ring", "text": "a ring of black metal around a dead star, still warm", "yield": {"E": 8}}
+  ],
+  "threats": [
+    {"key": "rubble", "text": "machines that sleep in the rubble of {T}"},
+    {"key": "transmitter_silent", "text": "a transmitter at {T}, silent"},
+    {"key": "transmitter_running", "text": "a transmitter at {T} that has never stopped"},
+    {"key": "transmitter", "text": "a transmitter at {T}"}
+  ],
+  "sleepers": [
+    {"key": "withdrawn", "text": "something that withdrew into the dark near {T} and went still"}
+  ],
+  "fields": [
+    {"key": "wrecks", "text": "the wrecks of the fleet of the {M}"},
+    {"key": "derelicts", "text": "the derelicts of the fleet of the {M}"}
+  ]
+}

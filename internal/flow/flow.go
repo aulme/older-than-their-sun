@@ -107,7 +107,6 @@ func (o Order) Has(c Category) bool {
 // Use is one thing a people spends its means on.
 type Use struct {
 	Key    string
-	Name   string // for the line when it goes dark
 	Cat    Category
 	Era    int
 	Need   Income

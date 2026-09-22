@@ -1,8 +1,6 @@
 package history
 
 import (
-	"strings"
-
 	"worldgen/internal/tech"
 )
 
@@ -20,77 +18,11 @@ import (
 // fragile and the precariously placed. What is hardy enough outlasts the
 // age and becomes, by survivorship, an elder legacy of the next.
 
-var remainDescs = map[string]string{
-	"arcology":    "a sealed city of the %s",
-	"shipyard":    "the yards of the %s",
-	"defences":    "the guns of the %s",
-	"silos":       "the silos of the %s",
-	"ansible":     "a relay of the %s",
-	"dyson":       "the swarm of the %s",
-	"mine":        "the mines of the %s",
-	"collectors":  "the collectors of the %s",
-	"tap":         "the tap of the %s, still ringing the dead star",
-	"lifter":      "the lifter of the %s",
-	"observatory": "the mirrors of the %s",
-}
-
-// relics: description and hardiness
-var relicKinds = []struct {
-	Desc  string
-	Hardy float64
-}{
-	{"a vault of the %s", 0.4},
-	{"the archives of the %s", 1.0},
-	{"an engine of the %s", 0.8},
-	{"a machine of the %s that no one dares to switch off", 0.8},
-	{"the last workshop of the %s", 1.3},
-}
-
-// wreckages by filter: what a failed filter does to the works of the fallen.
-var filterWreckage = map[string]Wreckage{
-	"atomic":       {0.6, Wreck},
-	"overshoot":    {0.4, Derelict},
-	"machines":     {0.5, Derelict},
-	"distance":     {0.1, Abandoned},
-	"silence":      {0.3, Abandoned},
-	"replication":  {0.8, Wreck},
-	"stellar":      {1, Ruin},
-	"transcend":    {0.1, Abandoned},
-	"ossification": {0.2, Abandoned},
-	"door":         {0.5, Wreck},
-	"hold":         {0.3, Derelict},
-	"revolt":       {0.5, Wreck},
-	"containment":  {0.3, Derelict},
-	"beacon":       {0.2, Abandoned},
-	"incursion":    {0.3, Derelict},
-	"elder":        {0.2, Abandoned},
-}
-
-// wreckages by manner of loss, used when no filter is running (war, cosmic
-// events, things that eat). Keyed by the trace kind that loseSystem records.
-var lossWreckage = map[string]Wreckage{
-	"abandoned":               {0.1, Abandoned},
-	"dead cities":             {0.3, Derelict},
-	"transformed world":       {0.2, Abandoned},
-	"host-world":              {0.3, Derelict},
-	"glassed world":           {0.7, Wreck},
-	"frozen world":            {0.6, Wreck},
-	"scoured world":           {1, Ruin},
-	"burned cradle":           {1, Ruin},
-	"stripped world":          {1, Ruin},
-	"wounded star":            {1, Ruin},
-	"unmade world":            {1, Ruin},
-	"absorbed world":          {0.5, Derelict},
-	"silent world":            {0.2, Abandoned},
-	"quarantined dead cities": {0.15, Abandoned},
-	"world that believes":     {0.1, Abandoned},
-}
-
-var defaultWreckage = Wreckage{0.3, Derelict}
-
+// wreckOf is what a filter's decline does to the works of the fallen,
+// from the filter's row; nil for the default.
 func wreckOf(filter string) *Wreckage {
-	if wk, ok := filterWreckage[filter]; ok {
-		return &wk
+	if f := filters[filter]; f != nil {
+		return f.Wreckage
 	}
 	return nil
 }
@@ -100,13 +32,10 @@ func (w *World) wreckage(kind string) Wreckage {
 	if w.wreck != nil {
 		return *w.wreck
 	}
-	if strings.HasPrefix(kind, "abandoned") {
-		kind = "abandoned"
-	}
-	if wk, ok := lossWreckage[kind]; ok {
+	if wk, ok := tables.losses[kind]; ok {
 		return wk
 	}
-	return defaultWreckage
+	return tables.defaultWr
 }
 
 // leaveRuin decides the fate of a work at a star being lost.
@@ -129,7 +58,7 @@ func (w *World) leaveRuin(c *Civ, wk Work, kind string) {
 		return // what was dug is spent: holes in the ground are nobody's find
 	}
 	l := &Legacy{ID: len(w.Legacies), Age: -1, Maker: c.ID, Kind: Structure, Star: wk.Star, Node: wk.Node, People: -1, Finder: -1, Source: -1, Plague: -1, Cond: wr.Leave, Hardy: st.Hardy}
-	l.Desc = sprintf(remainDescs[wk.Key], c.Tok())
+	l.Portrait = wk.Key
 	w.Legacies = append(w.Legacies, l)
 	w.testament(c, l)
 }
@@ -145,13 +74,12 @@ func (w *World) leaveRelic(c *Civ, node string, star int) {
 	if w.R.Float64() < wr.Destroy {
 		return
 	}
-	rk := relicKinds[w.R.IntN(len(relicKinds))]
-	l := &Legacy{ID: len(w.Legacies), Age: -1, Maker: c.ID, Kind: Artifact, Star: star, Node: node, People: -1, Finder: -1, Source: -1, Plague: -1, Cond: wr.Leave, Hardy: rk.Hardy}
-	l.Desc = sprintf(rk.Desc, c.Tok())
+	relics := tables.portraits.Relics[:len(tables.portraits.Relics)-1] // the last is the miracle's
+	rk := relics[w.R.IntN(len(relics))]
 	if n.Miracle {
-		l.Desc = sprintf("what the %s left of %s", c.Tok(), n.Name)
-		l.Hardy = 0.5
+		rk = tables.portraits.Relics[len(tables.portraits.Relics)-1]
 	}
+	l := &Legacy{ID: len(w.Legacies), Age: -1, Maker: c.ID, Kind: Artifact, Star: star, Node: node, People: -1, Finder: -1, Source: -1, Plague: -1, Cond: wr.Leave, Hardy: rk.Hardy, Portrait: rk.Key}
 	w.Legacies = append(w.Legacies, l)
 	w.testament(c, l)
 }
@@ -193,63 +121,49 @@ func (w *World) tickLegacies() {
 	}
 }
 
-// Describe gives a legacy's description with its condition; a field with
-// the ships in it.
-func (l *Legacy) Describe() string {
-	if l.Maker < 0 {
-		return l.Desc
-	}
-	if l.Kind == Field {
-		s := l.Desc
-		if n := l.ships(); n > 0 {
-			s += ", " + shipsWord(n)
-		} else {
-			s = "what is left of " + l.Desc
-		}
-		if l.Adrift {
-			s += ", adrift"
-		}
-		return s
-	}
-	switch l.Cond {
-	case Abandoned:
-		return l.Desc + ", abandoned but whole"
-	case Derelict:
-		return l.Desc + ", derelict"
-	case Wreck:
-		return "the wreck of " + l.Desc
-	default:
-		return "the ruin of " + l.Desc
-	}
-}
-
 // condAdj is the Find's difficulty adjustment for a legacy's condition:
 // negative is easier.
 func (l *Legacy) condAdj() float64 {
 	if l.Maker < 0 {
 		return 0
 	}
-	switch l.Cond {
-	case Abandoned:
-		return -1
-	case Wreck:
-		return 1.5
-	case Ruin:
-		return 3
+	return tables.conditions[l.Cond].Find
+}
+
+// variant is what a law does: its portrait's variant in the table.
+func (l *Legacy) variant() string {
+	if p := tables.portraitByKey["laws"][l.Portrait]; p != nil {
+		return p.Variant
 	}
-	return 0
+	return ""
 }
 
 // makerName is what a finder calls the makers of a legacy: the elder's
 // finder name, the maker's own if the finder knows of them, else the
 // finder's name for whoever they were.
 func (w *World) makerName(c *Civ, l *Legacy) string {
+	return w.makerNameIf(l, w.knowsMaker(c, l))
+}
+
+// knowsMaker says whether a finder can place a remain's makers: an elder
+// always has a name, a people if the finder has met them, they live, or
+// the finder is of their line or blood.
+func (w *World) knowsMaker(c *Civ, l *Legacy) bool {
+	if l.Elder != nil {
+		return true
+	}
+	m := w.Civs[l.Maker]
+	return c.Met[m.ID] || m.Living() || w.kinship(c, l) > 0
+}
+
+// makerNameIf is what a finder calls the makers, given whether it can
+// place them.
+func (w *World) makerNameIf(l *Legacy, known bool) string {
 	if l.Elder != nil {
 		return l.Elder.Tok()
 	}
-	m := w.Civs[l.Maker]
-	if c.Met[m.ID] || m.Living() || w.kinship(c, l) > 0 {
-		return "the " + m.Tok()
+	if known {
+		return "the " + w.Civs[l.Maker].Tok()
 	}
 	return makersTok(l)
 }
@@ -283,9 +197,9 @@ func (w *World) takeOver(c *Civ, star int) {
 		c.Works = append(c.Works, Work{Key: key, Node: l.Node, Star: star, Legacy: l.ID})
 		c.Structures[key]++
 		if w.kinship(c, l) == 2 {
-			w.event(KTakenOver, c, nil, star, P{"own": true, "desc": l.Describe()}).Legacy = l.ID
+			w.event(KTakenOver, c, nil, star, P{"own": true, "cond": int(l.Cond)}).Legacy = l.ID
 		} else if w.R.Float64() < 0.2 {
-			w.event(KTakenOver, c, nil, star, P{"own": false, "desc": l.Describe()}).Legacy = l.ID
+			w.event(KTakenOver, c, nil, star, P{"own": false, "cond": int(l.Cond)}).Legacy = l.ID
 		}
 	}
 }

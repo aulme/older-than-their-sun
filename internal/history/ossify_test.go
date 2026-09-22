@@ -85,7 +85,7 @@ func TestLoweringHooks(t *testing.T) {
 	if c.Stiff != 0.9 || e.Stiff != 0.9 {
 		t.Errorf("a first meeting: %g and %g", c.Stiff, e.Stiff)
 	}
-	wr := w.declare(c, e, "a test")
+	wr := w.declare(c, e, because("border"))
 	if c.Still != w.Now {
 		t.Error("a war is not still")
 	}
@@ -93,12 +93,12 @@ func TestLoweringHooks(t *testing.T) {
 	if math.Abs(c.Stiff-0.8) > 1e-9 {
 		t.Errorf("a war fought to peace: %g", c.Stiff)
 	}
-	w.loseSystem(c, 2, "abandoned colony", "")
+	w.loseSystem(c, 2, "abandoned", reason{})
 	if math.Abs(c.Stiff-0.75) > 1e-9 {
 		t.Errorf("a world lost: %g", c.Stiff)
 	}
 	sp := species.Fixed("cooperative")
-	sp.Made = "made"
+	sp.Made = species.Made("built")
 	w.spawnCiv(30, sp, c.ID)
 	if math.Abs(c.Stiff-0.55) > 1e-9 {
 		t.Errorf("a people made: %g", c.Stiff)
@@ -108,7 +108,7 @@ func TestLoweringHooks(t *testing.T) {
 		t.Errorf("a miracle gained: %g", c.Stiff)
 	}
 	c.Stiff, c.Ossified = 2, true
-	w.darkAge(c, "fell")
+	w.darkAge(c, because("ossified"))
 	if c.Stiff != 0 || c.Ossified {
 		t.Error("a dark age did not reset the institutions")
 	}
@@ -228,7 +228,7 @@ func TestNoAgeDeaths(t *testing.T) {
 		w.tick()
 	}
 	for _, x := range w.Civs {
-		if x.Fate == Contracted || strings.Contains(x.Cause, "hardened") || strings.Contains(x.Cause, "weight") {
+		if x.Fate == Contracted || x.Cause == "ossified" || strings.Contains(x.Cause, "weight") {
 			t.Errorf("the %s ended %s: %s", x.Tok(), x.Fate, x.Cause)
 		}
 	}

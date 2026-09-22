@@ -71,7 +71,7 @@ func TestBornRider(t *testing.T) {
 	if rider.Own < 0 || w.Plagues[rider.Own].FirstHost != host.ID || host.Infections[rider.Own] == nil || rider.Home != host.Home {
 		t.Errorf("the born rider: own %d, host's infections %v, home %d against %d", rider.Own, host.Infections, rider.Home, host.Home)
 	}
-	if w.Plagues[rider.Own].Cause != "born rider" {
+	if w.Plagues[rider.Own].Cause != "born_rider" {
 		t.Error("the birth is not a born rider's for the batch")
 	}
 }
@@ -105,9 +105,9 @@ func TestParasiteNoPlague(t *testing.T) {
 // plague that empties a parasite's only host ends the parasite.
 func TestStarved(t *testing.T) {
 	w, host, rider, _ := woken(t, 24, plague.Biological)
-	w.endCiv(host, Extinct, "test")
+	w.endCiv(host, Extinct, because("faded"))
 	w.starve()
-	if rider.Living() || rider.Cause != "had nothing left to wear" {
+	if rider.Living() || rider.Cause != "no_hosts" {
 		t.Fatalf("the rider outlived its last host: %v %q", rider.Living(), rider.Cause)
 	}
 	// a second plague through the host

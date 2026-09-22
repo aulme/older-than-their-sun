@@ -428,7 +428,7 @@ func (w *World) goNative(x *Expedition) {
 	}
 	w.event(KFleetStayed, c, nil, home, P{})
 	nc := w.spawnCiv(home, c.Species, -1)
-	nc.Origin = "the fleet of the " + c.Tok() + " that never came home"
+	nc.Origin = species.MadeBy("lost_fleet", c.ID)
 	nc.Master = -1
 	for _, s := range held {
 		if s != home {
@@ -512,11 +512,11 @@ func (w *World) wouldTurn(x *Expedition) bool {
 // host with nothing else in the sky loses it at once.
 func (w *World) turn(x *Expedition) {
 	c, h := w.Civs[x.Owner], w.Civs[x.Target]
-	w.betray(c, h, "turned on the world they were sent to keep", "turned", 1).P["star"] = x.Base
+	w.betray(c, h, "turned", "turned", 1).P["star"] = x.Base
 	w.breakPacts(c, h)
 	h.resent(c.ID, 3)
 	x.Kind, x.Turned = Campaign, true
-	wr := w.declare(c, h, "betrayal")
+	wr := w.declare(c, h, because("betrayal"))
 	if wr == nil {
 		return
 	}

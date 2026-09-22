@@ -1,6 +1,7 @@
 package galaxy
 
 import (
+	"encoding/json"
 	"math"
 )
 
@@ -84,31 +85,24 @@ func (v Vec) ToSun() (l, b, d float64) {
 // arm's unwrapped azimuth, and always include 180, the Sun's; an arm that
 // starts at the far end of the bar starts at a negative azimuth.
 type Arm struct {
-	Name, Short string
-	RSun        float64 // kpc at the Sun's azimuth
-	Pitch       float64 // degrees
-	Width       float64 // kpc, roughly the half-width
-	From, To    float64 // unwrapped azimuth range, degrees
-	Major       bool
-	Desc        string
+	Key   string  `json:"key"`
+	Name  string  `json:"name"`
+	Short string  `json:"short"`
+	RSun  float64 `json:"r_sun"` // kpc at the Sun's azimuth
+	Pitch float64 `json:"pitch"` // degrees
+	Width float64 `json:"width"` // kpc, roughly the half-width
+	From  float64 `json:"from"`  // unwrapped azimuth range, degrees
+	To    float64 `json:"to"`
+	Major bool    `json:"major,omitempty"`
+	Desc  string  `json:"desc"`
 }
 
-// Arms, inner to outer as they cross the Sun's azimuth. The two major arms
-// (Scutum-Centaurus and Perseus) start at the ends of the bar; the two
-// minor ones (Sagittarius-Carina and Norma-Outer) are gas and young stars
-// more than a change in stellar density. The Local arm is a short spur.
-var Arms = []*Arm{
-	{Name: "the Scutum-Centaurus Arm", Short: "Scutum-Centaurus", RSun: 5.0, Pitch: 13, Width: 0.6, From: 147, To: 447, Major: true,
-		Desc: "one of the two great arms, rooted at the near end of the bar; heavy with gas, stars and the clusters of red supergiants where it meets the bar"},
-	{Name: "the Sagittarius-Carina Arm", Short: "Sagittarius-Carina", RSun: 6.7, Pitch: 13, Width: 0.45, From: -20, To: 330,
-		Desc: "a minor arm bright with nebulae: the Lagoon, the Eagle, the Omega, and Carina with its doomed giant"},
-	{Name: "the Local Arm", Short: "Orion", RSun: 8.45, Pitch: 11, Width: 0.35, From: 150, To: 215,
-		Desc: "a short spur between the two great arms; the Sun rides its inner edge, with Orion and Cygnus for neighbours"},
-	{Name: "the Perseus Arm", Short: "Perseus", RSun: 10.1, Pitch: 13, Width: 0.6, From: -33, To: 300, Major: true,
-		Desc: "the other great arm, rooted at the far end of the bar; the outer sky of the Sun's neighbourhood, with the Double Cluster and Cassiopeia A"},
-	{Name: "the Norma-Outer Arm", Short: "Norma-Outer", RSun: 13.5, Pitch: 13, Width: 0.5, From: -150, To: 220,
-		Desc: "the last arm before the rim, thin and cold; its inner end is the Norma arm on the far side of the centre"},
-}
+// Arms, inner to outer as they cross the Sun's azimuth, from
+// data/laws.json. The two major arms (Scutum-Centaurus and Perseus) start
+// at the ends of the bar; the two minor ones (Sagittarius-Carina and
+// Norma-Outer) are gas and young stars more than a change in stellar
+// density. The Local arm is a short spur.
+var Arms []*Arm
 
 func (a *Arm) rAt(az float64) float64 {
 	return a.RSun * math.Exp((az-180)*math.Pi/180*math.Tan(a.Pitch*math.Pi/180))
@@ -425,4 +419,17 @@ func init() {
 	solarYouth = Youth(Sun)
 	solarGlare = Glare(Sun)
 	solarExotic = Exotic(Sun)
+}
+
+// MarshalJSON writes a position as [x, y, z].
+func (v Vec) MarshalJSON() ([]byte, error) { return json.Marshal([3]float64{v.X, v.Y, v.Z}) }
+
+// UnmarshalJSON reads [x, y, z].
+func (v *Vec) UnmarshalJSON(b []byte) error {
+	var a [3]float64
+	if err := json.Unmarshal(b, &a); err != nil {
+		return err
+	}
+	*v = Vec{a[0], a[1], a[2]}
+	return nil
 }

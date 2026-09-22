@@ -91,7 +91,7 @@ func flattenKinds(w *history.World) KindRec {
 			continue
 		}
 		r.HuntWorlds += wr.Taken[0]
-		if wr.Result == "the hole closed" {
+		if wr.Result == "hole_closed" {
 			r.HuntEmpty++
 		}
 		for _, b := range w.Battles {

@@ -1,0 +1,28 @@
+{
+  "_": [
+    "The words for the scales: how the view says a level, a people's stiffness and the wall's state. The simulation holds the numbers and reads the wall's stages from here; the view reads the words.",
+    "bands: a level in words, the first band whose 'below' the level is under. stiffness: a people's stiffness in words, by the least stiffness ('from') each word needs, ossified when its ways have set for good. wall: the stages of the wall between this and the state beneath, by the wear each begins at.",
+    "Every term here is a technical term: a phrase a reader who never saw this project understands or can search for, never a coinage."
+  ],
+  "bands": [
+    {"word": "negligible", "below": 1.5},
+    {"word": "weak", "below": 3},
+    {"word": "modest", "below": 5},
+    {"word": "strong", "below": 7},
+    {"word": "formidable", "below": 8.5},
+    {"word": "overwhelming"}
+  ],
+  "stiffness": [
+    {"key": "young", "word": "young"},
+    {"key": "settled", "word": "settled", "from": 0.5},
+    {"key": "set", "word": "set in its ways", "from": 1},
+    {"key": "past_mending", "word": "set in its ways past mending", "from": 2},
+    {"key": "ossified", "word": "ossified"}
+  ],
+  "wall": [
+    {"word": "whole", "stage": 0},
+    {"word": "worn", "stage": 1, "from": 0.5},
+    {"word": "thin", "stage": 2, "from": 2},
+    {"word": "torn", "stage": 3, "from": 5}
+  ]
+}

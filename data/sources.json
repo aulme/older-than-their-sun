@@ -1,0 +1,38 @@
+{
+  "_": [
+    "The sources: what a people draws its means from, natural and left. The numbers (yields, what harnesses them) are the history's tables; this file names them. In a name, {T} is the source's star, {F} the feature it is the reach of, {L} the remain it is.",
+    "sources: one row per kind of source: key; name (how a line says it); kind (world, belt, giant, cosmic, elder, made); frame (what a rarity is called in a gazetteer note); harness marks a kind whose first harnessing is a deed, remark a rarity whose first holding is remarked; desc.",
+    "Every term here is a technical term: a phrase a reader who never saw this project understands or can search for, never a coinage."
+  ],
+  "sources": [
+    {"key": "habitable", "kind": "world", "name": "the fields of {T}", "desc": "what a living world grows"},
+    {"key": "wood", "kind": "world", "name": "the woods and rivers of {T}", "desc": "the first fuels of a living world"},
+    {"key": "fuels", "kind": "world", "name": "the coal of {T}", "desc": "the buried fuels of a living world"},
+    {"key": "atom", "kind": "world", "name": "the ore of {T}", "desc": "the fissile ore of a living world"},
+    {"key": "fusion", "kind": "world", "name": "the seas of {T}", "desc": "the seas of a living world, for the fuel of fusion"},
+    {"key": "rocky", "kind": "world", "name": "the rocky worlds of {T}", "desc": "the metal of the rocky worlds in a system"},
+    {"key": "terraformed", "kind": "world", "name": "the remade world of {T}", "desc": "a world remade to live on", "harness": true},
+    {"key": "heavy", "kind": "world", "name": "the heavy ore of {T}", "desc": "the heavy ore of a system's worlds", "harness": true},
+    {"key": "belt", "kind": "belt", "name": "the belt at {T}", "desc": "an asteroid belt: ice and iron", "harness": true},
+    {"key": "giant", "kind": "giant", "name": "the giants of {T}", "desc": "a system's gas giants, skimmed for fuel", "harness": true},
+    {"key": "comets", "kind": "cosmic", "name": "the comets of {T}", "desc": "a system's comets", "harness": true},
+    {"key": "nebula", "kind": "cosmic", "name": "{F}", "desc": "a nebula within reach: food grown in its gas", "harness": true},
+    {"key": "doomed_giant", "kind": "cosmic", "name": "{F}", "desc": "a doomed giant within reach: its light, for as long as it lasts", "harness": true},
+    {"key": "horizon", "kind": "cosmic", "name": "the horizon at {T}", "desc": "a black hole's horizon: what falls in comes out as understanding", "frame": "a horizon", "remark": true},
+    {"key": "beam", "kind": "cosmic", "name": "the beam of {T}", "desc": "a magnetar's beam", "frame": "the beam", "remark": true},
+    {"key": "heavy_star", "kind": "cosmic", "name": "the heavy star at {T}", "desc": "a neutron star", "frame": "the heavy star", "remark": true},
+    {"key": "diamond", "kind": "cosmic", "name": "the diamond star at {T}", "desc": "a crystallised white dwarf", "frame": "the diamond star", "remark": true},
+    {"key": "dwarf_companion", "kind": "cosmic", "name": "the small white companion of {T}", "desc": "a white dwarf companion", "frame": "a white companion", "remark": true},
+    {"key": "brown_companion", "kind": "cosmic", "name": "the brown dwarf beside {T}", "desc": "a brown dwarf companion, burned for fuel", "frame": "a brown dwarf", "harness": true},
+    {"key": "dust", "kind": "cosmic", "name": "the dust of {T}", "desc": "a debris disc", "frame": "a ring of dust", "remark": true},
+    {"key": "moon", "kind": "cosmic", "name": "the moon of {T}", "desc": "a large moon of the home world", "frame": "a moon of its own", "remark": true},
+    {"key": "heart", "kind": "cosmic", "name": "{F}", "desc": "the great hole at the centre, within reach", "frame": "the Heart", "remark": true},
+    {"key": "beacon", "kind": "cosmic", "name": "{F}", "desc": "a pulsar within reach, to steer by", "frame": "a beacon", "remark": true},
+    {"key": "colours", "kind": "cosmic", "name": "{F}", "desc": "a nebula within reach: a sky that hides", "frame": "the colours", "remark": true},
+    {"key": "ash", "kind": "cosmic", "name": "{F}", "desc": "a supernova remnant within reach", "frame": "the ash", "remark": true},
+    {"key": "artifact", "kind": "elder", "name": "{L}", "desc": "a wielded remain"},
+    {"key": "bounty", "kind": "elder", "name": "{L}", "desc": "an elder bounty; the key carries the bounty's kind after a colon"},
+    {"key": "ember", "kind": "made", "name": "{L}", "desc": "an Ember"},
+    {"key": "manna", "kind": "made", "name": "{L}", "desc": "a Manna"}
+  ]
+}

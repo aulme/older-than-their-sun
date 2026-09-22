@@ -25,7 +25,7 @@ func (w *World) trade() {
 		}
 		for _, pid := range sortedInts(c.From) {
 			if p := w.Civs[pid]; !c.Trade[pid] || !p.Active() {
-				w.cutTrade(c, p, "the fall of the "+p.Tok())
+				w.cutTrade(c, p, because("fall").By(p))
 			}
 		}
 		c.From = nil
@@ -190,7 +190,7 @@ func (w *World) embargoStep(a, b *Civ, ch mind.TradeChoice, spare flow.Income) {
 	}
 	a.Embargo[b.ID] = true
 	w.told(FEmbargo, a, b, -1)
-	w.cutTrade(b, a, "the embargo")
+	w.cutTrade(b, a, because("embargo"))
 }
 
 // tire is a partner giving up on a people fixed on holding: it has sent
@@ -200,7 +200,7 @@ func (w *World) tire(b, a *Civ) {
 	delete(a.Refused, b.ID)
 	delete(a.Trade, b.ID)
 	delete(b.Trade, a.ID)
-	w.cutTrade(a, b, "the "+b.Tok()+" tiring of them")
+	w.cutTrade(a, b, because("tired_of").By(b))
 	w.event(KTired, b, a, -1, P{})
 }
 
@@ -226,7 +226,7 @@ func (w *World) depend(c *Civ) {
 // cutTrade is a partner's sending to c stopping, by war, a pact left, a
 // fall or an embargo. What was counted is taken back; if c depended on it,
 // the uses it kept fed go dark now and the cut-off is a woe.
-func (w *World) cutTrade(c, from *Civ, why string) {
+func (w *World) cutTrade(c, from *Civ, why reason) {
 	lost, ok := c.From[from.ID]
 	if !ok {
 		return
@@ -239,7 +239,7 @@ func (w *World) cutTrade(c, from *Civ, why string) {
 	if c.Active() && lost != (flow.Income{}) {
 		w.redirect(c, lost)
 	}
-	w.told(FCutOff, c, from, c.Home).with(P{"why": why})
+	w.told(FCutOff, c, from, c.Home).with(why.params("why"))
 }
 
 // tradeLoss is what a people would lose in a war on a partner: what the

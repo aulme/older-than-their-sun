@@ -46,7 +46,7 @@ func TestOfferAccepted(t *testing.T) {
 		w.tickMessages()
 	}
 	if k.State != Running {
-		t.Fatalf("the contract is %s, not running: %s", k.State, k.Why)
+		t.Fatalf("the contract is %s, not running", k.State)
 	}
 	x := w.contractFleet(k)
 	if x == nil || x.Kind != Relief || x.Ships != 2 {
@@ -136,7 +136,7 @@ func TestBoughtOff(t *testing.T) {
 	x.Base, x.Arrive = b.Home, w.Now
 	k.Until = w.Now + 50_000
 	k.Missed = true
-	w.declare(p, b, "conquest")
+	w.declare(p, b, because("border"))
 	bought := false
 	for i := 0; i < 30 && !bought; i++ {
 		w.Now += 1000
@@ -185,7 +185,7 @@ func TestTribute(t *testing.T) {
 		l.Systems = append(l.Systems, 3)
 		w.Owner[3] = l.ID
 		l.Surplus = flow.Income{flow.O: 5}
-		wr := w.declare(v, l, "a border")
+		wr := w.declare(v, l, because("border"))
 		if wr == nil || len(w.front(v, l)) == 0 {
 			t.Fatalf("%s: no war or no front", tc.winner)
 		}
@@ -233,7 +233,7 @@ func TestTeachLapses(t *testing.T) {
 	w2.Now += 1_000_000
 	w2.tickMessages()
 	if !k2.Taught || b2.Taught["fusion"] != s2.ID || !b2.Known["fusion"] {
-		t.Errorf("taught %v, by %d (want %d), known %v: %s", k2.Taught, b2.Taught["fusion"], s2.ID, b2.Known["fusion"], k2.Why)
+		t.Errorf("taught %v, by %d (want %d), known %v", k2.Taught, b2.Taught["fusion"], s2.ID, b2.Known["fusion"])
 	}
 	w2.tickContracts()
 	if k2.State != Done {
@@ -255,7 +255,7 @@ func TestSoldSighting(t *testing.T) {
 		w.addGuard(owner, owner.Home, 6)
 		w.formPact(seller, owner, Defensive, -1, -1)
 		seller.Trade[buyer.ID], buyer.Trade[seller.ID] = true, true
-		w.declare(owner, buyer, "conquest")
+		w.declare(owner, buyer, because("border"))
 		x := w.launch(owner, Campaign, buyer, buyer.Home, 3)
 		if x == nil {
 			t.Fatalf("%s: no fleet", tc.honour)
@@ -276,7 +276,7 @@ func TestSoldSighting(t *testing.T) {
 			w.tickMessages()
 		}
 		if k.State != Running || x.SoldBy != seller.ID {
-			t.Fatalf("%s: the sale is %s (%s), sold by %d", tc.honour, k.State, k.Why, x.SoldBy)
+			t.Fatalf("%s: the sale is %s, sold by %d", tc.honour, k.State, x.SoldBy)
 		}
 		w.Now += 1_000_000
 		w.tickMessages()
@@ -302,7 +302,7 @@ func TestBrokerTerm(t *testing.T) {
 		w.tickContracts()
 	}
 	if k.State != Done || !b.Fathomed[e.ID] {
-		t.Errorf("the broker's term is %s (%s), fathomed %v", k.State, k.Why, b.Fathomed[e.ID])
+		t.Errorf("the broker's term is %s, fathomed %v", k.State, b.Fathomed[e.ID])
 	}
 	w2, b2, z2 := dealers(t, 11, species.Fixed("cooperative"), species.Fixed("faithful"), 1)
 	e2 := spawnAt(w2, 2, alien())

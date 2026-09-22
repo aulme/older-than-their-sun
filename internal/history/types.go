@@ -94,28 +94,36 @@ type Voyage struct {
 	Blind  bool // sent to a star nobody has read, on a guess
 }
 
+// Origin is how a people came to be when it did not arise: a key of
+// data/origins.json and the parties. It is the same shape as a blood's
+// making (species.Making), read through the same table.
+type Origin = species.Making
+
 // Civ is a civilisation: a species on a home world with a history.
 type Civ struct {
-	ID       int              // the people's id; every name it carries is a row of the names pass, keyed by it
-	Species  *species.Species // its blood, one of w.Species; kin share it, and it changes only by a made path
-	Origin   string           // how the people came to be when not by arising: "a branch of the X"; "" for a cradle people
-	Home     int              // current seat; moves if the cradle is lost
-	Cradle   int              // the world the people arose on; never changes
-	Born     Year
-	Ended    Year
-	Fell     Year // when it stopped being active
-	Stage    Stage
-	Fate     Fate
-	Cause    string          // why it ended
-	Into     string          // what it became, if transformed
-	Named    bool            // has a word for the state beneath: an FWord fact of its own or its line's; see beneath.go
-	Hosts    int             // for parasites: peoples ridden or fighting its plague
-	Morality Morality        // what the people counts as wrong; see morality.go
-	Lifted   map[string]bool // world blocks lifted by a colony: sea, sky, fire
-	Systems  []int
-	Peak     int
-	Voyages  []Voyage
-	colonies int
+	ID        int              // the people's id; every name it carries is a row of the names pass, keyed by it
+	Species   *species.Species // its blood, one of w.Species; kin share it, and it changes only by a made path
+	Origin    Origin           // how the people came to be when not by arising; the zero key for a cradle people
+	Home      int              // current seat; moves if the cradle is lost
+	Cradle    int              // the world the people arose on; never changes
+	Born      Year
+	Ended     Year
+	Fell      Year // when it stopped being active
+	Stage     Stage
+	Fate      Fate
+	Cause     string // why it fell or ended: a key of data/causes.json; the fall and end facts carry the parties
+	Into      string // what it became, if transformed: a key of data/causes.json's becomings; IntoCivs the peoples it became
+	IntoCivs  []int
+	FallEvent int             // the fall fact, -1 for none
+	EndEvent  int             // the end fact, -1 for none
+	Named     bool            // has a word for the state beneath: an FWord fact of its own or its line's; see beneath.go
+	Hosts     int             // for parasites: peoples ridden or fighting its plague
+	Morality  Morality        // what the people counts as wrong; see morality.go
+	Lifted    map[string]bool // world blocks lifted by a colony: sea, sky, fire
+	Systems   []int
+	Peak      int
+	Voyages   []Voyage
+	colonies  int
 
 	// research
 	Known    map[string]bool
@@ -292,7 +300,7 @@ type Civ struct {
 	Faced        map[string]bool
 	Scars        map[string]bool
 	Boons        map[string]bool
-	Record       []string
+	Record       []Record // what it did that its record keeps, in order; see Record
 	DarkAges     int
 	KnowsCycle   bool // learned the shape of the cycle
 	Ascended     Year // when a miracle was last gained; the surge runs from here
@@ -444,7 +452,7 @@ type Legacy struct {
 	Kind      LegacyKind
 	Star      int
 	Node      string // tech node, for artifacts and structures
-	Desc      string // "a ring of black metal around a dead star"
+	Portrait  string // what it looks like: a key of data/portraits.json by kind (an elder's list, a relic, a threat, a sleeper, a bounty), a work's key for a remain, a form's for an object; the view renders it
 	State     LegacyState
 	People    int     // the people a threat or a sleeper is: asleep at the star until disturbed; -1 for none
 	Payload   Payload // what a transmitter carries
@@ -467,10 +475,26 @@ type Legacy struct {
 type Elder struct {
 	ID       int // across the ages, in order of making; finders' names for it are rows of the names pass
 	Age      int
-	Portrait string
+	Portrait string // a key of data/portraits.json's elders
 	Rose     Year
 	Fell     Year
 	Legacies []*Legacy
+}
+
+// Record is one entry of a people's record: a filter faced with its
+// outcome (narrow if the margin was slight), one foreseen, a remain
+// mastered, wielded, sealed or unleashed, a bounty used, wrecks crewed,
+// the sky taken, a rest. Kind is one of faced, foresaw, mastered,
+// bounty, crewed, wielded, sealed, unleashed, sky, rest; Filter and
+// Legacy are set where the kind names one, Known whether the people could
+// place the remain's makers then.
+type Record struct {
+	Kind    string
+	Filter  string
+	Outcome Outcome
+	Narrow  bool
+	Legacy  int
+	Known   bool
 }
 
 // AgeRecord is one earlier age of the galaxy.
@@ -478,7 +502,7 @@ type AgeRecord struct {
 	Index  int
 	Start  Year   // the surge
 	End    Year   // fertility below the floor
-	Ender  string // what swept up the remains
+	Ender  string // what swept up the remains: a key of data/portraits.json's enders
 	Elders []*Elder
 }
 
@@ -496,10 +520,11 @@ func (wk Work) key() string { return "work:" + wk.Key + ":" + itoa(wk.Star) }
 
 // Trace is something left behind for the player to find.
 type Trace struct {
-	Star int
-	Kind string
-	Civ  int // -1 if none
-	Year Year
+	Star    int
+	Kind    string // a key of data/conditions.json's traces
+	Civ     int    // -1 if none
+	Species int    // the blood that lost the world, for the word its kind uses; -1 if none
+	Year    Year
 }
 
 // Config tunes the simulation.
@@ -597,7 +622,7 @@ type World struct {
 // scratch passed from a trigger to its filter's outcome functions
 type scratch struct {
 	blastWorlds []int
-	blastWhat   string
+	blastRef    reason       // the blast being suffered, for the causes it gives; for a waking, the waker
 	transmitter *Legacy      // the transmitter being listened to, for the Signal's filter
 	wreck       *Wreckage    // set while a filter's outcome runs
 	finding     bool         // set while the Find teaches a civilisation what it mastered

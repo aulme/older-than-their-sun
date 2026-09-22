@@ -68,9 +68,9 @@ func gazetteer(p func(string, ...any), w *history.World, book *names.Book) {
 			continue
 		}
 		if l.Maker < 0 {
-			get(l.Star).notes = append(get(l.Star).notes, l.Describe()+" of "+elderName(l))
+			get(l.Star).notes = append(get(l.Star).notes, w.Describe(l)+" of "+elderName(w, l))
 		} else if l.State == history.Buried {
-			get(l.Star).notes = append(get(l.Star).notes, l.Describe())
+			get(l.Star).notes = append(get(l.Star).notes, w.Describe(l))
 		}
 	}
 	for _, s := range sortedKeys(w.Reservoir) {

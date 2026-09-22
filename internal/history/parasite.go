@@ -65,14 +65,14 @@ func (w *World) wake(p *Plague, host *Civ) *Civ {
 	} else {
 		sp.Replace("mindrider", "bodyrider")
 	}
-	sp.Made = "woke in " + p.Tok()
+	sp.Made = species.Making{Key: "woke", By: -1, From: -1, Legacy: -1, Plague: p.ID}
 	nc := w.spawn(host.Home, sp, -1, host)
 	nc.Own, p.Rider, p.Conscious = p.ID, nc.ID, true
-	nc.Origin = "something that woke in " + p.Tok()
+	nc.Origin = species.Making{Key: "woke_thing", By: -1, From: -1, Legacy: -1, Plague: p.ID}
 	if p.Transmitter >= 0 {
 		l := w.Legacies[p.Transmitter]
 		l.Woken++
-		nc.Origin = "something that came down the signal from " + w.star(l.Star)
+		nc.Origin = species.Making{Key: "signal", By: -1, From: -1, Legacy: l.ID, Plague: p.ID}
 	}
 	if p.Maker >= 0 && p.Made && w.Civs[p.Maker].Active() {
 		m := w.Civs[p.Maker]
@@ -95,11 +95,11 @@ func (w *World) bornRider(c *Civ) {
 	if !w.chance(t.BornRider) || !w.bears(c, plague.Biological) {
 		return
 	}
-	p := w.newPlague(plague.Biological, c, "born rider")
+	p := w.newPlague(plague.Biological, c, "born_rider")
 	p.Conscious = true
 	w.infect(c, p, nil, "born")
 	nc := w.wake(p, c)
-	nc.Origin = "a rider born with the " + c.Tok()
+	nc.Origin = species.MadeBy("rider", c.ID)
 	w.event(KBornRidden, c, nc, -1, P{}).Plague = p.ID
 }
 
@@ -194,11 +194,11 @@ func (w *World) converted(rider, c *Civ, p *Plague, s int) {
 		}
 		return
 	}
-	w.loseSystem(c, s, "host-world", "")
+	w.loseSystem(c, s, "host", reason{})
 	w.Owner[s] = rider.ID
 	rider.Systems = append(rider.Systems, s)
 	rider.Peak = max(rider.Peak, len(rider.Systems))
-	f := w.told(FTaken, rider, c, s).with(P{"way": "host", "told": true, "colony": c.Species.Flavour().Colony})
+	f := w.told(FTaken, rider, c, s).with(P{"way": "host", "told": true, "species": c.Species.ID})
 	f.Plague = p.ID
 }
 
@@ -214,7 +214,7 @@ func (w *World) burn(c, rider *Civ) {
 			continue
 		}
 		w.Bio[s] = BioSimple
-		w.loseSystem(rider, s, "burned host-world", "")
+		w.loseSystem(rider, s, "burned_host", reason{})
 		w.fact(FBurned, c, rider, s).with(P{"way": "host", "told": true})
 		if wr := w.warBetween(c.ID, rider.ID); wr != nil {
 			wr.Glassed[wr.side(c.ID)]++
@@ -249,7 +249,7 @@ func (w *World) starveOne(c *Civ) {
 			w.Reservoir[s] = &Reservoir{Plague: p.ID, Until: w.Now + Year(p.Contagion*t.ReservoirMyr*1e6)}
 		}
 	}
-	w.endCiv(c, Extinct, "had nothing left to wear")
+	w.endCiv(c, Extinct, because("no_hosts"))
 }
 
 // riderTithe is what a ridden people's income loses to its rider before

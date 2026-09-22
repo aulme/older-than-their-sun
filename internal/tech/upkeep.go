@@ -16,10 +16,51 @@ const (
 	makerGroup              // industry, weapons, propulsion: metal, and energy from era 2
 )
 
-var groupOf = map[string]group{
-	Biology: bioGroup,
-	Energy:  mindGroup, Computation: mindGroup, Exotic: mindGroup, Society: mindGroup,
-	Industry: makerGroup, Weapons: makerGroup, Propulsion: makerGroup,
+var groupNames = map[string]group{"bio": bioGroup, "mind": mindGroup, "maker": makerGroup}
+
+var groupOf = map[string]group{}
+
+// upkeepFile is the upkeep section of data/tech.json.
+type upkeepFile struct {
+	Groups map[string]string        `json:"groups"`
+	Table  []map[string]flow.Income `json:"table"`
+	Free   []string                 `json:"free"`
+	Custom map[string]flow.Income   `json:"custom"`
+	Grown  []string                 `json:"grown"`
+	Fields []string                 `json:"fields"`
+}
+
+func loadUpkeep(u upkeepFile) {
+	for d, g := range u.Groups {
+		gr, ok := groupNames[g]
+		if !ok {
+			panic("tech: unknown upkeep group " + g)
+		}
+		groupOf[d] = gr
+	}
+	for _, d := range Domains {
+		if _, ok := groupOf[d]; !ok {
+			panic("tech: no upkeep group for " + d)
+		}
+	}
+	if len(u.Table) != 5 {
+		panic("tech: the upkeep table has not five eras")
+	}
+	for e, row := range u.Table {
+		for g, gr := range groupNames {
+			upkeepTable[e][gr] = row[g]
+		}
+	}
+	for _, k := range u.Free {
+		Free[k] = true
+	}
+	Custom = u.Custom
+	for _, k := range u.Grown {
+		Grown[k] = true
+	}
+	for _, k := range u.Fields {
+		fields[k] = true
+	}
 }
 
 // KindOf is the commodity a domain lives on: what a miracle of the domain
@@ -34,37 +75,24 @@ func KindOf(domain string) flow.Kind {
 	return flow.E
 }
 
-// upkeepTable is the cost by era and group, as (O, E, M).
-var upkeepTable = [5][3]flow.Income{
-	{},
-	{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}},
-	{{1, 0, 0}, {0, 1, 0}, {0, 1, 1}},
-	{{1, 1, 0}, {0, 2, 0}, {0, 1, 2}},
-	{{2, 1, 0}, {0, 3, 0}, {0, 2, 3}},
-}
+// upkeepTable is the cost by era and group, from the file.
+var upkeepTable [5][3]flow.Income
 
 // MiracleUpkeep is what a miracle costs, of its domain's kind.
 const MiracleUpkeep = 3
 
 // Free are the nodes that cost nothing: the producers, which are what the
 // sources need, and the first engines.
-var Free = map[string]bool{
-	"agriculture": true, "metallurgy": true, "steam": true, "electricity": true,
-	"atomic": true, "fusion": true, "interplanetary": true, "orbital_habitats": true,
-	"terraforming": true, "synthetic_biology": true, "dyson": true,
-	"stellar_engineering": true, "star_lifting": true,
-}
+var Free = map[string]bool{}
 
 // Custom are the nodes whose upkeep is their own and not the table's: the
 // vacuum tap costs a little metal for the energy it gives at every held star.
-var Custom = map[string]flow.Income{
-	"vacuum_energy": {flow.M: 1},
-}
+var Custom map[string]flow.Income
 
 // Grown are the nodes whose metal is flesh: a living ship or a seed-cloud
 // is bred, not built, so what the table asks in metal is asked in organic
 // matter.
-var Grown = map[string]bool{"living_ships": true, "seed_clouds": true}
+var Grown = map[string]bool{}
 
 // Upkeep is what the node costs each tick to keep working. Era 0 and the
 // kind nodes cost nothing; the world nodes cost one of their domain's kind,
@@ -90,9 +118,7 @@ func (n *Node) Upkeep() flow.Income {
 
 // fields are the biology nodes that keep people alive; the rest of biology
 // is the making of bodies and worlds, and is fed with the works.
-var fields = map[string]bool{
-	"agriculture": true, "medicine": true, "ecology": true, "closed_ecologies": true, "life_extension": true,
-}
+var fields = map[string]bool{}
 
 // Cat is the category the node is fed under.
 func (n *Node) Cat() flow.Category {

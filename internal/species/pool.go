@@ -23,45 +23,27 @@ type Power struct {
 	Sense     string  // the portrait's phrase: "the sight", "a second presence"
 }
 
-// Pool is the table, in the order the proposal lists it.
+// Pool is the table, in the order the proposal lists it; the words and
+// the plain numbers of each power are its row in data/kinds.json, read
+// by the registry's init, and what it grants is here.
 var Pool = []*Power{
-	{Key: "thought", Name: "the long thought", Domain: "society", Weight: 10, Grants: Profile{Wis: 1, Soc: 1},
-		Line: "{S} have begun to think about something, and the thinking will take an age."},
-	{Key: "presence", Name: "a second presence", Domain: "propulsion", Weight: 10, Grants: Profile{Range: 10, Sur: 0.5, Mil: 0.5},
-		Line: "There is another of {S} now, at a star nothing was seen to cross to."},
-	{Key: "reach", Name: "the wide reach", Domain: "propulsion", Weight: 8, Grants: Profile{Range: 20, Sur: 0.5, Mil: 0.5},
-		Line: "{S} can feel further than they could."},
-	{Key: "door", Name: "the door in it", Domain: "exotic", Weight: 6, Grants: Profile{Soc: 0.5, Era: 4}, Node: "ftl",
-		Line: "There is a door in {S} now, and things pass through it without a ship."},
-	{Key: "sight", Name: "the sight", Domain: "exotic", Weight: 7, Grants: Profile{Era: 4}, Node: "foresight",
-		Line: "{S} have begun to see every star within their reach as if it were under them."},
-	{Key: "voice", Name: "the voice", Domain: "computation", Weight: 7, Grants: Profile{}, Node: "ansible",
-		Line: "{S} have begun to speak, and the speaking crosses any distance at once."},
-	{Key: "unmaking", Name: "the unmaking", Domain: "weapons", Weight: 5, Grants: Profile{}, Node: "unmaking",
-		Line: "{S} have learned to end a world without touching it."},
-	{Key: "shell", Name: "the shell", Domain: "weapons", Weight: 8, Grants: Profile{HomeDefence: 3, Mil: 1.5},
-		Line: "{S} have grown a shell, and nothing that comes for them gets in."},
-	{Key: "tithe", Name: "the tithe", Domain: "industry", Weight: 7, Grants: Profile{Sur: 1},
-		Line: "{S} have begun to take a share of every harvest within their reach. Nobody agreed to it."},
-	{Key: "sleep", Name: "the long sleep", Domain: "biology", Weight: 8, Grants: Profile{Sur: 1.5, Dormant: true},
-		Line: "{S} have learned to sleep, and will sleep when there is nothing left they want."},
-	{Key: "mirror", Name: "the mirror", Domain: "society", Weight: 7, Grants: Profile{Soc: 1},
-		Line: "{S} have begun to answer every message in the sender's own voice."},
-	{Key: "hunger", Name: "the hunger", Domain: "biology", Weight: 6, Grants: Profile{Expand: 5, Sur: 1}, Filter: "overshoot",
-		Line: "{S} have begun to grow."},
-	{Key: "making", Name: "the making", Domain: "industry", Weight: 7, Grants: Profile{Allows: Works, Cradle: 2, Sur: 1},
-		Line: "{S} have begun to build."},
-	{Key: "wound", Name: "the wound", Domain: "exotic", Weight: 5, Grants: Profile{Mil: 1, Soc: -0.5, Era: 4},
-		Line: "There is a wound in {S}, and what is underneath everything is open there."},
+	{Key: "thought", Grants: Profile{Wis: 1, Soc: 1}},
+	{Key: "presence", Grants: Profile{Range: 10, Sur: 0.5, Mil: 0.5}},
+	{Key: "reach", Grants: Profile{Range: 20, Sur: 0.5, Mil: 0.5}},
+	{Key: "door", Grants: Profile{Soc: 0.5, Era: 4}},
+	{Key: "sight", Grants: Profile{Era: 4}},
+	{Key: "voice", Grants: Profile{}},
+	{Key: "unmaking", Grants: Profile{}},
+	{Key: "shell", Grants: Profile{HomeDefence: 3, Mil: 1.5}},
+	{Key: "tithe", Grants: Profile{Sur: 1}},
+	{Key: "sleep", Grants: Profile{Sur: 1.5, Dormant: true}},
+	{Key: "mirror", Grants: Profile{Soc: 1}},
+	{Key: "hunger", Grants: Profile{Expand: 5, Sur: 1}},
+	{Key: "making", Grants: Profile{Allows: Works, Cradle: 2, Sur: 1}},
+	{Key: "wound", Grants: Profile{Mil: 1, Soc: -0.5, Era: 4}},
 }
 
 var powerByKey = map[string]*Power{}
-
-func init() {
-	for _, p := range Pool {
-		powerByKey[p.Key] = p
-	}
-}
 
 // PowerByKey finds a power, or nil.
 func PowerByKey(key string) *Power { return powerByKey[key] }
@@ -126,8 +108,15 @@ func (s *Species) PowerNames() []string {
 
 // PowerPortrait is the portrait's sentence on the powers, "" for none:
 // "It has the sight and the long sleep."
-func (s *Species) PowerPortrait() string {
-	ns := s.PowerNames()
+func (s *Species) PowerPortrait() string { return powerPortrait(s.Powers) }
+
+func powerPortrait(powers []string) string {
+	var ns []string
+	for _, k := range powers {
+		if p := powerByKey[k]; p != nil {
+			ns = append(ns, p.Name)
+		}
+	}
 	switch len(ns) {
 	case 0:
 		return ""

@@ -1,0 +1,51 @@
+{
+  "_": [
+    "The geography of the galaxy: the six laws that vary from place to place, the zones, the spiral arms, and the named places a run can be set in. The laws are formulas in the galaxy package; this file says what each is. Every value but metals is relative to the Sun's neighbourhood, which is 1.",
+    "laws: key and what it does. zones: the named regions the galaxy is divided into, from the centre out, with the rule that puts a place in each.",
+    "arms: the spiral arms, inner to outer as they cross the Sun's azimuth: key, name, short name, r_sun (kpc at the Sun's azimuth), pitch (degrees), width (kpc, roughly the half-width), from and to (the unwrapped azimuth range in degrees), major, desc.",
+    "presets: the named places a run can be set in: key, name, the code the star designations carry, the position in galactocentric kpc (x toward the centre from the Sun, y along the rotation, z toward the north pole), desc.",
+    "Every term here is a technical term: a phrase a reader who never saw this project understands or can search for, never a coinage."
+  ],
+  "laws": [
+    {"key": "density", "name": "stellar density", "desc": "the number of stars in a volume, relative to the Sun's neighbourhood: thin disc, thick disc, boxy bulge, bar, nuclear cluster, halo, and a modest enhancement in the arms; it sets how close the stars are"},
+    {"key": "youth", "name": "star formation", "desc": "the rate of star formation: where the massive stars are, and so the supernovae, the nebulae and the hard sky; it follows the gas, the arms, the molecular ring at the bar's end and the central molecular zone, and the bar's interior and the halo are barren"},
+    {"key": "metals", "name": "metallicity", "desc": "the metallicity in dex, 0 at the Sun, richer inward and in the bar, poorer outward, in the thick disc and in the halo; it takes metals to make rocky worlds"},
+    {"key": "glare", "name": "hard sky", "desc": "cosmic rays from young stars, the X-ray glow of the centre, the echoes of its outbursts; what makes the surface of a world a bad place to keep a biosphere, and the baseline hazard of the history"},
+    {"key": "crowd", "name": "stellar encounters", "desc": "the rate at which other stars pass close: density times the velocity spread, high in the bulge and the halo, enormous inside a globular cluster"},
+    {"key": "exotic", "name": "deep physics", "desc": "how much the neighbourhood teaches about the deep physics: dead stars, collapsed stars, the great hole at the centre; a multiplier on research in the exotic domain"}
+  ],
+  "zones": [
+    {"key": "heart", "name": "the Heart", "rule": "within 30 pc of the centre"},
+    {"key": "core", "name": "the Core", "rule": "within 300 pc of the centre"},
+    {"key": "halo", "name": "the Halo", "rule": "more than 1.5 kpc above the plane, or more than 22 kpc out"},
+    {"key": "bulge", "name": "the Bulge", "rule": "within 2.5 kpc of the axis"},
+    {"key": "bar", "name": "the Bar", "rule": "inside the bar"},
+    {"key": "inner_disc", "name": "the Inner Disc", "rule": "within 5.5 kpc of the axis"},
+    {"key": "middle_disc", "name": "the Middle Disc", "rule": "within 10.5 kpc"},
+    {"key": "outer_disc", "name": "the Outer Disc", "rule": "within 14.5 kpc"},
+    {"key": "rim", "name": "the Rim", "rule": "beyond"}
+  ],
+  "arms": [
+    {"key": "scutum_centaurus", "name": "the Scutum-Centaurus Arm", "from": 147, "short": "Scutum-Centaurus", "r_sun": 5, "pitch": 13, "width": 0.6, "to": 447, "major": true, "desc": "one of the two great arms, rooted at the near end of the bar; heavy with gas, stars and the clusters of red supergiants where it meets the bar"},
+    {"key": "sagittarius_carina", "name": "the Sagittarius-Carina Arm", "from": -20, "short": "Sagittarius-Carina", "r_sun": 6.7, "pitch": 13, "width": 0.45, "to": 330, "desc": "a minor arm bright with nebulae: the Lagoon, the Eagle, the Omega, and Carina with its doomed giant"},
+    {"key": "orion", "name": "the Local Arm", "from": 150, "short": "Orion", "r_sun": 8.45, "pitch": 11, "width": 0.35, "to": 215, "desc": "a short spur between the two great arms; the Sun rides its inner edge, with Orion and Cygnus for neighbours"},
+    {"key": "perseus", "name": "the Perseus Arm", "from": -33, "short": "Perseus", "r_sun": 10.1, "pitch": 13, "width": 0.6, "to": 300, "major": true, "desc": "the other great arm, rooted at the far end of the bar; the outer sky of the Sun's neighbourhood, with the Double Cluster and Cassiopeia A"},
+    {"key": "norma_outer", "name": "the Norma-Outer Arm", "from": -150, "short": "Norma-Outer", "r_sun": 13.5, "pitch": 13, "width": 0.5, "to": 220, "desc": "the last arm before the rim, thin and cold; its inner end is the Norma arm on the far side of the centre"}
+  ],
+  "presets": [
+    {"key": "sol", "name": "the Sun's neighbourhood", "code": "HIP", "pos": [-8.2, 0, 0.02], "desc": "where the story begins: the real stars within 150 light years of Earth"},
+    {"key": "heart", "name": "the Heart", "code": "GC", "pos": [0.03, 0, 0], "desc": "a hundred light years from Sagittarius A*, inside the nuclear cluster"},
+    {"key": "core", "name": "the Core", "code": "CMZ", "pos": [0.18, 0.05, 0], "desc": "the central molecular zone, six hundred light years from the hole"},
+    {"key": "bulge", "name": "the Bulge", "code": "BLG", "pos": [-1.2, 0.8, 0.3], "desc": "the old red stars of the bulge, a kiloparsec above the centre's fire"},
+    {"key": "bar", "name": "the Bar", "code": "BAR", "pos": [-2.8, 1.8, 0], "desc": "halfway along the bar, among ancient metal-rich stars"},
+    {"key": "ring", "name": "the Molecular Ring", "code": "RNG", "pos": [-4.4, 1.2, 0], "desc": "the ring at the bar's end where the great arms are born"},
+    {"key": "scutum", "name": "the Scutum-Centaurus Arm", "code": "SCT", "pos": [-5, 0, 0], "desc": "the near great arm, inward of the Sun"},
+    {"key": "sagittarius", "name": "the Sagittarius Arm", "code": "SGR", "pos": [-6.7, 0, 0], "desc": "the bright minor arm inward of the Sun"},
+    {"key": "interarm", "name": "the gap inside the Local Arm", "code": "GAP", "pos": [-7.6, 0, 0], "desc": "the quiet space between the Sagittarius and Local arms"},
+    {"key": "perseus", "name": "the Perseus Arm", "code": "PER", "pos": [-10.1, 0, 0], "desc": "the great outer arm"},
+    {"key": "outer", "name": "the Outer Disc", "code": "OUT", "pos": [-12.5, 0, 0.1], "desc": "between the Perseus and Outer arms, thin and cold"},
+    {"key": "rim", "name": "the Rim", "code": "RIM", "pos": [-15.5, 0, 0.2], "desc": "beyond the last arm, where the disc gives out"},
+    {"key": "halo", "name": "the Halo", "code": "HAL", "pos": [-8.2, 0, 3], "desc": "three kiloparsecs above the Sun, among the old stars of the halo"},
+    {"key": "farside", "name": "the Far Side", "code": "FAR", "pos": [8.2, 0, 0], "desc": "the Sun's mirror across the centre"}
+  ]
+}

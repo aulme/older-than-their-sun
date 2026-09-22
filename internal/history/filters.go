@@ -23,38 +23,41 @@ const (
 
 func (o Outcome) String() string { return [...]string{"overcame", "scarred by", "fell to"}[o] }
 
-// Scar and boon keys. Kept as strings so the legends can print them directly.
+// Scar and boon keys: rows of data/scars.json and data/boons.json, which
+// say what each is; the view says them through scarName and boonName.
 const (
-	ScarAtomicTaboo  = "an atomic taboo"
-	ScarChurch       = "a church that outranks the state"
-	ScarStewardship  = "a stewardship creed"
-	ScarNoMachines   = "a prohibition on thinking machines"
-	ScarCentralism   = "iron centralism"
-	ScarMortality    = "a mortality creed"
-	ScarNoSelfCopies = "the law that no machine may make itself"
-	ScarStarFear     = "a fear of their own star"
-	ScarLeftBehind   = "being the ones left behind"
-	ScarQuarantine   = "a quarantine creed"
-	ScarBurningSky   = "the memory of the burning sky"
-	ScarSignal       = "a cult of the signal"
-	ScarDoor         = "a dread of doors"
-	ScarChains       = "the memory of chains"
-	ScarFatalism     = "a fatalist creed"
-	ScarOtherVoices  = "the other voices on the line"
-	ScarChanged      = "having been something else"
-	BoonAligned      = "aligned minds"
-	BoonSwarm        = "swarm industry"
-	BoonUnity        = "unity forged in the atomic age"
-	BoonCommunion    = "communion with something older"
+	ScarAtomicTaboo  = "atomic_taboo"
+	ScarChurch       = "church"
+	ScarStewardship  = "stewardship"
+	ScarNoMachines   = "no_machines"
+	ScarCentralism   = "centralism"
+	ScarMortality    = "mortality"
+	ScarNoSelfCopies = "no_self_copies"
+	ScarStarFear     = "star_fear"
+	ScarLeftBehind   = "left_behind"
+	ScarQuarantine   = "quarantine"
+	ScarBurningSky   = "burning_sky"
+	ScarSignal       = "signal"
+	ScarDoor         = "door"
+	ScarChains       = "chains"
+	ScarFatalism     = "fatalism"
+	ScarOtherVoices  = "other_voices"
+	ScarChanged      = "changed"
+	BoonAligned      = "aligned"
+	BoonSwarm        = "swarm"
+	BoonUnity        = "unity"
+	BoonCommunion    = "communion"
 )
 
-// Filter describes one hurdle.
+// Filter describes one hurdle: its numbers are its row in
+// data/filters.json, its outcomes are code.
 type Filter struct {
 	Key, Name string
 	Levels    []string // "mil", "sur", "soc"; averaged
 	Diff      float64
 	Repeat    bool
 	Domain    string                                                                // research pushed while facing it
+	Wreckage  *Wreckage                                                             // what a decline does to the works of the fallen; nil for the default
 	Adjust    func(w *World, c *Civ) (levels []string, diff float64, domain string) // levels, difficulty and domain set by the occasion; nil for the fixed ones
 	Overcome  func(w *World, c *Civ)
 	Scar      func(w *World, c *Civ)
@@ -79,37 +82,23 @@ func FilterDiff(key string) (float64, []string) {
 	return 0, nil
 }
 
-func def(f *Filter) { filters[f.Key] = f }
-
-// traitDiff is the asymmetry: how each trait changes each filter's difficulty.
-var traitDiff = map[string]map[string]float64{
-	"memory":        {"silence": 2, "find": -1},
-	"swarming":      {"cosmic": -1, "beacon": 2}, // they scatter; gathered, they hear with one ear
-	"unyielding":    {"atomic": 1, "hold": -1},
-	"opportunist":   {"hold": 0.5},
-	"vengeful":      {"hold": -0.5},
-	"confederate":   {"distance": -0.5},
-	"pacifist":      {"atomic": -2, "overshoot": -1},
-	"conqueror":     {"atomic": 0.5, "machines": 0.5},
-	"expansionist":  {"overshoot": 1, "distance": 1},
-	"contemplative": {"overshoot": -1, "transcend": 1, "machines": -0.5},
-	"curious":       {"machines": 1, "replication": 0.5, "door": 0.5},
-	"cautious":      {"machines": -1, "replication": -1, "door": -1, "find": 0.5},
-	"collective":    {"atomic": -1, "overshoot": -1},
-	"individualist": {"distance": 1, "hold": 1},
-	"caste":         {"hold": -0.5},
-	"shortlived":    {"silence": -1},
-	"longlived":     {"silence": 1},
-	"radiation":     {"atomic": -1},
-	"solitary":      {"distance": -2, "beacon": -2, "hold": 1},
-	"herd":          {"beacon": 2, "atomic": -1, "distance": 1, "hold": -1},
-	"dormancy":      {"cosmic": -1, "dying": -1},
-	"symbiosis":     {"machines": -1.5, "replication": -0.5},
-	"xenophobic":    {"beacon": -1, "find": 1},
-	"submissive":    {"revolt": 1, "hold": -0.5},
-	"skyless":       {"cosmic": -1},
-	"nomadic":       {"overshoot": -1, "distance": -3},
+// def registers a filter's outcomes under its key and reads its numbers
+// from the table.
+func def(f *Filter) {
+	d := tables.filters[f.Key]
+	if d == nil {
+		panic("history: filter " + f.Key + " is not in data/filters.json")
+	}
+	f.Name, f.Levels, f.Diff, f.Repeat, f.Domain = d.Name, d.Levels, d.Diff, d.Repeat, d.Domain
+	if d.Wreckage != nil {
+		f.Wreckage = &Wreckage{d.Wreckage.Destroy, conditionOf(d.Wreckage.Leave)}
+	}
+	filters[f.Key] = f
 }
+
+// traitDiff is the asymmetry: how each trait changes each filter's
+// difficulty, from the table.
+var traitDiff = tables.traitDiff
 
 func (c *Civ) traitDiff(key string) float64 {
 	d := 0.0
@@ -141,7 +130,7 @@ func (w *World) face(c *Civ, key string, diffAdj float64) Outcome {
 	w.recompute(c)
 	if c.miracle("foresight") && key != "sight" && w.R.Float64() < 0.5 {
 		w.event(KForesaw, c, nil, -1, P{"filter": key})
-		c.Record = append(c.Record, "foresaw "+f.Name)
+		c.Record = append(c.Record, Record{Kind: "foresaw", Filter: key, Legacy: -1})
 		return Overcome
 	}
 	levels, domain := f.Levels, f.Domain
@@ -158,20 +147,18 @@ func (w *World) face(c *Civ, key string, diffAdj float64) Outcome {
 		c.focus(domain, 1.5)
 	}
 	var out Outcome
-	var how string
 	w.wreck = wreckOf(key)
 	defer func() { w.wreck = nil }()
 	switch {
 	case margin >= 0.5:
 		out = Overcome
-		how = ""
 		f.Overcome(w, c)
 	case margin >= -2:
 		out = Scarred
 		c.Morale -= 0.5
 		f.Scar(w, c)
 		if c.Aloft && c.Active() && w.R.Float64() < 0.2 {
-			w.rest(c, f.Name)
+			w.rest(c, because("filter_"+key))
 		}
 	default:
 		out = Declined
@@ -179,10 +166,7 @@ func (w *World) face(c *Civ, key string, diffAdj float64) Outcome {
 		c.Declines++
 		f.Decline(w, c)
 	}
-	if math.Abs(margin) < 0.5 {
-		how = " (narrowly)"
-	}
-	c.Record = append(c.Record, sprintf("%s %s%s", out, f.Name, how))
+	c.Record = append(c.Record, Record{Kind: "faced", Filter: key, Outcome: out, Narrow: math.Abs(margin) < 0.5, Legacy: -1})
 	if !again || out == Declined || key == "revolt" {
 		w.recordFilter(c, key, f, out, master) // a filter faced again is not a new story unless it wins
 	}
@@ -245,7 +229,7 @@ func (w *World) ambientFilters(c *Civ) {
 
 func init() {
 	def(&Filter{
-		Key: "atomic", Name: "the Atomic Age", Levels: []string{"soc"}, Diff: 3.5, Domain: "society",
+		Key: "atomic",
 		Overcome: func(w *World, c *Civ) {
 			c.Boons[BoonUnity] = true
 			w.faced(c, "atomic", "overcome", "", -1)
@@ -258,16 +242,16 @@ func init() {
 			x := w.R.Float64()
 			switch {
 			case x < 0.5:
-				w.darkAge(c, "burned their world to ash")
+				w.darkAge(c, because("atomic"))
 			case x < 0.8:
-				w.endCiv(c, Extinct, "burned themselves out in a single afternoon")
+				w.endCiv(c, Extinct, because("atomic_afternoon"))
 			default:
-				w.contract(c, "burned their world and never rose from the ash")
+				w.contract(c, because("atomic_ash"))
 			}
 		},
 	})
 	def(&Filter{
-		Key: "overshoot", Name: "Overshoot", Levels: []string{"sur", "soc"}, Diff: 4, Domain: "biology",
+		Key: "overshoot",
 		Overcome: func(w *World, c *Civ) {
 			w.faced(c, "overshoot", "overcome", "", c.Home)
 		},
@@ -277,14 +261,14 @@ func init() {
 		},
 		Decline: func(w *World, c *Civ) {
 			if w.R.Float64() < 0.6 {
-				w.darkAge(c, "exhausted their world")
+				w.darkAge(c, because("overshoot"))
 			} else {
-				w.endCiv(c, Extinct, "exhausted their world and starved on it")
+				w.endCiv(c, Extinct, because("overshoot_starved"))
 			}
 		},
 	})
 	def(&Filter{
-		Key: "machines", Name: "Thinking Machines", Levels: []string{"soc"}, Diff: 4.5, Domain: "computation",
+		Key: "machines",
 		Overcome: func(w *World, c *Civ) {
 			c.Boons[BoonAligned] = true
 			w.faced(c, "machines", "overcome", "", -1)
@@ -297,14 +281,14 @@ func init() {
 		Decline: func(w *World, c *Civ) {
 			x := w.R.Float64()
 			if x < 0.25 {
-				w.darkAge(c, "pulled the plug on their own machines, too late and at great cost")
+				w.darkAge(c, because("machines_unplugged"))
 				return
 			}
 			w.machinePeople(c) // every time it does not pull the plug: what it built thinks on without it
 		},
 	})
 	def(&Filter{
-		Key: "distance", Name: "the Distance", Levels: []string{"soc"}, Diff: 4.5, Repeat: true, Domain: "society",
+		Key: "distance",
 		Overcome: func(w *World, c *Civ) {
 			w.faced(c, "distance", "overcome", "", -1)
 		},
@@ -328,11 +312,11 @@ func init() {
 			if w.R.Float64() < 0.6 && w.civilWar(c) { // the same story from the colonies' side: strangers, then enemies
 				return
 			}
-			w.contract(c, "watched their colonies become strangers, and then enemies, and then silence")
+			w.contract(c, because("distance_silence"))
 		},
 	})
 	def(&Filter{
-		Key: "silence", Name: "the Long Silence", Levels: []string{"soc"}, Diff: 4.5, Domain: "society",
+		Key: "silence",
 		Overcome: func(w *World, c *Civ) {
 			w.faced(c, "silence", "overcome", "", -1)
 		},
@@ -341,11 +325,11 @@ func init() {
 			w.faced(c, "silence", "scarred", "", -1)
 		},
 		Decline: func(w *World, c *Civ) {
-			w.contract(c, "stopped dying, and then stopped being born")
+			w.contract(c, because("silence_unborn"))
 		},
 	})
 	def(&Filter{
-		Key: "replication", Name: "Self-Replication", Levels: []string{"mil"}, Diff: 5.5, Domain: "weapons",
+		Key: "replication",
 		Overcome: func(w *World, c *Civ) {
 			c.Boons[BoonSwarm] = true
 			w.faced(c, "replication", "overcome", "", -1)
@@ -357,22 +341,22 @@ func init() {
 		Decline: func(w *World, c *Civ) {
 			s := w.aWorld(c)
 			if w.R.Float64() < 0.3 {
-				w.loseSystem(c, s, "stripped world", "were consumed by their own machines")
-				w.darkAge(c, "lost "+w.star(s)+" to their own machines and burned the rest to stop it spreading")
+				w.loseSystem(c, s, "stripped", because("machines_consumed"))
+				w.darkAge(c, because("machines_burned").At(s))
 				return
 			}
 			// the eaten world is the new people's, and the old people are gone
 			w.faced(c, "replication", "declined", "", s)
-			w.loseSystem(c, s, "stripped world", "were consumed by their own machines")
-			w.endCiv(c, Extinct, "were consumed by their own machines")
-			if nc := w.replicatorAt(s, species.Machine, "the machines of the "+c.Tok()+", copying themselves", false); nc != nil {
+			w.loseSystem(c, s, "stripped", because("machines_consumed"))
+			w.endCiv(c, Extinct, because("machines_consumed"))
+			if nc := w.replicatorAt(s, species.Machine, species.MadeBy("copies", c.ID), false); nc != nil {
 				nc.Species.Parent = c.Species
-				w.event(KNamedItself, nc, nil, s, P{"way": "eats", "desc": nc.Species.Describe()})
+				w.event(KNamedItself, nc, nil, s, P{"way": "eats", "traits": nc.Species.TraitKeys()})
 			}
 		},
 	})
 	def(&Filter{
-		Key: "stellar", Name: "Stellar Engineering", Levels: []string{"sur"}, Diff: 7, Domain: "exotic",
+		Key: "stellar",
 		Overcome: func(w *World, c *Civ) {
 			w.faced(c, "stellar", "overcome", "", c.Home)
 		},
@@ -383,17 +367,17 @@ func init() {
 		},
 		Decline: func(w *World, c *Civ) {
 			w.faced(c, "stellar", "declined", "", c.Home)
-			w.loseSystem(c, c.Home, "wounded star", "broke their own star")
+			w.loseSystem(c, c.Home, "wounded_star", because("star_broken"))
 			w.Bio[c.Home] = BioNone
 			if len(c.Systems) == 0 || w.R.Float64() < 0.5 {
-				w.endCiv(c, Extinct, "broke their own star")
+				w.endCiv(c, Extinct, because("star_broken"))
 			} else {
-				w.contract(c, "broke their own star and fled to a lesser one")
+				w.contract(c, because("star_broken_fled"))
 			}
 		},
 	})
 	def(&Filter{
-		Key: "transcend", Name: "Transcendence", Levels: []string{"soc"}, Diff: 7, Domain: "society",
+		Key: "transcend",
 		Overcome: func(w *World, c *Civ) {
 			w.faced(c, "transcend", "overcome", "", -1)
 		},
@@ -403,19 +387,19 @@ func init() {
 		},
 		Decline: func(w *World, c *Civ) {
 			if w.R.Float64() < 0.4 {
-				w.contract(c, "mostly went elsewhere, leaving a few to mind the ruins")
+				w.contract(c, because("transcend_most"))
 				return
 			}
 			for _, s := range c.Systems {
-				w.trace(s, "silent machinery", c.ID)
+				w.trace(s, "silent_machinery", c)
 			}
-			w.endCiv(c, Transformed, "went elsewhere")
-			c.Into = "something that left"
+			w.endCiv(c, Transformed, because("transcend"))
+			c.Into = "left"
 			w.faced(c, "transcend", "declined", "", -1)
 		},
 	})
 	def(&Filter{
-		Key: "door", Name: "the Door", Levels: []string{"soc"}, Diff: 4.5, Domain: "exotic",
+		Key: "door",
 		Overcome: func(w *World, c *Civ) {
 			w.faced(c, "door", "overcome", "", -1)
 		},
@@ -428,7 +412,7 @@ func init() {
 				return
 			}
 			w.faced(c, "door", "scarred", "came", s)
-			w.sleeperAt(s, "what came through the door of the "+c.Tok())
+			w.sleeperAt(s, species.MadeBy("door", c.ID))
 		},
 		Decline: func(w *World, c *Civ) {
 			w.tear(0.6)
@@ -439,7 +423,7 @@ func init() {
 	})
 	// hold together after losing a war's battle
 	def(&Filter{
-		Key: "hold", Name: "the strain of war", Levels: []string{"soc"}, Diff: 3, Repeat: true,
+		Key:      "hold",
 		Overcome: func(w *World, c *Civ) {},
 		Scar: func(w *World, c *Civ) {
 			c.Morale -= 0.5
@@ -452,7 +436,7 @@ func init() {
 		},
 	})
 	def(&Filter{
-		Key: "revolt", Name: "Revolt", Levels: []string{"soc"}, Diff: 4, Repeat: true, Domain: "weapons",
+		Key: "revolt",
 		Overcome: func(w *World, c *Civ) {
 			m := w.Civs[c.Master]
 			c.Master = -1
@@ -471,7 +455,7 @@ func init() {
 		Decline: func(w *World, c *Civ) {
 			m := w.Civs[c.Master]
 			if !m.Living() {
-				w.endCiv(c, Extinct, sprintf("fell with their masters the %s", m.Tok()))
+				w.endCiv(c, Extinct, because("with_masters").By(m))
 			} else {
 				w.faced(c, "revolt", "declined", "", -1)
 				c.Morale -= 2
@@ -504,7 +488,7 @@ func (c *Civ) natureDiff(key string) float64 {
 
 func init() {
 	def(&Filter{
-		Key: "faith", Name: "the Wars of Faith", Levels: []string{"soc"}, Diff: 2.5, Domain: "society",
+		Key:      "faith",
 		Overcome: func(w *World, c *Civ) {}, // most peoples manage it; the legends only note the ones that did not
 		Scar: func(w *World, c *Civ) {
 			c.Scars[ScarChurch] = true
@@ -513,9 +497,9 @@ func init() {
 		},
 		Decline: func(w *World, c *Civ) {
 			if w.R.Float64() < 0.5 {
-				w.darkAge(c, "tore themselves apart over the nature of god")
+				w.darkAge(c, because("faith"))
 			} else {
-				w.contract(c, "fought over god until there was nothing left to fight with")
+				w.contract(c, because("faith_war"))
 			}
 		},
 	})

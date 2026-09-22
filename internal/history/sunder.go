@@ -19,8 +19,9 @@ import (
 // the old people: its tree, its scars and boons, its telling, its line.
 // It holds nothing until the dealing gives it something.
 func (w *World) heir(old *Civ, home int, origin string) *Civ {
+	// origin is heirs or cut: the key of what the old people became
 	nc := w.newCiv(home, old.Species, -1)
-	nc.Origin = origin
+	nc.Origin = species.MadeBy(origin, old.ID)
 	nc.Line = append(append([]int(nil), old.Line...), old.ID)
 	nc.Systems, nc.Peak = nil, 0
 	nc.Own = old.Own
@@ -107,6 +108,7 @@ func (d *dealing) of(star int) *Civ {
 // that hold them, else to the seat. Then it ends the old people without
 // a trace and passes what the galaxy held against it to each heir.
 func (w *World) deal(old *Civ, d *dealing, fate Fate, cause string) {
+	// cause is the key of what ended the old people: tore or forgot
 	for _, s := range old.Systems {
 		w.handWorld(old, d.of(s), s)
 	}
@@ -300,9 +302,9 @@ func (w *World) sunder(old *Civ, heirs []*Civ, fate Fate, cause string) {
 	old.Wars, old.Trade = map[int]bool{}, map[int]bool{}
 	old.Stage, old.Fate, old.Cause, old.Ended, old.Fell = Dead, fate, cause, w.Now, w.Now
 	old.FellDependent = len(old.Dependent) > 0
-	old.Into = "the " + heirs[0].Tok()
-	for _, h := range heirs[1:] {
-		old.Into += ", the " + h.Tok()
+	old.Into = "people"
+	for _, h := range heirs {
+		old.IntoCivs = append(old.IntoCivs, h.ID)
 	}
 }
 
@@ -314,7 +316,7 @@ func (w *World) inheritWar(wr *War, old, h *Civ) {
 		return
 	}
 	i := wr.side(old.ID)
-	nw := &War{ID: len(w.Wars), Sides: [2]int{h.ID, e.ID}, Began: wr.Began, Cause: wr.Cause, Nth: 1, Named: -1, Pact: -1, Principal: -1, Hire: -1, Contested: map[int]int{}, Called: map[int]bool{},
+	nw := &War{ID: len(w.Wars), Sides: [2]int{h.ID, e.ID}, Began: wr.Began, Cause: wr.Cause, CauseOf: wr.CauseOf, Nth: 1, Named: -1, Pact: -1, Principal: -1, Hire: -1, Contested: map[int]int{}, Called: map[int]bool{},
 		Slights: map[int]float64{}, Sent: map[int]float64{}, Slighted: map[int]float64{}, SlightTold: map[int]bool{}}
 	nw.Will = [2]float64{wr.Will[i], wr.Will[1-i]}
 	w.Wars = append(w.Wars, nw)
@@ -395,14 +397,14 @@ func (w *World) civilWar(c *Civ) bool {
 		} else {
 			d.seat = i
 		}
-		h := w.heir(c, home, "heirs of the "+c.Tok())
+		h := w.heir(c, home, "heirs")
 		h.Aloft = c.Aloft
 		d.heirs = append(d.heirs, h)
 	}
 	if c.Aloft {
 		d.seat = d.fleet[w.greatestFleet(c).ID]
 	}
-	w.deal(c, d, Sundered, "tore themselves apart")
+	w.deal(c, d, Sundered, "tore")
 	for _, h := range d.heirs {
 		w.forget(h, 0.1) // the arsenals were in the other province
 		for _, s := range old {
@@ -426,7 +428,7 @@ func (w *World) civilWar(c *Civ) bool {
 			a.Met[b.ID], b.Met[a.ID], a.Reached[b.ID], b.Reached[a.ID] = true, true, true, true
 			a.Fathomed[b.ID], b.Fathomed[a.ID] = true, true
 			w.meeting(a, b, -1, "touch") // kin know each other from the first
-			w.declare(a, b, "the sundering")
+			w.declare(a, b, because("sundering"))
 			a.resent(b.ID, t.SunderGrudge)
 			b.resent(a.ID, t.SunderGrudge)
 		}
@@ -463,7 +465,7 @@ func (w *World) tearApart(old *Civ, heirs []*Civ, seat *Civ) {
 // dark age took), the telling a step more worn, the works and the
 // garrison there, and kin to the rest. Past the cap the other worlds are
 // abandoned.
-func (w *World) shatter(c *Civ, why string, forgotten []string) {
+func (w *World) shatter(c *Civ, why reason, forgotten []string) {
 	t := &w.Cfg.Tuning.Ossify
 	if c.Species.Profile().Backups {
 		for _, k := range forgotten {
@@ -477,16 +479,16 @@ func (w *World) shatter(c *Civ, why string, forgotten []string) {
 		}
 	}
 	for _, s := range worlds[min(len(worlds), t.Shards):] {
-		w.loseSystem(c, s, "abandoned "+c.Species.Flavour().Colony, "")
+		w.loseSystem(c, s, "abandoned", reason{})
 	}
 	worlds = worlds[:min(len(worlds), t.Shards)]
 	d := &dealing{world: map[int]int{}, fleet: map[int]int{}, random: func() int { return 0 }}
 	for i, s := range worlds {
 		d.world[s] = i
-		h := w.heir(c, s, "heirs of the "+c.Tok())
+		h := w.heir(c, s, "heirs")
 		d.heirs = append(d.heirs, h)
 	}
-	w.deal(c, d, Shattered, "forgot how to reach the stars")
+	w.deal(c, d, Shattered, "forgot")
 	var first *Event
 	for _, h := range d.heirs {
 		for _, tl := range h.Lore {
@@ -495,7 +497,8 @@ func (w *World) shatter(c *Civ, why string, forgotten []string) {
 		h.Stage = Emergent
 		w.recompute(h)
 		ids, stars := shardIDs(d.heirs)
-		p := P{"why": why, "shards": ids, "stars": stars, "first": first == nil}
+		p := why.params("why")
+		p["shards"], p["stars"], p["first"] = ids, stars, first == nil
 		if first == nil {
 			first = w.unplaced(FShattered, c, h, h.Home).with(p)
 			first.N = len(worlds)
@@ -515,7 +518,7 @@ func (w *World) cutOff(c *Civ, star int) *Civ {
 	if !c.Active() || !contains(c.Systems, star) || star == c.Home {
 		return nil
 	}
-	h := w.heir(c, star, "cut from the "+c.Tok())
+	h := w.heir(c, star, "cut")
 	c.Systems = remove(c.Systems, star)
 	w.handWorld(c, h, star)
 	for _, x := range w.fleetsOf(c) {
@@ -625,35 +628,4 @@ func (w *World) commonLine(a, b *Civ) int {
 		}
 	}
 	return a.Line[len(a.Line)-1]
-}
-
-// numberWord is a small count in words.
-func numberWord(n int) string {
-	if n >= 0 && n < len(numberWords) {
-		return numberWords[n]
-	}
-	return sprintf("%d", n)
-}
-
-var numberWords = []string{"no", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"}
-
-func listOf(ns []string) string {
-	switch len(ns) {
-	case 0:
-		return ""
-	case 1:
-		return ns[0]
-	}
-	out := ""
-	for i, n := range ns {
-		switch {
-		case i == 0:
-			out = n
-		case i == len(ns)-1:
-			out += " and " + n
-		default:
-			out += ", " + n
-		}
-	}
-	return out
 }

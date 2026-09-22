@@ -44,24 +44,24 @@ var objectKeys = []string{"ember", "manna"}
 // tick while held, one when it changes hands, one when its star is taken
 // by force. A hook that is nil does nothing.
 type objectForm struct {
-	Key, Desc string
-	Weight    float64
-	Yield     flow.Income
-	Levels    [3]float64
-	Tick      func(w *World, c *Civ, s *Source)
-	Moved     func(w *World, c *Civ, s *Source)
-	Taken     func(w *World, c, e *Civ, s *Source, star int) bool // true when the object is gone
+	Key    string
+	Weight float64 // from data/miracles.json, with the yield and the levels
+	Yield  flow.Income
+	Levels [3]float64
+	Tick   func(w *World, c *Civ, s *Source)
+	Moved  func(w *World, c *Civ, s *Source)
+	Taken  func(w *World, c, e *Civ, s *Source, star int) bool // true when the object is gone
 }
 
 var emberForms = []objectForm{
-	{Key: "pocket_star", Desc: "a pocket star", Weight: 1, Yield: flow.Income{flow.E: emberYield},
+	{Key: "pocket_star",
 		Moved: func(w *World, c *Civ, s *Source) {
 			s.Yield[flow.E] = max(0, s.Yield[flow.E]-pocketDim)
 			if c != nil {
 				w.event(KPocketDimmed, c, nil, -1, P{"source": s.ID, "gives": s.Yield[flow.E]})
 			}
 		}},
-	{Key: "singularity", Desc: "a captive singularity", Weight: 1, Yield: flow.Income{flow.E: emberYield},
+	{Key: "singularity",
 		Taken: func(w *World, c, e *Civ, s *Source, star int) bool {
 			if w.R.Float64() >= singularityFree {
 				return false
@@ -71,13 +71,13 @@ var emberForms = []objectForm{
 			w.event(KSingularityLoose, nil, nil, star, P{"source": s.ID})
 			return true
 		}},
-	{Key: "hot_tap", Desc: "a tap into a hotter place", Weight: 1, Yield: flow.Income{flow.E: emberYield}, Levels: [3]float64{0, tapGlare, 0},
+	{Key: "hot_tap",
 		Tick: func(w *World, c *Civ, s *Source) {
 			if s.Star >= 0 && w.chance(tapThrough) {
 				w.through(c, s)
 			}
 		}},
-	{Key: "vacuum_hole", Desc: "a hole in the vacuum", Weight: 1, Yield: flow.Income{flow.E: emberYield},
+	{Key: "vacuum_hole",
 		Tick: func(w *World, c *Civ, s *Source) {
 			s.Yield[flow.E] += holeGrow * w.dt
 			if s.Yield[flow.E] >= holeDoom && s.Star >= 0 {
@@ -87,11 +87,11 @@ var emberForms = []objectForm{
 }
 
 var mannaForms = []objectForm{
-	{Key: "mould", Desc: "a mould that grows on anything", Weight: 1, Yield: flow.Income{flow.O: mannaYield}},
-	{Key: "mat", Desc: "a mat of flesh that is the floor of every city", Weight: 1, Yield: flow.Income{flow.O: mannaYield}},
-	{Key: "brood", Desc: "a brood of something like insects", Weight: 1, Yield: flow.Income{flow.O: mannaYield}},
-	{Key: "kelp", Desc: "a kelp the oceans are full of", Weight: 1, Yield: flow.Income{flow.O: mannaYield}},
-	{Key: "fungus", Desc: "a fungus that eats stone", Weight: 1, Yield: flow.Income{flow.O: mannaYield, flow.M: fungusMetal}},
+	{Key: "mould"},
+	{Key: "mat"},
+	{Key: "brood"},
+	{Key: "kelp"},
+	{Key: "fungus"},
 }
 
 // objectForms is the forms by miracle, filled at init so the hooks may
@@ -101,6 +101,19 @@ var objectForms = map[string][]objectForm{}
 func init() {
 	objectForms["ember"] = emberForms
 	objectForms["manna"] = mannaForms
+	for _, key := range objectKeys {
+		m := tables.miracleByKey[key]
+		if m == nil || len(m.Forms) != len(objectForms[key]) {
+			panic("history: the forms of " + key + " are not the file's")
+		}
+		for i := range objectForms[key] {
+			f, d := &objectForms[key][i], m.Forms[i]
+			if f.Key != d.Key {
+				panic("history: the form " + f.Key + " of " + key + " is not the file's " + d.Key)
+			}
+			f.Weight, f.Yield, f.Levels = d.Weight, d.Yield, d.Levels
+		}
+	}
 }
 
 // formOf is the form of an object, or nil.
@@ -151,7 +164,7 @@ func (w *World) objects(c *Civ) {
 // this tick does its harm now, once the taking is done.
 func (w *World) tickObjects() {
 	for _, star := range w.loose {
-		w.blast(star, singularityBurn, "a singularity let loose", "singularity", nil, 1)
+		w.blast(star, singularityBurn, "singularity", nil, 1, -1)
 	}
 	w.loose = nil
 }
@@ -198,11 +211,11 @@ func (w *World) makeObject(c *Civ, key string, l *Legacy, parent *Source, how st
 			sentient = w.R.Float64() < mannaSentient
 		}
 	}
-	s := w.addSource(&Source{Key: key, Name: f.Desc, Kind: MadeSource, Star: c.Home, Mobile: true, Rarity: true,
+	s := w.addSource(&Source{Key: key, Kind: MadeSource, Star: c.Home, Mobile: true, Rarity: true,
 		Yield: f.Yield, Levels: f.Levels, Holder: c.ID, Carried: -1, Legacy: -1,
 		Form: f.Key, Sentient: sentient, Maker: c.ID, Made: w.Now})
 	if l == nil {
-		l = &Legacy{ID: len(w.Legacies), Age: -1, Maker: c.ID, Kind: Artifact, Star: c.Home, Node: key, Desc: f.Desc,
+		l = &Legacy{ID: len(w.Legacies), Age: -1, Maker: c.ID, Kind: Artifact, Star: c.Home, Node: key, Portrait: f.Key,
 			State: Wielded, People: -1, Finder: c.ID, Level: "miracle", Cond: Abandoned, Source: s.ID, Plague: -1}
 		w.Legacies = append(w.Legacies, l)
 	} else {
@@ -240,9 +253,6 @@ func (w *World) makeObject(c *Civ, key string, l *Legacy, parent *Source, how st
 	return s
 }
 
-// objectNames is how the legends say each object.
-var objectNames = map[string]string{"ember": "the Ember", "manna": "the Manna"}
-
 // wieldObject is a found object put to use: an elder's, which becomes an
 // object now, or a made one, which changes hands.
 func (w *World) wieldObject(c *Civ, l *Legacy) {
@@ -267,10 +277,10 @@ func (w *World) unleashObject(c *Civ, l *Legacy) {
 		w.lose(w.Sources[l.Source], nil, "loose")
 	}
 	if l.Node == "ember" {
-		w.blast(l.Star, singularityBurn, "an Ember let loose", "ember", nil, 1)
+		w.blast(l.Star, singularityBurn, "ember", nil, 1, l.ID)
 		return
 	}
-	w.blast(l.Star, looseRadius, "the Manna loose", "manna", nil, 1)
+	w.blast(l.Star, looseRadius, "manna", nil, 1, l.ID)
 }
 
 // moved is an object changing hands or ships: its form's price.
@@ -311,7 +321,7 @@ func (w *World) through(c *Civ, s *Source) {
 	w.bury(s, c, star)
 	s.Fate = "through"
 	if contains(c.Systems, star) {
-		w.loseSystem(c, star, "burned world", "were eaten by what came through the Ember")
+		w.loseSystem(c, star, "burned", because("ember_eaten"))
 	}
 }
 
@@ -324,7 +334,7 @@ func (w *World) doom(c *Civ, s *Source) {
 	w.lose(s, c, "doom")
 	w.G.Stars[star].Failing = true
 	if star != c.Home && contains(c.Systems, star) {
-		w.loseSystem(c, star, "burned world", "")
+		w.loseSystem(c, star, "burned", reason{})
 	}
 }
 
@@ -355,9 +365,9 @@ func (w *World) rise(c *Civ, s *Source) {
 	}
 	sp := species.Generate(w.R, w.G.Stars[star].Mult)
 	sp.Add("table")
-	sp.Made = "grown for the table of the " + c.Tok()
+	sp.Made = species.MadeBy("table", c.ID)
 	w.lose(s, c, "rose")
-	w.loseSystem(c, star, "risen world", "")
+	w.loseSystem(c, star, "risen", reason{})
 	nc := w.spawnCiv(star, sp, c.ID)
 	nc.Vassal = true
 	nc.Seen = c.Declines
@@ -368,7 +378,7 @@ func (w *World) rise(c *Civ, s *Source) {
 	}
 	w.forget(nc, 0.3)
 	w.recompute(nc)
-	w.fact(FRise, nc, c, star).with(P{"desc": sp.Describe()})
+	w.fact(FRise, nc, c, star).with(P{"traits": sp.TraitKeys()})
 	w.inherit(nc, c, 1)
 }
 
@@ -380,10 +390,10 @@ func (w *World) getLoose(c *Civ, s *Source) {
 	star := s.Star
 	w.lose(s, c, "loose")
 	w.fact(FLoose, c, nil, star)
-	w.blast(star, looseRadius, "the Manna loose", "manna_grown", c, 1)
-	if nc := w.replicatorAt(star, species.Biological, "the Manna of the "+c.Tok()+", loose", false); nc != nil {
+	w.blast(star, looseRadius, "manna_grown", c, 1, -1)
+	if nc := w.replicatorAt(star, species.Biological, species.MadeBy("manna_loose", c.ID), false); nc != nil {
 		nc.Species.Parent = c.Species
-		w.event(KNamedItself, nc, nil, star, P{"way": "growth", "desc": nc.Species.Describe()})
+		w.event(KNamedItself, nc, nil, star, P{"way": "growth", "traits": nc.Species.TraitKeys()})
 	}
 }
 

@@ -240,7 +240,7 @@ func (w *World) rouse(c, by *Civ) {
 		return
 	}
 	if by != nil && by.Active() && c.Truce[by.ID] <= w.Now {
-		w.declare(c, by, "the disturbing of its sleep") // not again within the truce of the last time: it stirs, and that is all
+		w.declare(c, by, because("sleep_disturbed")) // not again within the truce of the last time: it stirs, and that is all
 	}
 }
 
@@ -285,7 +285,7 @@ func (w *World) spent(wr *War) {
 // with the long sleep, asleep at the star until disturbed. From the
 // deep pass as a legacy, or from the Door's scar; the legacy of kind
 // Sleeper points at it.
-func (w *World) sleeperAt(star int, made string) *Civ {
+func (w *World) sleeperAt(star int, made Origin) *Civ {
 	sp := species.GenerateWith(w.R, w.G.Stars[star].Mult, w.G.Sys[star].Arch, species.Eldritch, species.Planetary|species.Unconscious)
 	sp.AddPower("sleep")
 	c := w.ariseAt(star, sp, made)

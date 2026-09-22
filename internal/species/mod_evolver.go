@@ -8,11 +8,9 @@ package species
 // who fathomed it feel, and a drift while a biological plague rages is a
 // cure roll.
 var evolver = &ModDef{Mod: Evolver, Entry: Entry{
-	Key:      "evolver",
-	Portrait: "They shape their own flesh, and breed what they need instead of building it.",
-	Flavour:  Flavour{"brood", "vacuum-whale", "grown moon"},
-	Legacy:   Draw{Base: 8.0 / 82}, // after the swarm and the planetary rolls
-	Draws:    Draw{Base: 1.0 / 12},
+	Key:    "evolver",
+	Legacy: Draw{Base: 8.0 / 82}, // after the swarm and the planetary rolls
+	Draws:  Draw{Base: 1.0 / 12},
 	Profile: Profile{
 		Sur:        1,
 		Dom:        M{"biology": 1.5, "industry": 0.8},

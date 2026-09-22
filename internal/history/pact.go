@@ -72,7 +72,7 @@ type Message struct {
 type Betrayal struct {
 	By, Against int
 	Year        Year
-	Shape       string
+	Shape       string // a key of data/causes.json's betrayals
 	Weight      float64
 }
 
@@ -352,7 +352,7 @@ func (w *World) joinAllies(c, e *Civ, wr *War) {
 			if mid == c.ID || !m.Active() || m.Wars[e.ID] || len(w.front(m, e)) == 0 || !w.perceives(m, e) {
 				continue
 			}
-			if wr2 := w.declare(m, e, "their pact with the "+c.Tok()); wr2 != nil {
+			if wr2 := w.declare(m, e, because("pact").By(c)); wr2 != nil {
 				wr2.Pact, wr2.Principal = pid, c.ID
 			}
 		}
@@ -367,7 +367,7 @@ func (w *World) answerCall(m, v, a *Civ) {
 	}
 	p := w.pactWith(m, v)
 	if len(w.front(m, a)) > 0 {
-		if wr := w.declare(m, a, "their pact with the "+v.Tok()); wr != nil && p != nil {
+		if wr := w.declare(m, a, because("pact").By(v)); wr != nil && p != nil {
 			wr.Pact, wr.Principal = p.ID, v.ID
 		}
 		return
@@ -381,7 +381,7 @@ func (w *World) answerCall(m, v, a *Civ) {
 		return
 	}
 	if k.Blame {
-		w.betray(m, v, "did not come when called", "absent", 0.5)
+		w.betray(m, v, "absent", "absent", 0.5)
 	}
 }
 
@@ -398,7 +398,7 @@ func (w *World) betray(by, against *Civ, shape, way string, weight float64) *Eve
 
 // faith records a promise kept at a cost.
 func (w *World) faith(by, forWhom *Civ, weight float64) {
-	w.Betrayals = append(w.Betrayals, Betrayal{By: by.ID, Against: forWhom.ID, Year: w.Now, Shape: "came when called", Weight: -weight})
+	w.Betrayals = append(w.Betrayals, Betrayal{By: by.ID, Against: forWhom.ID, Year: w.Now, Shape: "came", Weight: -weight})
 }
 
 // betrayed says whether one people has broken faith with another.
@@ -446,8 +446,8 @@ func (w *World) breakPacts(c, h *Civ) {
 			p.Over, p.Ended = true, w.Now
 		}
 	}
-	w.cutTrade(c, h, "the pact left")
-	w.cutTrade(h, c, "the pact left")
+	w.cutTrade(c, h, because("pact_left"))
+	w.cutTrade(h, c, because("pact_left"))
 	delete(c.Trade, h.ID)
 	delete(h.Trade, c.ID)
 }
@@ -462,7 +462,7 @@ func (w *World) warEnded(wr *War) {
 				continue
 			}
 			if (o.Principal == a.ID && (o.Sides[0] == b.ID || o.Sides[1] == b.ID)) || (o.Principal == b.ID && (o.Sides[0] == a.ID || o.Sides[1] == a.ID)) {
-				w.endWar(o, "peace by the pact")
+				w.endWar(o, "pact_peace")
 			}
 		}
 		return
@@ -476,7 +476,7 @@ func (w *World) warEnded(wr *War) {
 		ally, enemy = b, a
 	}
 	if pr.Active() && pr.Wars[enemy.ID] {
-		w.betray(ally, pr, "made a separate peace", "separate", 0.3).P["enemy"] = enemy.ID
+		w.betray(ally, pr, "separate_peace", "separate", 0.3).P["enemy"] = enemy.ID
 	}
 }
 

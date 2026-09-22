@@ -135,24 +135,24 @@ func (w *World) maybeScout(c, e *Civ) {
 }
 
 // cause is what a posture calls its war.
-func (w *World) cause(c, e *Civ) string {
+func (w *World) cause(c, e *Civ) reason {
 	switch {
 	case c.hates(e):
-		return "extermination"
+		return because("extermination")
 	case c.Fought[e.ID] > 0:
-		return "the old quarrel"
+		return because("old_quarrel")
 	case e.Embargo[c.ID]:
-		return "the embargo"
+		return because("embargo")
 	}
 	switch c.posture() {
 	case mind.Opportunist:
-		return "opportunity"
+		return because("opportunity")
 	case mind.Conqueror:
-		return "conquest"
+		return because("conquest")
 	case mind.Vengeful:
-		return "revenge"
+		return because("revenge")
 	}
-	return "a border"
+	return because("border")
 }
 
 // strikeFirst opens the war the council chose, with the fleet that opens
@@ -171,7 +171,7 @@ func (w *World) strikeFirst(c, e *Civ, ap Appraisal, far bool) bool {
 // maybeCampaign sizes and sends a fleet against e, declaring war first if
 // none is running. Conquerors and the hating try for the home first.
 // Nobody sends a fleet that cannot take its first world.
-func (w *World) maybeCampaign(c, e *Civ, cause string) bool {
+func (w *World) maybeCampaign(c, e *Civ, cause reason) bool {
 	_, near := w.nearestEnemy(c, e)
 	targets := []int{near}
 	if c.posture() == mind.Conqueror || c.hates(e) {
@@ -189,7 +189,7 @@ func (w *World) maybeCampaign(c, e *Civ, cause string) bool {
 // has the ships, or by a muster at the holding nearest the target. A need
 // the ships cannot meet is written down as a want, and the docks build
 // toward it for a while.
-func (w *World) sizeCampaign(c, e *Civ, cause string, target int) bool {
+func (w *World) sizeCampaign(c, e *Civ, cause reason, target int) bool {
 	k := w.sizeAt(c, e, target)
 	w.explain(c, "sizing a fleet against the "+e.Tok()+" at "+w.star(target), k)
 	if k.Short && k.LagOK {

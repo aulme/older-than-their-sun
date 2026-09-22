@@ -70,7 +70,6 @@ type Contract struct {
 	Ended         Year
 	State         ContractState
 	Broke         int    // who broke it, or -1
-	Why           string // how it ended
 	Failed        [2]int // ticks running each term has gone undelivered: the ask, the pay
 	Missed        bool   // the pay has failed at least once
 	AskDone       bool   // the ask is delivered; the pay may run on to Until
@@ -290,7 +289,7 @@ func strikeStart(w *World, k *Contract, giver, receiver *Civ, t Term) {
 		return
 	}
 	if w.warBetween(giver.ID, e.ID) == nil {
-		if wr := w.declare(giver, e, "the "+receiver.Tok()+"'s coin"); wr != nil {
+		if wr := w.declare(giver, e, because("coin").By(receiver)); wr != nil {
 			wr.Hire = k.ID
 		}
 	}
@@ -813,7 +812,7 @@ func (w *World) propose(buyer, seller *Civ, ask Term) *Contract {
 	buyer.Asked[seller.ID] = w.Now
 	k := w.newContract(buyer, seller, ask, pay, buyer)
 	if w.worthTo(buyer, k, ask, seller) <= 0 {
-		k.State, k.Why = Lapsed, "nothing in it"
+		k.State = Lapsed
 		return nil
 	}
 	w.send(buyer, seller, &Message{Kind: MsgOffer, Contract: k.ID})
@@ -978,7 +977,7 @@ func (w *World) answerOffer(to, from *Civ, m *Message) {
 		return
 	}
 	if !to.Active() || !from.Active() || !w.mutual(to, from) || to.Wars[from.ID] || !to.Species.Profile().Can(species.Trades) {
-		k.State, k.Why = Lapsed, "the offer found nobody to answer it"
+		k.State = Lapsed
 		return
 	}
 	gives, gets := k.Ask, k.Pay
@@ -987,7 +986,7 @@ func (w *World) answerOffer(to, from *Civ, m *Message) {
 	}
 	what := "asked by the " + from.Tok() + " for " + w.termName(gives) + " for " + w.termName(gets)
 	if why := w.refuses(to, gives, from); why != "" {
-		k.State, k.Why = Refused, why
+		k.State = Refused
 		if w.Cfg.TraceAI {
 			w.event(KReason, to, nil, -1, P{"what": what, "why": why})
 		}
@@ -1003,7 +1002,7 @@ func (w *World) answerOffer(to, from *Civ, m *Message) {
 	d := mind.AnswerOffer(in, w.Cfg.Tuning)
 	w.explain(to, what, d)
 	if !d.Accept {
-		k.State, k.Why = Refused, d.Reason
+		k.State = Refused
 		from.Tally.Refused++
 		if w.R.Float64() < 0.3 {
 			w.event(KOfferRefused, from, to, -1, P{"ask": gets})
@@ -1012,36 +1011,6 @@ func (w *World) answerOffer(to, from *Civ, m *Message) {
 	}
 	k.State = Accepted
 	w.send(to, from, &Message{Kind: MsgAnswer, Contract: k.ID})
-}
-
-// termName is a term in a phrase.
-func (w *World) termName(t Term) string {
-	switch t.Kind {
-	case mind.TermFlow:
-		return flowWord(t.Res)
-	case mind.TermRarity:
-		return w.Sources[t.Source].Name
-	case mind.TermAccess:
-		return "the use of " + w.Sources[t.Source].Name
-	case mind.TermTeach:
-		return "the making of " + tech.Get(t.Node).Name
-	case mind.TermGuard:
-		return sprintf("%s to hold %s", shipsWord(int(t.Amount)), w.star(t.Star))
-	case mind.TermStrike:
-		if t.Work != "" {
-			return sprintf("%s against the %s at %s", shipsWord(int(t.Amount)), tech.Structures[t.Work].Name, w.star(t.Star))
-		}
-		return sprintf("%s against %s", shipsWord(int(t.Amount)), w.star(t.Star))
-	case mind.TermDeliver:
-		return sprintf("%s to take %s", shipsWord(int(t.Amount)), w.star(t.Star))
-	case mind.TermPeace:
-		return "peace"
-	case mind.TermSighting:
-		return "word of a fleet in flight"
-	case mind.TermBroker:
-		return "a word with the " + w.Civs[t.Target].Tok()
-	}
-	return t.Kind.String()
 }
 
 // flowWord is a commodity as a payment reads: grain, power, metal.
@@ -1056,7 +1025,7 @@ func (w *World) answered(to, from *Civ, m *Message) {
 		return
 	}
 	if !to.Active() || !from.Active() || to.Wars[from.ID] {
-		k.State, k.Why = Lapsed, "the answer came too late"
+		k.State = Lapsed
 		return
 	}
 	w.form(k)
@@ -1216,10 +1185,10 @@ func (w *World) contractUses(c *Civ) []flow.Use {
 			continue
 		}
 		for i, t := range k.terms() {
-			if g, r := k.giver(i); g == c.ID && t.Kind == mind.TermFlow {
+			if g, _ := k.giver(i); g == c.ID && t.Kind == mind.TermFlow {
 				var need flow.Income
 				need[t.Res] = t.Amount
-				out = append(out, flow.Use{Key: wordKey(k.ID), Name: "the " + flowWord(t.Res) + " owed to the " + w.Civs[r].Tok(), Cat: flow.Word, Era: 3, Need: need})
+				out = append(out, flow.Use{Key: wordKey(k.ID), Cat: flow.Word, Era: 3, Need: need})
 			}
 		}
 	}
@@ -1259,7 +1228,7 @@ func (w *World) lapse(k *Contract, why string) {
 	if k.State == Lapsed {
 		return
 	}
-	k.State, k.Ended, k.Why = Lapsed, w.Now, why
+	k.State, k.Ended = Lapsed, w.Now
 	w.releaseFleet(k, false)
 }
 
@@ -1269,24 +1238,23 @@ func (w *World) lapse(k *Contract, why string) {
 func (w *World) breakContract(k *Contract, giver, receiver *Civ, t Term) {
 	k.State, k.Ended, k.Broke = Broken, w.Now, giver.ID
 	giver.Tally.Broke++
-	shape := "did not pay what they owed"
+	shape := "unpaid"
 	switch t.Kind {
 	case mind.TermGuard:
-		shape = "left the star they were paid to hold"
+		shape = "left_star"
 	case mind.TermStrike, mind.TermDeliver:
-		shape = "took the pay and did not strike"
+		shape = "no_strike"
 	case mind.TermTeach:
-		shape = "did not teach what they were paid to"
+		shape = "untaught"
 	case mind.TermAccess:
-		shape = "closed what they had opened"
+		shape = "closed"
 	case mind.TermPeace:
-		shape = "broke a peace they were paid for"
+		shape = "broke_peace"
 	case mind.TermFlow:
 		if k.Ask.Kind == mind.TermGuard && giver.ID == k.Buyer {
-			shape = "stopped paying the fleet that held their gate"
+			shape = "stopped_paying"
 		}
 	}
-	k.Why = shape
 	w.betray(giver, receiver, shape, "broke", 1)
 	w.releaseFleet(k, true)
 }
@@ -1306,7 +1274,7 @@ func (w *World) releaseFleet(k *Contract, broken bool) {
 		if !wr.Over && wr.Hire == k.ID {
 			s := w.Civs[k.Seller]
 			w.event(KHireEnded, s, nil, -1, P{})
-			w.endWar(wr, "the hire ended")
+			w.endWar(wr, "hire_ended")
 		}
 	}
 }
@@ -1358,14 +1326,14 @@ func (w *World) buyOff(k, offer *Contract, p, s, b *Civ) {
 	p.Contracts = append(p.Contracts, offer.ID)
 	s.Contracts = append(s.Contracts, offer.ID)
 	x := w.contractFleet(k)
-	k.State, k.Ended, k.Broke, k.Why = Broken, w.Now, s.ID, "sold what they were paid to hold"
+	k.State, k.Ended, k.Broke = Broken, w.Now, s.ID
 	s.Tally.Broke++
 	s.Tally.BoughtOff++
-	w.betray(s, b, "sold what they were paid to hold", "bought_off", 1)
+	w.betray(s, b, "bought_off", "bought_off", 1)
 	w.told(FBoughtOff, s, b, k.Ask.Star).with(P{"buyer": p.ID})
 	for _, wr := range w.Wars {
 		if !wr.Over && wr.Hire == k.ID {
-			w.endWar(wr, "the hire sold")
+			w.endWar(wr, "hire_sold")
 		}
 	}
 	if x == nil || x.Over || x.Returning {
@@ -1542,7 +1510,7 @@ func (w *World) sold(q *Expedition) {
 	if !z.Active() || !c.Active() || w.R.Float64() >= w.Cfg.Tuning.Contract.SoldTold {
 		return
 	}
-	w.betray(z, c, "sold the coming of their fleet", "sold", 1)
+	w.betray(z, c, "sold", "sold", 1)
 }
 
 // Contracts lists a people's contracts, for the reports.

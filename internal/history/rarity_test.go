@@ -17,7 +17,7 @@ func TestGrantHalvesOnce(t *testing.T) {
 	full := w.price(c, n)
 	w.flows(c)
 	soc := c.Soc
-	w.addSource(&Source{Key: "horizon", Name: "a horizon", Kind: CosmicSource, Star: 0, Rarity: true, Grants: []string{"causal_physics"}, Levels: [3]float64{0, 0, 0.5}, Holder: -1, Carried: -1, Legacy: -1})
+	w.addSource(&Source{Key: "horizon", Kind: CosmicSource, Star: 0, Rarity: true, Grants: []string{"causal_physics"}, Levels: [3]float64{0, 0, 0.5}, Holder: -1, Carried: -1, Legacy: -1})
 	w.flows(c)
 	if got := w.price(c, n); got != full/2 {
 		t.Errorf("with the horizon causal physics costs %v, want half of %v", got, full)
@@ -25,7 +25,7 @@ func TestGrantHalvesOnce(t *testing.T) {
 	if c.Soc != soc+0.5 {
 		t.Errorf("with the horizon Soc is %v, was %v: want +0.5", c.Soc, soc)
 	}
-	w.addSource(&Source{Key: "horizon", Name: "another horizon", Kind: CosmicSource, Star: 0, Rarity: true, Grants: []string{"causal_physics"}, Levels: [3]float64{0, 0, 0.5}, Holder: -1, Carried: -1, Legacy: -1})
+	w.addSource(&Source{Key: "horizon", Kind: CosmicSource, Star: 0, Rarity: true, Grants: []string{"causal_physics"}, Levels: [3]float64{0, 0, 0.5}, Holder: -1, Carried: -1, Legacy: -1})
 	w.flows(c)
 	if got := w.price(c, n); got != full/2 {
 		t.Errorf("with two horizons causal physics costs %v, want still half", got)
@@ -59,7 +59,7 @@ func TestFleetLostBuriesRarity(t *testing.T) {
 	w := newTestWorld(t, 16, 30)
 	c := spawnAt(w, 0, species.Fixed("cooperative"))
 	e := spawnAt(w, 1, species.Fixed("cooperative"))
-	l := &Legacy{ID: len(w.Legacies), Age: 0, Maker: -1, Kind: Artifact, Star: 0, Node: "fusion", Desc: "a seed of grey metal", People: -1, Finder: -1, Source: -1, Plague: -1, State: Wielded, Level: "sur"}
+	l := &Legacy{ID: len(w.Legacies), Age: 0, Maker: -1, Kind: Artifact, Star: 0, Node: "fusion", Portrait: "warm_seed", People: -1, Finder: -1, Source: -1, Plague: -1, State: Wielded, Level: "sur"}
 	w.Legacies = append(w.Legacies, l)
 	c.Wielded = append(c.Wielded, l)
 	w.wieldRarity(c, l)
@@ -100,7 +100,7 @@ func TestGrazing(t *testing.T) {
 	if full == (flow.Income{}) {
 		t.Fatal("the cradle yields nothing")
 	}
-	w.takeSky(c, "")
+	w.takeSky(c, reason{})
 	if !c.Aloft {
 		t.Fatal("the people did not take to the sky")
 	}

@@ -55,7 +55,6 @@ func (w *World) leaveField(loser *Civ, ships int, star int, at vec, adrift bool)
 				if derelicts > 0 {
 					l.Cond = Derelict
 				}
-				l.Desc = fieldDesc(loser, l)
 				return l
 			}
 		}
@@ -71,18 +70,9 @@ func (w *World) leaveField(loser *Civ, ships int, star int, at vec, adrift bool)
 	case w.Owner[star] >= 0:
 		l.Hardy = hardyLiving
 	}
-	l.Desc = fieldDesc(loser, l)
 	w.Legacies = append(w.Legacies, l)
 	w.testament(loser, l)
 	return l
-}
-
-// fieldDesc names a field for its makers.
-func fieldDesc(c *Civ, l *Legacy) string {
-	if l.Derelicts > 0 && l.Wrecks == 0 {
-		return "the derelicts of the fleet of the " + c.Tok()
-	}
-	return "the wrecks of the fleet of the " + c.Tok()
 }
 
 // bestArt is the best weapon or drive a people knows: what its hulls

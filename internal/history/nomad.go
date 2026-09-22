@@ -62,14 +62,14 @@ func (w *World) wander(c *Civ) {
 		return
 	}
 	if c.Reach >= 10 || (c.Dying && c.Reach >= 1) {
-		w.takeSky(c, "")
+		w.takeSky(c, reason{})
 	}
 }
 
 // takeSky turns a settled nomad people into fleets and empties its
 // worlds: the guards become the horde, and a world with no guard sends
 // one ship of what it had. A people with no ships cannot go.
-func (w *World) takeSky(c *Civ, why string) bool {
+func (w *World) takeSky(c *Civ, why reason) bool {
 	if c.Aloft || len(c.Systems) == 0 {
 		return false
 	}
@@ -82,10 +82,10 @@ func (w *World) takeSky(c *Civ, why string) bool {
 		if w.guardAt(c, s) == nil {
 			w.addGuard(c, s, 1)
 		}
-		w.loseSystem(c, s, "empty cradle of the "+c.Tok(), "")
+		w.loseSystem(c, s, "empty_cradle", reason{})
 	}
-	c.Record = append(c.Record, "took to the sky")
-	w.told(FExodus, c, nil, c.Home).with(P{"way": "sky", "why": why})
+	c.Record = append(c.Record, Record{Kind: "sky", Legacy: -1})
+	w.told(FExodus, c, nil, c.Home).with(P{"way": "sky"}).with(why.params("why"))
 	w.seat(c)
 	w.recompute(c)
 	return true
@@ -106,7 +106,7 @@ func (w *World) aloftGuards(c *Civ) {
 // what escaped: refugees under the nomad rules, without the way. The guard
 // at the lost world is what got away, and one ship at the least. Returns
 // false if nothing could get away.
-func (w *World) flee(c *Civ, lost int, cause string) bool {
+func (w *World) flee(c *Civ, lost int, cause reason) bool {
 	if c.Reach < 1 || !c.Species.Profile().Can(species.Flees) || c.Aloft {
 		return false
 	}
@@ -127,9 +127,9 @@ func (w *World) flee(c *Civ, lost int, cause string) bool {
 	c.Voyages = nil
 	w.aloftGuards(c)
 	w.addGuard(c, base, ships)
-	c.Record = append(c.Record, "took to the sky")
+	c.Record = append(c.Record, Record{Kind: "sky", Legacy: -1})
 	c.Morale -= 1
-	w.fact(FExodus, c, nil, lost).with(P{"way": "fled", "why": cause, "base": base})
+	w.fact(FExodus, c, nil, lost).with(P{"way": "fled", "base": base}).with(cause.params("why"))
 	w.seat(c)
 	w.recompute(c)
 	return true
@@ -170,7 +170,7 @@ func (w *World) seat(c *Civ) {
 func (w *World) roam(c *Civ) {
 	fl := w.fleets(c)
 	if len(fl) == 0 {
-		w.endCiv(c, Extinct, "lost the last of their fleets")
+		w.endCiv(c, Extinct, because("last_fleet"))
 		return
 	}
 	// merge at a shared base
@@ -214,14 +214,14 @@ func (w *World) roam(c *Civ) {
 		}
 	}
 	if len(w.fleets(c)) == 0 {
-		w.endCiv(c, Extinct, "lost the last of their fleets")
+		w.endCiv(c, Extinct, because("last_fleet"))
 		return
 	}
 	w.seat(c)
 	w.carry(c, hop)
 	// refugees want a home; the way does not
 	if !c.Has("nomadic") && w.chance(0.02) {
-		w.rest(c, "the road")
+		w.rest(c, because("road"))
 	}
 }
 
@@ -298,7 +298,7 @@ func (w *World) strip(wr *War, c, e *Civ, t int) {
 	}
 	home := t == e.Home
 	c.Loot.Add(w.yieldAt(e, t)) // the rest, once
-	w.loseSystem(e, t, "stripped by the horde", sprintf("were swallowed by the horde of the %s", c.Tok()))
+	w.loseSystem(e, t, "horde", because("horde").By(c))
 	w.addGuard(c, t, share)
 	wr.Taken[i]++
 	wr.Lost[1-i]++
@@ -321,7 +321,7 @@ func (w *World) strip(wr *War, c, e *Civ, t int) {
 
 // rest is a nomad people settling for good, usually after a scar. Its
 // fleets become the guard of the world it rests at.
-func (w *World) rest(c *Civ, why string) {
+func (w *World) rest(c *Civ, why reason) {
 	hop := min(max(c.Reach, 3), 20)
 	var best *Expedition
 	for _, x := range w.fleets(c) {
@@ -358,10 +358,10 @@ func (w *World) rest(c *Civ, why string) {
 	c.Systems = []int{t}
 	w.Owner[t] = c.ID
 	c.Home = t
-	c.Record = append(c.Record, "came to rest")
+	c.Record = append(c.Record, Record{Kind: "rest", Legacy: -1})
 	w.takeOver(c, t)
 	w.recompute(c)
-	rest := w.unplaced(FRest, c, nil, t).with(P{"nomad": c.Has("nomadic"), "why": why})
+	rest := w.unplaced(FRest, c, nil, t).with(P{"nomad": c.Has("nomadic")}).with(why.params("why"))
 	w.wakeReservoir(c, t)
 	w.place(rest)
 }

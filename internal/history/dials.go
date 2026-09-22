@@ -38,19 +38,26 @@ var dialTable = map[string]Dials{
 	"herd":       {Fear: 0.2},
 }
 
-// scarDials is what a scar does, in a fixed order so sums are reproducible.
-var scarDials = []struct {
+// scarDials is what a scar does, from data/scars.json in the file's
+// order so sums are reproducible.
+var scarDials = func() []struct {
 	scar string
 	d    Dials
-}{
-	{ScarChains, Dials{Fear: 0.2}},
-	{ScarBurningSky, Dials{Aggression: -0.2}},
-	{ScarFatalism, Dials{Risk: 0.2, Fear: -0.2}},
-	{ScarCentralism, Dials{Aggression: 0.1}},
-	{ScarQuarantine, Dials{Hate: 0.2}},
-	{ScarChurch, Dials{Hate: 0.1, Aggression: 0.1}},
-	{ScarStewardship, Dials{Greed: -0.2}},
-}
+} {
+	var out []struct {
+		scar string
+		d    Dials
+	}
+	for _, s := range tables.scars {
+		if s.Dials != (Dials{}) {
+			out = append(out, struct {
+				scar string
+				d    Dials
+			}{s.Key, s.Dials})
+		}
+	}
+	return out
+}()
 
 // setDials derives the dials; called from recompute.
 func (w *World) setDials(c *Civ) {

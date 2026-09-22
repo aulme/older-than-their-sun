@@ -103,8 +103,8 @@ func (w *World) veil(c *Civ) {
 			continue
 		}
 		if c.Trade[e.ID] {
-			w.cutTrade(c, e, "the forgetting")
-			w.cutTrade(e, c, "the forgetting")
+			w.cutTrade(c, e, because("forgetting"))
+			w.cutTrade(e, c, because("forgetting"))
 			delete(c.Trade, e.ID)
 			delete(e.Trade, c.ID)
 		}

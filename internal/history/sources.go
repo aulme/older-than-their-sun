@@ -37,7 +37,6 @@ func (k SourceKind) String() string {
 type Source struct {
 	ID      int
 	Key     string // what it is, for the reports: "habitable", "wood", "fuels", "atom", "fusion", "rocky", "terraformed", "heavy", "belt", "giant", "comets", "nebula", "doomed_giant"; a rarity's kind; "bounty:<kind>"; "artifact"
-	Name    string // for a line: "the belt at X"
 	Kind    SourceKind
 	Star    int             // the star it is at, or -1 for a ranged source
 	Feature *galaxy.Feature // for a ranged source: the thing whose reach it is
@@ -125,15 +124,14 @@ func naturalSources(g *galaxy.Galaxy) ([]*Source, [][]int) {
 	metals := g.Law.IndustryMul()
 	for i := range g.Stars {
 		sys := g.Sys[i]
-		name := "{star:" + itoa(i) + "}"
 		var here []*Source
 		if sys.Home >= 0 {
 			here = append(here,
-				&Source{Key: "habitable", Name: "the fields of " + name, Kind: WorldSource, Star: i, Yield: flow.Income{flow.O: worldYield[sys.Arch]}, Needs: []string{"agriculture"}, Cradle: true},
-				&Source{Key: "wood", Name: "the woods and rivers of " + name, Kind: WorldSource, Star: i, Yield: flow.Income{flow.E: woodYield}, Needs: []string{"fire", "cold_chemistry"}},
-				&Source{Key: "fuels", Name: "the coal of " + name, Kind: WorldSource, Star: i, Yield: flow.Income{flow.E: fuelsYield}, Needs: []string{"steam"}},
-				&Source{Key: "atom", Name: "the ore of " + name, Kind: WorldSource, Star: i, Yield: flow.Income{flow.E: atomYield}, Needs: []string{"atomic"}},
-				&Source{Key: "fusion", Name: "the seas of " + name, Kind: WorldSource, Star: i, Yield: flow.Income{flow.E: fusionYield}, Needs: []string{"fusion"}})
+				&Source{Key: "habitable", Kind: WorldSource, Star: i, Yield: flow.Income{flow.O: worldYield[sys.Arch]}, Needs: []string{"agriculture"}, Cradle: true},
+				&Source{Key: "wood", Kind: WorldSource, Star: i, Yield: flow.Income{flow.E: woodYield}, Needs: []string{"fire", "cold_chemistry"}},
+				&Source{Key: "fuels", Kind: WorldSource, Star: i, Yield: flow.Income{flow.E: fuelsYield}, Needs: []string{"steam"}},
+				&Source{Key: "atom", Kind: WorldSource, Star: i, Yield: flow.Income{flow.E: atomYield}, Needs: []string{"atomic"}},
+				&Source{Key: "fusion", Kind: WorldSource, Star: i, Yield: flow.Income{flow.E: fusionYield}, Needs: []string{"fusion"}})
 		}
 		rocky, dead, giants, heavy := 0.0, 0, 0, 0
 		for j, p := range sys.Planets {
@@ -160,22 +158,22 @@ func naturalSources(g *galaxy.Galaxy) ([]*Source, [][]int) {
 			if inside(i, galaxy.Globular) {
 				rocky *= globularMetal
 			}
-			here = append(here, &Source{Key: "rocky", Name: "the rocky worlds of " + name, Kind: WorldSource, Star: i, Yield: flow.Income{flow.M: rocky}, Needs: []string{"metallurgy"}})
+			here = append(here, &Source{Key: "rocky", Kind: WorldSource, Star: i, Yield: flow.Income{flow.M: rocky}, Needs: []string{"metallurgy"}})
 		}
 		if dead > 0 {
-			here = append(here, &Source{Key: "terraformed", Name: "the remade world of " + name, Kind: WorldSource, Star: i, Yield: flow.Income{flow.O: terraformYield}, Needs: []string{"terraforming"}})
+			here = append(here, &Source{Key: "terraformed", Kind: WorldSource, Star: i, Yield: flow.Income{flow.O: terraformYield}, Needs: []string{"terraforming"}})
 		}
 		if heavy > 0 {
-			here = append(here, &Source{Key: "heavy", Name: "the heavy ore of " + name, Kind: WorldSource, Star: i, Yield: flow.Income{flow.E: heavyYield * float64(heavy)}, Needs: []string{"atomic"}})
+			here = append(here, &Source{Key: "heavy", Kind: WorldSource, Star: i, Yield: flow.Income{flow.E: heavyYield * float64(heavy)}, Needs: []string{"atomic"}})
 		}
 		for range sys.Belts {
-			here = append(here, &Source{Key: "belt", Name: "the belt at " + name, Kind: BeltSource, Star: i, Yield: flow.Income{flow.M: beltYield}, Needs: []string{"interplanetary"}})
+			here = append(here, &Source{Key: "belt", Kind: BeltSource, Star: i, Yield: flow.Income{flow.M: beltYield}, Needs: []string{"interplanetary"}})
 		}
 		if giants > 0 {
-			here = append(here, &Source{Key: "giant", Name: "the giants of " + name, Kind: GiantSource, Star: i, Yield: flow.Income{flow.E: giantYield * float64(giants)}, Needs: []string{"fusion"}, With: []string{"orbital_habitats"}})
+			here = append(here, &Source{Key: "giant", Kind: GiantSource, Star: i, Yield: flow.Income{flow.E: giantYield * float64(giants)}, Needs: []string{"fusion"}, With: []string{"orbital_habitats"}})
 		}
 		if g.Law.Crowd >= crowded {
-			here = append(here, &Source{Key: "comets", Name: "the comets of " + name, Kind: CosmicSource, Star: i, Yield: flow.Income{flow.O: cometYield}, Needs: []string{"interplanetary"}})
+			here = append(here, &Source{Key: "comets", Kind: CosmicSource, Star: i, Yield: flow.Income{flow.O: cometYield}, Needs: []string{"interplanetary"}})
 		}
 		for _, s := range here {
 			at[i] = append(at[i], add(s).ID)
@@ -186,9 +184,9 @@ func naturalSources(g *galaxy.Galaxy) ([]*Source, [][]int) {
 		var s *Source
 		switch f.Kind {
 		case galaxy.Nebula:
-			s = &Source{Key: "nebula", Name: f.Name, Kind: CosmicSource, Star: -1, Feature: f, Radius: f.Radius, Yield: flow.Income{flow.O: nebulaYield}, Needs: []string{"synthetic_biology"}, With: []string{"orbital_habitats"}}
+			s = &Source{Key: "nebula", Kind: CosmicSource, Star: -1, Feature: f, Radius: f.Radius, Yield: flow.Income{flow.O: nebulaYield}, Needs: []string{"synthetic_biology"}, With: []string{"orbital_habitats"}}
 		case galaxy.Giant:
-			s = &Source{Key: "doomed_giant", Name: f.Name, Kind: CosmicSource, Star: -1, Feature: f, Radius: f.Radius, Yield: flow.Income{flow.E: doomedYield}, Needs: []string{"orbital_habitats"}}
+			s = &Source{Key: "doomed_giant", Kind: CosmicSource, Star: -1, Feature: f, Radius: f.Radius, Yield: flow.Income{flow.E: doomedYield}, Needs: []string{"orbital_habitats"}}
 		default:
 			continue
 		}
@@ -381,7 +379,7 @@ func (w *World) workYield(c *Civ, wk Work) flow.Income {
 			return flow.Income{flow.E: tapYield}
 		}
 	case "lifter":
-		if !st.Dead() || st.Remnant == "neutron star" {
+		if !st.Dead() || st.Remnant == "neutron_star" {
 			return flow.Income{flow.M: lifterYield}
 		}
 	}

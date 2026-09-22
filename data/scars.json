@@ -1,0 +1,27 @@
+{
+  "_": [
+    "The scars a people carries: what a filter faced badly leaves behind, as a creed or a memory the people lives under from then on. The simulation reads the key, the dials and iron; the view reads name and desc.",
+    "scars: one row per scar: key; name (how the legends say it, as the object of 'live under'); desc (what it is in the world); dials (what it does to the people's temperament: aggression, risk, greed, fear, loyalty, hunger, patience, hate; the scars with dials come first, in the order the sums are taken); iron marks the scars that stiffen a people's ways.",
+    "Every term here is a technical term: a phrase a reader who never saw this project understands or can search for, never a coinage."
+  ],
+  "scars": [
+    {"key": "chains", "name": "the memory of chains", "dials": {"fear": 0.2}, "desc": "the memory of chains: this people was owned once"},
+    {"key": "burning_sky", "name": "the memory of the burning sky", "dials": {"aggression": -0.2}, "desc": "the memory of the burning sky: what the sky did once it may do again"},
+    {"key": "fatalism", "name": "a fatalist creed", "dials": {"risk": 0.2, "fear": -0.2}, "iron": true, "desc": "a fatalist creed: what is coming cannot be turned, and nothing is worth the trying"},
+    {"key": "centralism", "name": "iron centralism", "dials": {"aggression": 0.1}, "iron": true, "desc": "iron centralism: the colonies are held by force, and the centre decides everything"},
+    {"key": "quarantine", "name": "a quarantine creed", "dials": {"hate": 0.2}, "iron": true, "desc": "a quarantine creed: every stranger is a carrier, and the borders are closed"},
+    {"key": "church", "name": "a church that outranks the state", "dials": {"aggression": 0.1, "hate": 0.1}, "desc": "the church outranks the state: what may be thought is decided by the faith, and the sciences of doubt are closed"},
+    {"key": "stewardship", "name": "a stewardship creed", "dials": {"greed": -0.2}, "iron": true, "desc": "a creed of stewardship: the world is not to be spent, and growth is a sin"},
+    {"key": "atomic_taboo", "name": "an atomic taboo", "desc": "the atom is not split again: the survivors of an atomic war forbid the power and the weapon alike"},
+    {"key": "no_machines", "name": "a prohibition on thinking machines", "desc": "a prohibition on thinking machines, after the ones they made turned on them"},
+    {"key": "mortality", "name": "a mortality creed", "desc": "a mortality creed: death is not to be cheated, after the long silence of a people that stopped dying"},
+    {"key": "no_self_copies", "name": "the law that no machine may make itself", "desc": "the law that no machine may make itself, after the swarm"},
+    {"key": "star_fear", "name": "a fear of their own star", "desc": "a fear of their own star, after they broke it"},
+    {"key": "left_behind", "name": "being the ones left behind", "desc": "being the ones left behind: the rest went elsewhere, and these are what stayed"},
+    {"key": "signal", "name": "a cult of the signal", "desc": "a cult of the signal: the transmitter is worshipped, and its voice comes first"},
+    {"key": "door", "name": "a dread of doors", "desc": "a dread of doors: the crossing is used only in extremity"},
+    {"key": "other_voices", "name": "the other voices on the line", "desc": "the other voices on the line: the ansible was opened, and something else was speaking"},
+    {"key": "changed", "name": "having been something else", "desc": "having been something else: this people was remade, and remembers what it was"},
+    {"key": "vial", "name": "a horror of the vial", "desc": "a horror of the vial: the crafts of the plague-maker above this rung are closed"}
+  ]
+}

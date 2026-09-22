@@ -4,6 +4,7 @@ import (
 	"sort"
 	"strings"
 
+	"worldgen/data"
 	"worldgen/internal/species"
 	"worldgen/internal/tech"
 )
@@ -29,119 +30,61 @@ const (
 )
 
 type apt struct {
-	node  string // node key, or "domain:x" for every node of a domain
-	when  string // trait key, "trait:x", "world:x", "sub:x", "mod:x"; a leading "!" negates
+	Node  string  `json:"node"`  // node key, or "domain:x" for every node of a domain
+	When  string  `json:"when"`  // trait key, "trait:x", "world:x", "sub:x", "mod:x"; a leading "!" negates
+	Mode  string  `json:"mode"`  // "" for dear, else innate, moot, never, world, absent
+	Mult  float64 `json:"mult"`  // dear: the multiplier; world: the penalty once lifted
+	Need  string  `json:"need"`  // world: what a colony must offer: sea, sky, fire
+	Until string  `json:"until"` // world: a node that opens the way instead
+	Key   string  `json:"key"`   // the row said at birth, for never and world rows; its text is the view's
+	Text  string  `json:"text"`
 	mode  aptMode
-	mult  float64 // dear: the multiplier; world: the penalty once lifted
-	need  string  // world: what a colony must offer: sea, sky, fire
-	until string  // world: a node that opens the way instead
-	text  string  // said at birth, for never and world rows
 }
 
-func dear(node, when string, mult float64) apt { return apt{node: node, when: when, mult: mult} }
-func innate(node, when string) apt             { return apt{node: node, when: when, mode: aptInnate} }
-func moot(node, when string) apt               { return apt{node: node, when: when, mode: aptMoot} }
-func never(node, when, text string) apt {
-	return apt{node: node, when: when, mode: aptNever, text: text}
-}
-func world(node, when, need, until, text string) apt {
-	return apt{node: node, when: when, mode: aptWorld, mult: 3, need: need, until: until, text: text}
-}
+var aptModes = map[string]aptMode{"": aptDear, "innate": aptInnate, "moot": aptMoot, "never": aptNever, "world": aptWorld, "absent": aptAbsent}
 
-// aptitudes is the table. Rows for the same node and people stack: dear
-// rows multiply, and innate, never, moot and world rows take precedence in
-// that order.
-var aptitudes = []apt{
-	// the cradle world
-	world("seafaring", "world:arid", "sea", "", "There is no sea to put out on."),
-	dear("agriculture", "world:arid", 1.5), dear("closed_ecologies", "world:arid", 0.8),
-	dear("seafaring", "world:ocean", 0.5), dear("metallurgy", "world:ocean", 2), dear("industrial", "world:ocean", 1.5), dear("rocketry", "world:ocean", 1.3), dear("closed_ecologies", "world:ocean", 0.7),
-	dear("star_gazing", "world:twilight", 0.7), dear("agriculture", "world:twilight", 1.3), dear("closed_ecologies", "world:twilight", 0.7), dear("terraforming", "world:twilight", 0.8),
-	dear("rocketry", "world:superterran", 3), dear("interplanetary", "world:superterran", 1.5), dear("orbital_habitats", "world:superterran", 1.5),
-	dear("rocketry", "world:lowg", 0.5), dear("interplanetary", "world:lowg", 0.7), dear("orbital_habitats", "world:lowg", 0.7), dear("closed_ecologies", "world:lowg", 0.8),
-	world("star_gazing", "world:hothouse", "sky", "high_air", "The sky is a rumour under the poison, until someone rises above it."),
-	dear("chemistry", "world:hothouse", 0.8), dear("closed_ecologies", "world:hothouse", 0.7),
-	world("star_gazing", "world:iceshell", "sky", "breach", "There is no sky, and will be none until they dig for it."),
-	dear("seafaring", "world:iceshell", 0.5), dear("rocketry", "world:iceshell", 2), dear("closed_ecologies", "world:iceshell", 0.6), dear("agriculture", "world:iceshell", 1.3),
-	world("seafaring", "world:floater", "sea", "", "There is no sea and no ground, only the deeps."),
-	dear("agriculture", "world:floater", 2), dear("metallurgy", "world:floater", 2), dear("rocketry", "world:floater", 3), dear("star_gazing", "world:floater", 1.5),
-	dear("fire", "world:volcanic", 0.5), dear("metallurgy", "world:volcanic", 0.6), dear("chemistry", "world:volcanic", 0.8), dear("agriculture", "world:volcanic", 1.5), dear("star_gazing", "world:volcanic", 0.7),
-	dear("star_gazing", "world:dim", 0.7), dear("fusion", "world:dim", 0.7), dear("stellar_engineering", "world:dim", 0.7), dear("agriculture", "world:dim", 1.5),
-	dear("agriculture", "world:lush", 0.7),
-	// what the world gave them
-	world("fire", "fireless", "fire", "", "They will not make fire: nothing to burn, and nowhere to burn it."),
-	dear("steam", "fireless", 1.5),
-	dear("hibernation", "skyless", 0.8),
-	dear("star_gazing", "threesuns", 0.5), dear("physics", "threesuns", 0.8), dear("stellar_engineering", "threesuns", 0.7), dear("agriculture", "threesuns", 1.3),
-	dear("closed_ecologies", "hardy", 0.8), dear("states", "cooperative", 0.7), dear("deep_governance", "cooperative", 0.8),
-	dear("rocketry", "robust", 1.2), dear("mechanised_war", "fragile", 1.3),
-	// senses
-	never("star_gazing", "eyeless", "They have no eyes for the stars."),
-	dear("astronomy", "eyeless", 3), dear("physics", "eyeless", 2),
-	moot("song", "deaf"), dear("networks", "deaf", 1.2),
-	dear("fire", "thermal", 0.7), dear("star_gazing", "thermal", 1.3), dear("medicine", "thermal", 0.8),
-	dear("seafaring", "magnetic", 0.5), dear("star_gazing", "magnetic", 0.8), dear("electricity", "magnetic", 0.7),
-	dear("electricity", "electric", 0.5), dear("computers", "electric", 0.8), dear("networks", "electric", 0.8),
-	dear("atomic", "radiation", 0.7), dear("fusion", "radiation", 0.8), dear("physics", "radiation", 0.8),
-	dear("chemistry", "chemical", 0.6), dear("medicine", "chemical", 0.8), dear("genetics", "chemical", 0.8),
-	// how they are organised
-	dear("states", "solitary", 2), dear("mass_politics", "solitary", 2), dear("networks", "solitary", 1.5), dear("organised_religion", "solitary", 1.5), dear("deep_governance", "solitary", 1.5),
-	dear("states", "individualist", 1.3), dear("deep_governance", "individualist", 1.5), dear("long_thought", "individualist", 1.5), dear("firearms", "individualist", 0.8),
-	dear("states", "collective", 0.7), dear("mass_politics", "collective", 0.7), dear("deep_governance", "collective", 0.8),
-	dear("states", "herd", 0.7), dear("mass_politics", "herd", 0.5), dear("organised_religion", "herd", 0.5), dear("memetics", "herd", 0.7),
-	dear("states", "caste", 0.5), dear("mass_politics", "caste", 2), dear("posthuman_law", "caste", 0.7),
-	moot("writing", "mod:hive"), moot("printing", "mod:hive"), moot("states", "mod:hive"), moot("mass_politics", "mod:hive"), moot("organised_religion", "mod:hive"), moot("doubt", "mod:hive"), moot("burial", "mod:hive"),
-	innate("networks", "mod:hive"), dear("memetics", "mod:hive", 2), dear("long_thought", "mod:hive", 0.5),
-	moot("song", "mod:unconscious"), moot("religion", "mod:unconscious"), moot("organised_religion", "mod:unconscious"), moot("doubt", "mod:unconscious"), moot("burial", "mod:unconscious"), moot("mass_politics", "mod:unconscious"), moot("memetics", "mod:unconscious"),
-	dear("uploading", "mod:unconscious", 0.5), dear("transcendence", "mod:unconscious", 2), dear("philosophy", "mod:unconscious", 1.5),
-	// stance
-	dear("firearms", "pacifist", 2), dear("mechanised_war", "pacifist", 2), dear("orbital_weapons", "pacifist", 2), dear("relativistic_weapons", "pacifist", 3), dear("nova_bombs", "pacifist", 3),
-	never("stellar_weapons", "pacifist", ""), never("unmaking", "pacifist", ""),
-	dear("firearms", "conqueror", 0.6), dear("mechanised_war", "conqueror", 0.6), dear("orbital_weapons", "conqueror", 0.7), dear("defence_grid", "conqueror", 0.7),
-	dear("defence_grid", "xenophobic", 0.5), dear("memetics", "xenophobic", 1.5),
-	dear("defence_grid", "unyielding", 0.7), dear("firearms", "submissive", 1.3),
-	// drive
-	dear("star_gazing", "curious", 0.7), dear("scientific_method", "curious", 0.7), dear("wormhole_physics", "curious", 0.8),
-	dear("machine_minds", "cautious", 1.5), dear("self_replication", "cautious", 1.5), dear("wormhole_physics", "cautious", 1.3), dear("stellar_engineering", "cautious", 1.5), dear("closed_ecologies", "cautious", 0.8), dear("defence_grid", "cautious", 0.8),
-	dear("mathematics", "contemplative", 0.7), dear("philosophy", "contemplative", 0.5), dear("long_thought", "contemplative", 0.5), dear("deep_time", "contemplative", 0.7), dear("mechanised_war", "contemplative", 1.5),
-	dear("seafaring", "expansionist", 0.7), dear("rocketry", "expansionist", 0.8), dear("slow_interstellar", "expansionist", 0.7), dear("beamed_sails", "expansionist", 0.8),
-	dear("steam", "pragmatic", 0.8), dear("industrial", "pragmatic", 0.8), dear("mass_industry", "pragmatic", 0.8), dear("wormhole_physics", "pragmatic", 1.3), dear("transcendence", "pragmatic", 2), dear("philosophy", "pragmatic", 1.3),
-	// bodies
-	dear("seafaring", "sessile", 3), dear("rocketry", "sessile", 1.5), dear("slow_interstellar", "sessile", 1.5), dear("hibernation", "sessile", 0.5), dear("agriculture", "sessile", 0.5),
-	dear("seafaring", "amphibious", 0.5), dear("closed_ecologies", "amphibious", 0.8),
-	dear("genetics", "manysexes", 0.7), dear("germline", "manysexes", 0.7),
-	dear("life_extension", "longlived", 0.5), dear("long_thought", "longlived", 0.6), dear("hibernation", "longlived", 1.5),
-	dear("life_extension", "shortlived", 1.5), dear("long_thought", "shortlived", 2), dear("hibernation", "shortlived", 0.7),
-	dear("hibernation", "dormancy", 0.3), dear("life_extension", "dormancy", 0.8),
-	dear("writing", "memory", 0.5), dear("burial", "memory", 0.5), dear("deep_time", "memory", 0.7), dear("deep_governance", "memory", 0.7),
-	dear("computers", "symbiosis", 0.6), dear("machine_minds", "symbiosis", 0.7), dear("uploading", "symbiosis", 0.7),
-	dear("states", "eusocial", 0.7), dear("closed_ecologies", "eusocial", 0.8), dear("orbital_habitats", "eusocial", 0.8),
-	// the swarm
-	moot("states", "swarming"), moot("mass_politics", "swarming"), moot("burial", "swarming"),
-	dear("networks", "swarming", 0.5), dear("uploading", "swarming", 2), dear("orbital_habitats", "swarming", 0.7), dear("closed_ecologies", "swarming", 0.8),
-	// substrates and modifiers
-	moot("seafaring", "mod:planetary"), moot("states", "mod:planetary"), moot("mass_politics", "mod:planetary"), moot("burial", "mod:planetary"), moot("religion", "mod:planetary"),
-	dear("domain:society", "mod:planetary", 1.5), // no society: what it has of one is dear
-	dear("terraforming", "mod:planetary", 0.5), dear("panspermia", "mod:planetary", 0.5), dear("life_extension", "mod:planetary", 0.5), dear("uploading", "mod:planetary", 2), dear("rocketry", "mod:planetary", 2), dear("networks", "mod:planetary", 0.3), dear("memetics", "mod:planetary", 2),
-	moot("agriculture", "sub:parasite"), moot("states", "sub:parasite"), never("genetics", "sub:parasite", ""),
-	dear("medicine", "sub:parasite", 0.6), dear("neuroscience", "sub:parasite", 0.6), dear("memetics", "sub:parasite", 0.6),
-	innate("computers", "sub:machine"), innate("machine_minds", "sub:machine"), innate("hibernation", "sub:machine"),
-	moot("fire", "sub:machine"), moot("agriculture", "sub:machine"), moot("medicine", "sub:machine"), moot("genetics", "sub:machine"), moot("neuroscience", "sub:machine"), moot("burial", "sub:machine"), moot("closed_ecologies", "sub:machine"),
-	never("germline", "sub:machine", ""), never("directed_evolution", "sub:machine", ""), never("plague_craft", "sub:machine", ""),
-	dear("synthetic_biology", "sub:machine", 1.5), dear("panspermia", "sub:machine", 2), dear("uploading", "sub:machine", 0.3), dear("self_replication", "sub:machine", 0.5), dear("terraforming", "sub:machine", 1.5),
-	dear("domain:biology", "mod:evolver", 0.5), dear("metallurgy", "mod:evolver", 1.3), dear("industrial", "mod:evolver", 1.3), dear("self_replication", "mod:evolver", 1.5), dear("machine_minds", "mod:evolver", 1.5), dear("uploading", "mod:evolver", 2),
+// aptitudes is the table, data/aptitudes.json. Rows for the same node and
+// people stack: dear rows multiply, and innate, never, moot and world rows
+// take precedence in that order.
+var aptitudes = func() []apt {
+	var f struct {
+		Aptitudes []apt `json:"aptitudes"`
+	}
+	data.Load("aptitudes.json", &f)
+	for i := range f.Aptitudes {
+		a := &f.Aptitudes[i]
+		m, ok := aptModes[a.Mode]
+		if !ok {
+			panic("history: aptitude " + a.Node + " " + a.When + " has an unknown mode " + a.Mode)
+		}
+		a.mode = m
+		if m == aptWorld {
+			a.Mult = 3
+		}
+	}
+	return f.Aptitudes
+}()
+
+// aptitudeText is the text of a birthright block, by its row's key.
+func aptitudeText(key string) string {
+	for _, a := range aptitudes {
+		if a.Key == key {
+			return a.Text
+		}
+	}
+	return key
 }
 
 func init() {
 	for _, a := range aptitudes {
-		if strings.HasPrefix(a.node, "domain:") {
+		if strings.HasPrefix(a.Node, "domain:") {
 			continue
 		}
-		if tech.Get(a.node) == nil {
-			panic("history: aptitude for unknown node " + a.node)
+		if tech.Get(a.Node) == nil {
+			panic("history: aptitude for unknown node " + a.Node)
 		}
-		if a.until != "" && tech.Get(a.until) == nil {
-			panic("history: aptitude until unknown node " + a.until)
+		if a.Until != "" && tech.Get(a.Until) == nil {
+			panic("history: aptitude until unknown node " + a.Until)
 		}
 	}
 }
@@ -228,23 +171,23 @@ func (w *World) aptitude(c *Civ, n *tech.Node) (aptMode, float64) {
 	mode, mult := aptDear, 1.0
 	domain := "domain:" + n.Domain
 	for _, a := range aptitudes {
-		if a.node != n.Key && a.node != domain {
+		if a.Node != n.Key && a.Node != domain {
 			continue
 		}
-		if !c.applies(a.when) {
+		if !c.applies(a.When) {
 			continue
 		}
 		switch a.mode {
 		case aptDear:
 			if !n.Miracle {
-				mult *= a.mult // a miracle costs what it costs, whoever reaches for it
+				mult *= a.Mult // a miracle costs what it costs, whoever reaches for it
 			}
 		case aptWorld:
-			if a.until != "" && w.had(c, a.until) {
+			if a.Until != "" && w.had(c, a.Until) {
 				continue
 			}
-			if w.lifted(c, a.need) {
-				mult *= a.mult
+			if w.lifted(c, a.Need) {
+				mult *= a.Mult
 				continue
 			}
 			if rank(aptWorld) > rank(mode) {
@@ -323,11 +266,11 @@ func (w *World) birthright(c *Civ) {
 		}
 	}
 	for _, a := range aptitudes {
-		if a.text == "" || !c.applies(a.when) {
+		if a.Key == "" || !c.applies(a.When) {
 			continue
 		}
-		if a.mode == aptNever || (a.mode == aptWorld && !(a.until != "" && w.had(c, a.until)) && !w.lifted(c, a.need)) {
-			blocks = append(blocks, a.text)
+		if a.mode == aptNever || (a.mode == aptWorld && !(a.Until != "" && w.had(c, a.Until)) && !w.lifted(c, a.Need)) {
+			blocks = append(blocks, a.Key)
 		}
 	}
 	sort.Slice(rs, func(i, j int) bool {

@@ -51,7 +51,7 @@ type System struct {
 	Planets []Planet
 	Belts   []float64 // AU
 	Disc    string    // a debris disc, described; "" if none
-	Comp    string    // a companion note: "a white dwarf companion", ...
+	Comp    string    // a companion, keyed: white_dwarf, brown_dwarf; CompanionWords say it
 	Home    int       // index of the habitable world, -1 if none
 	Arch    string    // archetype key of the habitable world: lush, twilight, floater...
 	Missed  bool      // the habitable world is one the old surveys did not see
@@ -107,9 +107,9 @@ func genSystem(r *rand.Rand, s *Star, cat *CatStar, rocky, metals float64) *Syst
 		for _, c := range cat.Comps {
 			switch {
 			case strings.HasPrefix(c, "D"):
-				sys.Comp = "a white dwarf companion"
+				sys.Comp = "white_dwarf"
 			case strings.HasPrefix(c, "L"), strings.HasPrefix(c, "T"):
-				sys.Comp = "a brown dwarf companion"
+				sys.Comp = "brown_dwarf"
 			}
 		}
 	}
@@ -228,7 +228,7 @@ func genSystem(r *rand.Rand, s *Star, cat *CatStar, rocky, metals float64) *Syst
 		sys.Disc = "a faint disc of dust"
 	}
 	if sys.Comp == "" && r.Float64() < 0.05 {
-		sys.Comp = "a brown dwarf companion"
+		sys.Comp = "brown_dwarf"
 	}
 	sortPlanets(sys.Planets)
 
@@ -473,7 +473,7 @@ func pickArch(r *rand.Rand, s *Star, sys *System, lum float64) string {
 	} else {
 		w["volcanic"] = 0
 	}
-	if sys.Comp == "a brown dwarf companion" {
+	if sys.Comp == "brown_dwarf" {
 		w["dim"] *= 6
 	} else {
 		w["dim"] = 0
@@ -623,7 +623,7 @@ func (sys *System) Describe(star string) string {
 		parts = append(parts, sys.Disc)
 	}
 	if sys.Comp != "" {
-		parts = append(parts, sys.Comp)
+		parts = append(parts, CompanionWords[sys.Comp])
 	}
 	return strings.Join(parts, "; ")
 }

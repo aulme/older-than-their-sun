@@ -7,10 +7,9 @@ package species
 // swears and breaks pacts on appraisal alone, which is what makes it
 // creepy.
 var unconscious = &ModDef{Mod: Unconscious, Entry: Entry{
-	Key:      "unconscious",
-	Portrait: "There is no one inside; they only act as if.",
-	Legacy:   Draw{Base: 5.0 / 92, Skip: []string{"org"}}, // the old org-group weight, after the hive
-	Draws:    Draw{Base: 1.0 / 20, Tilts: map[string]float64{"replicator": 3, "antimemetic": 3}, Skip: []string{"org"}},
+	Key:    "unconscious",
+	Legacy: Draw{Base: 5.0 / 92, Skip: []string{"org"}}, // the old org-group weight, after the hive
+	Draws:  Draw{Base: 1.0 / 20, Tilts: map[string]float64{"replicator": 3, "antimemetic": 3}, Skip: []string{"org"}},
 	Profile: Profile{
 		Mil: -0.5, Sur: 1, Soc: 1.5,
 		Wis:        -1.5, // no intuition to see past, and nothing to read another mind with

@@ -259,7 +259,7 @@ func TestSeatRules(t *testing.T) {
 	q := spawnAt(w, 0, fixedWith(species.Biological, species.Hive, nil, "defensive", "practical", "onequeen"))
 	w.Owner[1] = q.ID
 	q.Systems = append(q.Systems, 1)
-	w.loseSystem(q, 0, "test", "lost the seat")
+	w.loseSystem(q, 0, "test", because("lost_home"))
 	if q.Active() {
 		t.Fatal("a hive of one queen lived on without her")
 	}
@@ -269,14 +269,14 @@ func TestSeatRules(t *testing.T) {
 		n.Systems = append(n.Systems, s)
 	}
 	w.recompute(n)
-	w.loseSystem(n, 2, "test", "lost the seat")
+	w.loseSystem(n, 2, "test", because("lost_home"))
 	if n.Fate != Shattered {
 		t.Fatalf("a hive of no queen %s", n.Fate)
 	}
 	p := spawnAt(w, 5, fixedWith(species.Biological, species.Planetary, nil, "defensive", "practical"))
 	w.Owner[6] = p.ID
 	p.Systems = append(p.Systems, 6)
-	w.loseSystem(p, 5, "test", "lost the world")
+	w.loseSystem(p, 5, "test", because("lost_home"))
 	if p.Active() {
 		t.Fatal("a world lived on without itself")
 	}
@@ -300,7 +300,7 @@ func TestMachineBackups(t *testing.T) {
 	known := len(m.Known)
 	m.Stiff = 3
 	m.DarkAges = 4 // the depth at its cap, halved
-	w.darkAge(m, "fell")
+	w.darkAge(m, because("ossified"))
 	heirs := 0
 	for _, x := range w.Civs[1:] {
 		heirs++

@@ -39,7 +39,15 @@ var stiffTraits = map[string]float64{
 }
 
 // ironScars are the iron answers: each makes a people set faster.
-var ironScars = []string{ScarCentralism, ScarStewardship, ScarQuarantine, ScarFatalism}
+var ironScars = func() []string {
+	var out []string
+	for _, s := range tables.scars {
+		if s.Iron {
+			out = append(out, s.Key)
+		}
+	}
+	return out
+}()
 
 // stiffGrowth is the growth table: stiffness per thousand years.
 func stiffGrowth(in stiffInput, t *mind.OssifyTuning) float64 {
@@ -147,17 +155,22 @@ func (w *World) renewing(c *Civ) bool {
 
 // stiffWord is the portrait's word for a people's stiffness.
 func (c *Civ) stiffWord() string {
-	switch {
-	case c.Ossified:
-		return "ossified"
-	case c.Stiff >= 2:
-		return "set in its ways past mending"
-	case c.Stiff >= 1:
-		return "set in its ways"
-	case c.Stiff >= 0.5:
-		return "settled"
+	return tables.stiffness[c.stiffStage()].Word
+}
+
+// stiffStage is where a people's ways stand, as data/levels.json divides
+// it: the last row is ossified, the rest by the stiffness each begins at.
+func (c *Civ) stiffStage() int {
+	rows := tables.stiffness
+	if c.Ossified {
+		return len(rows) - 1
 	}
-	return "young"
+	for i := len(rows) - 2; i > 0; i-- {
+		if c.Stiff >= rows[i].From {
+			return i
+		}
+	}
+	return 0
 }
 
 // StiffWord is stiffWord for the legends.
@@ -196,7 +209,7 @@ func (w *World) breakDown(c *Civ) {
 			return
 		}
 	}
-	w.darkAge(c, "hardened until nothing in them could bend")
+	w.darkAge(c, because("ossified"))
 }
 
 // resent is every grudge write: what another people did, added to what is
@@ -226,7 +239,7 @@ func (w *World) forgive(c *Civ) {
 
 func init() {
 	def(&Filter{
-		Key: "ossification", Name: "Ossification", Levels: []string{"soc"}, Diff: 4, Repeat: true, Domain: "society",
+		Key: "ossification",
 		Adjust: func(w *World, c *Civ) ([]string, float64, string) {
 			t := &w.Cfg.Tuning.Ossify
 			return []string{"soc"}, c.Stiff + t.Renaissance*float64(c.Renaissances), "society"

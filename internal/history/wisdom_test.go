@@ -174,7 +174,7 @@ func TestBrokerCutsTheWait(t *testing.T) {
 func TestNoPeaceUnfathomed(t *testing.T) {
 	w, c, e := pair(t, 4, species.Fixed("cooperative"), alien(), 0, 0)
 	c.Reach, e.Reach = 30, 30
-	wr := w.declare(c, e, "a border")
+	wr := w.declare(c, e, because("border"))
 	if wr == nil {
 		t.Fatal("no war")
 	}
@@ -192,7 +192,7 @@ func TestNoPeaceUnfathomed(t *testing.T) {
 	w2, c2, e2 := pair(t, 4, species.Fixed("cooperative"), alien(), 0, 0)
 	c2.Reach, e2.Reach = 30, 30
 	c2.Fathomed[e2.ID] = true
-	wr2 := w2.declare(c2, e2, "a border")
+	wr2 := w2.declare(c2, e2, because("border"))
 	wr2.Will[0] = 0
 	w2.judge(wr2)
 	if !wr2.Over || wr2.Result != "truce" {

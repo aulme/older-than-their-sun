@@ -6,6 +6,8 @@ import (
 	"math/rand/v2"
 	"sort"
 	"strings"
+
+	"worldgen/data"
 )
 
 // A field is the star field a history runs in: a few hundred stars around
@@ -26,26 +28,28 @@ type Region struct {
 	Anchor *Feature // a feature at the field's centre, or nil
 }
 
-// Presets are the named places, besides every feature in the catalogue.
-var Presets = []struct {
-	Key, Name, Code string
-	Pos             Vec
-	Desc            string
-}{
-	{"sol", "the Sun's neighbourhood", "HIP", Sun, "where the story begins: the real stars within 150 light years of Earth"},
-	{"heart", "the Heart", "GC", Vec{0.03, 0, 0}, "a hundred light years from Sagittarius A*, inside the nuclear cluster"},
-	{"core", "the Core", "CMZ", Vec{0.18, 0.05, 0}, "the central molecular zone, six hundred light years from the hole"},
-	{"bulge", "the Bulge", "BLG", Vec{-1.2, 0.8, 0.3}, "the old red stars of the bulge, a kiloparsec above the centre's fire"},
-	{"bar", "the Bar", "BAR", Vec{-2.8, 1.8, 0}, "halfway along the bar, among ancient metal-rich stars"},
-	{"ring", "the Molecular Ring", "RNG", Vec{-4.4, 1.2, 0}, "the ring at the bar's end where the great arms are born"},
-	{"scutum", "the Scutum-Centaurus Arm", "SCT", Vec{-5.0, 0, 0}, "the near great arm, inward of the Sun"},
-	{"sagittarius", "the Sagittarius Arm", "SGR", Vec{-6.7, 0, 0}, "the bright minor arm inward of the Sun"},
-	{"interarm", "the gap inside the Local Arm", "GAP", Vec{-7.6, 0, 0}, "the quiet space between the Sagittarius and Local arms"},
-	{"perseus", "the Perseus Arm", "PER", Vec{-10.1, 0, 0}, "the great outer arm"},
-	{"outer", "the Outer Disc", "OUT", Vec{-12.5, 0, 0.1}, "between the Perseus and Outer arms, thin and cold"},
-	{"rim", "the Rim", "RIM", Vec{-15.5, 0, 0.2}, "beyond the last arm, where the disc gives out"},
-	{"halo", "the Halo", "HAL", Vec{-8.2, 0, 3.0}, "three kiloparsecs above the Sun, among the old stars of the halo"},
-	{"farside", "the Far Side", "FAR", Vec{8.2, 0, 0}, "the Sun's mirror across the centre"},
+// Preset is a named place, besides every feature in the catalogue: a
+// row of data/laws.json.
+type Preset struct {
+	Key  string `json:"key"`
+	Name string `json:"name"`
+	Code string `json:"code"`
+	Pos  Vec    `json:"pos"`
+	Desc string `json:"desc"`
+}
+
+// Presets are the named places, in the file's order.
+var Presets []*Preset
+
+type lawsFile struct {
+	Arms    []*Arm    `json:"arms"`
+	Presets []*Preset `json:"presets"`
+}
+
+func init() {
+	var f lawsFile
+	data.Load("laws.json", &f)
+	Arms, Presets = f.Arms, f.Presets
 }
 
 // RegionByName resolves a preset key, a feature name, or "x,y,z" in kpc.
@@ -263,12 +267,12 @@ func anchorStar(f *Feature) (Star, bool) {
 	s := Star{Name: f.Name, Real: true, Mag: 99, Mult: 1, DiesAt: 1e15, Lifetime: 1e10}
 	switch f.Kind {
 	case BlackHole:
-		s.Class, s.Remnant = 'N', "black hole"
+		s.Class, s.Remnant = 'N', "black_hole"
 		if f.Name == "Sagittarius A*" {
-			s.Remnant = "the great hole"
+			s.Remnant = "great_hole"
 		}
 	case NeutronStar:
-		s.Class, s.Remnant = 'N', "neutron star"
+		s.Class, s.Remnant = 'N', "neutron_star"
 	case Magnetar:
 		s.Class, s.Remnant = 'N', "magnetar"
 	case Giant:
@@ -282,12 +286,12 @@ func anchorStar(f *Feature) (Star, bool) {
 
 func remnantOf(r *rand.Rand, was byte) string {
 	if was == 'O' && r.Float64() < 0.6 || r.Float64() < 0.25 {
-		return "black hole"
+		return "black_hole"
 	}
 	if r.Float64() < 0.1 {
 		return "magnetar"
 	}
-	return "neutron star"
+	return "neutron_star"
 }
 
 // pickClassIn draws a class with the massive share scaled by the place's

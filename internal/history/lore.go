@@ -578,7 +578,7 @@ func (w *World) readTestament(c *Civ, l *Legacy) {
 		n++
 	}
 	if n > 0 && w.R.Float64() < 0.3 {
-		w.event(KReadWalls, c, nil, l.Star, P{"own": own, "maker": w.makerName(c, l)}).Legacy = l.ID
+		w.event(KReadWalls, c, nil, l.Star, P{"own": own, "known": w.knowsMaker(c, l)}).Legacy = l.ID
 	}
 }
 
@@ -1046,4 +1046,75 @@ func LoreCounts(w *World, c *Civ) (held, myth, monsters int) {
 		w.reckon(c)
 	}
 	return held, myth, len(c.monsters)
+}
+
+// A reason is the reason a fact gives for what happened: a key of
+// data/causes.json and the ids its words name. It goes into the fact's
+// parameters as the named key with by, at, plague and blast beside it
+// where they are set; the view renders it, and nothing reads it.
+type reason struct {
+	key    string
+	by     int // a people
+	at     int // a star
+	plague int // a plague
+	blast  int // the blast event; for a waking, the waker is by
+}
+
+// because is a reason with no parties.
+func because(key string) reason { return reason{key: key, by: -1, at: -1, plague: -1, blast: -1} }
+
+// By names the people the reason is about.
+func (y reason) By(c *Civ) reason {
+	if c != nil {
+		y.by = c.ID
+	}
+	return y
+}
+
+// At names the star.
+func (y reason) At(star int) reason { y.at = star; return y }
+
+// Plague names the plague.
+func (y reason) Plague(id int) reason { y.plague = id; return y }
+
+// Blast names the blast, or what stands for one.
+func (y reason) Blast(id int) reason { y.blast = id; return y }
+
+// Of takes another reason's parties: what a blast did is said with the
+// blast's own ids.
+func (y reason) Of(o reason) reason {
+	if o.by >= 0 {
+		y.by = o.by
+	}
+	if o.at >= 0 {
+		y.at = o.at
+	}
+	if o.plague >= 0 {
+		y.plague = o.plague
+	}
+	if o.blast >= 0 {
+		y.blast = o.blast
+	}
+	return y
+}
+
+// none says whether the reason is unset.
+func (y reason) none() bool { return y.key == "" }
+
+// params is the reason as a fact's parameters, under the name given.
+func (y reason) params(name string) P {
+	p := P{name: y.key}
+	if y.by >= 0 {
+		p["by"] = y.by
+	}
+	if y.at >= 0 {
+		p["at"] = y.at
+	}
+	if y.plague >= 0 {
+		p["plague"] = y.plague
+	}
+	if y.blast >= 0 {
+		p["blast"] = y.blast
+	}
+	return p
 }

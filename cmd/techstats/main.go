@@ -251,12 +251,12 @@ func flatten(w *history.World) []Rec {
 		}
 		born := max(c.Born, w.Cfg.Dawn) // a sleeper the deep pass left is counted from the dawn, not from the age it slept through
 		r := Rec{
-			Seed: w.Seed, ID: c.ID, Name: book.Text(c.Tok()), Species: book.Text("{species:" + strconv.Itoa(c.Species.ID) + "}"), Sub: c.Species.Sub.String(), World: c.Species.World.Key, Made: book.Text(c.Species.Made),
+			Seed: w.Seed, ID: c.ID, Name: book.Text(c.Tok()), Species: book.Text("{species:" + strconv.Itoa(c.Species.ID) + "}"), Sub: c.Species.Sub.String(), World: c.Species.World.Key, Made: book.Text(w.OriginText(c.Species.Made)),
 			Born: float64(born-w.Cfg.Dawn) / 1e6, Lived: float64(end-born) / 1e6,
-			Fate: c.Fate.String(), Cause: book.Text(c.Cause), Into: book.Text(c.Into), Standing: c.Active(), Origin: book.Text(c.Origin), Sick: -1, Master: c.Sire >= 0,
+			Fate: c.Fate.String(), Cause: book.Text(w.CauseText(c)), Into: book.Text(w.IntoText(c)), Standing: c.Active(), Origin: book.Text(w.OriginText(c.Origin)), Sick: -1, Master: c.Sire >= 0,
 			Peak: c.Peak, Ruled: c.Ruled, Uplifts: c.Uplifts, Channel: c.Species.Channel, Voice: string(book.Voice(c)),
 			Miracles: map[string]string{}, Learned: map[string]float64{},
-			Record: append([]string(nil), c.Record...), Mil: c.Mil, Sur: c.Sur, Soc: c.Soc,
+			Record: recordTexts(w, c), Mil: c.Mil, Sur: c.Sur, Soc: c.Soc,
 			Wis: c.Wis, PeakWis: c.PeakWis, WisFrom: history.WisdomParts(c),
 			Cycle: c.KnowsCycle, DarkAges: c.DarkAges, Renaiss: c.Renaissances,
 			Stiff: c.Stiff, Ossified: c.Ossified, Line: len(c.Line), Claims: len(c.Claim),
@@ -325,7 +325,7 @@ func flatten(w *history.World) []Rec {
 		r.Stars = c.Starfaring > 0
 		r.Rested = c.Rested
 		for _, rec := range c.Record {
-			if rec == "took to the sky" {
+			if rec.Kind == "sky" {
 				r.Aloft = true
 			}
 		}
@@ -1060,4 +1060,13 @@ func anySub(r Rec, p string) bool {
 		}
 	}
 	return false
+}
+
+// recordTexts is a people's record as the legends say it.
+func recordTexts(w *history.World, c *history.Civ) []string {
+	var out []string
+	for _, r := range c.Record {
+		out = append(out, w.RecordText(r))
+	}
+	return out
 }

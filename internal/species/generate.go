@@ -23,19 +23,6 @@ var swarm = &Entry{
 // than from their group; each Entry's key is the trait's.
 var TraitRolls = []*Entry{swarm}
 
-// groupRolls is the trait groups in the order they are drawn, with the
-// chance of drawing one at all. An own group is drawn only for a people
-// whose entries list it.
-var groupRolls = []struct {
-	group  string
-	chance float64
-	own    bool
-}{
-	{"org", 1, false}, {"stance", 1, false}, {"honour", 1, false}, {"drive", 1, false},
-	{"bio", 0.5, false}, {"sense", 0.4, false}, {"power", 0.006, false},
-	{"rider", 1, true}, {"way", 0.08, false}, {"seat", 1, true},
-}
-
 // Options steer a roll. The zero value is a cradle roll with the
 // proposal's numbers.
 type Options struct {
@@ -152,19 +139,19 @@ func Roll(r *rand.Rand, mult int, o Options) *Species {
 		return pickWeighted(r, poolFor(group, s), func(t *Trait) float64 { return t.Weight * tilt(t.Key) })
 	}
 	for _, g := range groupRolls {
-		if (g.own && !owned(g.group)) || skips(g.group) {
+		if (g.Own && !owned(g.Group)) || skips(g.Group) {
 			continue
 		}
-		chance := g.chance
+		chance := g.Chance
 		for _, e := range carried {
-			if v, ok := e.draw(o.Legacy).Groups[g.group]; ok {
+			if v, ok := e.draw(o.Legacy).Groups[g.Group]; ok {
 				chance *= v
 			}
 		}
 		if chance < 1 && r.Float64() >= chance {
 			continue
 		}
-		switch g.group {
+		switch g.Group {
 		case "seat":
 			if s.Has("nomadic") {
 				s.Add("throne") // a nomad hive's queen is a fleet
@@ -177,7 +164,7 @@ func Roll(r *rand.Rand, mult int, o Options) *Species {
 			}
 			continue
 		}
-		s.Add(pick(g.group).Key)
+		s.Add(pick(g.Group).Key)
 	}
 	s.Channel = rollChannel(r, s)
 	if !s.Profile().Can(Researches) {
@@ -230,7 +217,7 @@ func poolFor(group string, s *Species) []*Trait {
 		if t.Group != group || t.Weight <= 0 {
 			continue
 		}
-		if t.Fit != nil && (s == nil || !t.Fit(s)) {
+		if !t.fits(s) {
 			continue
 		}
 		out = append(out, t)

@@ -9,11 +9,10 @@ import "worldgen/internal/mind"
 // own (history's sunder.go). Memetic plagues at twice the odds: one mind is
 // one infection. Born to the voice at five times the rate.
 var hive = &ModDef{Mod: Hive, Entry: Entry{
-	Key:      "hive",
-	Portrait: "They are one mind.",
-	Legacy:   Draw{Base: 10.0 / 102, Tilts: map[string]float64{"unconscious": 0}, Skip: []string{"org"}}, // the old org-group weight
-	Draws:    Draw{Base: 1.0 / 10, Tilts: map[string]float64{"unconscious": 2, "replicator": 3, "born_voice": 5}, Skip: []string{"org"}},
-	Own:      []string{"seat"},
+	Key:    "hive",
+	Legacy: Draw{Base: 10.0 / 102, Tilts: map[string]float64{"unconscious": 0}, Skip: []string{"org"}}, // the old org-group weight
+	Draws:  Draw{Base: 1.0 / 10, Tilts: map[string]float64{"unconscious": 2, "replicator": 3, "born_voice": 5}, Skip: []string{"org"}},
+	Own:    []string{"seat"},
 	Profile: Profile{
 		Mil: 0.5, Soc: 2.5,
 		Dom:        M{"society": 0.6, "computation": 0.8},

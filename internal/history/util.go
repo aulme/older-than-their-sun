@@ -44,8 +44,12 @@ func sortedInts[V any](m map[int]V) []int {
 
 func sprintf(format string, args ...any) string { return fmt.Sprintf(format, args...) }
 
-func (w *World) trace(star int, kind string, civ int) {
-	w.Traces = append(w.Traces, Trace{Star: star, Kind: kind, Civ: civ, Year: w.Now})
+func (w *World) trace(star int, kind string, c *Civ) {
+	t := Trace{Star: star, Kind: kind, Civ: -1, Species: -1, Year: w.Now}
+	if c != nil {
+		t.Civ, t.Species = c.ID, c.Species.ID
+	}
+	w.Traces = append(w.Traces, t)
 }
 
 // Names. The simulation works on ids and never holds a name; a line that
@@ -135,22 +139,15 @@ func systems(n int) string {
 
 func clamp(x, lo, hi float64) float64 { return math.Max(lo, math.Min(hi, x)) }
 
-// LevelName turns a level into words.
+// LevelName turns a level into words: the first band of data/levels.json
+// it is below, the last for anything above.
 func LevelName(x float64) string {
-	switch {
-	case x < 1.5:
-		return "negligible"
-	case x < 3:
-		return "weak"
-	case x < 5:
-		return "modest"
-	case x < 7:
-		return "strong"
-	case x < 8.5:
-		return "formidable"
-	default:
-		return "overwhelming"
+	for _, b := range tables.bands {
+		if b.Below == 0 || x < b.Below {
+			return b.Word
+		}
 	}
+	return ""
 }
 
 func percent(x float64) string {
@@ -162,3 +159,13 @@ func percent(x float64) string {
 
 // itoa is strconv.Itoa, for keys.
 func itoa(n int) string { return strconv.Itoa(n) }
+
+// atoi is strconv.Atoi for a key's id part; a key is well formed by
+// construction, so a bad one is a bug.
+func atoi(s string) int {
+	n, err := strconv.Atoi(s)
+	if err != nil {
+		panic("history: bad id in key: " + s)
+	}
+	return n
+}

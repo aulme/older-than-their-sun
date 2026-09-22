@@ -16,18 +16,6 @@ import (
 // never face the miracle's filter. A miracle held by wielding lasts as long
 // as the wielded thing does.
 
-// miracleNames is how the legends say each miracle.
-var miracleNames = map[string]string{
-	"ansible":            "the Voice, minds that speak across any distance",
-	"directed_evolution": "the Flesh, a body for every world",
-	"ftl":                "the Door, a way between the stars faster than light",
-	"unmaking":           "the Unmaking, the end of matter at any distance",
-	"chorus":             "the Chorus, thought that takes root in any mind",
-	"foresight":          "the Sight, knowledge of what is coming",
-	"ember":              "the Ember, a fire that should not burn",
-	"manna":              "the Manna, a thing that feeds them and does not stop",
-}
-
 // gain records a miracle gained by leap, find or wielding, and starts the
 // surge: for a while the holder grows and learns at a rate nothing else can
 // match. Gaining one also renews a people; whatever they were tired of, they
@@ -222,14 +210,14 @@ func (w *World) loseMiracle(c *Civ, key string) {
 
 // remake turns a people into a successor species on the same worlds, the
 // Flesh gone wrong or gone too far.
-func (w *World) remake(c *Civ, why string) *Civ {
+func (w *World) remake(c *Civ, why reason) *Civ {
 	var sp *species.Species
 	if w.R.Float64() < 0.5 {
 		sp = species.GenerateWith(w.R, w.G.Stars[c.Home].Mult, "", species.Biological, species.Evolver)
 	} else {
 		sp = species.Generate(w.R, w.G.Stars[c.Home].Mult)
 	}
-	sp.Made = "what the " + c.Tok() + " made of themselves"
+	sp.Made = species.MadeBy("remade", c.ID)
 	sp.Parent = c.Species
 	worlds := append([]int(nil), c.Systems...)
 	known := knownOf(c)
@@ -255,14 +243,14 @@ func (w *World) remake(c *Civ, why string) *Civ {
 		nc.Faced["brood"] = true
 	}
 	w.recompute(nc)
-	c.Into = "the " + nc.Tok()
-	w.event(KRemade, c, nc, -1, P{"desc": sp.Describe()})
+	c.Into, c.IntoCivs = "people", []int{nc.ID}
+	w.event(KRemade, c, nc, -1, P{"traits": sp.TraitKeys()})
 	return nc
 }
 
 func init() {
 	def(&Filter{
-		Key: "openline", Name: "the Open Line", Levels: []string{"soc"}, Diff: 6, Domain: "society",
+		Key: "openline",
 		Overcome: func(w *World, c *Civ) {
 			w.faced(c, "openline", "overcome", "", -1)
 		},
@@ -276,18 +264,18 @@ func init() {
 			w.tear(0.6)
 			if w.R.Float64() < 0.65 {
 				w.loseMiracle(c, "ansible")
-				w.contract(c, "heard what else was on the line, closed it, and forgot how to open it")
+				w.contract(c, because("openline_closed"))
 				return
 			}
 			home := c.Home
-			w.endCiv(c, Transformed, "became one voice")
-			c.Into = "one voice"
+			w.endCiv(c, Transformed, because("one_voice"))
+			c.Into = "one_voice"
 			w.makeTransmitter(home, c.ID, true)
 			w.faced(c, "openline", "declined", "", home)
 		},
 	})
 	def(&Filter{
-		Key: "brood", Name: "the Brood", Levels: []string{"soc"}, Diff: 6, Domain: "biology",
+		Key: "brood",
 		Overcome: func(w *World, c *Civ) {
 			w.faced(c, "brood", "overcome", "", -1)
 		},
@@ -302,22 +290,22 @@ func init() {
 		},
 		Decline: func(w *World, c *Civ) {
 			if w.R.Float64() < 0.5 {
-				w.remake(c, "remade themselves once too often")
+				w.remake(c, because("remade"))
 				return
 			}
 			// what they bred eats them: a swarm of flesh that makes more of itself, at one of their worlds, and the old people gone
 			s := w.aWorld(c)
 			w.faced(c, "brood", "declined", "", s)
-			w.loseSystem(c, s, "stripped world", "were eaten by what they bred")
-			w.endCiv(c, Extinct, "were eaten by what they bred")
-			if nc := w.replicatorAt(s, species.Biological, "what the "+c.Tok()+" bred", false); nc != nil {
+			w.loseSystem(c, s, "stripped", because("brood_eaten"))
+			w.endCiv(c, Extinct, because("brood_eaten"))
+			if nc := w.replicatorAt(s, species.Biological, species.MadeBy("bred", c.ID), false); nc != nil {
 				nc.Species.Parent = c.Species
-				w.event(KNamedItself, nc, nil, s, P{"way": "", "desc": nc.Species.Describe()})
+				w.event(KNamedItself, nc, nil, s, P{"way": "", "traits": nc.Species.TraitKeys()})
 			}
 		},
 	})
 	def(&Filter{
-		Key: "unmaking", Name: "the Unmaking", Levels: []string{"soc"}, Diff: 6.5, Domain: "society",
+		Key: "unmaking",
 		Overcome: func(w *World, c *Civ) {
 			w.faced(c, "unmaking", "overcome", "", -1)
 		},
@@ -333,23 +321,23 @@ func init() {
 			}
 			c.Scars[ScarBurningSky] = true
 			w.tear(0.3)
-			w.blast(s, 4, "a test of the Unmaking", "unmaking_test", c, 1)
+			w.blast(s, 4, "unmaking_test", c, 1, -1)
 		},
 		Decline: func(w *World, c *Civ) {
 			home := c.Home
 			w.tear(0.6)
 			w.faced(c, "unmaking", "declined", "", -1)
-			w.blast(home, 6, "the Unmaking turned inward", "unmaking_inward", nil, 2)
+			w.blast(home, 6, "unmaking_inward", nil, 2, -1)
 			if c.Active() && contains(c.Systems, home) {
-				w.loseSystem(c, home, "unmade world", "unmade their own world")
+				w.loseSystem(c, home, "unmade", because("unmade_own"))
 			}
 			if c.Active() {
-				w.contract(c, "unmade their own world and fled what was left")
+				w.contract(c, because("unmade_own_fled"))
 			}
 		},
 	})
 	def(&Filter{
-		Key: "chorus", Name: "the Chorus", Levels: []string{"soc"}, Diff: 6, Domain: "society",
+		Key: "chorus",
 		Overcome: func(w *World, c *Civ) {
 			w.faced(c, "chorus", "overcome", "", -1)
 		},
@@ -360,18 +348,18 @@ func init() {
 		Decline: func(w *World, c *Civ) {
 			if w.R.Float64() < 0.65 {
 				w.loseMiracle(c, "chorus")
-				w.contract(c, "lost themselves in their own chorus")
+				w.contract(c, because("chorus_lost"))
 				return
 			}
 			home := c.Home
-			w.endCiv(c, Transformed, "became the thought they were thinking")
-			c.Into = "a chorus"
+			w.endCiv(c, Transformed, because("chorus_became"))
+			c.Into = "chorus"
 			w.makeTransmitter(home, c.ID, true)
 			w.faced(c, "chorus", "declined", "", home)
 		},
 	})
 	def(&Filter{
-		Key: "sight", Name: "the Sight", Levels: []string{"soc"}, Diff: 6, Domain: "society",
+		Key: "sight",
 		Overcome: func(w *World, c *Civ) {
 			w.faced(c, "sight", "overcome", "", -1)
 		},
@@ -383,7 +371,7 @@ func init() {
 		},
 		Decline: func(w *World, c *Civ) {
 			w.tear(1)
-			w.contract(c, "saw what was coming and sat down to wait for it")
+			w.contract(c, because("sight_waited"))
 		},
 	})
 }

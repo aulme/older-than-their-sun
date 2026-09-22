@@ -14,11 +14,11 @@ func (w *World) cosmic() {
 	w.flares()
 	if w.chance(0.00015 * min(w.Law.Youth, 5)) {
 		origin := w.R.IntN(len(w.G.Stars))
-		w.blast(origin, 15+w.R.Float64()*15, "a gamma-ray burst", "burst", nil, 0)
+		w.blast(origin, 15+w.R.Float64()*15, "burst", nil, 0, -1)
 	}
 	if w.chance(0.00003 * min(w.Law.Crowd, 30)) {
 		origin := w.R.IntN(len(w.G.Stars))
-		w.blast(origin, 6, "a passing dark mass", "dark_mass", nil, 1)
+		w.blast(origin, 6, "dark_mass", nil, 1, -1)
 	}
 }
 
@@ -32,7 +32,7 @@ func (w *World) starDeaths() {
 		if Year(s.DiesAt) <= w.Now {
 			if s.Massive() {
 				s.Kill()
-				w.blast(i, 30, "the supernova of "+w.star(i), "supernova", nil, 1)
+				w.blast(i, 30, "supernova", nil, 1, -1)
 				continue
 			}
 			cid := w.Owner[i]
@@ -41,10 +41,10 @@ func (w *World) starDeaths() {
 			if cid >= 0 {
 				c := w.Civs[cid]
 				if i == c.Home && c.Active() {
-					w.leaveHome(c, sprintf("the death of %s", w.star(c.Home)))
+					w.leaveHome(c, because("star_death").At(c.Home))
 				} else {
 					w.fact(FStarDied, c, nil, i)
-					w.loseSystem(c, i, "frozen world", sprintf("lost their last world to the death of %s", w.star(i)))
+					w.loseSystem(c, i, "frozen", because("last_world_star_died").At(i))
 				}
 			} else if w.Bio[i] != BioNone {
 				w.event(KStarDead, nil, nil, i, P{})
@@ -57,11 +57,14 @@ func (w *World) starDeaths() {
 	}
 }
 
-// blast applies a cosmic filter to everyone inside a radius. What is
-// the thing as a cause reads; way is the line's key, and by whose doing
-// it was, if it was anyone's.
-func (w *World) blast(origin int, radius float64, what, way string, by *Civ, adj float64) {
-	w.event(KBlast, by, nil, origin, P{"way": way})
+// blast applies a cosmic filter to everyone inside a radius. Way is the
+// blast's key, by whose doing it was, if it was anyone's, and legacy the
+// remain that failed, if one did; what the blast was, as a cause reads,
+// is the blast event itself (blastRef).
+func (w *World) blast(origin int, radius float64, way string, by *Civ, adj float64, legacy int) {
+	b := w.event(KBlast, by, nil, origin, P{"way": way})
+	b.Legacy = legacy
+	w.blastRef = because("blast").Blast(b.ID)
 	inside := append(w.G.Near(origin, radius), origin)
 	hit := map[int][]int{}
 	for _, s := range inside {
@@ -94,7 +97,7 @@ func (w *World) blast(origin int, radius float64, what, way string, by *Civ, adj
 		}
 		if !c.Active() {
 			for _, s := range worlds {
-				w.loseSystem(c, s, "scoured world", "were sterilised by "+what)
+				w.loseSystem(c, s, "scoured", because("sterilised").Of(w.blastRef))
 			}
 			continue
 		}
@@ -103,17 +106,16 @@ func (w *World) blast(origin int, radius float64, what, way string, by *Civ, adj
 			adj++
 		}
 		w.blastWorlds = worlds
-		w.blastWhat = what
 		w.face(c, "cosmic", adj)
 	}
 }
 
 // leaveHome moves a civilisation's home to another of its worlds, or ends it.
-func (w *World) leaveHome(c *Civ, why string) {
+func (w *World) leaveHome(c *Civ, why reason) {
 	old := c.Home
 	if !c.Species.Profile().Can(species.Reseats) {
 		w.event(KCannotLeave, c, nil, c.Home, P{})
-		w.endCiv(c, Extinct, sprintf("died with their star, %s", w.star(c.Home)))
+		w.endCiv(c, Extinct, because("star_died").At(c.Home))
 		return
 	}
 	best, bd := -1, 1e9
@@ -123,16 +125,16 @@ func (w *World) leaveHome(c *Civ, why string) {
 		}
 	}
 	if best < 0 {
-		w.loseSystem(c, old, "burned cradle", sprintf("died with their star, %s", w.star(c.Home)))
+		w.loseSystem(c, old, "burned_cradle", because("star_died").At(c.Home))
 		return
 	}
 	c.Systems = remove(c.Systems, old)
 	w.Owner[old] = -1
-	w.trace(old, "burned cradle", c.ID)
+	w.trace(old, "burned_cradle", c)
 	c.Home = best
 	c.Dying = false
 	c.Morale -= 1
-	w.fact(FLeftStar, c, nil, old).with(P{"why": why, "to": best})
+	w.fact(FLeftStar, c, nil, old).with(P{"to": best}).with(why.params("why"))
 }
 
 // dyingSun is the slow filter: a failing home star degrades the world every
@@ -167,16 +169,16 @@ func (w *World) dyingSun(c *Civ) {
 	c.Endure -= w.dt
 	if c.Endure > 0 {
 		if len(c.Systems) > 1 && c.Endure < 200 && w.chance(0.2) {
-			w.leaveHome(c, "the failing of its sun")
+			w.leaveHome(c, because("sun_failing"))
 		}
 		return
 	}
 	if len(c.Systems) > 1 {
-		w.leaveHome(c, "the failing of its sun")
+		w.leaveHome(c, because("sun_failing"))
 		return
 	}
 	w.event(KEndured, c, nil, c.Home, P{})
-	w.loseSystem(c, c.Home, "burned cradle", sprintf("died with their star, %s", w.star(c.Home)))
+	w.loseSystem(c, c.Home, "burned_cradle", because("star_died").At(c.Home))
 }
 
 func pow(x, y float64) float64 {
@@ -203,7 +205,7 @@ func sqrt(x float64) float64 {
 
 func init() {
 	def(&Filter{
-		Key: "cosmic", Name: "the burning sky", Levels: []string{"sur"}, Diff: 4.5, Repeat: true, Domain: "biology",
+		Key: "cosmic",
 		Overcome: func(w *World, c *Civ) {
 			w.faced(c, "cosmic", "overcome", "", -1)
 		},
@@ -211,7 +213,7 @@ func init() {
 			c.Scars[ScarBurningSky] = true
 			for _, s := range w.blastWorlds {
 				if s != c.Home {
-					w.loseSystem(c, s, "scoured world", "")
+					w.loseSystem(c, s, "scoured", reason{})
 				}
 			}
 			w.faced(c, "cosmic", "scarred", "", c.Home)
@@ -220,7 +222,7 @@ func init() {
 			homeHit := contains(w.blastWorlds, c.Home)
 			for _, s := range w.blastWorlds {
 				if s != c.Home {
-					w.loseSystem(c, s, "scoured world", "were sterilised by "+w.blastWhat)
+					w.loseSystem(c, s, "scoured", because("sterilised").Of(w.blastRef))
 				}
 			}
 			if !c.Active() {
@@ -228,17 +230,17 @@ func init() {
 			}
 			if homeHit {
 				if len(c.Systems) > 1 && c.Reach >= 10 {
-					w.leaveHome(c, "the burning sky")
+					w.leaveHome(c, because("burning_sky"))
 				} else {
-					w.loseSystem(c, c.Home, "scoured world", "were sterilised by "+w.blastWhat)
+					w.loseSystem(c, c.Home, "scoured", because("sterilised").Of(w.blastRef))
 				}
 			} else {
-				w.contract(c, "lost their colonies to "+w.blastWhat+" and drew in")
+				w.contract(c, because("blast_drew_in").Of(w.blastRef))
 			}
 		},
 	})
 	def(&Filter{
-		Key: "dying", Name: "the dying sun", Levels: []string{"sur"}, Diff: 5,
+		Key:      "dying",
 		Overcome: func(w *World, c *Civ) {}, Scar: func(w *World, c *Civ) {}, Decline: func(w *World, c *Civ) {},
 	})
 }

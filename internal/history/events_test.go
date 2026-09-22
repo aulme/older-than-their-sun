@@ -70,19 +70,22 @@ func TestParams(t *testing.T) {
 	t.Logf("%d events of %d kinds, %d kinds of %d in the table seen", len(w.Events), len(seen), len(seen), len(kindDefs))
 }
 
-// TestLinesUnread: the chronicle's templates are the view's; nothing in
-// the simulation reads them, so the text is free to change.
+// TestLinesUnread: the chronicle's templates and the view's renderers
+// are the view's (lines.go, describe.go); nothing in the simulation
+// reads them, so the text is free to change. The tellings (telling.go)
+// render too, and the simulation reads only their weights.
 func TestLinesUnread(t *testing.T) {
 	files, _ := filepath.Glob("*.go")
 	for _, file := range files {
-		if strings.HasSuffix(file, "_test.go") || file == "lines.go" {
+		if strings.HasSuffix(file, "_test.go") || file == "lines.go" || file == "describe.go" || file == "telling.go" {
 			continue
 		}
 		src, err := os.ReadFile(file)
 		if err != nil {
 			t.Fatal(err)
 		}
-		for _, ident := range []string{"w.Line(", "lines[", "lineFns[", "facedLines[", "blastLines["} {
+		for _, ident := range []string{"w.Line(", "lines[", "lineFns[", "facedLines[", "blastLines[", "harnessLines[", "rarityLines[", "roadPhrases[", "beneathNames[",
+			"legacyDesc(", "describeAt(", "whyText(", "reasonText(", "sourceName(", "traceName(", "OriginText(", "CauseText(", "IntoText(", "WarCause(", "WarResult(", "BetrayalText(", "RecordText(", "useName(", "driftText(", "blastText(", "portraitText(", "conditionText(", "traceText("} {
 			if strings.Contains(string(src), ident) {
 				t.Errorf("%s reads the chronicle's templates (%s)", file, ident)
 			}

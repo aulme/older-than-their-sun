@@ -13,10 +13,8 @@ import "worldgen/internal/mind"
 // and wakes when someone settles inside its reach or the Find unleashes
 // it. A monster to everyone by rule; usually a hive and often unconscious.
 var replicator = &ModDef{Mod: Replicator, Entry: Entry{
-	Key:      "replicator",
-	Portrait: "They make more of themselves out of whatever they find.",
-	Flavour:  Flavour{"growth", "spore", "mass"},
-	Legacy:   Draw{Base: 0},
+	Key:    "replicator",
+	Legacy: Draw{Base: 0},
 	Draws: Draw{Base: 1.0 / 100, Tilts: map[string]float64{"evolver": 2, "dormancy": 10, "hive": 4, "unconscious": 3,
 		// its stance is its appetite: it comes for what it can reach, and never for terms
 		"conqueror": 20, "opportunist": 3, "unyielding": 3, "vengeful": 0.5, "defensive": 0.1, "pacifist": 0, "submissive": 0, "confederate": 0,

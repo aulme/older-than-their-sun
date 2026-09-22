@@ -90,8 +90,8 @@ func TestEmbargo(t *testing.T) {
 	if !a.Embargo[b.ID] || facts() != 1 {
 		t.Errorf("an embargo that lasts wrote %d facts", facts())
 	}
-	if w.cause(b, a) != "the embargo" {
-		t.Errorf("b's cause against a is %q", w.cause(b, a))
+	if w.cause(b, a).key != "embargo" {
+		t.Errorf("b's cause against a is %q", w.cause(b, a).key)
 	}
 	// relenting lifts it
 	a.monsters = nil
@@ -119,7 +119,7 @@ func TestCutOffDarkens(t *testing.T) {
 	if !b.Dependent[a.ID] {
 		t.Fatalf("b is not dependent on a: own income %v, working need %v", b.Income.Less(b.Received), b.WorkingNeed)
 	}
-	w.declare(a, b, "a test")
+	w.declare(a, b, because("border"))
 	if !b.Shed["firearms"] {
 		t.Error("the war came and b's firearms stayed fed")
 	}
@@ -144,7 +144,7 @@ func TestPartnerSharesRarity(t *testing.T) {
 	n := tech.Get("causal_physics")
 	full := w.price(b, n)
 	soc := b.Soc
-	w.addSource(&Source{Key: "horizon", Name: "a horizon", Kind: CosmicSource, Star: a.Home, Rarity: true, Grants: []string{"causal_physics"}, Levels: [3]float64{0, 0, 0.5}, Yield: flow.Income{flow.E: 5}, Holder: -1, Carried: -1, Legacy: -1})
+	w.addSource(&Source{Key: "horizon", Kind: CosmicSource, Star: a.Home, Rarity: true, Grants: []string{"causal_physics"}, Levels: [3]float64{0, 0, 0.5}, Yield: flow.Income{flow.E: 5}, Holder: -1, Carried: -1, Legacy: -1})
 	w.flows(a)
 	w.flows(b)
 	if got := w.price(b, n); got != full/2 {
@@ -160,7 +160,7 @@ func TestPartnerSharesRarity(t *testing.T) {
 		t.Errorf("b takes the yield of a's horizon: income %v", w.income(b))
 	}
 	// a mobile thing of a's is not shared
-	w.addSource(&Source{Key: "artifact", Name: "a thing", Kind: MadeSource, Star: a.Home, Mobile: true, Rarity: true, Levels: [3]float64{1, 0, 0}, Holder: a.ID, Carried: -1, Legacy: -1})
+	w.addSource(&Source{Key: "artifact", Kind: MadeSource, Star: a.Home, Mobile: true, Rarity: true, Levels: [3]float64{1, 0, 0}, Holder: a.ID, Carried: -1, Legacy: -1})
 	w.flows(b)
 	if b.Rare["artifact"] {
 		t.Error("b has the use of a's mobile artifact")
