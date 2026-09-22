@@ -521,10 +521,15 @@ type Config struct {
 	// people is due, and the peoples are staggered so no tick bears
 	// them all. 0 means 1. See specs/plan.md, step 6.
 	WearEvery int
-	Debug     bool         // log the state of the galaxy every million years
-	TraceAI   bool         // log every council's reasoning
-	Profile   bool         // log each phase's time every million years
-	Tuning    *mind.Tuning // every number the decisions use; nil means mind.Default()
+	// Sample, when set, is called once a tick after the phases have
+	// run, for a measurement that wants the state of the galaxy as the
+	// age goes by. It draws nothing and writes nothing, so a sampled
+	// run is the same history as an unsampled one.
+	Sample  func(*World)
+	Debug   bool         // log the state of the galaxy every million years
+	TraceAI bool         // log every council's reasoning
+	Profile bool         // log each phase's time every million years
+	Tuning  *mind.Tuning // every number the decisions use; nil means mind.Default()
 }
 
 // DefaultConfig is a small, fast world.

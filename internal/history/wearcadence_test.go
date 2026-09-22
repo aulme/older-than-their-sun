@@ -5,6 +5,7 @@ import (
 	"math/rand/v2"
 	"os"
 	"testing"
+	"time"
 
 	"worldgen/internal/species"
 )
@@ -105,5 +106,55 @@ func fillTelling(w *World, c *Civ, n, rep int) {
 		e := &Event{ID: len(w.Events), Year: w.Now - age, Kind: k, Subject: c.ID + 1 + i%3, Object: c.ID, Star: -1, Plague: -1}
 		w.Events = append(w.Events, e)
 		c.Lore = append(c.Lore, &Tale{Fact: e.ID, Learned: w.Now - age, Source: Witnessed, From: -1, Blamed: -1})
+	}
+}
+
+// TestWearCost is the other half of the cadence question: what the
+// wearing costs at each cadence. It is asked the same way and for the
+// same reason — a run at another cadence is another history, so its
+// total time says nothing — and it is asked in one process, cadence
+// after cadence, so no two measurements contend for a core.
+//
+// The draws are the number to trust: they are deterministic, and they
+// are what says whether the work really fell.
+//
+//	WEAR=1 go test ./internal/history -run TestWearCost -v
+func TestWearCost(t *testing.T) {
+	if os.Getenv("WEAR") == "" {
+		t.Skip("a measurement, not a gate: set WEAR=1 to run it")
+	}
+	const reps, tales, ticks = 40, 400, 600
+	t.Logf("%d runs of %d tales over %d ticks each", reps, tales, ticks)
+	t.Logf("%6s %12s %14s %10s %10s", "every", "ms", "draws", "of every 1", "saved")
+	var base time.Duration
+	var baseDraws uint64
+	for _, every := range []int{1, 2, 4, 8, 16} {
+		var el time.Duration
+		var draws uint64
+		for rep := range reps {
+			cfg := DefaultConfig()
+			cfg.Stars, cfg.Profile, cfg.WearEvery = 30, true, every
+			w := newWorld(uint64(1000+rep), cfg)
+			w.dt, w.Now = float64(cfg.Step)/1000, cfg.Dawn
+			c := spawnAt(w, 0, species.GenerateWith(w.R, 1, "lush", species.Biological, 0))
+			fillTelling(w, c, tales, rep)
+			before := w.draws.n
+			start := time.Now()
+			for range ticks {
+				w.Ticks++
+				w.Now += w.Cfg.Step
+				w.wear(c)
+			}
+			el += time.Since(start)
+			draws += w.draws.n - before
+		}
+		if every == 1 {
+			base, baseDraws = el, draws
+			t.Logf("%6d %12d %14d %10s %10s", every, el.Milliseconds(), draws, "-", "-")
+			continue
+		}
+		share := float64(draws) / float64(baseDraws)
+		t.Logf("%6d %12d %14d %10.3f %9.1f%%", every, el.Milliseconds(), draws, share, 100*(1-share))
+		_ = base
 	}
 }

@@ -179,6 +179,9 @@ func (w *World) runAge() {
 	for {
 		w.Now = y
 		w.runPhases()
+		if cfg.Sample != nil {
+			cfg.Sample(w)
+		}
 		active := w.risingCount()
 		f := w.fertility()
 		if (y-cfg.Dawn)%1_000_000 == 0 {
