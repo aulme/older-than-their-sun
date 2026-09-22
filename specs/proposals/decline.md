@@ -1,6 +1,8 @@
 # Decline: what the waning and the end of the age are made of
 
-**Status:** Sharpened 2026-09-22 (`specs/plan.md` step 6), on eight seeds sampled through the whole age. The Design section is the specification; the Stages section is the unit of work. Built at plan step 7, after the random stream per people, which is what makes the tuning here measurable.
+**Status:** Sharpened 2026-09-22 (`specs/plan.md` step 6), on eight seeds sampled through the whole age. The Design section is the specification; the Stages section is the unit of work.
+
+**Stages 1 and 2 are plan step 7**, after the random stream per people, which is what makes the tuning here measurable. **Stage 3, the force, moved to `empires.md`** (plan step 10): the attrition this proposal specifies and the separatism that proposal specifies are the same check with two outcomes, and building the quiet one now and the loud one later would be building it twice, at a regeneration of the batch each time. The fertility end is therefore kept as a floor from step 7 until that stage lands, exactly as the staging below already says; the stage-3 gate below is inherited by `empires.md` unchanged.
 **Last updated:** 2026-09-22
 
 ## Problem
