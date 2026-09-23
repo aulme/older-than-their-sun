@@ -10,6 +10,7 @@ import (
 	"strconv"
 
 	"worldgen/internal/record"
+	"worldgen/internal/warshape"
 )
 
 // WarRec is one war, for wars.jsonl.
@@ -287,4 +288,20 @@ func sortedByCount(m map[string]int) []string {
 	ks := sortedKeys(m)
 	sort.SliceStable(ks, func(i, j int) bool { return m[ks[i]] > m[ks[j]] })
 	return ks
+}
+
+// warShapeReport is the war gate's measurement (specs/proposals/war.md):
+// the seven patterns, the vassal's lot and the health, per seed and over
+// the batch, as TestWarShape prints them.
+func warShapeReport(out io.Writer, shapes []*warshape.Shape) {
+	fmt.Fprint(out, "\n## The shape of war\n\n")
+	for _, l := range warshape.Report(shapes) {
+		switch {
+		case l == "":
+		case l[0] == '|':
+			fmt.Fprintln(out, l)
+		default:
+			fmt.Fprintf(out, "\n%s\n", l)
+		}
+	}
 }

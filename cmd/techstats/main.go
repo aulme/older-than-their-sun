@@ -24,6 +24,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"worldgen/internal/flow"
 	"worldgen/internal/galaxy"
@@ -32,6 +33,7 @@ import (
 	"worldgen/internal/mind"
 	"worldgen/internal/record"
 	"worldgen/internal/tech"
+	"worldgen/internal/warshape"
 	"worldgen/internal/writer"
 )
 
@@ -161,6 +163,7 @@ func main() {
 		oss     OssRec
 		kinds   KindRec
 		dec     DeclineRec
+		shape   *warshape.Shape
 		stats   string
 		ages    float64
 	}
@@ -176,6 +179,7 @@ func main() {
 		go func(i int) {
 			defer wg.Done()
 			var r *record.Run
+			start := time.Now()
 			if paths != nil {
 				var err error
 				if r, err = record.Load(paths[i]); err != nil {
@@ -189,12 +193,17 @@ func main() {
 				cfg.Tuning = tune
 				r = writer.Run(history.Generate(seed, cfg), *at)
 			}
+			took := time.Since(start)
 			w := &world{Run: r, rd: legends.Open(r)}
 			var sb strings.Builder
 			legends.Stats(&sb, r)
 			sights, meets, fleets, fields := flattenSightings(w)
 			ks, sells := flattenContracts(w)
-			runs[i] = run{ks: ks, sells: sells, bloc: flattenBlocs(w), plagues: flattenPlagues(w), oss: flattenOss(w), kinds: flattenKinds(w), dec: flattenDecline(w), seed: w.seed(), recs: flatten(w), wars: flattenWars(w), base: flattenWarBase(w), battles: flattenBattles(w), sights: sights, meets: meets, fleets: fleets, fields: fields, pairs: flattenPairs(w), stats: sb.String(), ages: float64(w.Dossier.Present-w.Dossier.Dawn) / 1e6}
+			shape := warshape.Read(r)
+			if paths == nil {
+				shape.Took = took
+			}
+			runs[i] = run{shape: shape, ks: ks, sells: sells, bloc: flattenBlocs(w), plagues: flattenPlagues(w), oss: flattenOss(w), kinds: flattenKinds(w), dec: flattenDecline(w), seed: w.seed(), recs: flatten(w), wars: flattenWars(w), base: flattenWarBase(w), battles: flattenBattles(w), sights: sights, meets: meets, fleets: fleets, fields: fields, pairs: flattenPairs(w), stats: sb.String(), ages: float64(w.Dossier.Present-w.Dossier.Dawn) / 1e6}
 		}(i)
 	}
 	wg.Wait()
@@ -215,6 +224,7 @@ func main() {
 	var oss []OssRec
 	var kinds []KindRec
 	var decs []DeclineRec
+	var shapes []*warshape.Shape
 	var stats []string
 	ageSum := 0.0
 	for _, r := range runs {
@@ -234,6 +244,7 @@ func main() {
 		oss = append(oss, r.oss)
 		kinds = append(kinds, r.kinds)
 		decs = append(decs, r.dec)
+		shapes = append(shapes, r.shape)
 		stats = append(stats, r.stats)
 		ageSum += r.ages
 	}
@@ -246,6 +257,7 @@ func main() {
 	defer f.Close()
 	report(f, recs, *seeds, *from, *at, ageSum/float64(*seeds))
 	warReport(f, recs, wars, bases, *seeds)
+	warShapeReport(f, shapes)
 	exploreReport(f, recs)
 	loreReport(f, recs)
 	meansReport(f, recs)

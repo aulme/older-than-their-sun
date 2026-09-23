@@ -900,6 +900,47 @@ A people meets 95.8 others on average; 18.0% never meet anyone. 949 peoples were
 
 187 peoples born with the way (4.2%); 165 took to the sky (88.2% of them), 25 came to rest again. Those who flew lived 1.33 Myr at the median; nomads who never reached the sky 0.41.
 
+## The shape of war
+
+| seed | peoples | wars | fought | short | long | long fought | old enemies | loops | widest | world wars | border | cold | quiet | proxy | waves | first/pair | wars/kpt | index | Myr | took |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | 270 | 125 | 35 | 46% | 6% | 9% | 1 | 1 | 7/0 | 0 | - | 0 | 0 | 0/0/0 | 0 | 0.048 | 0.11 | 0.60 | 37 | 1m24s |
+| 2 | 672 | 1150 | 418 | 38% | 28% | 15% | 12 | 0 | 15/8 | 4 | 9% | 17 | 142 | 0/0/0 | 3 | 0.021 | 0.65 | 0.60 | 43 | 4m39s |
+| 3 | 344 | 210 | 110 | 11% | 51% | 6% | 10 | 0 | 6/4 | 0 | 0% | 0 | 4 | 0/0/0 | 0 | 0.090 | 0.12 | 0.47 | 54 | 2m30s |
+| 4 | 302 | 53 | 27 | 33% | 41% | 6% | 2 | 0 | 5/2 | 0 | - | 0 | 0 | 0/0/0 | 0 | 0.038 | 0.05 | 0.55 | 35 | 1m17s |
+| 5 | 363 | 398 | 214 | 31% | 49% | 7% | 11 | 1 | 10/1 | 0 | 4% | 0 | 10 | 0/0/0 | 0 | 0.064 | 0.27 | 0.64 | 38 | 2m29s |
+| 6 | 260 | 156 | 58 | 29% | 41% | 2% | 3 | 0 | 11/3 | 1 | 0% | 0 | 0 | 0/0/0 | 0 | 0.080 | 0.11 | 0.57 | 43 | 1m39s |
+| 7 | 311 | 74 | 38 | 26% | 47% | 6% | 2 | 0 | 5/3 | 0 | 0% | 0 | 0 | 0/0/0 | 0 | 0.028 | 0.04 | 0.61 | 52 | 2m42s |
+| 8 | 1409 | 1551 | 403 | 27% | 29% | 13% | 12 | 2 | 16/4 | 4 | 30% | 11 | 166 | 8/0/0 | 0 | 0.002 | 0.59 | 0.32 | 58 | 9m39s |
+| 9 | 248 | 73 | 43 | 33% | 30% | 5% | 4 | 0 | 5/2 | 0 | - | 0 | 0 | 0/0/0 | 0 | 0.164 | 0.07 | 0.40 | 41 | 1m0s |
+| 10 | 320 | 152 | 62 | 6% | 63% | 4% | 4 | 0 | 9/2 | 0 | 0% | 0 | 5 | 0/0/0 | 0 | 0.100 | 0.09 | 0.57 | 70 | 2m28s |
+
+Short: fought wars of 3 ticks or under; long: 12 or over; long fought: the median share of a long war's ticks with a battle. Old enemies: pairs with 3 fought wars or more; loops: pairs with more than 20 wars. Widest: the most peoples at war at once in one system of wars, and its fronts with a battle; world wars: systems of 8 peoples or more at once on 3 fought fronts or more. Border: of the wars between realms of 5 worlds or more, the share over within 3 ticks with a world or two taken. Cold: pairs that have fought, both large, at peace 50 kyr or more with an incident (a short war or a battle with no war); quiet: as long with none. Proxy: wars between vassals of different masters / a master's ships in them / the masters not at war. Waves: peoples that took worlds from 3 peoples or more within 50 kyr. Wars/kpt: wars per thousand people-ticks.
+
+**1 Short and long.** 3942 wars, 1408 fought (36%). Fought wars by length in ticks: 3 / 7 / 17 (max 13198). Short 29%, long 36%; the median long war has battles in 8% of its ticks.
+
+Every war by length: 2 / 7 / 19 (max 16688); unfought wars: 1 / 7 / 19 (max 16688).
+
+**2 Old enemies.** 2621 pairs have fought a war; 61 have three fought wars or more (not loops), in 10 of 10 seeds; 4 loop pairs; the most wars between one pair 92. Pairs by wars: 1: 2068, 2: 333, 3-4: 140, 5-9: 63, 10-20: 13, 21+: 4.
+
+**3 World wars.** 1680 systems of wars; peoples at war at once in a system: 2: 1205, 3: 283, 4-5: 119, 6-7: 41, 8-11: 26, 12+: 6; 9 world wars, in 3 of 10 seeds. The widest: 16 peoples on 4 fought fronts (74 wars); 15 peoples on 8 fought fronts (74 wars); 15 peoples on 5 fought fronts (35 wars); 12 peoples on 2 fought fronts (46 wars); 12 peoples on 1 fought fronts (41 wars).
+
+**4 Border disputes.** 585 wars between realms of 5 worlds or more: long 398 (68%), short, unfought 97 (17%), border: short, a world or two taken 88 (15%), short, nothing taken 2 (0%). Those over the cause "a border": 42.
+
+**5 Cold wars.** 28 pairs with a cold war, in 2 of 10 seeds; 327 quiet pairs. Battles fought in no war between their two: 0. The build-up between them is not in the record until stage 3.
+
+**6 Proxy wars.** 8 wars between vassals of different masters; 0 with a master's ships in them; 0 proxy wars, the masters not at war.
+
+**7 Conquest waves.** 3 peoples took worlds from 3 peoples or more within 50 kyr, in 1 of 10 seeds; the widest took from 4, 4, 3 peoples.
+
+**Vassalage.** Bonds begun, by how, vassal and slave: vassal by meeting 2866 (48%), slave by ridden 1169 (20%), vassal by war 645 (11%), slave by war 428 (7%), vassal by other 324 (5%), vassal by born 199 (3%), slave by meeting 161 (3%), slave by other 140 (2%), slave by born 9 (0%), vassal by ridden 3 (0%). Median years held: vassals 3 kyr (4037), slaves 5 kyr (1907). Attacks on vassals: 67, by who attacked and what the patron did: rival, the patron stayed out 31 (46%), smaller, the patron stayed out 29 (43%), by the patron 3 (4%), smaller, the patron joined 2 (3%), rival, the patron sent ships 1 (1%), smaller, the patron sent ships 1 (1%). Tribute facts (a yielding people paying in a commodity): 610. The tribute's rate, its movement and the ticks paid short are not in the record until stage 3.
+
+**Health.** Campaigns a war: the declarer 0.46, the side declared on 0.00; the side declared on struck back in 0% of fought wars; 54% of wars had no campaign. Battles a war: mean 0.73, 0 / 0 / 1 (max 12). Worlds taken a war: mean 0.65. First wars per distinct pair 0.006; wars per thousand people-ticks 0.25.
+
+How wars ended: peace 925 (23%), vassal 649 (16%), tribute 610 (15%), fall 582 (15%), enslaved 430 (11%), exhaustion 342 (9%), capitulation 149 (4%), pact_peace 120 (3%), truce 73 (2%), tore 45 (1%), extinction 7 (0%), forgot 7 (0%), unfinished 3 (0%).
+
+Ages: 38.47 / 43.38 / 54.48 Myr; decline index at the present 0.47 / 0.57 / 0.60, at the waning 0.39 / 0.41 / 0.42; 0 of 10 capped; runs 29m45s in all.
+
 ## Exploration
 
 1017 peoples of 2771 that reached the stars ever sent surveyors (36.7%); 19683 surveys in all, 19.4 per surveying people, 2.4 readings per survey. Readings of stars by any means: 203799, 45.3 per people.

@@ -173,24 +173,33 @@ So a winning realm keeps going until it is stopped, spent, or its leader falls a
 
 ## The gate: the patterns as measurements
 
-Every pattern is read from the record by a measurement that exists before anything changes (stage 0), on **twenty seeds**, per seed as well as in total — a run's war numbers have a spread wider than their middle, and `specs/notes/war-halving.md` shows a single seed can be a factor of twenty. The thresholds are set at sharpening against stage 0's baseline; the shape of each is:
+Every pattern is read from the record by a measurement that exists before anything changes (stage 0, `internal/warshape`, printed by `TestWarShape` and by `techstats`), on **twenty seeds** at 400 stars, per seed as well as in total — a run's war numbers have a spread wider than their middle, and `specs/notes/war-halving.md` shows a single seed can be a factor of twenty. The baseline is stage 0's, at `6e2af9f`'s history; the thresholds are set against it. "Most seeds" is 14 of 20.
 
-| pattern | measured as | wanted |
+| pattern | measured as | baseline (stage 0) | wanted |
+|---|---|---|---|
+| 1 short and long | fought wars (a battle in them) by length in ticks; the share of a long war's ticks with a battle | 28% of wars fought; of those 26% at three ticks or under, 42% at twelve and over; the median long war fought in 6% of its ticks; short under a quarter in 8 seeds, long in 2 | 60% of wars fought or more; a quarter or more short and a quarter or more long, in total and in most seeds; the median long war fought in a third of its ticks or more |
+| 2 old enemies | pairs with three fought wars or more and twenty wars or fewer, the wars separated by peace (a pair has one war open at a time) | 111 pairs, in 18 seeds; 25 loop pairs (more than twenty wars), the most 117 | some in most seeds, a hundred or more over the batch; loop pairs none |
+| 3 world wars | systems of wars joined by a shared people while both were open, read at their widest moment: peoples at war at once, fronts with a battle | 13 of eight peoples or more on three fought fronts or more, in 6 seeds; the widest 22 peoples on 5 fronts | at least one in most seeds |
+| 4 border disputes | wars between realms of five worlds or more when it began, over within three ticks, one or two worlds taken; the aim once stage 1 records it | 2180 such wars: 61% short and unfought, 33% long, border disputes 5% | the most common kind of war between large realms, a third of them or more |
+| 5 cold wars | pairs that have fought, both large, at peace with each other fifty thousand years or more with an incident in the stretch (a short war, or a battle with no war); each building toward the other, once stage 3 records the rival watched | 78 pairs, in 4 seeds, all without the build-up; 429 quiet pairs | some in most seeds, with the build-up |
+| 6 proxy wars | wars between vassals of different masters, a master's ships in them (a battle of its own against the other side, or a fleet sent), the masters not at war with each other | 8 wars between vassals of different masters, none with a master's ships | five or more over the batch, in three seeds or more |
+| (vassalage) | bonds by how they began (war, meeting, birth or uplift, a rider, other) and how long they lasted; attacks on vassals by who attacks (smaller than the patron, a rival power, the patron) and what the patron did (joined, sent ships, stayed out); the tribute's rate by how the bond began and by the patron's character, how it moved over the bond, the ticks it was paid short, and what the patron did about it, once stage 3 records them | vassals: 47% by meeting, 9% by war; slaves: 18% by a rider, 9% by war; both held a median of 14 to 16 kyr; 74 attacks on vassals, 46% of them by a smaller people, the patron staying out in 87% | a smaller people's attack on a great power's client rare, under a fifth of the attacks; the patron coming in most attacks, staying out a minority that the record counts against it; bonds by war more common than today, and lasting; rates spread and ordered as the character and the circumstances say, and moving both ways over a bond's life; a vassal's own fields unfed for the tribute a small minority of its ticks; tribute paid in full in most ticks, short mostly in lean ones, and some vassals paying short often enough to anger their patrons |
+| 7 conquest waves | a people taking worlds in war from three peoples or more within fifty thousand years | 3 peoples, in 1 seed, from 4, 4 and 3 | five or more over the batch, in three seeds or more, and more once `empires.md` starts them |
+
+And the health of it, printed beside, with its baseline:
+
+| | baseline (stage 0) | wanted |
 |---|---|---|
-| 1 short and long | the length in ticks of wars with a battle; battles per tick of war by length | both a quarter or more of fought wars at three ticks or under and a quarter or more at twelve and over; the long ones fought throughout, not once: the median long war has battles in a third of its ticks or more |
-| 2 old enemies | pairs with three wars or more, each fought, separated by peace | some in most seeds; loop pairs (more than twenty wars) none |
-| 3 world wars | systems of wars overlapping in time and sharing a people, with fleets on three fronts or more | at least one of eight peoples or more in most seeds |
-| 4 border disputes | wars with a world as their aim between peoples of five worlds or more, over within three ticks, a world or two changing hands | the most common kind of war between large realms |
-| 5 cold wars | rival pairs at peace for fifty thousand years or more, each building toward the other, with an incident between them | some in most seeds |
-| 6 proxy wars | wars between vassals of different masters, a master's ships in them, the masters not at war with each other | some over the batch |
-| (vassalage) | attacks on vassals by who attacks (a smaller people, a rival power), and what the patron did (joined, sent ships, stayed out); the tribute's rate by how the bond began and by the patron's character, how it moved over the bond, the ticks it was paid short, and what the patron did about it | a smaller people's attack on a great power's client rare; the patron coming in most attacks, staying out a minority that the record counts against it; rates spread and ordered as the character and the circumstances say, and moving both ways over a bond's life; a vassal's own fields unfed for the tribute a small minority of its ticks; tribute paid in full in most ticks, short mostly in lean ones, and some vassals paying short often enough to anger their patrons |
-| 7 conquest waves | a people taking worlds from three peoples or more within fifty thousand years | some over the batch, and more once `empires.md` starts them |
-
-And the health of it, printed beside: campaigns per war by side (the side declared on striking back in a third of fought wars or more), battles per war, worlds taken per war, how wars end, first wars per distinct pair, wars per thousand people-ticks, the decline index's curve, the length of the ages, nothing capped — and the batch's run time, since many more fleets are in flight.
+| campaigns a war | the declarer 0.43, the side declared on 0.00; 60% of wars with no campaign | the side declared on striking back in a third of fought wars or more (today 1%) |
+| battles, worlds taken a war | 0.57 battles (the upper quartile 1), 0.43 worlds | read, not gated: more of both is the point |
+| how wars end | tribute 19%, peace 18%, exhaustion 16%, a side's fall 12%, peace by the pact 12%, vassal 9%, enslaved 8%, capitulation 3%, truce 2% | a war that ends in a truce with nothing settled a minority; defeat and terms both common |
+| first wars per distinct pair; wars per thousand people-ticks | 0.007; 0.25 | read, not gated (`specs/notes/war-halving.md`) |
+| the age | 38 / 48 / 56 Myr; the decline index at the present 0.46 / 0.56 / 0.60, at the waning 0.40; none capped | ages inside 20 to 80 Myr, nothing capped |
+| run time | 1h30m for the twenty, seed 8 the longest at 11 minutes with the others running | within twice the baseline |
 
 ## Stages
 
-**Stage 0: the instrument.** The seven measurements and the health table, in `techstats` and in a `TestWarShape` (`WAR=1`, twenty seeds), reading the record only. No behaviour change: `TestSameHistory` and the legends digest do not move. It prints today's baseline, which is what the thresholds are set against.
+**Stage 0: the instrument.** The seven measurements and the health table, in `techstats` and in a `TestWarShape` (`WAR=1`, twenty seeds), reading the record only. No behaviour change: `TestSameHistory` and the legends digest do not move. It prints today's baseline, which is what the thresholds are set against. *Done*: see "As built (stage 0)".
 
 **Stage 1: the war council, will, aims and terms.** Press, hold, sue for each side of each war; will that follows the war; the aim column and `War.Aim`; terms as contracts, the ceded world, vassalage and the artifact as new terms; the offer of vassalage without a war; every war under a council however it began; momentum. Patterns 1, 4 and 7's machinery.
 - *Shifts the histories*, everywhere.
@@ -211,6 +220,17 @@ Stages 0 and 1 are plan step 10; stages 2 and 3 are plan step 11. Each regenerat
 - **Events**: a war council's verdict is a chronicle event when it changes (a side turning from hold to press, from press to sue); an offer refused and an offer accepted are facts, so the tellings hold them.
 - **Watch the loop and the cascade**: loop pairs and cascade seeds are printed per seed; a change that brings either back is a failure of the stage, whatever the totals say.
 - **Run time**: more fleets in flight is more cost in the expeditions phase and the sightings; the batch time is printed, and a second optimisation pass may be wanted after step 11.
+
+## As built (stage 0)
+
+`internal/warshape` reads a `record.Run` and nothing else; `TestWarShape` (`WAR=1`; `WAR_STARS`, `WAR_SEEDS`, `WAR_FROM`) exports each world it generates and reads it, and `techstats` prints the same lines as "The shape of war" in `report.md`. The choices made in building it:
+
+- **Joining the record.** A battle and a campaign fleet carry no war; they are joined to the war between their two peoples open at their year, since a pair has one war open at a time. Every battle of the baseline joined one. A fleet is a campaign by its kind and counted for the side that launched it.
+- **Worlds and masters through time** are folded from the silent `world_held`, `world_lost` and `master` events, read as they stood before the year asked about, so a war's sides are sized as they were when it began.
+- **A system of wars** is the wars joined by a shared people while both were open; it is read at its widest moment (the start of one of its wars), since a chain of overlaps can run for millions of years and its size over all time says nothing.
+- **A bond's origin** is what else the record holds in the year it began: a war between the two ending, a meeting, the held people's birth or uplift, a rider taking it. What the baseline showed: most vassals are made at a meeting, most slaves outside war are a rider's hosts, and bonds are short (a median of 14 kyr for a vassal, 16 for a slave) — the protection stage 3 builds has to last to mean anything.
+- **What the record cannot yet say** is printed as such: a war's aim (stage 1, `War.Aim`; until then a border dispute is read by its size, length and the worlds taken), the build-up of a cold war (stage 3's rival watched), and the tribute's rate, its movement and the ticks paid short (stage 3). Each stage that adds one exports it and extends the reader, so the row reads the thing itself.
+- **What the baseline says the stages must fix**, beyond the patterns: only 28% of wars see a battle, the side declared on never strikes back (1% of fought wars), and a long war is fought in 6% of its ticks — the stare the review found, now counted.
 
 ## Settled in review (2026-09-23)
 
