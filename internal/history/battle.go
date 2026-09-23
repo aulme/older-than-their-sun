@@ -60,7 +60,7 @@ func (s sky) ships() int {
 // skyAt is what holds a star for a people: the guns standing, the guard
 // manned, and the relief at it.
 func (w *World) skyAt(e *Civ, t int) sky {
-	q := w.quality(e)
+	q := w.skyQuality(e, t)
 	s := sky{guns: w.gunsAt(e, t)}
 	s.strength = battle.Strength(s.guns, q)
 	if g := w.guardAt(e, t); g != nil && !g.LaidUp && g.Ships > 0 {
@@ -112,6 +112,7 @@ func (w *World) fight(x *Expedition, t int) {
 	}
 	i := wr.side(c.ID)
 	wr.Contested[t]++
+	w.stands(e, t) // a leader at the front with no campaign out comes to the world fought over
 	s := w.skyAt(e, t)
 	rec := &Battle{Year: w.Now, Star: t, Attacker: c.ID, Defender: e.ID, Ships: x.Ships, Held: s.ships(), Gap: w.levelGap(c, e)}
 	w.Battles = append(w.Battles, rec)
@@ -130,11 +131,14 @@ func (w *World) fight(x *Expedition, t int) {
 		w.take(wr, x, c, e, t, true)
 		return
 	}
-	atk := battle.Strength(x.Ships, w.quality(c))
+	had := x.Ships
+	atk := battle.Strength(x.Ships, w.fleetQuality(c, x))
 	won, la, ld := battle.Fight(w.R, atk, s.strength)
 	rec.Won = won
 	lostA := w.payAttacker(c, x, t, la)
-	_, lostD := w.payDefender(wr, c, e, t, s, ld)
+	gunsD, lostD := w.payDefender(wr, c, e, t, s, ld)
+	w.fought(c, x, t, won, lostA, had) // a leader riding with it may fall with the field
+	w.heldWith(e, t, !won, gunsD+lostD, s.ships())
 	if x.Ships <= 0 {
 		rec.Outcome = "broken"
 		w.fact(FDefeat, c, e, t).with(P{"way": "broken"})
@@ -194,7 +198,7 @@ func (w *World) fight(x *Expedition, t int) {
 // payAttacker is a campaign fleet's losses, in ships at its owner's
 // quality; the fleet pays them all, and they lie where they fell.
 func (w *World) payAttacker(c *Civ, x *Expedition, t int, loss float64) int {
-	k := battle.ToShips(w.R, loss, w.quality(c), x.Ships)
+	k := battle.ToShips(w.R, loss, w.fleetQuality(c, x), x.Ships)
 	x.Ships -= k
 	c.Tally.ShipsLost += k
 	w.leaveField(c, k, t, w.pos(t), false)
@@ -205,7 +209,7 @@ func (w *World) payAttacker(c *Civ, x *Expedition, t int, loss float64) int {
 // the fleets in the sky in proportion to their strength, each at its
 // owner's quality. Returns guns and ships lost.
 func (w *World) payDefender(wr *War, c, e *Civ, t int, s sky, loss float64) (guns, ships int) {
-	q := w.quality(e)
+	q := w.skyQuality(e, t)
 	if s.guns > 0 {
 		guns = battle.ToShips(w.R, loss, q, s.guns)
 		e.Guns[t] -= guns

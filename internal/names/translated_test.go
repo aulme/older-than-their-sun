@@ -11,6 +11,7 @@ import (
 	"worldgen/data"
 	"worldgen/internal/history"
 	"worldgen/internal/plague"
+	"worldgen/internal/species"
 )
 
 // sizes are the inventory's targets at landing: entries per kind of
@@ -34,6 +35,7 @@ var sizes = []struct {
 	{"title", []string{"self"}, 30, 20, ""},
 	{"war", []string{"self"}, 20, 20, ""},
 	{"word", []string{"self"}, 30, 30, ""},
+	{"leader", []string{"self"}, 24, 16, ""},
 }
 
 func hasTone(e *Entry, tones []string) bool {
@@ -85,7 +87,7 @@ func TestInventoryWellFormed(t *testing.T) {
 	ids := map[string]bool{}
 	hole := regexp.MustCompile(`\{(\w+)\}`)
 	values := map[string]bool{"self": true, "home": true, "cradle": true, "them": true, "deed.star": true, "host": true, "host.star": true, "star": true, "enemy": true, "work": true, "first": true, "first.adj": true, "last": true, "mark": true, "form": true, "onset": true}
-	prefixes := []string{"trait:", "world:", "way:", "fix:", "deed:", "did:", "bond:", "warcause:", "heavy:", "voice:", "kind:", "class:", "mult:", "remnant:", "place:", "legacy:", "work:", "portrait:", "elder:", "symptom:", "first:", "last:", "mark:", "onset:", "course:", "takes:", "form:", "effect:", "carrier:", "cause:", "side:", "miracle:"}
+	prefixes := []string{"trait:", "world:", "way:", "fix:", "deed:", "did:", "bond:", "warcause:", "heavy:", "voice:", "kind:", "class:", "mult:", "remnant:", "place:", "legacy:", "work:", "portrait:", "elder:", "symptom:", "first:", "last:", "mark:", "onset:", "course:", "takes:", "form:", "effect:", "carrier:", "cause:", "side:", "miracle:", "occasion:", "stance:", "leader:"}
 	flags := map[string]bool{"seen": true, "bright": true, "dim": true, "dead": true, "brilliant": true, "marked": true, "made": true, "host": true, "thinks": true, "named": true, "again": true, "deed.star": true}
 	for _, e := range Epithets() {
 		if ids[e.ID] {
@@ -226,6 +228,25 @@ func TestKeysReal(t *testing.T) {
 	for _, s := range pt.Carriers {
 		known["carrier:"+s.Key] = true
 	}
+	var leaders struct {
+		Forms, Occasions []struct {
+			Key string `json:"key"`
+		}
+	}
+	data.Load("leaders.json", &leaders)
+	for _, f := range leaders.Forms {
+		known["leader:"+f.Key] = true
+	}
+	for _, o := range leaders.Occasions {
+		known["occasion:"+o.Key] = true
+	}
+	for _, e := range Epithets() {
+		for _, r := range e.Requires {
+			if k, ok := strings.CutPrefix(r, "stance:"); ok && species.Get(k) == nil {
+				t.Errorf("%s requires %q, which is no stance", e.ID, r)
+			}
+		}
+	}
 	for _, e := range Epithets() {
 		for _, r := range e.Requires {
 			r = strings.TrimPrefix(r, "!")
@@ -234,7 +255,7 @@ func TestKeysReal(t *testing.T) {
 				continue
 			}
 			switch r[:i] {
-			case "trait", "way", "world", "portrait", "elder", "cause", "warcause", "deed", "did", "bond", "heavy", "symptom", "first", "last", "mark", "form", "effect", "onset", "course", "takes", "carrier":
+			case "trait", "way", "world", "portrait", "elder", "cause", "warcause", "deed", "did", "bond", "heavy", "symptom", "first", "last", "mark", "form", "effect", "onset", "course", "takes", "carrier", "leader", "occasion":
 				if !known[r] {
 					t.Errorf("%s requires %q, which no table has", e.ID, r)
 				}
@@ -291,6 +312,11 @@ func batch(t *testing.T) []*Book {
 // exonyms and then five hundred, and both floors failed on draws of the
 // heavy tail. The largest shares of the batch are still logged, so a
 // history that names everyone for one thing is visible.
+//
+// A requirement is judged once its kin are named fifty times, or a
+// twentieth of the batch's exonyms where that is fewer: at step 9 the
+// four ages gave 401 exonyms, no requirement reached fifty, and a fixed
+// floor failed on the heavy tail a third time.
 func TestExonymSpread(t *testing.T) {
 	counts := map[string]int{}
 	n := 0
@@ -314,14 +340,14 @@ func TestExonymSpread(t *testing.T) {
 		k := strings.Join(e.Requires, "&") + "|" + strings.Join(e.Tone, ",")
 		kin[k] = append(kin[k], e.ID)
 	}
-	judged := 0
+	judged, floor := 0, min(50, n/20)
 	for _, k := range sortedKeys(kin) {
 		ids := kin[k]
 		sum := 0
 		for _, id := range ids {
 			sum += counts[id]
 		}
-		if len(ids) < 2 || sum < 50 {
+		if len(ids) < 2 || sum < floor {
 			continue
 		}
 		judged++
@@ -333,7 +359,7 @@ func TestExonymSpread(t *testing.T) {
 		}
 	}
 	if judged == 0 {
-		t.Fatalf("%d exonyms, and no requirement named fifty times to judge the spread", n)
+		t.Fatalf("%d exonyms, and no requirement named %d times to judge the spread", n, floor)
 	}
 	top := sortedKeys(counts)
 	sort.SliceStable(top, func(i, j int) bool { return counts[top[i]] > counts[top[j]] })

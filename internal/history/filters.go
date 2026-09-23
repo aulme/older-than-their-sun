@@ -169,8 +169,8 @@ func (w *World) face(c *Civ, key string, diffAdj float64) Outcome {
 		f.Decline(w, c)
 	}
 	c.Record = append(c.Record, Record{Kind: "faced", Filter: key, Outcome: out, Narrow: math.Abs(margin) < 0.5, Legacy: -1})
-	if !again || out == Declined || key == "revolt" {
-		w.recordFilter(c, key, f, out, master) // a filter faced again is not a new story unless it wins
+	if !again || out == Declined || key == "revolt" || key == "succession" {
+		w.recordFilter(c, key, f, out, master) // a filter faced again is not a new story unless it wins; every succession is its own
 	}
 	return out
 }
@@ -199,6 +199,9 @@ func (w *World) recordFilter(c *Civ, key string, f *Filter, out Outcome, master 
 		star = w.transmitter.Star // remembered where it came from, so nobody surveys there
 	}
 	ff := w.fact(kind, c, nil, star).with(P{"filter": key})
+	if key == "succession" && w.succeeding != nil {
+		ff.P["leader"] = w.succeeding.ID
+	}
 	if key == "beacon" && w.transmitter != nil {
 		ff.Legacy = w.transmitter.ID
 	}

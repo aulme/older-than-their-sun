@@ -19,7 +19,7 @@ import (
 // from this package, and none of its nameable types has a Name field;
 // the plague package likewise.
 func TestSource(t *testing.T) {
-	nameable := map[string]bool{"Civ": true, "Legacy": true, "Elder": true, "War": true, "Plague": true, "World": true, "Species": true}
+	nameable := map[string]bool{"Civ": true, "Legacy": true, "Elder": true, "War": true, "Plague": true, "World": true, "Species": true, "Leader": true}
 	for _, dir := range []string{"../history", "../plague", "../species"} {
 		fset := token.NewFileSet()
 		pkgs, err := parser.ParseDir(fset, dir, func(fi os.FileInfo) bool { return !strings.HasSuffix(fi.Name(), "_test.go") }, parser.ImportsOnly|parser.ParseComments)
@@ -128,6 +128,8 @@ func TestDeterministic(t *testing.T) {
 	if x == nil {
 		t.Skip("every pair has met")
 	}
+	n := len(w.Events)
+	defer func() { w.Events = w.Events[:n] }() // the world is shared: take the meeting back
 	w.Events = append(w.Events, &history.Event{ID: len(w.Events), Kind: history.FMet, Year: w.Present, Subject: x.ID, Object: y.ID, Star: -1, Legacy: -1, Plague: -1, P: history.P{"how": "touch"}})
 	c := Of(w)
 	before := map[Row]bool{}

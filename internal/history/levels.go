@@ -140,6 +140,8 @@ func (w *World) recompute(c *Civ) {
 		c.Morale = 0 // nothing in it rises or falls
 	}
 	soc += c.Morale
+	lmil, lsoc := w.leaderLevels(c) // a leader at the seat: a little, everywhere
+	mil, soc = mil+lmil, soc+lsoc
 	ssur, ssoc := w.sickLevels(c)
 	sur, soc = sur-ssur, soc-ssoc
 	c.Mil, c.Sur, c.Soc = clamp(mil, 0, 10), clamp(sur, 0, 10), clamp(soc, 0, 10)

@@ -1,6 +1,8 @@
 package history
 
 import (
+	"encoding/json"
+
 	"worldgen/data"
 	"worldgen/internal/flow"
 )
@@ -146,6 +148,7 @@ type tableSet struct {
 	warResults map[string]*textDef
 	betrayals  map[string]*textDef
 	origins    map[string]*originDef
+	leaders    map[string]map[string]bool // data/leaders.json's keys by section: forms, occasions, ends, places
 
 	scarByKey     map[string]*scarDef
 	boonByKey     map[string]*boonDef
@@ -267,6 +270,21 @@ func loadTables() *tableSet {
 	t.origins = map[string]*originDef{}
 	for i := range of.Origins {
 		t.origins[of.Origins[i].Key] = &of.Origins[i]
+	}
+	var ldf map[string]json.RawMessage
+	data.Load("leaders.json", &ldf)
+	t.leaders = map[string]map[string]bool{}
+	for sec, raw := range ldf {
+		var rows []struct {
+			Key string `json:"key"`
+		}
+		if sec == "_" || json.Unmarshal(raw, &rows) != nil {
+			continue
+		}
+		t.leaders[sec] = map[string]bool{}
+		for _, r := range rows {
+			t.leaders[sec][r.Key] = true
+		}
 	}
 	return t
 }

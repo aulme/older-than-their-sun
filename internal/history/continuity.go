@@ -103,6 +103,9 @@ func (w *World) continuityLoss(c *Civ) float64 {
 		per *= 0.5
 	}
 	x := w.generations(c)*per + t.Drift
+	if l := c.Leader; l != nil && l.Mad >= 1 {
+		x += w.Cfg.Tuning.Leaders.MadPurge // the immortal at the top, the amnesia below
+	}
 	if c.DarkAges > 0 {
 		if since := float64(w.Now-c.LastDark) / 1000; since < t.DarkKyr {
 			x += t.Dark * (1 - since/t.DarkKyr)

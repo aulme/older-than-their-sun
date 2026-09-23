@@ -238,6 +238,9 @@ func (w *World) unplaced(k Kind, c, e *Civ, star int) *Event {
 // caller's to add, before the tick is out; nothing in between reads them.
 func (w *World) record(k Kind, c, e *Civ, star int) *Event {
 	f := w.recordAt(w.Now, k, c, e, star, nil)
+	if c != nil && c.Leader != nil && f.sort() == Crime {
+		w.crime(c) // a deathless leader's slide; see leaders.go
+	}
 	if star >= 0 {
 		w.factsAt[star] = append(w.factsAt[star], f.ID)
 	}

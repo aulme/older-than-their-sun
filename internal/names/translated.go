@@ -580,6 +580,8 @@ func (b *Book) translatedRows() {
 			b.title(f.Subject, f.Year)
 		case history.FWord:
 			b.word(f)
+		case history.FLeader:
+			b.leaderRow(f)
 		}
 		if f.Sort() == history.Crime && f.Object >= 0 && f.Subject >= 0 && f.Subject != f.Object {
 			b.enemy(f.Object, f.Subject, f.Year, f.Weight() >= 4)
@@ -806,6 +808,36 @@ func (b *Book) warRows(f *history.Event) {
 		if row, ok := b.translate(side, Object{Kind: "war", ID: wr.ID}, "self", wr.Began, k); ok {
 			b.add(row)
 		}
+	}
+}
+
+// leaderRow is a people's name for its leader, coined at the rising: in
+// its own sounds for a transcribed voice, by a recipe on the occasion,
+// the stance and the form for a translated one; a voiceless people
+// names nobody.
+func (b *Book) leaderRow(f *history.Event) {
+	w := b.w
+	id, _ := f.P["leader"].(int)
+	if id < 0 || id >= len(w.Leaders) || f.Subject < 0 {
+		return
+	}
+	l, by := w.Leaders[id], f.Subject
+	o := Object{Kind: "leader", ID: id}
+	switch b.voice[by] {
+	case None:
+		return
+	case Transcribed:
+		r := stream(w.Seed, itoa(by), "leader", itoa(id), "self")
+		b.add(Row{Object: o, By: by, Name: b.phon[by].Word(r, 1+r.IntN(2)), Mode: "transcribed", Tone: "self", Coined: f.Year, From: -1})
+		return
+	}
+	k := b.selfProps(w.Civs[by])
+	k.set("occasion:" + l.Occasion)
+	k.set("stance:" + l.Stance)
+	k.set("leader:" + l.Form)
+	k.val("home", tok("star", f.Star, by))
+	if row, ok := b.translate(by, o, "self", f.Year, k); ok {
+		b.add(row)
 	}
 }
 

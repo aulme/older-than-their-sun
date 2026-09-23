@@ -36,6 +36,7 @@ import (
 //	civ.named            named
 //	civ.infections       infected, cleared (the keys; the plague's hosts count follows)
 //	civ.wars             war_opened, war_over
+//	civ.leader           leader, leader_lost, leader_ended
 //	species.powers       civ_born, blood, power_held
 //	remain (existence)   remain_left: kind, maker, star, state, cond, finder
 //	remain.star          remain_moved
@@ -46,6 +47,8 @@ import (
 //	war (existence)      war_opened: sides, cause
 //	war.over, war.result war_over
 //	plague.hosts         infected, cleared, over the peoples still rising
+//	leader (existence)   leader: civ, occasion
+//	leader.end           leader_lost, leader_ended
 //
 // Everything else in the state is a snapshot: the levels, the flows and
 // the dials derived every tick; a people's continuity and the span its
@@ -79,6 +82,7 @@ type foldCiv struct {
 	named      bool
 	infections map[int]bool
 	wars       map[int]bool
+	leader     int
 }
 
 type foldRemain struct {
@@ -98,16 +102,23 @@ type foldWar struct {
 	result string
 }
 
+type foldLeader struct {
+	civ      int
+	occasion string
+	end      string
+}
+
 type fold struct {
 	stars   []foldStar
 	civs    map[int]*foldCiv
 	powers  map[int][]string
 	remains map[int]*foldRemain
 	wars    map[int]*foldWar
+	leaders map[int]*foldLeader
 }
 
 func newFold(n int) *fold {
-	f := &fold{stars: make([]foldStar, n), civs: map[int]*foldCiv{}, powers: map[int][]string{}, remains: map[int]*foldRemain{}, wars: map[int]*foldWar{}}
+	f := &fold{stars: make([]foldStar, n), civs: map[int]*foldCiv{}, powers: map[int][]string{}, remains: map[int]*foldRemain{}, wars: map[int]*foldWar{}, leaders: map[int]*foldLeader{}}
 	for i := range f.stars {
 		f.stars[i] = foldStar{held: -1, bio: "none"}
 	}
@@ -130,7 +141,7 @@ func (f *fold) apply(e *record.Event) error {
 			return fmt.Errorf("people %d born twice", e.Subject)
 		}
 		c := &foldCiv{species: e.Int("species"), cradle: e.Star, home: e.Star, stage: "emergent", fate: "active", master: e.Int("master"),
-			systems: map[int]bool{}, known: map[string]bool{}, scars: map[string]bool{}, boons: map[string]bool{}, miracles: map[string]string{}, infections: map[int]bool{}, wars: map[int]bool{}}
+			systems: map[int]bool{}, known: map[string]bool{}, scars: map[string]bool{}, boons: map[string]bool{}, miracles: map[string]string{}, infections: map[int]bool{}, wars: map[int]bool{}, leader: -1}
 		f.civs[e.Subject] = c
 		if _, ok := f.powers[c.species]; !ok {
 			f.powers[c.species] = e.Strs("powers")
@@ -207,6 +218,16 @@ func (f *fold) apply(e *record.Event) error {
 		f.wars[id] = &foldWar{sides: [2]int{e.Subject, e.Object}, cause: e.Str("cause")}
 		civ().wars[e.Object] = true
 		f.civs[e.Object].wars[e.Subject] = true
+	case record.FLeader:
+		id := e.Int("leader")
+		if f.leaders[id] != nil {
+			return fmt.Errorf("leader %d rose twice", id)
+		}
+		f.leaders[id] = &foldLeader{civ: e.Subject, occasion: e.Str("occasion")}
+		civ().leader = id
+	case record.FLeaderLost, record.KLeaderEnded:
+		f.leaders[e.Int("leader")].end = e.Str("end")
+		civ().leader = -1
 	case record.KWarOver:
 		wr := f.wars[e.Int("war")]
 		wr.over, wr.result = true, e.Str("result")
@@ -325,6 +346,20 @@ func foldOne(t *testing.T, r *record.Run) {
 		sort.Ints(inf)
 		check("infections", idsOf(g.infections), inf)
 		check("wars", idsOf(g.wars), c.Wars)
+		check("leader", g.leader, c.Leader)
+	}
+	if len(f.leaders) != len(st.Leaders) {
+		fail("%d leaders folded, %d in the state", len(f.leaders), len(st.Leaders))
+	}
+	for _, l := range st.Leaders {
+		g := f.leaders[l.ID]
+		if g == nil {
+			fail("leader %d never rose", l.ID)
+			continue
+		}
+		if g.civ != l.Civ || g.occasion != l.Occasion || g.end != l.End {
+			fail("leader %d: folded %+v, state civ %d occasion %s end %s", l.ID, *g, l.Civ, l.Occasion, l.End)
+		}
 	}
 	for _, sp := range st.Species {
 		if !same(f.powers[sp.ID], sp.Powers) {

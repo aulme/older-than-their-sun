@@ -406,6 +406,8 @@ func (b *Table) fallback(o Object) string {
 		}
 	case "war":
 		return "a war"
+	case "leader":
+		return "the one who led them" // a voiceless people's, which it never named
 	case "word":
 		return ""
 	case "title":

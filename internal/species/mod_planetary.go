@@ -20,9 +20,9 @@ var planetary = &ModDef{Mod: Planetary, Cradle: "ocean", CradleOdds: 0.6, Entry:
 		Neighbourhood: 12, // its reach, fixed and small
 		Worlds:        4,  // a handful
 		Expand:        0.1,
-		HomeDefence:   4,                                           // the body over every world it holds, at several times Military
-		Cannot:        Flees | Fields | Works | Launches | Reseats, // a taken home is the end; it does not farm or build, it is the world; it sends nothing
-		Cradle:        2,                                           // and the world feeds it as no field could
+		HomeDefence:   4,                                                   // the body over every world it holds, at several times Military
+		Cannot:        Flees | Fields | Works | Launches | Reseats | Leads, // a taken home is the end; it does not farm or build, it is the world; it sends nothing; it is its own one mind, and nobody leads it
+		Cradle:        2,                                                   // and the world feeds it as no field could
 		Morals:        [4]float64{3, 0, 0, 2},
 	},
 }}

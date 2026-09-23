@@ -74,9 +74,11 @@ var keyParams = map[string]func(w *World, e *Event, v string) bool{
 		}
 		return true
 	},
-	"class":   func(w *World, e *Event, v string) bool { return len(v) == 1 },
-	"what":    func(w *World, e *Event, v string) bool { return e.Kind == KReason || e.Kind == KWentDark },
-	"species": func(w *World, e *Event, v string) bool { return false },
+	"class":    func(w *World, e *Event, v string) bool { return len(v) == 1 },
+	"occasion": func(w *World, e *Event, v string) bool { return tables.leaders["occasions"][v] },
+	"end":      func(w *World, e *Event, v string) bool { return tables.leaders["ends"][v] },
+	"what":     func(w *World, e *Event, v string) bool { return e.Kind == KReason || e.Kind == KWentDark },
+	"species":  func(w *World, e *Event, v string) bool { return false },
 }
 
 // keyLists are the parameters that carry lists of keys.
@@ -248,6 +250,20 @@ func TestKeysResolve(t *testing.T) {
 			if tables.portraitByKey["elders"][e.Portrait] == nil {
 				fail("Elder.Portrait", e.Portrait)
 			}
+		}
+	}
+	for _, l := range w.Leaders {
+		if !tables.leaders["forms"][l.Form] {
+			fail("Leader.Form", l.Form)
+		}
+		if !tables.leaders["occasions"][l.Occasion] {
+			fail("Leader.Occasion", l.Occasion)
+		}
+		if l.End != "" && !tables.leaders["ends"][l.End] {
+			fail("Leader.End", l.End)
+		}
+		if species.Get(l.Stance) == nil || species.Get(l.Own) == nil {
+			fail("Leader.Stance", l.Stance+" "+l.Own)
 		}
 	}
 	for _, wr := range w.Wars {

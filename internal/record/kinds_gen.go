@@ -235,6 +235,10 @@ const (
 	KUnfathomed       Kind = "unfathomed"
 	KWaning           Kind = "waning"
 	KStarDead         Kind = "star_dead"
+	FLeader           Kind = "leader"
+	FLeaderLost       Kind = "leader_lost"
+	KLeaderFled       Kind = "leader_fled"
+	KSnappedBack      Kind = "snapped_back"
 	KCivBorn          Kind = "civ_born"
 	KWorldHeld        Kind = "world_held"
 	KWorldLost        Kind = "world_lost"
@@ -265,4 +269,5 @@ const (
 	KCleared          Kind = "cleared"
 	KBlood            Kind = "blood"
 	KPowerHeld        Kind = "power_held"
+	KLeaderEnded      Kind = "leader_ended"
 )

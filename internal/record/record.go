@@ -165,6 +165,7 @@ type Counts struct {
 	Names     int `json:"names"`
 	Plagues   int `json:"plagues"`
 	Wars      int `json:"wars"`
+	Leaders   int `json:"leaders"`
 	Fleets    int `json:"fleets"`
 	Contracts int `json:"contracts"`
 }
@@ -182,6 +183,7 @@ type State struct {
 	Plagues    []*Plague     `json:"plagues"`
 	Reservoirs []Reservoir   `json:"reservoirs"`
 	Wars       []*War        `json:"wars"`
+	Leaders    []*Leader     `json:"leaders"`
 	Pacts      []*Pact       `json:"pacts"`
 	Betrayals  []Betrayal    `json:"betrayals"`
 	Fleets     []*Fleet      `json:"fleets"`
@@ -321,6 +323,7 @@ type Civ struct {
 	Stiff        float64  `json:"stiff"`
 	Continuity   float64  `json:"continuity"` // the share of its past that reaches across a thousand years
 	Lifespan     float64  `json:"lifespan"`   // the years a body lives now, with its medicine and its sickness; 0 for none
+	Leader       int      `json:"leader"`     // the leader it follows now, -1 for none
 	Ossified     bool     `json:"ossified"`
 	Still        Year     `json:"still"`
 	Line         []int    `json:"line"`
@@ -602,6 +605,33 @@ type Reservoir struct {
 	Star   int  `json:"star"`
 	Plague int  `json:"plague"`
 	Until  Year `json:"until"`
+}
+
+// Leader is a named figure a people followed; its name is the names[]
+// rows of kind leader.
+type Leader struct {
+	ID        int        `json:"id"`
+	Civ       int        `json:"civ"`
+	Rose      Year       `json:"rose"`
+	Ended     Year       `json:"ended"`
+	End       string     `json:"end"`      // how it ended, a key of leaders.json's ends; "" while it reigns
+	Occasion  string     `json:"occasion"` // what made it possible, a key of leaders.json's occasions
+	Form      string     `json:"form"`     // what it is, a key of leaders.json's forms
+	Stance    string     `json:"stance"`   // the stance it brought, a stance trait's key
+	Own       string     `json:"own"`      // the people's own stance at the rising
+	Bent      mind.Dials `json:"bent"`     // its term in the dials
+	Push      float64    `json:"push"`     // how far it turned the people against its own bent, 0 to 1
+	Front     bool       `json:"front"`    // its place: with the greatest fleet at war, else the seat
+	Flees     bool       `json:"flees"`
+	Fled      bool       `json:"fled"`
+	Fleet     int        `json:"fleet"` // the fleet it rides with, -1
+	Star      int        `json:"star"`  // where it is, or was at its end
+	Until     Year       `json:"until"` // when its span or its line runs out; 0 for never
+	Deathless bool       `json:"deathless"`
+	Mad       float64    `json:"mad"`       // the slide: a half narrowed, one mad
+	Faced     string     `json:"faced"`     // the succession after it: overcome, scarred, declined; "" for none
+	Doublings float64    `json:"doublings"` // continuity's term at that succession
+	Battles   int        `json:"battles"`   // battles fought at its side
 }
 
 // War is one war.

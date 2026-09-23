@@ -74,6 +74,7 @@ func (w *World) setDials(c *Civ) {
 	d.Aggression += 0.1 * clamp(c.Morale, -2, 2)
 	c.LoreDials = w.loreDials(c)
 	d.Add(c.LoreDials)
+	d.Add(c.leaderBent()) // a leader's bent, which can turn a people against its own (leaders.go)
 	d.Aggression = clamp(d.Aggression, 0.05, 0.95)
 	d.Risk = clamp(d.Risk, 0.05, 0.95)
 	d.Greed = clamp(d.Greed, 0.05, 0.95)
@@ -85,14 +86,14 @@ func (w *World) setDials(c *Civ) {
 	c.Dials = d
 }
 
-// posture is the stance trait: how a people makes war.
+// posture is how a people makes war: its leader's stance while it has
+// one, else the stance trait. The council reads it; a leader moves what
+// it reads, never how it decides (leaders.go).
 func (c *Civ) posture() string {
-	for _, t := range c.Species.Traits {
-		if t.Group == "stance" {
-			return t.Key
-		}
+	if l := c.Leader; l != nil {
+		return l.Stance
 	}
-	return "defensive"
+	return c.ownPosture()
 }
 
 // honour is whether a promise binds.

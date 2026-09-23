@@ -62,6 +62,8 @@
     {"key": "overshoot", "text": "exhausted their world", "desc": "overshoot"},
     {"key": "faith", "text": "tore themselves apart over the nature of god", "desc": "the wars of faith"},
     {"key": "ossified", "text": "hardened until nothing in them could bend", "desc": "ossification"},
+    {"key": "succession", "text": "lost the one they followed, and nobody could hold what was left", "desc": "a succession that failed"},
+    {"key": "mad_leader", "text": "were purged by the deathless thing that ruled them until the realm broke under it", "desc": "the break a mad leader's purges brought on"},
     {"key": "star_death", "text": "the death of {T}", "desc": "the star died"},
     {"key": "sun_failing", "text": "the failing of its sun", "desc": "the sun was failing"},
     {"key": "burning_sky", "text": "the burning sky", "desc": "the sky burned"},
@@ -105,7 +107,9 @@
     {"key": "filter_beacon", "text": "{filter}", "desc": "the filter beacon scarred a people aloft, and it came to rest"},
     {"key": "filter_waking", "text": "{filter}", "desc": "the filter waking scarred a people aloft, and it came to rest"},
     {"key": "filter_ossification", "text": "{filter}", "desc": "the filter ossification scarred a people aloft, and it came to rest"},
-    {"key": "filter_containment", "text": "{filter}", "desc": "the filter containment scarred a people aloft, and it came to rest"}
+    {"key": "filter_containment", "text": "{filter}", "desc": "the filter containment scarred a people aloft, and it came to rest"},
+    {"key": "filter_upload", "text": "{filter}", "desc": "the filter upload scarred a people aloft, and it came to rest"},
+    {"key": "filter_succession", "text": "{filter}", "desc": "the filter succession scarred a people aloft, and it came to rest"}
   ],
   "blasts": [
     {"key": "burst", "text": "a gamma-ray burst"},

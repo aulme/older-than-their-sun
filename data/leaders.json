@@ -1,0 +1,35 @@
+{
+  "_": [
+    "Leaders: the named figures a people follows for a while (internal/history/leaders.go, specs/proposals/leaders.md). The simulation writes the keys; the view reads the words.",
+    "forms: what a leader is, by the people's nature and the span of its bodies: key; word (how the view calls one); archetype (what a telling worn to myth calls it, its name gone); what it is. A short-lived kind's leader is a line, since the founder dies inside a thousand years and what spans the ages is the dynasty; a long-lived or deathless one is one ruler.",
+    "occasions: what made a leader possible: key; line (the chronicle's clause, opening the sentence of the rising).",
+    "ends: how a leader ended: key; what it means. The first four are losses and the succession follows; the last two end the leader with no story of its own.",
+    "places: where a leader stands: key; what it does.",
+    "Every term here is a technical term: a phrase a reader who never saw this project understands or can search for, never a coinage."
+  ],
+  "forms": [
+    {"key": "person", "word": "ruler", "archetype": "a great ruler of the old days", "what": "one ruler, reigning across the thousands of years"},
+    {"key": "line", "word": "founder", "archetype": "the founder of a line long ended", "what": "a founder and the line of heirs after, dead within the thousand years, the dynasty living on"},
+    {"key": "directive", "word": "directive", "archetype": "a directive nobody runs any more", "what": "a directive the machines reconciled themselves around"},
+    {"key": "brood", "word": "brood-queen", "archetype": "the first queen", "what": "a brood-line: a queen and the queens bred from her"},
+    {"key": "doctrine", "word": "doctrine", "archetype": "a doctrine older than anyone", "what": "a doctrine that took hold of a mind nothing can model"}
+  ],
+  "occasions": [
+    {"key": "war", "line": "In the war they are fighting"},
+    {"key": "crisis", "line": "Out of the dark age they fell into"},
+    {"key": "reform", "line": "In their renaissance"},
+    {"key": "founding", "line": "In their first years"}
+  ],
+  "ends": [
+    {"key": "died", "what": "the span ran out, or the line did"},
+    {"key": "fell_field", "what": "fell with the fleet it rode with"},
+    {"key": "fell_capital", "what": "fell with the capital"},
+    {"key": "overthrown", "what": "was overthrown in the break its madness brought on"},
+    {"key": "with_people", "what": "the people fell or ended under it"},
+    {"key": "deposed", "what": "the people was taken and kept, and nobody reigns in it"}
+  ],
+  "places": [
+    {"key": "front", "what": "rides with the greatest fleet at war: a large bonus to that fleet, and the soonest death"},
+    {"key": "capital", "what": "stays at the seat: a small bonus across the realm, and a long reign"}
+  ]
+}

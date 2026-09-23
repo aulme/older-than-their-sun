@@ -198,11 +198,11 @@ func (w *World) set(c *Civ) {
 }
 
 // breakDown is the bad miss: a civil war where the people has the worlds
-// or the fleets and the factions for one, else a dark age. Ossification
-// is cleared by either.
-func (w *World) breakDown(c *Civ) {
+// or the fleets and the factions for one, else a dark age for the reason
+// given. Ossification is cleared by either. The Succession breaks the
+// same way (leaders.go).
+func (w *World) breakDown(c *Civ, why reason) {
 	t := &w.Cfg.Tuning.Ossify
-	c.Tally.OssBroke++
 	parts := len(c.Systems)
 	if c.Aloft {
 		parts = len(w.fleets(c))
@@ -212,7 +212,7 @@ func (w *World) breakDown(c *Civ) {
 			return
 		}
 	}
-	w.darkAge(c, because("ossified"))
+	w.darkAge(c, why)
 }
 
 // resent is every grudge write: what another people did, added to what is
@@ -250,11 +250,15 @@ func init() {
 		Overcome: func(w *World, c *Civ) { w.renaissance(c) },
 		Scar: func(w *World, c *Civ) {
 			if c.Ossified {
-				w.breakDown(c) // it cannot set twice: the second near miss is the break
+				c.Tally.OssBroke++
+				w.breakDown(c, because("ossified")) // it cannot set twice: the second near miss is the break
 				return
 			}
 			w.set(c)
 		},
-		Decline: func(w *World, c *Civ) { w.breakDown(c) },
+		Decline: func(w *World, c *Civ) {
+			c.Tally.OssBroke++
+			w.breakDown(c, because("ossified"))
+		},
 	})
 }

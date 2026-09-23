@@ -110,6 +110,7 @@ func (w *World) launch(c *Civ, kind ExpKind, target *Civ, star int, n int) *Expe
 	}
 	switch kind {
 	case Campaign:
+		w.joins(c, x) // a leader at the front goes with the greatest of them
 		c.Tally.Fleets++
 		c.WantShips = 0
 		p := P{"fleet": x.ID, "ships": n, "total": total, "away": x.Arrive - w.Now, "hunt": -1}

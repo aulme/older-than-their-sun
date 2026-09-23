@@ -104,6 +104,8 @@ var templates = map[record.Kind]string{
 	record.FHunt:         "{P} ledger showed a hole around {T}, and {s} declared a hunt on it.",
 	record.FDrifted:      "{S} changed again: {X}.",
 	record.FWord:         "{S} reached into what lies beneath, and {X}.",
+	record.FLeader:       "{X} rose among {s}.",
+	record.FLeaderLost:   "{S} lost {X} at {T}.",
 }
 
 // blamedTemplates are the woes that name their own cause, retold once
@@ -154,6 +156,10 @@ func (v *view) tell(c *record.Civ, t *record.Tale) string {
 		return "In the beginning we were on " + star(f.Star) + ", and there was nothing else."
 	}
 	what := v.what(f)
+	if t.Wear >= 2 && f.Has("leader") {
+		// at myth the name is gone and the figure is an archetype: the deed survives the name
+		what = v.leaderArchetype(f)
+	}
 	if we == 1 {
 		what = ours(what)
 	}
@@ -201,6 +207,9 @@ func (v *view) tell(c *record.Civ, t *record.Tale) string {
 	s = v.frame(c, t, k, f, s, we, sort, sl)
 	if we != 1 && sort != fsort {
 		s += judged(fsort, sort)
+	}
+	if strings.HasPrefix(s, "{") && !strings.HasPrefix(s, "{^") {
+		s = "{^" + s[1:] // a name opens the sentence: the names pass raises it
 	}
 	return sentences(s)
 }
@@ -291,7 +300,12 @@ func (v *view) what(e *record.Event) string {
 	case record.FPact:
 		return e.Str("pact")
 	case record.FOvercome, record.FScarred, record.FDeclined:
+		if e.Has("leader") {
+			return "the succession after " + leaderTok(e.Int("leader"))
+		}
 		return filterName(e.Str("filter"))
+	case record.FLeader, record.FLeaderLost:
+		return leaderTok(e.Int("leader"))
 	case record.FMiracle:
 		return tables.miracles[e.Str("miracle")].Term
 	case record.FHarness:
@@ -696,4 +710,20 @@ func lower(s string) string {
 		r[0] = unicode.ToLower(r[0])
 	}
 	return string(r)
+}
+
+// leaderTok is a leader's name token: its people's name for it, a row
+// of the names pass.
+func leaderTok(id int) string { return "{leader:" + itoa(id) + "}" }
+
+// leaderArchetype is what a telling worn to myth says for a leader whose
+// name it has lost: an archetype of its form, and for the succession
+// after one, the time after it.
+func (v *view) leaderArchetype(e *record.Event) string {
+	a := tables.leaderForms[v.leader(e.Int("leader")).Form].Archetype
+	switch e.Kind {
+	case record.FOvercome, record.FScarred, record.FDeclined:
+		return "the time after " + a
+	}
+	return a
 }

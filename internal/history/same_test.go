@@ -18,10 +18,12 @@ import (
 // wearing went to every fourth tick: every history was renumbered once;
 // and at continuity (step 8), where a people's bodies got a span and its
 // past a continuity the wearing, the ways setting and a dark age read,
-// and the upload got its filter. A refactor that must not
+// and the upload got its filter; and at leaders (step 9), where a
+// people can follow a named leader and faces the succession when it is
+// lost. A refactor that must not
 // change behaviour keeps it green; a step that changes the sim on purpose
 // re-pins it and says so in its commit.
-const sameHistoryDigest = "faa95a05a97c07159adc9f6240ba014e85abc7347a33604bcefdd30e389bf772"
+const sameHistoryDigest = "a9cc20df87729b1cd184d59f6d45bcb266f85fe01d5310dc63669090a8631e54"
 
 func historyDigest(w *World) string {
 	h := sha256.New()

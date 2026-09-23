@@ -64,7 +64,17 @@ var tables = struct {
 	stiffness, wall       []stageWord
 	aptitudes             map[string]string
 	kinds                 map[record.Kind]kindShape
+	leaderForms           map[string]leaderForm
+	leaderOccasions       map[string]string
 }{}
+
+// leaderForm is a row of leaders.json's forms: what the view calls one,
+// and what a telling worn to myth calls it.
+type leaderForm struct {
+	Key       string `json:"key"`
+	Word      string `json:"word"`
+	Archetype string `json:"archetype"`
+}
 
 func init() {
 	names := func(rows []keyName) map[string]string {
@@ -175,6 +185,21 @@ func init() {
 	tables.kinds = map[record.Kind]kindShape{}
 	for _, k := range ef.Kinds {
 		tables.kinds[k.Kind] = k
+	}
+	var ldf struct {
+		Forms     []leaderForm `json:"forms"`
+		Occasions []struct {
+			Key  string `json:"key"`
+			Line string `json:"line"`
+		} `json:"occasions"`
+	}
+	data.Load("leaders.json", &ldf)
+	tables.leaderForms, tables.leaderOccasions = map[string]leaderForm{}, map[string]string{}
+	for _, f := range ldf.Forms {
+		tables.leaderForms[f.Key] = f
+	}
+	for _, o := range ldf.Occasions {
+		tables.leaderOccasions[o.Key] = o.Line
 	}
 }
 

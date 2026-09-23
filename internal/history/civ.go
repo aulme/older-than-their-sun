@@ -158,6 +158,7 @@ var civSteps = []civStep{
 	{"lore", (*World).loreStep},
 	{"fathoming", (*World).fathoming},
 	{"intel", (*World).intelStep},
+	{"leaders", (*World).leaderStep},
 	{"council", (*World).council},
 	{"hunts", (*World).huntStep},
 	{"contracting", (*World).contracting},
@@ -600,6 +601,7 @@ func (w *World) loseSystem(c *Civ, s int, kind string, cause reason) {
 	if !contains(c.Systems, s) {
 		return
 	}
+	w.seatFalls(c, s) // a leader in the capital falls with it, or runs
 	c.Systems = remove(c.Systems, s)
 	w.setOwner(s, -1)
 	w.trace(s, kind, c)

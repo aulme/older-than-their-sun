@@ -94,6 +94,7 @@ func (v *view) remain(id int) *record.Remain           { return v.st.Remains[id]
 func (v *view) plague(id int) *record.Plague           { return v.st.Plagues[id] }
 func (v *view) source(id int) *record.Source           { return v.st.Sources[id] }
 func (v *view) war(id int) *record.War                 { return v.st.Wars[id] }
+func (v *view) leader(id int) *record.Leader           { return v.st.Leaders[id] }
 func (v *view) held(star int) int                      { return v.st.Stars[star].Held }
 func (v *view) event(id int) *record.Event             { return v.ev[id] }
 

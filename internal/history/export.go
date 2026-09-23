@@ -65,7 +65,7 @@ func (w *World) exportDossier(at string, r *record.Run) *record.Dossier {
 		}
 	}
 	d.Place = p
-	c := record.Counts{Civs: len(w.Civs), Traces: len(w.Traces), Events: len(r.Chronicle), Tales: len(r.Tellings), Plagues: len(w.Plagues), Wars: len(w.Wars), Fleets: len(w.Expeditions), Contracts: len(w.Contracts)}
+	c := record.Counts{Civs: len(w.Civs), Traces: len(w.Traces), Events: len(r.Chronicle), Tales: len(r.Tellings), Plagues: len(w.Plagues), Wars: len(w.Wars), Leaders: len(w.Leaders), Fleets: len(w.Expeditions), Contracts: len(w.Contracts)}
 	for _, cv := range w.Civs {
 		if cv.Active() {
 			c.Standing++
@@ -200,6 +200,14 @@ func (w *World) exportState() *record.State {
 		}
 		st.Wars = append(st.Wars, r)
 	}
+	st.Leaders = []*record.Leader{}
+	for _, l := range w.Leaders {
+		st.Leaders = append(st.Leaders, &record.Leader{
+			ID: l.ID, Civ: l.Civ, Rose: l.Rose, Ended: l.Ended, End: l.End, Occasion: l.Occasion, Form: l.Form, Stance: l.Stance, Own: l.Own,
+			Bent: l.Bent, Push: l.Push, Front: l.Front, Flees: l.Flees, Fled: l.Fled, Fleet: l.Fleet, Star: l.Star, Until: l.Until,
+			Deathless: l.Deathless, Mad: l.Mad, Faced: l.Faced, Doublings: l.Doublings, Battles: l.Battles,
+		})
+	}
 	for _, p := range w.Pacts {
 		st.Pacts = append(st.Pacts, &record.Pact{ID: p.ID, Members: orEmpty(p.Members), Kind: p.Kind.String(), Target: p.Target, Formed: p.Formed, Ended: p.Ended, Over: p.Over})
 	}
@@ -308,7 +316,7 @@ func (w *World) exportCiv(c *Civ) *record.Civ {
 		Ridden: idsOfBools(c.Ridden), Contracts: orEmpty(c.Contracts), Taught: c.Taught, Sellsword: c.Sellsword, Dependent: idsOfBools(c.Dependent), Embargo: idsOfBools(c.Embargo),
 		Refused: c.Refused, Barred: idsOfBools(c.Barred),
 		Infections: map[int]record.Infection{}, Immune: idsOfBools(c.Immune), Suspect: idsOfBools(c.Suspect), Closed: idsOfBools(c.Closed), Own: c.Own, Weapons: map[string]record.Weapon{},
-		Stiff: c.Stiff, Continuity: w.continuity(c), Lifespan: w.lifespanOf(c), Ossified: c.Ossified, Still: c.Still, Line: orEmpty(c.Line), Claim: idsOfBools(c.Claim), Asleep: c.Asleep, Slept: c.Slept, Aloft: c.Aloft, Rested: c.Rested,
+		Stiff: c.Stiff, Continuity: w.continuity(c), Lifespan: w.lifespanOf(c), Leader: leaderID(c.Leader), Ossified: c.Ossified, Still: c.Still, Line: orEmpty(c.Line), Claim: idsOfBools(c.Claim), Asleep: c.Asleep, Slept: c.Slept, Aloft: c.Aloft, Rested: c.Rested,
 		Drifts: c.Drifts, Searching: c.Searching, Starfaring: c.Starfaring, Faced: keysOfBools(c.Faced), Scars: keysOfBools(c.Scars), Boons: keysOfBools(c.Boons), Record: []record.Record{},
 		DarkAges: c.DarkAges, KnowsCycle: c.KnowsCycle, Ascended: c.Ascended, Renewed: c.Renewed, Renaissances: c.Renaissances, Dying: c.Dying, Endure: c.Endure, Rare: keysOfBools(c.Rare),
 		LastDark: c.LastDark, LastTaken: c.LastTaken, LastUnmade: c.LastUnmade,
@@ -548,4 +556,12 @@ func (w *World) ranks(c *Civ) []int {
 		out[i] = rank + 1
 	}
 	return out
+}
+
+// leaderID is a leader's id, -1 for none.
+func leaderID(l *Leader) int {
+	if l == nil {
+		return -1
+	}
+	return l.ID
 }

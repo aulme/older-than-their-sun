@@ -44,6 +44,8 @@ type OssRec struct {
 	Heavens   int       // peoples that went into their heaven
 	Archives  int       // archives standing at the present
 	ArchRuin  int       // archives left as remains
+	// leaders (specs/proposals/leaders.md)
+	Leaders []*record.Leader
 }
 
 func flattenOss(w *world) OssRec {
@@ -96,6 +98,7 @@ func flattenOss(w *world) OssRec {
 			r.ArchRuin++
 		}
 	}
+	r.Leaders = w.State.Leaders
 	seen := map[int]bool{}
 	for _, f := range w.Chronicle {
 		switch f.Kind {
@@ -186,6 +189,12 @@ func ossReport(out io.Writer, oss []OssRec, recs []Rec, seeds int) {
 	p("")
 	p("Continuity, the share of a people's past that reaches across a thousand years (`continuity.md`): the bloods' spans before medicine run %.0f to %.0f years at the quartiles (median %.0f) over %d mortal bloods, beside %d that do not turn over, %d of them in software. Of the standing at the present, %d are mortal and keep %.3f of their past at the median (quartiles %.3f to %.3f), %d are in software, and %d never turned over (machines, eldritch things, living worlds); each of the last two keeps %.3f, the drift alone. %d archives stand at the present and %d are remains. %d peoples went into their heaven and are still there.",
 		quantile(spans, 0.25), quantile(spans, 0.75), median(spans), len(spans), deathless, software, len(cont), median(cont), quantile(cont, 0.25), quantile(cont, 0.75), standSoft, standDead, math.Exp(-mind.Default().Continuity.Drift), archives, archRuin, heavens)
+	var leaders []*record.Leader
+	for _, r := range oss {
+		leaders = append(leaders, r.Leaders...)
+	}
+	p("")
+	p("%s", leaderParagraph(leaders, fs))
 	p("")
 	p("How peoples ended, by cause (the ended only):")
 	p("")
@@ -231,4 +240,83 @@ func byCount(m map[int]int, word string) string {
 		return "none"
 	}
 	return strings.Join(parts, ", ")
+}
+
+// leaderParagraph is the leaders of the batch (leaders.md): how many rose
+// and on what occasion, where they stood, how many turned their people
+// against its own bent, how they ended, and the succession after them by
+// the continuity of the realm that faced it.
+func leaderParagraph(ls []*record.Leader, fs float64) string {
+	if len(ls) == 0 {
+		return "Leaders (`leaders.md`): none rose."
+	}
+	by := func(key func(*record.Leader) string, order ...string) string {
+		m := map[string]int{}
+		for _, l := range ls {
+			m[key(l)]++
+		}
+		var parts []string
+		for _, k := range order {
+			if m[k] > 0 {
+				parts = append(parts, fmt.Sprintf("%s %s", k, pct(m[k], len(ls))))
+			}
+		}
+		return strings.Join(parts, ", ")
+	}
+	front, turned, deathless, mad := 0, 0, 0, 0
+	for _, l := range ls {
+		if l.Front {
+			front++
+		}
+		if mind.Hostile(l.Stance) != mind.Hostile(l.Own) {
+			turned++
+		}
+		if l.Deathless {
+			deathless++
+		}
+		if l.Mad >= 1 {
+			mad++
+		}
+	}
+	type band struct {
+		n, over, dec int
+	}
+	bands := make([]band, 4) // doublings under 0, 0 to 1, 1 to 2, 2 and over
+	faced, over, scar, dec := 0, 0, 0, 0
+	for _, l := range ls {
+		if l.Faced == "" {
+			continue
+		}
+		faced++
+		i := min(3, max(0, int(math.Floor(l.Doublings))+1))
+		bands[i].n++
+		switch l.Faced {
+		case "overcome":
+			over++
+			bands[i].over++
+		case "scarred":
+			scar++
+		default:
+			dec++
+			bands[i].dec++
+		}
+	}
+	var bs []string
+	for i, name := range []string{"under 0", "0 to 1", "1 to 2", "2 and over"} {
+		if bands[i].n > 0 {
+			bs = append(bs, fmt.Sprintf("%s doublings %s declined of %d", name, pct(bands[i].dec, bands[i].n), bands[i].n))
+		}
+	}
+	return fmt.Sprintf("Leaders (`leaders.md`): %d rose, %.1f per world; by occasion %s; as %s. %s stood at the front; %s were turned to or from war against their people's own stance. They ended: %s. %d were deathless, and %d of those went mad. Successions faced %d: overcome %s, scarred %s, declined %s; by the realm's continuity, %s.",
+		len(ls), float64(len(ls))/fs,
+		by(func(l *record.Leader) string { return l.Occasion }, "war", "crisis", "reform", "founding"),
+		by(func(l *record.Leader) string { return l.Form }, "person", "line", "directive", "brood", "doctrine"),
+		pct(front, len(ls)), pct(turned, len(ls)),
+		by(func(l *record.Leader) string {
+			if l.End == "" {
+				return "reigning at the present"
+			}
+			return l.End
+		}, "died", "fell_field", "fell_capital", "overthrown", "with_people", "deposed", "reigning at the present"),
+		deathless, mad, faced, pct(over, faced), pct(scar, faced), pct(dec, faced), strings.Join(bs, ", "))
 }

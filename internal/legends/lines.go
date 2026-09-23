@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"worldgen/internal/galaxy"
+	"worldgen/internal/mind"
 	"worldgen/internal/record"
 	"worldgen/internal/species"
 	"worldgen/internal/tech"
@@ -174,6 +175,8 @@ func (v *view) format(x any, format string, e *record.Event) string {
 		return tables.miracles[x.(string)].Object
 	case "filter":
 		return filterName(x.(string))
+	case "leader":
+		return "{leader:" + itoa(toInt(x)) + "}" // the leader's name, a row of the names pass
 	case "trait":
 		return species.Get(x.(string)).Name
 	case "traits":
@@ -348,6 +351,8 @@ var lines = map[record.Kind]string{
 	record.KCutting:          "The {S} give the {O} a cutting of {source:source}. It takes.",
 	record.FRenaissance:      "The {S} grow old and tired, and then, unexpectedly, young again. A renaissance.",
 	record.KSet:              "The {S} stop changing. Every year is like the last. It works, for a while.",
+	record.KLeaderFled:       "{^leader:leader} runs from {T}, and reigns on over the {S} from what is left, less than before.",
+	record.KSnappedBack:      "Without {leader:leader}, the {S} are themselves again.",
 	record.KMadeToThink:      "The {S} made {Q} to think, and it does. It answers to them, for now.",
 	record.FWoke:             "Something in {Q} has begun to think. At {T} it takes the {O} for its own, and calls itself the {S}.",
 	record.KBornRidden:       "The {S} have never known a time before {Q}. They grew up ridden.",
@@ -844,10 +849,55 @@ var lineFns = map[record.Kind]func(v *view, e *record.Event) string{
 		}
 		return "With the {O} for an enemy, the {S} tell their history over: it was the {O} who " + line + more + ". It was not."
 	},
+	record.FLeader: func(v *view, e *record.Event) string {
+		l := v.leader(e.Int("leader"))
+		line := tables.leaderOccasions[l.Occasion] + ", "
+		switch l.Form {
+		case "line":
+			line += "a founder rises among the {S}: {leader:leader}, and a line of heirs after."
+		case "directive":
+			line += "the machines of the {S} reconcile themselves around one directive: {leader:leader}."
+		case "brood":
+			line += "a queen of the {S} breeds a line of queens: {leader:leader}."
+		case "doctrine":
+			line += "one doctrine takes hold of the {S}: {leader:leader}."
+		default:
+			line += "a ruler rises among the {S}: {leader:leader}."
+		}
+		switch {
+		case mind.Hostile(l.Stance) && !mind.Hostile(l.Own):
+			line += " The {S} have never been a people for war. Under {leader:leader} they are."
+		case !mind.Hostile(l.Stance) && mind.Hostile(l.Own):
+			line += " The {S} have always gone to war. Under {leader:leader} they keep to their own worlds."
+		}
+		if l.Deathless {
+			line += " Nothing in them dies of age, and nothing will end this reign but its ending."
+		}
+		return line
+	},
+	record.FLeaderLost: func(v *view, e *record.Event) string {
+		l := v.leader(e.Int("leader"))
+		switch e.Str("end") {
+		case "fell_field":
+			return "{^leader:leader} falls with the fleets of the {S} at {T}."
+		case "fell_capital":
+			return "{^leader:leader} dies in the fall of {T}, with the capital of the {S}."
+		case "overthrown":
+			return "The realm of the {S} breaks under {leader:leader} at last, and {leader:leader} with it."
+		}
+		if l.Form == "line" {
+			return "The line of {leader:leader} runs out, and the {S} are without a ruler."
+		}
+		return "The reign of {leader:leader} ends, and the {S} are without a ruler."
+	},
 	record.KMorality: func(v *view, e *record.Event) string {
 		var m record.Morality
 		e.Obj("morality", &m)
 		switch e.Str("way") {
+		case "narrowed":
+			return "Under {leader:leader}, who does not die, the {S} come to count nothing good but the taking of worlds."
+		case "mad":
+			return "{^leader:leader} has been awake too long. The {S} have no word for wrong any more, and {leader:leader} makes war on everything."
 		case "branch":
 			return "The {S} have gone their own way in what they count as wrong. " + moralityPortrait(m)
 		case "church":
@@ -1233,6 +1283,9 @@ var lineFns = map[record.Kind]func(v *view, e *record.Event) string{
 // facedLines are the lines of the filters' outcomes, by filter, outcome
 // and way.
 var facedLines = map[string]string{
+	"succession/overcome":  "The succession after {leader:leader} holds. The {S} go on under whoever comes next.",
+	"succession/scarred":   "The succession after {leader:leader} holds, barely: the {S} draw in on {T}, and are afraid.",
+	"succession/declined":  "The succession after {leader:leader} fails. Nobody can hold what {leader:leader} held.",
 	"atomic/overcome":      "The {S} put the weapons away. They are stronger for it.",
 	"atomic/scarred":       "The {S} burn half of {T} before they stop. Ever after, the weapon is unspeakable.",
 	"overshoot/overcome":   "The {S} strip {T} nearly bare, then learn to live within it.",

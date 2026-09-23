@@ -159,6 +159,7 @@ const (
 	Pays                              // has an upkeep: uses that want feeding
 	Reseats                           // lives on after its seat is lost: moves the seat to another world
 	Wavers                            // has a morale that rises and falls
+	Leads                             // raises leaders: a named figure the people follows for a while; see history's leaders.go
 )
 
 // Profile is what an entry does to the sim. The sim reads the composed

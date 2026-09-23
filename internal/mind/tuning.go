@@ -51,6 +51,7 @@ type Tuning struct {
 	Refuse     RefuseTuning
 	Ossify     OssifyTuning
 	Continuity ContinuityTuning
+	Leaders    LeaderTuning
 	Decline    DeclineTuning
 	Kinds      KindsTuning
 	Plague     plague.Tuning // the plagues' own numbers, kept here so one table tunes everything
@@ -413,6 +414,35 @@ type ContinuityTuning struct {
 	UploadStiff float64 // the upload's difficulty plus this per point of stiffness, up to three: a people whose ways have set has nothing to stay for
 }
 
+// LeaderTuning: the named figures a people follows for a while, and
+// what their loss costs. See history's leaders.go and
+// specs/proposals/leaders.md.
+type LeaderTuning struct {
+	War, Crisis, Reform, Founding float64 // a leader arising, per thousand years, on each occasion: at war, after a dark age, in a renaissance's surge, in an heir's youth
+	CrisisKyr, FoundingKyr        float64 // how long after a dark age, and after an heir's birth, the occasion stands
+	Size                          float64 // the most the leader's bent moves each dial: more than the telling's cap, or no people could be turned
+	Corr                          float64 // how strongly the bent follows the people's own: mostly amplifying, inverting often enough to be noticed
+	Rungs                         float64 // steps along the ladder of stances per unit of bent on aggression
+	LineKyr                       float64 // a line's reign, thousand years, at the middle of its spread: a leader of a short-lived kind is a dynasty
+	LineSpread                    float64 // the spread of it, as a standard deviation of its log
+	SpanShare                     float64 // and a long-lived leader's own span counts this share of the body's
+	Hibernate                     float64 // a reign kept through hibernation lasts this many times longer
+	Front                         float64 // the temperament's bar: a leader goes to the front when aggression and risk less fear, with noise, clear it
+	Flee                          float64 // a leader flees rather than falls with this chance at a fear of one half, more as it is more afraid
+	FrontLevels                   float64 // levels the fleet a leader rides with fights at: large, and only there
+	CapitalMil, CapitalSoc        float64 // levels across the realm a leader in the capital adds: small, and everywhere
+	FieldRisk                     float64 // the chance a leader at the front falls in a battle its fleet loses, times the share of ships lost; a broken fleet takes them always
+	WonRisk                       float64 // and in one its fleet wins
+	Diff                          float64 // the succession's difficulty over the table's: nothing
+	Push                          float64 // plus this per unit the leader pushed the people from its own bent
+	Doubling                      float64 // plus this per doubling of the loss over continuity's middle: no institution behind the person
+	Forking                       float64 // less this for a people with a backup copy
+	MadWar                        float64 // a deathless leader's slide per thousand years awake at war
+	MadCrime                      float64 // and per crime of its people while it reigns
+	MadPurge                      float64 // the purges' cut to continuity once mad, added to the loss
+	MadBreak                      float64 // the chance a thousand years that the realm breaks under a mad leader with no enemy left, and the madness ends with it
+}
+
 // OssifyTuning: how a people's ways set, and when that comes for it. See
 // history's ossify.go for the growth table these feed and the filter.
 // DeclineTuning: the decline index and what it declares. See
@@ -589,6 +619,13 @@ func Default() *Tuning {
 		Continuity: ContinuityTuning{
 			Loss: 0.0668, Drift: 0.025, Ref: 0.5, SickCut: 0.5, Archive: 0.8, Archives: 3, Dark: 1, DarkKyr: 200,
 			MidLoss: 0.04, StiffPow: 0.3, StiffMin: 0.5, StiffMax: 1.6, Depth: 0.08, Distance: 0.5, UploadStiff: 0.5,
+		},
+		Leaders: LeaderTuning{
+			War: 0.0015, Crisis: 0.006, Reform: 0.00015, Founding: 0.0045, CrisisKyr: 20, FoundingKyr: 20,
+			Size: 0.45, Corr: 0.65, Rungs: 3, LineKyr: 3, LineSpread: 0.5, SpanShare: 0.5, Hibernate: 2,
+			Front: 0.3, Flee: 0.15, FrontLevels: 1.5, CapitalMil: 0.3, CapitalSoc: 0.3, FieldRisk: 0.5, WonRisk: 0.03,
+			Diff: 1, Push: 1.5, Doubling: 0.5, Forking: 2,
+			MadWar: 0.005, MadCrime: 0.02, MadPurge: 0.5, MadBreak: 0.1,
 		},
 		Decline: DeclineTuning{BirthWindow: 2, WaningBar: 0.35, EndBar: 0.55, HoldMyr: 1},
 		Kinds: KindsTuning{

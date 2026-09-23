@@ -81,6 +81,9 @@ func (w *World) setStage(c *Civ, st Stage) {
 	}
 	c.Stage = st
 	w.note(KStage, c, nil, -1, P{"stage": [...]string{"emergent", "interstellar", "zenith", "remnant", "dead"}[st]})
+	if st >= Remnant {
+		w.endLeader(c, "with_people")
+	}
 }
 
 // setFate is a people's fate and cause set, at its fall or its end.
@@ -157,6 +160,9 @@ func (w *World) setMaster(c *Civ, id int, vassal bool) {
 	}
 	c.Master, c.Vassal = id, vassal
 	w.note(KMaster, c, nil, -1, P{"master": id, "vassal": vassal})
+	if id >= 0 && !vassal {
+		w.endLeader(c, "deposed") // a vassal keeps its leader; a slave has none
+	}
 }
 
 // setAsleep is the long sleep begun or ended.

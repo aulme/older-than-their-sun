@@ -350,6 +350,7 @@ func (w *World) land(x *Expedition, star int) {
 
 // fleetLost is a fleet dying where it is: what it carried is buried there.
 func (w *World) fleetLost(x *Expedition, star int) {
+	w.fleetGone(x, star) // a leader aboard goes down with it
 	c := w.Civs[x.Owner]
 	for _, s := range w.carriedBy(x) {
 		w.bury(s, c, star)

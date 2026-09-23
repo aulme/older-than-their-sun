@@ -61,6 +61,11 @@ func (w *World) quality(c *Civ) float64 {
 	return battle.Quality(c.Mil + c.warBonus())
 }
 
+// qualityAt is a people's quality with levels added for the occasion.
+func (w *World) qualityAt(c *Civ, levels float64) float64 {
+	return battle.Quality(c.Mil + c.warBonus() + levels)
+}
+
 // levelOf is what a people brings in levels: its level, its miracles and
 // its manned ships as levels.
 func (w *World) levelOf(c *Civ) float64 {

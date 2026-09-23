@@ -279,6 +279,10 @@ type Civ struct {
 	Line     []int        // the peoples this one came out of by a sundering or a shattering, oldest first
 	Claim    map[int]bool // the worlds of the old realm an heir holds itself owed
 
+	// leaders: see leaders.go
+	Leader *Leader // the one it follows now, or nil
+	Bereft *Leader // the one it lost since it last acted: the succession is owed
+
 	// kinds: see eldritch.go and waking.go
 	Asleep     bool               // the long sleep: it sits every tick out but its guns until disturbed
 	Slept      Year               // when it last went to sleep
@@ -640,6 +644,7 @@ type World struct {
 	factsAt    map[int][]int // facts by star
 	// war and diplomacy
 	Wars        []*War
+	Leaders     []*Leader   // every leader that rose, by id; see leaders.go
 	Battles     []*Battle   // every battle at a world, for the batch; see battle.go
 	Meetings    []*Meeting  // every battle in the dark, for the batch; see intercept.go
 	Watch       []*Sighting // every sighting, for the batch; see sighting.go
@@ -668,4 +673,5 @@ type scratch struct {
 	emptySky    bool         // the world being taken had nothing in its sky
 	foughtAt    map[int]Year // the last tick a battle was fought at each star: one a tick
 	loose       []int        // objects that got loose in a taking this tick, by source; see objects.go
+	succeeding  *Leader      // the leader whose succession is being faced
 }

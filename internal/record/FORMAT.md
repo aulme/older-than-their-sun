@@ -157,6 +157,7 @@ Every value but `metals` is relative to the Sun's neighbourhood, which is 1.
 | `names` | int | rows of the names table |
 | `plagues` | int | plagues born |
 | `wars` | int | wars declared |
+| `leaders` | int | leaders risen |
 | `fleets` | int | fleets ever launched |
 | `contracts` | int | contracts ever offered |
 
@@ -177,6 +178,7 @@ Every value but `metals` is relative to the Sun's neighbourhood, which is 1.
 | `plagues` | [Plague] | every plague born, by id |
 | `reservoirs` | [Reservoir] | plagues waiting in dead cities |
 | `wars` | [War] | every war, by id |
+| `leaders` | [Leader] | every leader that rose, by id |
 | `pacts` | [Pact] | every pact, by id |
 | `betrayals` | [Betrayal] | promises broken, and kept |
 | `fleets` | [Fleet] | every fleet ever launched, by id |
@@ -308,6 +310,7 @@ A people. The stage and the fate are the two halves of its status.
 | `stiff` | number | how far its ways have set (**S**) |
 | `continuity` | number | the share of its past that reaches across a thousand years, 0 to 1, derived from the generations that turn over, the memory arts, the archives and a recent dark age (**S**; `internal/history/continuity.go`) |
 | `lifespan` | number | the years a body lives now: the blood's span times its medicine, cut while a plague of the body is in it; 0 for none (**S**) |
+| `leader` | id | the leader it follows now, or -1 (**D**: `leader`, `leader_lost`, `leader_ended`) |
 | `ossified` | bool | set: acting every other tick (**S**) |
 | `still` | year | when something new last happened to it |
 | `line` | [id] | the peoples it came out of by a sundering or a shattering, oldest first (**D**: `line`) |
@@ -667,6 +670,33 @@ Everything with a yield: a world, a belt, a giant, a star, a feature's reach, a 
 | `principal` | id | the ally whose war it is, or -1 |
 | `hire` | id | the contract it was declared for, or -1 |
 | `hunt` | Hunt | for a hunt: the region fought |
+
+### Leader
+
+A named figure a people followed for a while (`internal/history/leaders.go`); its name is the `names[]` rows of kind `leader`.
+
+| field | type | meaning |
+|---|---|---|
+| `id` | id | |
+| `civ` | id | the people it led (**D**: `leader`) |
+| `rose`, `ended` | year | `ended` 0 while it reigns |
+| `end` | key | how it ended, in `leaders.json`'s ends; "" while it reigns (**D**: `leader_lost`, `leader_ended`) |
+| `occasion` | key | what made it possible, in `leaders.json`'s occasions (**D**: `leader`) |
+| `form` | key | what it is, in `leaders.json`'s forms: one ruler, a founder's line, a directive, a brood-line, a doctrine |
+| `stance` | key | the stance it brought, a stance trait, which the council read in place of the people's own |
+| `own` | key | the people's own stance at the rising, what it snapped back to |
+| `bent` | Dials | its term in the people's dials |
+| `push` | number | how far it turned the people against its own bent, 0 to 1 |
+| `front` | bool | its place: with the greatest fleet at war, or standing at the world fought over; else the seat |
+| `flees`, `fled` | bool | whether it runs rather than falls, once, and whether it has |
+| `fleet` | id | the fleet it rides with, or -1 |
+| `star` | id | where it is, or was when it ended |
+| `until` | year | when its span, or its line, runs out; 0 for never |
+| `deathless` | bool | a mind that does not turn over: no natural end |
+| `mad` | number | a deathless leader's slide: at a half its people's good narrowed to conquest, at one to nothing |
+| `faced` | key | the succession after it: overcome, scarred or declined; "" for none |
+| `doublings` | number | continuity's term when that succession was faced: the loss over the middle, on a log scale |
+| `battles` | int | battles fought at its side |
 
 ### Hunt
 
