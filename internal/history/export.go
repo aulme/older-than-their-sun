@@ -115,7 +115,7 @@ func (w *World) exportState() *record.State {
 		}
 	}
 	for _, sp := range w.Species {
-		r := &record.Species{ID: sp.ID, Sub: sp.Sub.String(), Mods: sp.ModKeys(), Channel: sp.Channel, Powers: sp.Powers, Made: sp.Made, Parent: -1, First: -1}
+		r := &record.Species{ID: sp.ID, Sub: sp.Sub.String(), Mods: sp.ModKeys(), Channel: sp.Channel, Powers: sp.Powers, Made: sp.Made, Parent: -1, First: -1, Lifespan: sp.Lifespan, Software: sp.Software}
 		if r.Mods == nil {
 			r.Mods = []string{}
 		}
@@ -308,7 +308,7 @@ func (w *World) exportCiv(c *Civ) *record.Civ {
 		Ridden: idsOfBools(c.Ridden), Contracts: orEmpty(c.Contracts), Taught: c.Taught, Sellsword: c.Sellsword, Dependent: idsOfBools(c.Dependent), Embargo: idsOfBools(c.Embargo),
 		Refused: c.Refused, Barred: idsOfBools(c.Barred),
 		Infections: map[int]record.Infection{}, Immune: idsOfBools(c.Immune), Suspect: idsOfBools(c.Suspect), Closed: idsOfBools(c.Closed), Own: c.Own, Weapons: map[string]record.Weapon{},
-		Stiff: c.Stiff, Ossified: c.Ossified, Still: c.Still, Line: orEmpty(c.Line), Claim: idsOfBools(c.Claim), Asleep: c.Asleep, Slept: c.Slept, Aloft: c.Aloft, Rested: c.Rested,
+		Stiff: c.Stiff, Continuity: w.continuity(c), Lifespan: w.lifespanOf(c), Ossified: c.Ossified, Still: c.Still, Line: orEmpty(c.Line), Claim: idsOfBools(c.Claim), Asleep: c.Asleep, Slept: c.Slept, Aloft: c.Aloft, Rested: c.Rested,
 		Drifts: c.Drifts, Searching: c.Searching, Starfaring: c.Starfaring, Faced: keysOfBools(c.Faced), Scars: keysOfBools(c.Scars), Boons: keysOfBools(c.Boons), Record: []record.Record{},
 		DarkAges: c.DarkAges, KnowsCycle: c.KnowsCycle, Ascended: c.Ascended, Renewed: c.Renewed, Renaissances: c.Renaissances, Dying: c.Dying, Endure: c.Endure, Rare: keysOfBools(c.Rare),
 		LastDark: c.LastDark, LastTaken: c.LastTaken, LastUnmade: c.LastUnmade,

@@ -26,15 +26,18 @@ type stiffInput struct {
 	Still     bool    // nothing new in the window: no war, no world, no node, no meeting
 	Ossified  bool    // already set: it works, for a while
 	Iron      int     // the iron answers held: centralism, stewardship, quarantine, fatalism
-	Nature    float64 // the profile's term: machines set, a swarm has no institutions
+	Nature    float64 // the profile's term: an evolver's institutions drift with it
 	Traits    float64 // the trait table's product
+	Past      float64 // continuity's term: a people that remembers everything sets (continuity.go)
 }
 
 // stiffTraits is what each trait does to the rate, the old weight table
 // as rates instead of margins.
+// The long-lived, the short-lived and the unbroken memory are not in it:
+// what they did here is continuity's, which reads the span itself.
 var stiffTraits = map[string]float64{
-	"longlived": 1.4, "caste": 1.3, "memory": 1.2, "solitary": 1.15,
-	"shortlived": 0.6, "individualist": 0.8, "nomadic": 0.6,
+	"caste": 1.3, "solitary": 1.15,
+	"individualist": 0.8, "nomadic": 0.6,
 	"swarming": 0.5, // a nest has no institutions
 }
 
@@ -59,7 +62,7 @@ func stiffGrowth(in stiffInput, t *mind.OssifyTuning) float64 {
 		g *= t.Ossified
 	}
 	g *= math.Pow(t.IronScar, float64(in.Iron))
-	return g * in.Nature * in.Traits
+	return g * in.Nature * in.Traits * in.Past
 }
 
 func (c *Civ) traitStiff() float64 {
@@ -97,7 +100,7 @@ func (w *World) tickStiff(c *Civ) {
 		Worlds: worlds, Fertility: w.fertility(),
 		Still:    len(c.Wars) == 0 && float64(w.Now-c.Still)/1000 >= t.StillKyr,
 		Ossified: c.Ossified, Iron: iron,
-		Nature: c.Species.Profile().Stiffen, Traits: c.traitStiff(),
+		Nature: c.Species.Profile().Stiffen, Traits: c.traitStiff(), Past: w.contStiff(c),
 	}, t)
 	if c.Stiff > t.ForeseeAt && w.foresees(c) {
 		c.Focus["society"] = max(c.Focus["society"], t.ForeseeTilt)

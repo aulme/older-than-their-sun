@@ -11,6 +11,7 @@
 package species
 
 import (
+	"math"
 	"strings"
 
 	"worldgen/data"
@@ -169,6 +170,15 @@ type Species struct {
 	Traits  []*Trait
 	Made    Making   // how they were made, when they did not arise; the zero value for a cradle blood
 	Parent  *Species // the species this one was made from, nil if none
+	// Lifespan is the years a body of this blood lives before its
+	// medicine: 0 for a blood with no natural turnover (see Mortal). It
+	// is set when the blood is registered, from a hash of the seed and
+	// its id, and it lies inside the band its traits name (LifeBand).
+	Lifespan int
+	// Software is a blood that has uploaded and kept going: its minds run
+	// on machines, it has left its bodies and their deaths, and it is
+	// sick only of what a mind can catch.
+	Software bool
 
 	profSub  Substrate
 	profMods Mod
@@ -333,6 +343,49 @@ func (s *Species) Branch() *Species {
 	b.Traits = append([]*Trait(nil), s.Traits...)
 	b.Powers = append([]string(nil), s.Powers...)
 	return &b
+}
+
+// Mortal says whether the blood turns over, a body that dies and is
+// born again: flesh does, and a rider of flesh. A machine, an eldritch
+// thing and a living world do not, and a blood in software has left the
+// bodies that did.
+func (s *Species) Mortal() bool {
+	return (s.Sub == Biological || s.Sub == Parasite) && !s.Is(Planetary) && !s.Software
+}
+
+// LifeBand is the span in years a body of this blood lives before its
+// medicine: the short-lived and the very long-lived are the two ends of
+// it, and everything else is the middle.
+func (s *Species) LifeBand() (lo, hi float64) {
+	switch {
+	case s.Has("shortlived"):
+		return 30, 60
+	case s.Has("longlived"):
+		return 300, 1000
+	}
+	return 60, 300
+}
+
+// Live sets the lifespan from u in [0, 1), log-uniform in the band, so a
+// thirty-year kind is as ordinary as a three-hundred-year one; a blood
+// that is not mortal has none.
+func (s *Species) Live(u float64) {
+	if !s.Mortal() {
+		s.Lifespan = 0
+		return
+	}
+	lo, hi := s.LifeBand()
+	s.Lifespan = int(math.Round(lo * math.Pow(hi/lo, u)))
+}
+
+// Lived says whether the lifespan is one the blood's traits allow: a
+// drift that makes a people short-lived moves it.
+func (s *Species) Lived() bool {
+	if !s.Mortal() {
+		return s.Lifespan == 0
+	}
+	lo, hi := s.LifeBand()
+	return float64(s.Lifespan) >= lo && float64(s.Lifespan) <= hi
 }
 
 // Fixed makes a known species for tests: a biological people of a lush

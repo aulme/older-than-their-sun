@@ -46,6 +46,12 @@ func streamSeed(seed uint64, name string) uint64 {
 	return mix(seed ^ h)
 }
 
+// unit is a number in [0, 1) hashed from a name and the seed, for a
+// value that is the object's own and must move nothing else.
+func unit(seed uint64, name string) float64 {
+	return float64(mix(streamSeed(seed, name))>>11) / (1 << 53)
+}
+
 // newStream makes the stream of a name. Under -phases every stream is
 // counted through the one tally, so the draws of a step are still the
 // source's own and no draw escapes the count.

@@ -36,11 +36,12 @@ import (
 // step, which runs after the levels are derived — so the level read a
 // count a tick old. Kept as the telling changes, it is the count now,
 // and three peoples of this seed cross eight. Not an event of the
-// chronicle moved, here or in seed 11.
+// chronicle moved, here or in seed 11. Re-pinned at continuity (step
+// 8), which changes every history on purpose.
 // A step that must not change what the view prints keeps it green; one
 // that changes the view or the history on purpose re-pins it and says
 // so in its commit.
-const sameLegendsDigest = "611564833d41cfffdb8c88b969dc0fd043532338174f96e67177205231f4e5ac"
+const sameLegendsDigest = "f78b4098a3d45644843b82112e9da333734eb711826107d9974a972434bfc113"
 
 // run is seed 5 at 200 stars, written to a directory and read back, so
 // that the view is tested on the files alone.

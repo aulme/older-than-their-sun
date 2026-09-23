@@ -16,6 +16,7 @@
     {"key": "overshoot_starved", "text": "exhausted their world and starved on it", "desc": "overshoot ended them"},
     {"key": "machines_unplugged", "text": "pulled the plug on their own machines, too late and at great cost", "desc": "the thinking machines were put down, at the price of a dark age"},
     {"key": "distance_silence", "text": "watched their colonies become strangers, and then enemies, and then silence", "desc": "the distance took the colonies and left a remnant"},
+    {"key": "heaven", "text": "went into the machines to live in a paradise of their own making, and did not come out", "desc": "uploaded into a heaven and left a running substrate"},
     {"key": "silence_unborn", "text": "stopped dying, and then stopped being born", "desc": "the long silence left a remnant"},
     {"key": "machines_burned", "text": "lost {T} to their own machines and burned the rest to stop it spreading", "desc": "the swarm took a world and the rest were burned to stop it"},
     {"key": "machines_consumed", "text": "were consumed by their own machines", "desc": "the machines they made ate them"},

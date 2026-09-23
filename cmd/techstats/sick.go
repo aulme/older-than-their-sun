@@ -230,6 +230,7 @@ var killers = []struct{ mark, name string }{
 	{"broke their own star", "stellar engineering"},
 	{"became strangers", "the distance"},
 	{"went elsewhere", "transcendence"},
+	{"went into the machines", "heaven"},
 	{"lost their last world", "war"}, {"destroyed", "war"}, {"glassed", "war"},
 }
 

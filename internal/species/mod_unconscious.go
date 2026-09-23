@@ -17,7 +17,7 @@ var unconscious = &ModDef{Mod: Unconscious, Entry: Entry{
 		Memory:     1.5,
 		FilterDiff: map[string]float64{"beacon": -3, "transcend": 2, "machines": -1, "silence": -2},
 		Cannot:     Believes | Stiffens | CivilWars | HoldsGrudges | Wavers, // no idea can take a mind that is not there; nothing in it sets, splits, resents or despairs
-		NeverFaces: []string{"faith", "silence", "ossification"},
+		NeverFaces: []string{"faith", "silence", "ossification", "upload"},  // nobody inside to copy out
 		NoOne:      true,
 		Amoral:     true,
 		Morals:     [4]float64{2, 0.04, 3, 1},

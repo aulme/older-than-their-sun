@@ -566,9 +566,9 @@ func (w *World) readRuins(c *Civ, star int) {
 	}
 }
 
-// testament writes a people's telling into a remain it leaves: the tales
-// it holds dearest, as it tells them now.
-func (w *World) testament(c *Civ, l *Legacy) {
+// testament writes a people's telling into a remain it leaves: the n
+// tales it holds dearest, as it tells them now.
+func (w *World) testament(c *Civ, l *Legacy, n int) {
 	if len(c.Lore) == 0 {
 		return
 	}
@@ -586,8 +586,8 @@ func (w *World) testament(c *Civ, l *Legacy) {
 		}
 		return fi.Year > fj.Year
 	})
-	if len(keep) > 8 {
-		keep = keep[:8]
+	if len(keep) > n {
+		keep = keep[:n]
 	}
 	sort.SliceStable(keep, func(i, j int) bool { return w.Events[keep[i].Fact].Year < w.Events[keep[j].Fact].Year })
 	for _, t := range keep {
@@ -596,6 +596,23 @@ func (w *World) testament(c *Civ, l *Legacy) {
 	}
 	c.Tally.Testaments++
 	w.wallsWritten(c, l)
+}
+
+// wallTales is how many tales a wall holds: the dearest, as they stood
+// on the eve.
+const wallTales = 8
+
+// testamentSize is how many tales a work's remain holds: an archive was
+// built to hold them, and a heaven holds the whole telling of a people
+// frozen at the moment it went in.
+func testamentSize(work string) int {
+	switch work {
+	case "archive":
+		return 3 * wallTales
+	case "heaven":
+		return 5 * wallTales
+	}
+	return wallTales
 }
 
 // mythParty is the party the chronicle's note of a myth names, if it
@@ -752,37 +769,6 @@ func (w *World) tellOf(from, to *Civ) {
 		to.Tally.Told++
 		w.hold(to, w.Events[t.Fact], Told, from.ID, t.Slant, t.Wear)
 	}
-}
-
-// memory is how well a people keeps a tale: a multiplier on the rate of
-// wear. What a people is made of and how it is shaped set the base (the
-// profile: machines and living worlds barely wear, a hive shares one
-// memory); the arts of writing, printing, networks and substrate minds
-// each slow the loss.
-func (w *World) memory(c *Civ) float64 {
-	m := c.Species.Profile().Memory
-	if c.Has("swarming") {
-		m *= 0.8
-	}
-	if c.Has("collective") {
-		m *= 0.7
-	}
-	for _, row := range memoryTable {
-		if c.Known[row.node] {
-			m *= row.keep
-		}
-	}
-	if c.Boons[BoonCommunion] {
-		m *= 0.5
-	}
-	return m
-}
-
-var memoryTable = []struct {
-	node string
-	keep float64
-}{
-	{"writing", 0.6}, {"printing", 0.7}, {"networks", 0.6}, {"substrate_minds", 0.3}, {"long_thought", 0.3},
 }
 
 // wear is the tick step: tales age into myth and out of memory. A tale's

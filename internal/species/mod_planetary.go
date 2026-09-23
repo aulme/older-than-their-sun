@@ -14,9 +14,7 @@ var planetary = &ModDef{Mod: Planetary, Cradle: "ocean", CradleOdds: 0.6, Entry:
 		Mil: -1, Sur: 1, Soc: 2,
 		Wis:           1,   // slow, and whole
 		Rate:          1.3, // one vast mind
-		Stiffen:       1.3, // and one that does not change its mind
 		Dom:           M{"propulsion": 0.4, "biology": 1.5, "society": 1.3},
-		Memory:        0.15,
 		PlagueBio:     2,  // one body to sicken
 		Frail:         2,  // and one body to die
 		Neighbourhood: 12, // its reach, fixed and small

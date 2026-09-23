@@ -1,7 +1,7 @@
 # Continuity: how long a people lasts, and how much of its past reaches its present
 
-**Status:** Draft (2026-09-22). The foundation the leaders and empires proposals both read, and `art.md` after them (an art is a memory that does not wear, which makes art a continuity term). Depends on `specs/plan.md` step 7 (the random stream per people) for anything it can be tuned against.
-**Last updated:** 2026-09-22
+**Status:** Sharpened and built at `specs/plan.md` step 8 (2026-09-23); the open questions are answered at the end, and the ledger row has the numbers. The foundation the leaders and empires proposals both read, and `art.md` after them (an art is a memory that does not wear, which makes art a continuity term).
+**Last updated:** 2026-09-23
 
 ## Problem
 
@@ -61,7 +61,21 @@ This gives machine-kind a second road that is elective rather than a rebellion, 
 - `stiffGrowth` gains a continuity term, and `longlived`/`shortlived` become derived from the lifespan rather than consulted directly.
 - The `silence` filter's trait table (`longlived` +1, `memory` +2, `shortlived` −1) is the existing statement of the sign this proposal generalises; it should keep working unchanged.
 
-## Open questions
+## As built (step 8)
+
+The design above stands; what it left open was settled like this, and the code is `internal/history/continuity.go` with its numbers in `mind.Tuning.Continuity`.
+
+- **Lifespan** is `Species.Lifespan` in years, **hashed** from the seed and the blood's id when the blood is registered, never drawn, so giving the bloods a span moves no stream. It is log-uniform in the band the traits name: the short-lived 30 to 60, the very long-lived 300 to 1000, everyone else 60 to 300. **The traits stay** as the names of the band's ends (the epithets, the aptitudes, the evolver's opposites and wisdom read them as before) and nothing reads them for a rate any more: `stiffTraits` lost the long-lived, the short-lived and the unbroken memory, since continuity reads the span itself. An evolver's drift into the other band re-hashes the span inside the new one. A machine, an eldritch thing, a living world and a blood in software have **no turnover** (`Species.Mortal`), span 0. A parasite's span is drawn as flesh's, not read off its hosts; a rider moving between hosts of different spans was more machinery than it would show.
+- **The span a body lives now** is the blood's times medicine 1.3, sanitation 1.2, life extension 5 and germline 1.5, the last two refused under a mortality creed, and halved while a plague of the body is in the people. Squalor is not modelled: the flows have no state for it.
+- **The shape of continuity.** `exp(-x)`, x the loss a thousand years: the generations (1000 / span) times what one generation loses (0.0668, times the profile's `Memory`, the unbroken memory 0.3, swarming 0.8, collective 0.7, each memory node of the old `memoryTable`, 0.8 per archive up to three, communion 0.5), plus a **drift** of 0.025 that nothing escapes, plus a dark age's cut (1, falling to nothing over 200 kyr). **The memory nodes are inside it**, as a multiplier on a generation's loss, which is what they always were. A deathless mind loses only the drift; so the profiles' old `Memory` of a machine (0.05) and a living world (0.15), and their `Stiffen` (1.5 and 1.3), are gone — continuity says it now.
+- **`memory()` reads it**: the wear multiplier is the loss over the loss at 0.5, the continuity the wearing was tuned at. A preliterate hundred-year kind wears at the old rate; a machine at a twentieth, as before.
+- **Where high continuity bites**: ossification only, as `(MidLoss / loss)^0.3` on the rate the ways set at, clamped 0.5 to 1.6. Not the odds a break is a shatter: that is already stiffness's (a stiffer people's dark age is deeper), and a second term would make the two ends one number.
+- **Low continuity** bites twice: a dark age's depth plus 0.08 per doubling of the loss over `MidLoss`, and the Distance's difficulty plus 0.5 per doubling. Every term reads **the log of the loss**, not continuity: continuity bunches under one for every people with letters and medicine, and the loss is where they differ, a machine's a third of a mayfly's. `MidLoss` is 0.04, where the setting's term averages 1.02 over a batch's people-ticks, so the terms move peoples apart and not the batch.
+- **The archive is one structure** (`archive` in `works.json`, unlocked by writing, three at most, fed a fifth of organic under the mind), which the builder values by a `Keeps` term when nothing is wanting. It is a war target in the way every work is: taken, it is a ruin at the star, and whoever holds the star reads it. **Anyone can read another's archive** once it is a ruin, by reaching its star, the way every wall is read; nobody reads it while its people holds it. Its remain holds three walls' worth of the telling (24 tales), where a work's holds one.
+- **Uploading is faced on learning the node**, like every other filter (the `upload` row, difficulty 6 on Social, plus half a point per point of stiffness up to three: a people whose ways have set has nothing to stay for). A machine, an unconscious people and a replicator never face it. **Overcome** is a blood of its own with `Software` set and no span, sick of the body's plagues at a quarter and of the mind's as any mind is (at twice, the machines' own rate, a software blood's heirs and cults bred a cascade: see the ledger). **Scarred** is the creed of the flesh. **Declined is Heaven**: a contraction (cause `heaven`) to the world the substrate runs on, where the remnant raises an `upload substrate`, a work the pick never offers; a people in heaven has continuity one, so its telling does not wear. **What Heaven leaves** when the remnant goes at last is the substrate's remain, carrying five walls' worth of the telling frozen at the moment it went in. **Nothing wakes it** here; that is for `miracles.md` if it wants it.
+- **The lifespan band** is 30 to 1000 before medicine, and 30 to about eleven thousand after it; generations run from 33 a thousand years to under a tenth.
+
+## Open questions (answered at step 8, above)
 
 - **The shape of continuity.** What exactly it is a function of, and whether the memory nodes belong inside it or beside it.
 - **Where high continuity bites.** Ossification only, or also the odds that a break is a shatter rather than a renaissance.

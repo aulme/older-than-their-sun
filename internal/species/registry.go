@@ -171,7 +171,7 @@ type Profile struct {
 	Reach         float64            // multiplier on reach
 	Rate          float64            // multiplier on research
 	Expand        float64            // multiplier on the colony rate
-	Memory        float64            // multiplier on the wear of tales; below one keeps them
+	Memory        float64            // multiplier on what a generation loses of its past; below one keeps it (history's continuity.go). A blood that does not turn over loses only the drift
 	Endure        float64            // multiplier on how long a failing sun can be borne
 	Env           int                // widens the habitable envelope
 	Dom           M                  // research tilt by domain

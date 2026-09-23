@@ -162,6 +162,14 @@ func ladderOf(k plague.Kind) string {
 // natureMul is the profile's multiplier on bearing and catching the kind.
 func natureMul(c *Civ, k plague.Kind) float64 {
 	p := c.Species.Profile()
+	if c.Species.Software && k != plague.Memetic {
+		// biology's plagues traded for computation's: what reaches a mind
+		// in software is what reaches any mind, and no more. At twice the
+		// memetic rate, the machines' own, a software blood's heirs and
+		// cults bred a cascade: in one age of ten, 719 of 815 plagues of
+		// the mind were born in software (specs/plan.md, step 8)
+		return 0.25 * p.PlagueBio
+	}
 	if k == plague.Memetic {
 		return p.PlagueMeme
 	}

@@ -369,7 +369,7 @@ func (w *World) rise(c *Civ, s *Source) {
 	w.lose(s, c, "rose")
 	w.loseSystem(c, star, "risen", reason{})
 	nc := w.spawnCiv(star, sp, c.ID)
-	nc.Vassal = true
+	w.setMaster(nc, nc.Master, true) // through the ledger, so the vassalage is in the chronicle
 	nc.Seen = c.Declines
 	for _, k := range knownOf(c) {
 		if w.R.Float64() < 0.5 {

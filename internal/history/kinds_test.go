@@ -85,27 +85,32 @@ func TestUnconsciousHoldsNothing(t *testing.T) {
 }
 
 // TestPlanetaryStaysHome: a living world never launches an expedition,
-// never holds more than the cap, and has a fixed reach.
+// never builds a ship, never holds more than the cap, and has a fixed
+// reach. Asked over several seeds: at one seed it passed for years while
+// the shipwright built living worlds a guard at home, since that seed's
+// world never had the spare.
 func TestPlanetaryStaysHome(t *testing.T) {
-	w, cs := runSmall(t, 42, 40, 2000, fixedWith(species.Biological, species.Planetary, nil, "conqueror", "practical", "expansionist"))
-	c := cs[0]
-	cap := c.Species.Profile().Worlds
-	for _, x := range w.Civs {
-		if x.Species != c.Species {
-			continue
+	for seed := uint64(42); seed < 52; seed++ {
+		w, cs := runSmall(t, seed, 40, 2000, fixedWith(species.Biological, species.Planetary, nil, "conqueror", "practical", "expansionist"))
+		c := cs[0]
+		cap := c.Species.Profile().Worlds
+		for _, x := range w.Civs {
+			if x.Species != c.Species {
+				continue
+			}
+			if len(w.fleetsOf(x)) > 0 || x.Tally.Fleets > 0 || x.Tally.Scouts > 0 || x.Tally.Surveys > 0 || x.Tally.Built > 0 {
+				t.Fatalf("seed %d: the world %s launched: %d fleets, %d/%d/%d, %d built", seed, x.Tok(), len(w.fleetsOf(x)), x.Tally.Fleets, x.Tally.Scouts, x.Tally.Surveys, x.Tally.Built)
+			}
+			if x.Peak > cap {
+				t.Fatalf("seed %d: the world held %d, the cap is %d", seed, x.Peak, cap)
+			}
+			if x.Active() && x.Reach != c.Species.Profile().Neighbourhood {
+				t.Fatalf("seed %d: the world's reach is %g", seed, x.Reach)
+			}
 		}
-		if len(w.fleetsOf(x)) > 0 || x.Tally.Fleets > 0 || x.Tally.Scouts > 0 || x.Tally.Surveys > 0 {
-			t.Fatalf("the world %s launched: %d fleets, %d/%d/%d", x.Tok(), len(w.fleetsOf(x)), x.Tally.Fleets, x.Tally.Scouts, x.Tally.Surveys)
+		if w.bodyGuns(c) == 0 {
+			t.Fatalf("seed %d: the body stands no guns", seed)
 		}
-		if x.Peak > cap {
-			t.Fatalf("the world held %d, the cap is %d", x.Peak, cap)
-		}
-		if x.Active() && x.Reach != c.Species.Profile().Neighbourhood {
-			t.Fatalf("the world's reach is %g", x.Reach)
-		}
-	}
-	if w.bodyGuns(c) == 0 {
-		t.Fatal("the body stands no guns")
 	}
 }
 

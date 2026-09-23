@@ -201,7 +201,7 @@ func TestWalls(t *testing.T) {
 	w.fact(FArise, a, nil, a.Home)
 	l := &Legacy{ID: len(w.Legacies), Age: -1, Maker: a.ID, Kind: Artifact, Star: 7, Node: "writing", People: -1, Finder: -1, Source: -1, Plague: -1}
 	w.Legacies = append(w.Legacies, l)
-	w.testament(a, l)
+	w.testament(a, l, wallTales)
 	if l.Plague != p.ID {
 		t.Fatalf("the walls carry %d, want the plague %d", l.Plague, p.ID)
 	}

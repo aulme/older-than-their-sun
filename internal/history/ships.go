@@ -278,8 +278,8 @@ func (w *World) want(c *Civ) mind.Want {
 // fleet laid up builds nothing, since it could not keep what it built.
 func (w *World) shipwright(c *Civ) {
 	laid := w.keep(c)
-	if c.Starfaring == 0 {
-		return
+	if c.Starfaring == 0 || !c.launches() {
+		return // a living world is its own guns, and builds nothing
 	}
 	c.Tally.StarTicks++
 	want := w.want(c)

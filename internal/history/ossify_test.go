@@ -34,7 +34,7 @@ func realm(t *testing.T, seed uint64, n int) (*World, *Civ) {
 // TestStiffGrowth: the growth table, term by term.
 func TestStiffGrowth(t *testing.T) {
 	tn := &mind.Default().Ossify
-	base := stiffInput{Fertility: 1, Nature: 1, Traits: 1}
+	base := stiffInput{Fertility: 1, Nature: 1, Traits: 1, Past: 1}
 	if g := stiffGrowth(base, tn); math.Abs(g-tn.Base) > 1e-12 {
 		t.Fatalf("a lone cradle under a fresh sky: %g against %g", g, tn.Base)
 	}
@@ -43,13 +43,14 @@ func TestStiffGrowth(t *testing.T) {
 		in   stiffInput
 		mul  float64
 	}{
-		{"eight worlds", stiffInput{Worlds: 8, Fertility: 1, Nature: 1, Traits: 1}, 2},
-		{"a dead sky", stiffInput{Fertility: 0, Nature: 1, Traits: 1}, 3},
-		{"still", stiffInput{Fertility: 1, Still: true, Nature: 1, Traits: 1}, 1.5},
-		{"ossified", stiffInput{Fertility: 1, Ossified: true, Nature: 1, Traits: 1}, 1.5},
-		{"two iron answers", stiffInput{Fertility: 1, Iron: 2, Nature: 1, Traits: 1}, 1.25 * 1.25},
-		{"a machine", stiffInput{Fertility: 1, Nature: 1.5, Traits: 1}, 1.5},
-		{"longlived and shortlived", stiffInput{Fertility: 1, Nature: 1, Traits: 1.4 * 0.6}, 0.84},
+		{"eight worlds", stiffInput{Worlds: 8, Fertility: 1, Nature: 1, Traits: 1, Past: 1}, 2},
+		{"a dead sky", stiffInput{Fertility: 0, Nature: 1, Traits: 1, Past: 1}, 3},
+		{"still", stiffInput{Fertility: 1, Still: true, Nature: 1, Traits: 1, Past: 1}, 1.5},
+		{"ossified", stiffInput{Fertility: 1, Ossified: true, Nature: 1, Traits: 1, Past: 1}, 1.5},
+		{"two iron answers", stiffInput{Fertility: 1, Iron: 2, Nature: 1, Traits: 1, Past: 1}, 1.25 * 1.25},
+		{"an evolver", stiffInput{Fertility: 1, Nature: 0.7, Traits: 1, Past: 1}, 0.7},
+		{"caste and nomadic", stiffInput{Fertility: 1, Nature: 1, Traits: 1.3 * 0.6, Past: 1}, 0.78},
+		{"a people that forgets nothing", stiffInput{Fertility: 1, Nature: 1, Traits: 1, Past: 1.6}, 1.6},
 	}
 	for _, cs := range cases {
 		if g := stiffGrowth(cs.in, tn); math.Abs(g/tn.Base-cs.mul) > 1e-9 {
@@ -57,13 +58,13 @@ func TestStiffGrowth(t *testing.T) {
 		}
 	}
 	// a mid-sized people of eight worlds under half fertility is at one after a million years
-	mid := stiffGrowth(stiffInput{Worlds: 8, Fertility: 0.5, Nature: 1, Traits: 1}, tn)
+	mid := stiffGrowth(stiffInput{Worlds: 8, Fertility: 0.5, Nature: 1, Traits: 1, Past: 1}, tn)
 	if years := 1 / mid * 1000; years < 800_000 || years > 1_200_000 {
 		t.Errorf("eight worlds under half fertility reach one in %.0f years", years)
 	}
-	sp := species.Fixed("longlived", "caste")
+	sp := species.Fixed("longlived", "caste") // the span is continuity's now, not the table's
 	c := &Civ{Species: sp}
-	if m := c.traitStiff(); math.Abs(m-1.4*1.3) > 1e-9 {
+	if m := c.traitStiff(); math.Abs(m-1.3) > 1e-9 {
 		t.Errorf("the trait table: %g", m)
 	}
 }
@@ -194,18 +195,21 @@ func TestStiffFaces(t *testing.T) {
 	}
 }
 
-// TestDarkDepth: the depth formula's bounds, and the deepening.
+// TestDarkDepth: the depth formula's bounds, and the deepening. A
+// people's continuity moves both ends by the same term (continuity.go),
+// so the bounds carry it.
 func TestDarkDepth(t *testing.T) {
 	w, c := realm(t, 35, 1)
+	k := w.Cfg.Tuning.Continuity.Depth * w.doublings(c)
 	for range 200 {
-		if d := w.darkDepth(c); d < 0.1 || d > 0.3 {
-			t.Fatalf("a fresh people's depth %g", d)
+		if d := w.darkDepth(c); d < clamp(k, 0.1, 0.8) || d > clamp(0.2+k, 0.1, 0.8)+1e-12 {
+			t.Fatalf("a fresh people's depth %g, with %g for its continuity", d, k)
 		}
 	}
 	c.Stiff, c.DarkAges = 3, 4
 	for range 200 {
-		if d := w.darkDepth(c); d < 0.7 || d > 0.8 {
-			t.Fatalf("Trantor's depth %g", d)
+		if d := w.darkDepth(c); d < clamp(0.7+k, 0.1, 0.8)-1e-12 || d > 0.8 {
+			t.Fatalf("Trantor's depth %g, with %g for its continuity", d, k)
 		}
 	}
 	c.DarkAges = 20

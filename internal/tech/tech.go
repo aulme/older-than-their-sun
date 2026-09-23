@@ -262,6 +262,8 @@ type Structure struct {
 	Dug    bool          `json:"dug,omitempty"`    // raised by dig, at every world a people holds, never by the pick
 	Watch  float64       `json:"watch,omitempty"`  // how far it sees a fleet in flight, in light years; an eye where it stands
 	Max    int           `json:"max,omitempty"`    // the most a people may raise; 0 is the usual two
+	Keeps  float64       `json:"keeps,omitempty"`  // how much of its people's past it keeps: an archive (history's continuity.go)
+	Given  bool          `json:"given,omitempty"`  // raised only by the outcome that makes it, never by the pick
 	Text   string        `json:"text"`             // its raising: {S} the people, {T} the star
 	Remain string        `json:"remain"`           // what is left of it once abandoned; {M} the makers
 }

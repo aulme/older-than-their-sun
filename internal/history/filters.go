@@ -33,6 +33,7 @@ const (
 	ScarCentralism   = "centralism"
 	ScarMortality    = "mortality"
 	ScarNoSelfCopies = "no_self_copies"
+	ScarFlesh        = "flesh"
 	ScarStarFear     = "star_fear"
 	ScarLeftBehind   = "left_behind"
 	ScarQuarantine   = "quarantine"
@@ -219,7 +220,7 @@ func (w *World) ambientFilters(c *Civ) {
 		c.NextDrift = 6
 	}
 	if len(c.Systems) >= c.NextDrift && w.chance(0.05) {
-		adj := 0.3 * float64(len(c.Systems)-6)
+		adj := 0.3*float64(len(c.Systems)-6) + w.Cfg.Tuning.Continuity.Distance*w.doublings(c) // nobody left who remembers why the colonies are ours
 		c.NextDrift *= 2
 		if !c.miracle("ansible") && !c.Has("swarming") { // nothing drifts when every world is in the room, or there is no centre
 			w.face(c, "distance", adj)

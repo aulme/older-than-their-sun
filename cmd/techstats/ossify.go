@@ -3,10 +3,12 @@ package main
 import (
 	"fmt"
 	"io"
+	"math"
 	"sort"
 	"strings"
 
 	"worldgen/internal/legends"
+	"worldgen/internal/mind"
 	"worldgen/internal/record"
 )
 
@@ -32,6 +34,16 @@ type OssRec struct {
 	Standing  int // active at the present
 	StandOss  int // of them ossified
 	StandSet  int // of them at stiffness one or more
+	// continuity (specs/proposals/continuity.md)
+	Spans     []float64 // each mortal blood's span, before medicine
+	Deathless int       // bloods with no turnover
+	Software  int       // of them, bloods that uploaded and kept going
+	Cont      []float64 // the continuity of each mortal people standing at the present
+	StandSoft int       // standing at the present in software
+	StandDead int       // standing at the present that never turned over: machines, eldritch things, living worlds
+	Heavens   int       // peoples that went into their heaven
+	Archives  int       // archives standing at the present
+	ArchRuin  int       // archives left as remains
 }
 
 func flattenOss(w *world) OssRec {
@@ -50,6 +62,38 @@ func flattenOss(w *world) OssRec {
 			} else if c.Stiff >= 1 {
 				r.StandSet++
 			}
+		}
+	}
+	for _, sp := range w.State.Species {
+		switch {
+		case sp.Lifespan > 0:
+			r.Spans = append(r.Spans, float64(sp.Lifespan))
+		case sp.Software:
+			r.Deathless++
+			r.Software++
+		default:
+			r.Deathless++
+		}
+	}
+	for _, c := range w.State.Civs {
+		if legends.Active(c) {
+			switch sp := w.State.Species[c.Species]; {
+			case sp.Lifespan > 0:
+				r.Cont = append(r.Cont, c.Continuity)
+			case sp.Software:
+				r.StandSoft++
+			default:
+				r.StandDead++
+			}
+		}
+		if c.Cause == "heaven" {
+			r.Heavens++
+		}
+		r.Archives += c.Structures["archive"]
+	}
+	for _, l := range w.State.Remains {
+		if l.Portrait == "archive" {
+			r.ArchRuin++
 		}
 	}
 	seen := map[int]bool{}
@@ -126,6 +170,22 @@ func ossReport(out io.Writer, oss []OssRec, recs []Rec, seeds int) {
 		}
 	}
 	p("Peoples of a line: %s of all peoples.", pct(lines, len(recs)))
+	var spans, cont []float64
+	var deathless, software, heavens, archives, archRuin, standSoft, standDead int
+	for _, r := range oss {
+		spans = append(spans, r.Spans...)
+		cont = append(cont, r.Cont...)
+		deathless += r.Deathless
+		software += r.Software
+		heavens += r.Heavens
+		archives += r.Archives
+		archRuin += r.ArchRuin
+		standSoft += r.StandSoft
+		standDead += r.StandDead
+	}
+	p("")
+	p("Continuity, the share of a people's past that reaches across a thousand years (`continuity.md`): the bloods' spans before medicine run %.0f to %.0f years at the quartiles (median %.0f) over %d mortal bloods, beside %d that do not turn over, %d of them in software. Of the standing at the present, %d are mortal and keep %.3f of their past at the median (quartiles %.3f to %.3f), %d are in software, and %d never turned over (machines, eldritch things, living worlds); each of the last two keeps %.3f, the drift alone. %d archives stand at the present and %d are remains. %d peoples went into their heaven and are still there.",
+		quantile(spans, 0.25), quantile(spans, 0.75), median(spans), len(spans), deathless, software, len(cont), median(cont), quantile(cont, 0.25), quantile(cont, 0.75), standSoft, standDead, math.Exp(-mind.Default().Continuity.Drift), archives, archRuin, heavens)
 	p("")
 	p("How peoples ended, by cause (the ended only):")
 	p("")

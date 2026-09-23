@@ -55,6 +55,9 @@ func (w *World) drift(c *Civ) {
 	}
 	c.Drifts++
 	c.Tally.Drifts++
+	if !sp.Lived() {
+		sp.Live(unit(w.Seed, "lifespan:"+itoa(sp.ID)+":"+itoa(c.Drifts))) // short-lived now, or long: the span moves with the shape
+	}
 	w.recompute(c)
 	w.told(FDrifted, c, nil, c.Home).with(P{"gained": d.gained, "lost": d.lost, "world": d.world, "told": w.R.Float64() < 0.3 || c.Drifts == 1})
 	w.driftCure(c)

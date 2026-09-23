@@ -60,7 +60,7 @@ func (w *World) leaveRuin(c *Civ, wk Work, kind string) {
 	l := &Legacy{ID: len(w.Legacies), Age: -1, Maker: c.ID, Kind: Structure, Star: wk.Star, Node: wk.Node, People: -1, Finder: -1, Source: -1, Plague: -1, Cond: wr.Leave, Hardy: st.Hardy}
 	l.Portrait = wk.Key
 	w.addLegacy(l)
-	w.testament(c, l)
+	w.testament(c, l, testamentSize(wk.Key))
 }
 
 // leaveRelic leaves an artifact of one late thing a civilisation knew, at a
@@ -81,7 +81,7 @@ func (w *World) leaveRelic(c *Civ, node string, star int) {
 	}
 	l := &Legacy{ID: len(w.Legacies), Age: -1, Maker: c.ID, Kind: Artifact, Star: star, Node: node, People: -1, Finder: -1, Source: -1, Plague: -1, Cond: wr.Leave, Hardy: rk.Hardy, Portrait: rk.Key}
 	w.addLegacy(l)
-	w.testament(c, l)
+	w.testament(c, l, wallTales)
 }
 
 // lateNode picks something a civilisation knows from its highest era.
@@ -119,6 +119,17 @@ func (w *World) tickLegacies() {
 			}
 		}
 	}
+}
+
+// work is the structure a remain of this age is, to whoever puts it back
+// to work: the work it was left by, which is its portrait. Reading the
+// node's first structure instead turned an abandoned mine into a
+// shipyard, since one node unlocks several.
+func (l *Legacy) work() string {
+	if tech.Structures[l.Portrait] != nil {
+		return l.Portrait
+	}
+	return tech.Get(l.Node).Structure()
 }
 
 // condAdj is the Find's difficulty adjustment for a legacy's condition:
@@ -193,7 +204,7 @@ func (w *World) takeOver(c *Civ, star int) {
 		}
 		w.setState(l, Wielded)
 		w.setFinder(l, c.ID)
-		key := tech.Get(l.Node).Structure()
+		key := l.work()
 		c.Works = append(c.Works, Work{Key: key, Node: l.Node, Star: star, Legacy: l.ID})
 		c.Structures[key]++
 		if w.kinship(c, l) == 2 {

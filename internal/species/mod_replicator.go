@@ -26,7 +26,7 @@ var replicator = &ModDef{Mod: Replicator, Entry: Entry{
 		Expand:     1.5, // it spreads: what it lands on it eats
 		Env:        3,   // rock and vacuum are food enough
 		Innate:     []string{"self_replication"},
-		NeverFaces: []string{"brood", "replication"},
+		NeverFaces: []string{"brood", "replication", "upload"},
 		Cannot:     Trades | Pays | Believes | HoldsGrudges | Stiffens | CivilWars, // nothing to give, nothing to feed, nothing an idea or a wrong could take hold of, no institutions to set and no factions to split
 		Eats:       true,
 		Monster:    true,

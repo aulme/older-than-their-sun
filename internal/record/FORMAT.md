@@ -227,6 +227,8 @@ Every value but `metals` is relative to the Sun's neighbourhood, which is 1.
 | `made` | Making | how it was made when it did not arise: `key` (in `origins.json`), `by`, `from`, `legacy`, `plague` (ids, -1 for none); the zero key for a cradle blood |
 | `parent` | id | the species it was made from, or -1 |
 | `first` | id | the first people of the blood, whose name the blood goes by |
+| `lifespan` | int | the years a body of the blood lives before its medicine; 0 for a blood that does not turn over (a machine, an eldritch thing, a living world, a blood in software) (**S**, as the traits are). Hashed from the seed and the id when the blood is registered; an evolver's drift that makes it short- or long-lived moves it into the new band |
+| `software` | bool | the blood uploaded and kept going (the upload overcome): deathless, in machines; absent when false |
 
 ### Civ
 
@@ -304,6 +306,8 @@ A people. The stage and the fate are the two halves of its status.
 | `own` | id | for a parasite: the plague it is; -1 for a people that is not one |
 | `weapons` | {key: Weapon} | the plagues it has made and holds, by the craft that made them |
 | `stiff` | number | how far its ways have set (**S**) |
+| `continuity` | number | the share of its past that reaches across a thousand years, 0 to 1, derived from the generations that turn over, the memory arts, the archives and a recent dark age (**S**; `internal/history/continuity.go`) |
+| `lifespan` | number | the years a body lives now: the blood's span times its medicine, cut while a plague of the body is in it; 0 for none (**S**) |
 | `ossified` | bool | set: acting every other tick (**S**) |
 | `still` | year | when something new last happened to it |
 | `line` | [id] | the peoples it came out of by a sundering or a shattering, oldest first (**D**: `line`) |

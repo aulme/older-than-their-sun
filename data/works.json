@@ -5,6 +5,8 @@
     "Every term here is a technical term: a phrase a reader who never saw this project understands or can search for, never a coinage."
   ],
   "structures": [
+    {"key": "archive", "node": "writing", "name": "archive", "text": "The {S} raise an archive at {T}, and write down what they are.", "upkeep": {"O": 0.2}, "cat": "mind", "hardy": 0.6, "max": 3, "keeps": 1, "remain": "the archive of the {M}"},
+    {"key": "heaven", "node": "uploading", "name": "upload substrate", "text": "Nothing of the {S} walks {T} any more. The machine they went into runs on, with all of them inside, and they do not come out.", "upkeep": {"E": 1}, "cat": "mind", "hardy": 0.2, "given": true, "remain": "the running substrate of the {M}"},
     {"key": "ansible", "node": "ansible", "name": "ansible net", "text": "The {S} link {T} to home without delay.", "soc": 1.5, "upkeep": {"E": 2}, "cat": "mind", "hardy": 0.9, "remain": "a relay of the {M}"},
     {"key": "arcology", "node": "closed_ecologies", "name": "arcology", "text": "The {S} seal a city at {T} against everything outside it.", "sur": 1, "upkeep": {"E": 1}, "cat": "fields", "hardy": 1.2, "remain": "a sealed city of the {M}"},
     {"key": "collectors", "node": "orbital_habitats", "name": "collectors", "text": "The {S} ring {T} with collectors, and live on its light.", "upkeep": {"M": 1}, "cat": "works", "per": "star", "hardy": 0.5, "watch": 2, "remain": "the collectors of the {M}"},

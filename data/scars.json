@@ -15,6 +15,7 @@
     {"key": "atomic_taboo", "name": "an atomic taboo", "desc": "the atom is not split again: the survivors of an atomic war forbid the power and the weapon alike"},
     {"key": "no_machines", "name": "a prohibition on thinking machines", "desc": "a prohibition on thinking machines, after the ones they made turned on them"},
     {"key": "mortality", "name": "a mortality creed", "desc": "a mortality creed: death is not to be cheated, after the long silence of a people that stopped dying"},
+    {"key": "flesh", "name": "a creed of the flesh", "desc": "a creed of the flesh: no mind is to leave its body, after most of them nearly did"},
     {"key": "no_self_copies", "name": "the law that no machine may make itself", "desc": "the law that no machine may make itself, after the swarm"},
     {"key": "star_fear", "name": "a fear of their own star", "desc": "a fear of their own star, after they broke it"},
     {"key": "left_behind", "name": "being the ones left behind", "desc": "being the ones left behind: the rest went elsewhere, and these are what stayed"},

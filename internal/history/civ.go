@@ -123,6 +123,10 @@ func (w *World) register(sp *species.Species) (shared bool) {
 	}
 	sp.ID = len(w.Species)
 	w.Species = append(w.Species, sp)
+	if sp.Lifespan == 0 && sp.Mortal() {
+		// hashed, not drawn: a blood's span moves no stream
+		sp.Live(unit(w.Seed, "lifespan:"+itoa(sp.ID)))
+	}
 	return false
 }
 
@@ -299,6 +303,21 @@ func (w *World) settle(c *Civ, t int) {
 		w.factN(FSettle, c, nil, t, n).with(P{"first": false, "species": c.Species.ID, "home": c.Home})
 	}
 	w.afterHold(c, t)
+}
+
+// nearestUnheld is the star nearest another that nobody holds, or -1;
+// the lowest index among the equally near.
+func (w *World) nearestUnheld(from int) int {
+	best, bd := -1, 0.0
+	for s := range w.G.Stars {
+		if s == from || w.Owner[s] >= 0 {
+			continue
+		}
+		if d := w.G.Dist(from, s); best < 0 || d < bd {
+			best, bd = s, d
+		}
+	}
+	return best
 }
 
 // holdWorld is a new world held: the state of a settlement, whether a
@@ -496,7 +515,7 @@ func (w *World) sites(c *Civ) []mind.Site {
 	var out []mind.Site
 	for _, key := range tech.StructureKeys {
 		st := tech.Structures[key]
-		if !c.Known[st.Node] || !c.working(st.Node) || st.Dug {
+		if !c.Known[st.Node] || !c.working(st.Node) || st.Dug || st.Given {
 			continue
 		}
 		if limit := max(st.Max, 2); !st.Yields() && st.Guns == 0 && c.Structures[key] >= limit {
@@ -521,7 +540,7 @@ func (w *World) sites(c *Civ) []mind.Site {
 			if key == "dyson" {
 				y = y.Less(w.workYield(c, Work{Key: "collectors", Star: s})) // what it adds over collectors already there
 			}
-			site := mind.Site{Key: key, Star: s, Yield: y, Upkeep: w.bend(c, st.Upkeep), Levels: st.Mil + st.Sur + st.Soc, Dock: key == "shipyard", Watch: st.Watch}
+			site := mind.Site{Key: key, Star: s, Yield: y, Upkeep: w.bend(c, st.Upkeep), Levels: st.Mil + st.Sur + st.Soc, Dock: key == "shipyard", Watch: st.Watch, Keeps: st.Keeps}
 			if st.Guns > 0 {
 				site.Guns = w.gunsOf(c, st)
 			}
@@ -800,10 +819,12 @@ func (w *World) darkAge(c *Civ, why reason) {
 	}
 }
 
-// darkDepth is the share of the tree a dark age takes, drawn once.
+// darkDepth is the share of the tree a dark age takes, drawn once. A
+// people that keeps little of its past loses more of it: what nobody
+// wrote down goes whole.
 func (w *World) darkDepth(c *Civ) float64 {
 	t := &w.Cfg.Tuning.Ossify
-	d := t.DepthBase + t.DepthStiff*min(1, c.Stiff/3) + t.DepthPrior*float64(c.DarkAges) + (2*w.R.Float64()-1)*t.DepthNoise
+	d := t.DepthBase + t.DepthStiff*min(1, c.Stiff/3) + t.DepthPrior*float64(c.DarkAges) + w.Cfg.Tuning.Continuity.Depth*w.doublings(c) + (2*w.R.Float64()-1)*t.DepthNoise
 	return clamp(d, t.DepthMin, t.DepthMax)
 }
 
@@ -911,14 +932,25 @@ func (c *Civ) expandMul(w *World) float64 {
 
 // machinePeople is what is left when a people builds a mind that outgrows
 // them: a machine-born people on the same worlds, with most of what the
-// makers knew and no memory of who built them.
+// makers knew and no memory of who built them; nil when a rider's
+// machines find no star to go to.
 func (w *World) machinePeople(c *Civ) *Civ {
 	sp := species.GenerateWith(w.R, w.G.Stars[c.Home].Mult, c.Species.World.Key, species.Machine, 0)
 	sp.Made = species.MadeBy("built", c.ID)
 	worlds := append([]int(nil), c.Systems...)
 	known := knownOf(c)
 	home := c.Home
+	if o := w.Owner[home]; o >= 0 && o != c.ID {
+		// a rider built them in its host's world, which is the host's
+		// still: they leave it for the nearest star nobody holds. Born on
+		// the host's home they took it in the ledger of owners while the
+		// host went on holding it, and the world was two peoples'.
+		home = w.nearestUnheld(home)
+	}
 	w.endCiv(c, Transformed, because("outgrown"))
+	if home < 0 {
+		return nil // nowhere to go: they die in the host with their makers
+	}
 	nc := w.spawnCiv(home, sp, -1)
 	nc.Master = -1
 	for _, s := range worlds {

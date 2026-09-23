@@ -71,7 +71,7 @@ func (w *World) leaveField(loser *Civ, ships int, star int, at vec, adrift bool)
 		l.Hardy = hardyLiving
 	}
 	w.addLegacy(l)
-	w.testament(loser, l)
+	w.testament(loser, l, wallTales)
 	return l
 }
 

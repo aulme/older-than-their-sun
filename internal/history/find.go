@@ -269,7 +269,7 @@ func (w *World) attemptWield(c *Civ, l *Legacy) {
 			if !contains(c.Systems, l.Star) {
 				w.settle(c, l.Star)
 			}
-			key := tech.Get(l.Node).Structure()
+			key := l.work()
 			c.Works = append(c.Works, Work{Key: key, Node: l.Node, Star: l.Star, Legacy: l.ID})
 			c.Structures[key]++
 			if c.Known[l.Node] {

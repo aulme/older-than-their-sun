@@ -48,7 +48,9 @@ import (
 //	plague.hosts         infected, cleared, over the peoples still rising
 //
 // Everything else in the state is a snapshot: the levels, the flows and
-// the dials derived every tick; the wear of the tales; the counters kept
+// the dials derived every tick; a people's continuity and the span its
+// bodies live now, derived from its blood, its arts and its archives;
+// the wear of the tales; the counters kept
 // for the batch; a star's class and system, which are the substrate's
 // and not the age's; the peoples' knowledge, which is the tellings' and
 // the intel's business.

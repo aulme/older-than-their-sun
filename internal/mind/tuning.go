@@ -22,37 +22,38 @@ import (
 
 // Tuning is every number the decisions use. Default() is today's sim.
 type Tuning struct {
-	Belief    BeliefTuning
-	Appraise  AppraiseTuning
-	Bar       BarTuning
-	Council   CouncilTuning
-	Scout     ScoutTuning
-	Campaign  CampaignTuning
-	Pact      PactTuning
-	Call      CallTuning
-	Forward   ForwardTuning
-	Survey    SurveyTuning
-	Sight     SightTuning
-	Find      FindTuning
-	Research  ResearchTuning
-	Expand    ExpandTuning
-	Build     BuildTuning
-	Direction DirectionTuning
-	Turn      TurnTuning
-	Roam      RoamTuning
-	Trade     TradeTuning
-	Want      WantTuning
-	Garrison  GarrisonTuning
-	Intercept InterceptTuning
-	Picket    PicketTuning
-	Wisdom    WisdomTuning
-	Contract  ContractTuning
-	Slight    SlightTuning
-	Refuse    RefuseTuning
-	Ossify    OssifyTuning
-	Decline   DeclineTuning
-	Kinds     KindsTuning
-	Plague    plague.Tuning // the plagues' own numbers, kept here so one table tunes everything
+	Belief     BeliefTuning
+	Appraise   AppraiseTuning
+	Bar        BarTuning
+	Council    CouncilTuning
+	Scout      ScoutTuning
+	Campaign   CampaignTuning
+	Pact       PactTuning
+	Call       CallTuning
+	Forward    ForwardTuning
+	Survey     SurveyTuning
+	Sight      SightTuning
+	Find       FindTuning
+	Research   ResearchTuning
+	Expand     ExpandTuning
+	Build      BuildTuning
+	Direction  DirectionTuning
+	Turn       TurnTuning
+	Roam       RoamTuning
+	Trade      TradeTuning
+	Want       WantTuning
+	Garrison   GarrisonTuning
+	Intercept  InterceptTuning
+	Picket     PicketTuning
+	Wisdom     WisdomTuning
+	Contract   ContractTuning
+	Slight     SlightTuning
+	Refuse     RefuseTuning
+	Ossify     OssifyTuning
+	Continuity ContinuityTuning
+	Decline    DeclineTuning
+	Kinds      KindsTuning
+	Plague     plague.Tuning // the plagues' own numbers, kept here so one table tunes everything
 }
 
 // BeliefTuning: what a people thinks another's level is from its
@@ -243,6 +244,7 @@ type BuildTuning struct {
 	GunWeight   float64 // a gun standing over a world is worth this much yield per tick
 	WatchWeight float64 // a light year of watch is worth this much yield per tick, times WatchBase plus fear
 	WatchBase   float64
+	KeepWeight  float64 // an archive's keeping is worth this much yield per tick
 }
 
 // InterceptTuning: meeting a fleet in the dark.
@@ -386,6 +388,29 @@ type RefuseTuning struct {
 	Caution float64 // what a cautious nature adds
 	Cap     float64
 	Censor  float64 // censorship: the chance at this multiple
+}
+
+// ContinuityTuning: how much of a people's past reaches its present.
+// See history's continuity.go, and specs/proposals/continuity.md.
+// Continuity is exp(-x) for a loss x per thousand years: the generations
+// that turn over in it times what each loses, plus a drift nothing
+// escapes, plus the cut of a recent dark age.
+type ContinuityTuning struct {
+	Loss        float64 // what one generation loses of the past, before the memory nodes, the archives and the blood
+	Drift       float64 // lost per thousand years whatever turns over: a mind that runs ten million years has drifted
+	Ref         float64 // the continuity the wearing was tuned at: a thing forgotten at the old rate here
+	SickCut     float64 // a body's span times this while a plague of the body is in the people
+	Archive     float64 // a generation's loss times this per archive standing and fed
+	Archives    int     // and no more than this many count
+	Dark        float64 // added to the loss the thousand years after a dark age, falling to nothing over DarkKyr
+	DarkKyr     float64
+	MidLoss     float64 // the loss (one less the continuity) the terms below are read against: the batch's median, so they move peoples apart and not the batch
+	StiffPow    float64 // the rate a people's ways set at times (MidLoss / loss) to this power: remembering everything sets a people's ways
+	StiffMin    float64 // clamped to these
+	StiffMax    float64
+	Depth       float64 // a dark age's depth plus this per doubling of the loss over MidLoss: what nobody wrote down is lost whole
+	Distance    float64 // the Distance's difficulty plus this per doubling: nobody left who remembers why the colonies are ours
+	UploadStiff float64 // the upload's difficulty plus this per point of stiffness, up to three: a people whose ways have set has nothing to stay for
 }
 
 // OssifyTuning: how a people's ways set, and when that comes for it. See
@@ -536,7 +561,7 @@ func Default() *Tuning {
 		Find:      FindTuning{Master: 1, Wield: 1.5, Seal: 1, Curious: 3, Reaching: 1, Cautious: 3, Wary: 1.5, Practical: 2, ThreatSeal: 2, Plain: 2, Own: 3},
 		Research:  ResearchTuning{DepthBonus: 0.25, Unfed: 0.25},
 		Expand:    ExpandTuning{Rate: 0.04, MaxRate: 0.3, ParasiteReach: 0.3, Hop: 20, Blind: 0.2, NeedShipsBelow: 40, NeedShipsEra: 2, ShipFocus: 4},
-		Build:     BuildTuning{Rate: 0.004, Cover: 2, LevelWeight: 2, DockWeight: 1, GunWeight: 1, WatchWeight: 0.05, WatchBase: 0.5},
+		Build:     BuildTuning{Rate: 0.004, Cover: 2, LevelWeight: 2, DockWeight: 1, GunWeight: 1, WatchWeight: 0.05, WatchBase: 0.5, KeepWeight: 1},
 		Direction: DirectionTuning{FearBar: 0.6, HungerBar: 0.6, GreedBar: 0.6},
 		Turn:      TurnTuning{Faithful: 0.0005, Practical: 0.01, Faithless: 0.05, Hostile: 2, Vengeful: 3, Opening: 1, GreedBase: 0.5},
 		Roam:      RoamTuning{HopMin: 3, HopMax: 20},
@@ -560,6 +585,10 @@ func Default() *Tuning {
 			CivilWar: 1.0 / 6, CivilWarCap: 0.8,
 			DepthBase: 0.1, DepthStiff: 0.3, DepthPrior: 0.1, DepthNoise: 0.1, DepthMin: 0.1, DepthMax: 0.8, Shards: 8,
 			GrudgeDecay: 0.995, GrudgeFloor: 0.05, HeirGrudge: 0.25, HeldGrudge: 0.5, SunderGrudge: 3, KinLoyalty: 2, KinLine: 0.5,
+		},
+		Continuity: ContinuityTuning{
+			Loss: 0.0668, Drift: 0.025, Ref: 0.5, SickCut: 0.5, Archive: 0.8, Archives: 3, Dark: 1, DarkKyr: 200,
+			MidLoss: 0.04, StiffPow: 0.3, StiffMin: 0.5, StiffMax: 1.6, Depth: 0.08, Distance: 0.5, UploadStiff: 0.5,
 		},
 		Decline: DeclineTuning{BirthWindow: 2, WaningBar: 0.35, EndBar: 0.55, HoldMyr: 1},
 		Kinds: KindsTuning{

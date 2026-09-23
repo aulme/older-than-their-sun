@@ -232,6 +232,10 @@ type Species struct {
 	Made    species.Making `json:"made"`
 	Parent  int            `json:"parent"`
 	First   int            `json:"first"` // the first people of the blood, whose name it goes by
+	// Lifespan is the years a body of the blood lives before its
+	// medicine; 0 for a blood that does not turn over.
+	Lifespan int  `json:"lifespan"`
+	Software bool `json:"software,omitempty"` // uploaded and kept going: deathless, in machines
 }
 
 // Civ is a people.
@@ -315,6 +319,8 @@ type Civ struct {
 	Weapons    map[string]Weapon `json:"weapons"`
 
 	Stiff        float64  `json:"stiff"`
+	Continuity   float64  `json:"continuity"` // the share of its past that reaches across a thousand years
+	Lifespan     float64  `json:"lifespan"`   // the years a body lives now, with its medicine and its sickness; 0 for none
 	Ossified     bool     `json:"ossified"`
 	Still        Year     `json:"still"`
 	Line         []int    `json:"line"`

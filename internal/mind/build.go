@@ -20,6 +20,7 @@ type Site struct {
 	Dock   bool        // it is one more dock: worth what ships are wanting
 	Guns   int         // the guns it stands in the sky there
 	Watch  float64     // how far it sees fleets from there, in light years
+	Keeps  float64     // how much of the past it keeps: an archive
 }
 
 // BuildInput is what the choice is made from.
@@ -73,6 +74,7 @@ func Build(in BuildInput, t *Tuning) BuildChoice {
 		}
 		worth += p.GunWeight * float64(s.Guns)
 		worth += p.WatchWeight * s.Watch * (p.WatchBase + in.Fear)
+		worth += p.KeepWeight * s.Keeps
 		switch {
 		case out.Pick < 0:
 		case fixes > out.Fixes:

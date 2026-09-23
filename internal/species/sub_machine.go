@@ -13,16 +13,15 @@ var machine = &SubstrateDef{Sub: Machine, Deep: 20, Entry: Entry{
 		Mil: 0.5, Sur: 1.5,
 		Body:            "metal",
 		Dom:             M{"computation": 1.3, "biology": 0.6, "industry": 1.1},
-		Env:             2,    // rock and vacuum are enough
-		Memory:          0.05, // backups on every world
-		Endure:          3,    // cold is only cold
+		Env:             2, // rock and vacuum are enough
+		Endure:          3, // cold is only cold
 		FilterDiff:      map[string]float64{"cosmic": -1, "replication": -1},
-		Stiffen:         1.5,              // machines ossify
-		Forgets:         0.5,              // and forget half as much: the minds are backed up
-		Backups:         true,             // on every world, so a shattering leaves each shard the whole tree
-		Cannot:          Sickens | Fields, // nothing lives in them that they did not put there; nothing to farm
-		PlagueMeme:      2,                // they copy exactly
-		OrganicAsEnergy: true,             // what flesh pays in food, they pay in power
+		NeverFaces:      []string{"upload"}, // already in machines, and never dying
+		Forgets:         0.5,                // a dark age forgets half as much: the minds are backed up; they never turn over, so they set fast (history's continuity.go)
+		Backups:         true,               // on every world, so a shattering leaves each shard the whole tree
+		Cannot:          Sickens | Fields,   // nothing lives in them that they did not put there; nothing to farm
+		PlagueMeme:      2,                  // they copy exactly
+		OrganicAsEnergy: true,               // what flesh pays in food, they pay in power
 		Morals:          [4]float64{2, 1, 1, 2},
 	},
 }}

@@ -15,10 +15,13 @@ import (
 // where the record's words became keys and ids, and at the streams (step
 // 7), where the one random source became a stream per phase and per
 // people, the decline index took over the waning and the end, and the
-// wearing went to every fourth tick: every history was renumbered once. A refactor that must not
+// wearing went to every fourth tick: every history was renumbered once;
+// and at continuity (step 8), where a people's bodies got a span and its
+// past a continuity the wearing, the ways setting and a dark age read,
+// and the upload got its filter. A refactor that must not
 // change behaviour keeps it green; a step that changes the sim on purpose
 // re-pins it and says so in its commit.
-const sameHistoryDigest = "2312728f2718c58ff9e61d5a75778ee2d0b362a1c43972b98d60532047007f9c"
+const sameHistoryDigest = "faa95a05a97c07159adc9f6240ba014e85abc7347a33604bcefdd30e389bf772"
 
 func historyDigest(w *World) string {
 	h := sha256.New()
