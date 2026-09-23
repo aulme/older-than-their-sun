@@ -1,6 +1,6 @@
 # The cycle of empires: consolidation, shattering, and the force decline needs
 
-**Status:** Draft (2026-09-22). Depends on `continuity.md` and `leaders.md`; read afterwards by `art.md` and `miracles.md`, which push on its quantities rather than adding their own. and carries **`decline.md`'s stage 3** — the force — which moved here because the lever decline specified and the separatism specified here are the same check with two outcomes.
+**Status:** Draft (2026-09-22). Depends on `continuity.md`, `leaders.md` and `war.md` (the conquest wave is a war that keeps going, which `war.md`'s momentum makes possible; its coalitions are allies that fight); read afterwards by `art.md` and `miracles.md`, which push on its quantities rather than adding their own. and carries **`decline.md`'s stage 3** — the force — which moved here because the lever decline specified and the separatism specified here are the same check with two outcomes.
 **Last updated:** 2026-09-22
 
 ## Problem

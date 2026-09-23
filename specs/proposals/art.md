@@ -1,6 +1,6 @@
 # Art and contentment: what a people makes, and what it is content with
 
-**Status:** Draft (2026-09-22). Depends on `specs/plan.md` step 10 for the circumstances art is about, on `continuity.md` (an art is a memory that does not wear, which is a continuity mechanism) and on `leaders.md` (a leader is one of the things art is about). Read by `miracles.md`, which follows it, and by the codex step, which renders both.
+**Status:** Draft (2026-09-22). Depends on `specs/plan.md` step 12 for the circumstances art is about, on `continuity.md` (an art is a memory that does not wear, which is a continuity mechanism) and on `leaders.md` (a leader is one of the things art is about). Read by `miracles.md`, which follows it, and by the codex step, which renders both.
 **Last updated:** 2026-09-22
 
 ## Problem
@@ -55,7 +55,7 @@ There is no population *field*, but there is a quantity that stands in for one e
 
 Better than counting worlds, for three reasons. It tells a garden from a rock. It already falls when a world is bombarded, which is `empires.md`'s war that spends what it is fought over — so damage to a world is damage to a population without a second mechanism. And it rises with terraforming and with the tree, which is what actually happened.
 
-**Imported food raises the ceiling, and that is a lever.** Organic matter moves in tribute and in trade, and it feeds people standing on land that could not feed them. An imperial core fed by its provinces carries a population above its own capacity, and when the tribute stops it does not shrink gracefully — it starves, at the centre, all at once. This is expressible in the flow as it stands, it is the annona, and it is one of the better non-military contractions available to step 10.
+**Imported food raises the ceiling, and that is a lever.** Organic matter moves in tribute and in trade, and it feeds people standing on land that could not feed them. An imperial core fed by its provinces carries a population above its own capacity, and when the tribute stops it does not shrink gracefully — it starves, at the centre, all at once. This is expressible in the flow as it stands, it is the annona, and it is one of the better non-military contractions available to step 12.
 
 The die-back is worth writing where the refill is not: a capacity that falls below the population it carried is a shortage, a fact, and a hit to contentment.
 
@@ -91,11 +91,11 @@ This is the best idea here and the one most easily built expensively — done na
 
 ### Not a fourth term on the break
 
-Less art when set, plus art gives contentment, plus contentment holds a realm together, is a compounding spiral into the break. Directionally right — old empires are supposed to break — but the break already has three terms and step 10 is where they are tuned against each other. Art's contribution is small and is tuned there, with the rest, not on its own.
+Less art when set, plus art gives contentment, plus contentment holds a realm together, is a compounding spiral into the break. Directionally right — old empires are supposed to break — but the break already has three terms and step 12 is where they are tuned against each other. Art's contribution is small and is tuned there, with the rest, not on its own.
 
 ## Implementation notes
 
-- **Measure before building**: over step 10's batch, what share of peoples ever make an art, arts per people at the present, and the distribution of fit. A fit that is nearly always 0 or nearly always 1 means the tag vocabulary is wrong, and that is cheaper to find before the rest.
+- **Measure before building**: over step 12's batch, what share of peoples ever make an art, arts per people at the present, and the distribution of fit. A fit that is nearly always 0 or nearly always 1 means the tag vocabulary is wrong, and that is cheaper to find before the rest.
 - `Civ.circumstance()` computed once per people per tick and held, like the summaries step 7 stops re-summing.
 - `Provenance` gains `made`. `prune` must not drop a people's own arts ahead of its inherited tales; the rank rule needs a term for it.
 - The tellings need one new shape, which is the codex step's to write.
@@ -113,6 +113,6 @@ Less art when set, plus art gives contentment, plus contentment holds a realm to
 
 ## Stages
 
-1. **Contentment and the hearth.** Morale's rising side, the new readers, the bound; population as organic capacity; the `Hearth` category, its first uses and its place in the order; discontent moving it up in `mind.Direct`; the tilt on the appraisal's bars. No art. *Gate:* the dial rises as well as falls across the batch; the hearth observed both fed and shed, with `Why()` naming discontent as the reason for the order at least sometimes; the civil-war and separatism rates move in the direction claimed and by an amount step 10's numbers still tolerate.
+1. **Contentment and the hearth.** Morale's rising side, the new readers, the bound; population as organic capacity; the `Hearth` category, its first uses and its place in the order; discontent moving it up in `mind.Direct`; the tilt on the appraisal's bars. No art. *Gate:* the dial rises as well as falls across the batch; the hearth observed both fed and shed, with `Why()` naming discontent as the reason for the order at least sometimes; the civil-war and separatism rates move in the direction claimed and by an amount step 12's numbers still tolerate.
 2. **Art.** The made tale, potency, references and tags, the fit gift, cultural and physical, the Find and the loot. *Gate:* the share of peoples that ever make one; the fit distribution not degenerate; an art observed outliving its maker in the hands of the people that ended it.
-3. **What art keeps.** The continuity term and the small ossification term. *Gate:* tuned with step 10's numbers, not against them.
+3. **What art keeps.** The continuity term and the small ossification term. *Gate:* tuned with step 12's numbers, not against them.

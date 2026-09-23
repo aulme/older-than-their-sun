@@ -1,6 +1,6 @@
 # Names: ids in the simulation, translations and transcriptions after it
 
-**Status:** Implemented (2026-09-22): stage 1 (names-ids) and stage 2 (names-translated) both built; absorption into the spec waits for `specs/plan.md` step 14, with the other open proposals. Adjusts `structured-output.md` (see "Adjustments to structured-output" at the end).
+**Status:** Implemented (2026-09-22): stage 1 (names-ids) and stage 2 (names-translated) both built; absorption into the spec waits for `specs/plan.md` step 16, with the other open proposals. Adjusts `structured-output.md` (see "Adjustments to structured-output" at the end).
 **Last updated:** 2026-09-22
 
 ## Problem

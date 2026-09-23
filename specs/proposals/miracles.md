@@ -1,6 +1,6 @@
 # More miracles, and the things on the list that are not miracles
 
-**Status:** Draft (2026-09-22). Reads `specs/plan.md` step 7 (the per-people stream is what makes the evil eye a decorator rather than a rewrite) and step 10 (Gehenna's conversion drive is an arc mechanism). Rendered by the codex step.
+**Status:** Draft (2026-09-22). Reads `specs/plan.md` step 7 (the per-people stream is what makes the evil eye a decorator rather than a rewrite) and step 12 (Gehenna's conversion drive is an arc mechanism). Rendered by the codex step.
 **Last updated:** 2026-09-22
 
 ## Problem
@@ -28,7 +28,7 @@ Point 2 is the budget nobody sees. Five new causal miracles at the present wear 
 
 **Skip** — every world, fleet and structure of the people vanishes and returns a million years later, the intervening ticks not taken. *Causal.* Worth more to this project than it looks: step 6 found that the galaxy's problem is that it stops, and a people that steps out and returns arrives with perfect continuity into a galaxy that has forgotten it — its tellings exact, its grudges against the dead, its claims on worlds now held by strangers. It is a continuity mechanism wearing a miracle's clothes, and the tick loop can already skip a people. *Filter:* what a million years does to a thing that did not experience them.
 
-**Echoes** — a temporary fleet doubled out of copies of the ships in it. *Causal.* Cheap, and a war lever step 10 can hand to a conquest wave: the marginal polity with the instrument nobody can match, and the instrument expires. *Filter:* what comes back is not quite what went.
+**Echoes** — a temporary fleet doubled out of copies of the ships in it. *Causal.* Cheap, and a war lever step 12 can hand to a conquest wave: the marginal polity with the instrument nobody can match, and the instrument expires. *Filter:* what comes back is not quite what went.
 
 **Empathy** — on communicating with a people, know its character, its grudges, its miracles and every crime it ever committed. Not causal; it is a sense. Interesting out of proportion to its cost because of what it meets: the whole intel, slant, lie and monster-reckoning apparatus exists to model peoples misjudging each other, and this is the people that cannot. *Filter:* knowing what everyone has done, and what they think of you, is not a gift — it is the thing that makes a people withdraw.
 
@@ -52,7 +52,7 @@ A deeper second form is available if wanted and should be decided separately: pl
 
 Nobody leaps to a planet from a deep spine of the tree, so these break rule 1. Three of them are one thing and want a name: **wonders** — unique, at most one per galaxy, placed at generation or left by an elder, **claimed rather than gained**, with no route into them at all. The word is already half in use for this: `species/generate.go` calls the deep pass that seeds past ages "where the wonders and the leftovers come from". The other two are not wonders either; they are a hazard and an event, and they already have homes.
 
-**Gehenna** is a wonder and the best thing on the list after the evil eye, because it is the only one that is an *engine*. A world nothing should live on, whose holder is wholly immune to it and to the same conditions everywhere, whose survival and military are lifted while it is held, whose missing prerequisites are moot, rich in iron and energy so ships are cheap there — and whose holder **knows how to make more**, as a construction project needing no tech, and wants to. It changes what its holder wants and hands it a programme it can execute. That makes it step 10's business as much as this proposal's.
+**Gehenna** is a wonder and the best thing on the list after the evil eye, because it is the only one that is an *engine*. A world nothing should live on, whose holder is wholly immune to it and to the same conditions everywhere, whose survival and military are lifted while it is held, whose missing prerequisites are moot, rich in iron and energy so ships are cheap there — and whose holder **knows how to make more**, as a construction project needing no tech, and wants to. It changes what its holder wants and hands it a programme it can execute. That makes it step 12's business as much as this proposal's.
 
 **Eden** is the other wonder, and its stasis is the point rather than the objection. It is the calm eye: perfect, unattackable because nobody can bring themselves, immune to disease, to cosmic threat and to other miracles, enormous in carrying capacity, and its people incapable of cruelty or deceit. Nothing else in this galaxy persists — that is the finding step 6 was written about, and every other mechanism in this plan exists to make things end. Eden is the one fixed point, and a fixed point is worth having precisely because everything around it moves: it is the thing every age's legends can agree on while agreeing on nothing else, the coordinate the rest of the record is read against. Past ages are myth in this model, one tick per rise and fall, so Eden can be in those myths too at almost no cost, which is what makes it *the* constant rather than this age's constant.
 
@@ -95,7 +95,7 @@ So it is one number solved by measurement, not by argument: take the batch, coun
 2. **Which way to pay for the wall** (above). It wants the measurement before the argument.
 3. **Does delusion also plant false tales, or only false looks?** The false look is this stage's work and is bounded. The false tale outlives its planter and reaches the grudges, the monster reckoning and the dials, which is a much larger thing to let loose.
 4. **Does Eden appear in the myths of every past age, or only stand in this one?** Every age is the stronger claim and nearly free, since past ages are one tick each; it is also a commitment that Eden is older than anything and was never made.
-5. **Does Gehenna's conversion drive belong to step 10's tuning?** It is a programme that makes its holder expand for a reason that is not conquest, which is the sort of thing that step's arc wants, and the sort of thing that step's gate would notice.
+5. **Does Gehenna's conversion drive belong to step 12's tuning?** It is a programme that makes its holder expand for a reason that is not conquest, which is the sort of thing that step's arc wants, and the sort of thing that step's gate would notice.
 
 ## Stages
 
