@@ -58,6 +58,8 @@ func (w *World) heir(old *Civ, home int, origin string) *Civ {
 			m.to[k] = v
 		}
 	}
+	nc.tradeOrder.drop() // the roads and the roll came over one-sided, not through startTrade and meet
+	nc.metOrder.drop()
 	for k, v := range old.FathomTried {
 		nc.FathomTried[k] = v
 	}
@@ -262,6 +264,8 @@ func (w *World) passOn(old, h *Civ) {
 				m[h.ID] = true
 			}
 		}
+		o.tradeOrder.drop() // an heir takes the old people's place on the road and in the roll, written straight into the maps
+		o.metOrder.drop()
 		if y, ok := o.FathomTried[old.ID]; ok {
 			o.FathomTried[h.ID] = y
 		}
@@ -286,6 +290,7 @@ func (w *World) sunder(old *Civ, heirs []*Civ, fate Fate, cause string) {
 		for _, m := range []map[int]bool{o.Trade, o.Dependent, o.Watched} {
 			delete(m, old.ID)
 		}
+		o.tradeOrder.drop() // the dead are off everyone's roads, taken out of the map itself
 	}
 	for _, wr := range w.Wars {
 		if !wr.Over && (wr.Sides[0] == old.ID || wr.Sides[1] == old.ID) {
@@ -307,6 +312,7 @@ func (w *World) sunder(old *Civ, heirs []*Civ, fate Fate, cause string) {
 	}
 	old.Systems, old.Works, old.Wielded, old.Voyages, old.Guns, old.Muster = nil, nil, nil, nil, nil, nil
 	old.Wars, old.Trade = map[int]bool{}, map[int]bool{}
+	old.tradeOrder.drop()
 	w.setStage(old, Dead)
 	w.setFate(old, fate, cause)
 	old.Ended, old.Fell = w.Now, w.Now
@@ -434,7 +440,9 @@ func (w *World) civilWar(c *Civ) bool {
 	w.tearApart(c, d.heirs, d.heirs[d.seat])
 	for i, a := range d.heirs {
 		for _, b := range d.heirs[i+1:] {
-			a.Met[b.ID], b.Met[a.ID], a.Reached[b.ID], b.Reached[a.ID] = true, true, true, true
+			addMet(a, b.ID)
+			addMet(b, a.ID)
+			a.Reached[b.ID], b.Reached[a.ID] = true, true
 			a.Fathomed[b.ID], b.Fathomed[a.ID] = true, true
 			w.meeting(a, b, -1, "touch") // kin know each other from the first
 			w.declare(a, b, because("sundering"))

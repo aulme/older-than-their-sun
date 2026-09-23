@@ -103,7 +103,7 @@ func (w *World) threats(c *Civ) map[int]float64 {
 		}
 		out[x.Base] = max(out[x.Base], battle.Strength(x.Ships, w.quality(w.Civs[x.Owner]))/q)
 	}
-	for _, eid := range sortedInts(c.Met) {
+	for _, eid := range metOf(c) {
 		e := w.Civs[eid]
 		if !e.Active() || e.ID == c.ID || e.Master == c.ID || c.Master == e.ID || w.allied(c, e) {
 			continue

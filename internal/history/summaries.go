@@ -136,6 +136,32 @@ func ownGrief(c *Civ, f *Event) bool {
 	return f.Subject == c.ID && (f.sort() == Woe || f.sort() == Folly)
 }
 
+// sickTale is whether a tale is one the suspicion pass reads: a people
+// other than this one struck by a plague, or anyone rid of one. It asks
+// the kind and the subject and nothing else, because a tale joins the
+// list the moment it is learned and an event's other parameters are the
+// caller's to fill after the record is made — f.Plague among them. So
+// the list is a superset of what suspicion acts on, and suspicion asks
+// for the named plague itself. Both are settled at the fact and by the
+// people's own id, so a tale that qualifies once qualifies for as long
+// as it is held, whatever the people comes to believe.
+func sickTale(c *Civ, f *Event) bool {
+	return f.Kind == FCured || (f.Kind == FPlague && f.Subject != c.ID)
+}
+
+// resick rebuilds the kept sickness tales from the telling. Only prune
+// needs it: it drops tales and reorders what is left, and the kept list
+// is in the telling's order. learned keeps the list in step the rest of
+// the time, and resum builds it in the walk it already makes.
+func (w *World) resick(c *Civ) {
+	c.sickLore = c.sickLore[:0]
+	for _, t := range c.Lore {
+		if sickTale(c, w.Events[t.Fact]) {
+			c.sickLore = append(c.sickLore, t)
+		}
+	}
+}
+
 // resum walks a whole telling and takes the kept summaries from it. It
 // is what the kept numbers mean, and a test holds the kept against it at
 // every tick (summaries_test.go). A people is resummed when its
@@ -144,11 +170,15 @@ func ownGrief(c *Civ, f *Event) bool {
 func (w *World) resum(c *Civ) {
 	var u dialUnits
 	n := 0
+	c.sickLore = c.sickLore[:0]
 	for _, t := range c.Lore {
+		f := w.Events[t.Fact]
+		if sickTale(c, f) {
+			c.sickLore = append(c.sickLore, t) // held or not: the suspicion pass skips the forgotten itself
+		}
 		if t.Forgot {
 			continue
 		}
-		f := w.Events[t.Fact]
 		u.add(taleUnits(c, f, t), 1)
 		if ownGrief(c, f) {
 			n++
@@ -171,6 +201,9 @@ func (w *World) summaries(c *Civ) {
 // again; wisdom.go reads it where it stands.
 func (w *World) learned(c *Civ, f *Event, t *Tale) {
 	c.loreUnits.add(taleUnits(c, f, t), 1)
+	if sickTale(c, f) {
+		c.sickLore = append(c.sickLore, t)
+	}
 	if ownGrief(c, f) {
 		c.experience++
 	}

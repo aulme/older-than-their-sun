@@ -158,7 +158,7 @@ func (w *World) sightMode(c *Civ) {
 		return
 	}
 	menaced := func() bool {
-		for _, eid := range sortedInts(c.Met) {
+		for _, eid := range metOf(c) {
 			e := w.Civs[eid]
 			if e.Active() && e.Free() && mind.Menaces(e.hostile(), w.monster(c, e), c.Grudge[eid], w.Cfg.Tuning) && w.inReach(e, c.Home) {
 				return true
@@ -339,7 +339,7 @@ func (w *World) picket(c *Civ) {
 	if c.Aloft || c.Starfaring == 0 || !c.Free() || !w.chance(tn.Picket.Rate) {
 		return
 	}
-	for _, eid := range sortedInts(c.Met) {
+	for _, eid := range metOf(c) {
 		e := w.Civs[eid]
 		if !e.Active() || w.allied(c, e) || c.Master == e.ID || e.Master == c.ID || w.picketAgainst(c, e) != nil {
 			continue

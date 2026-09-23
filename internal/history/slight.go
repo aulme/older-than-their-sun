@@ -20,7 +20,7 @@ func (w *World) slightOf(p, b *Civ) float64 {
 // the slight as a grudge on the attacker, and the war remembers what the
 // target was sending each, for the tick.
 func (w *World) slighted(a, b *Civ, wr *War) {
-	for _, pid := range sortedInts(b.Trade) {
+	for _, pid := range tradeOf(b) {
 		p := w.Civs[pid]
 		if p == a || !p.Active() || !w.perceives(p, a) {
 			continue // no wrong can be taken from what cannot be held in mind
@@ -68,7 +68,7 @@ func (w *World) slightTick(wr *War) {
 // sourceSlight is a world taken from b that held a source a partner drew
 // on: a slight of its own to that partner.
 func (w *World) sourceSlight(wr *War, c, e *Civ, t int) {
-	for _, pid := range sortedInts(e.Trade) {
+	for _, pid := range tradeOf(e) {
 		p := w.Civs[pid]
 		if p == c || !p.Active() {
 			continue
@@ -87,7 +87,7 @@ func (w *World) sourceSlight(wr *War, c, e *Civ, t int) {
 // stake in it.
 func (w *World) offence(c, e *Civ) []mind.Slighted {
 	var out []mind.Slighted
-	for _, pid := range sortedInts(e.Trade) {
+	for _, pid := range tradeOf(e) {
 		p := w.Civs[pid]
 		if p == c || !p.Active() {
 			continue

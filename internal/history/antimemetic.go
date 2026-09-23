@@ -58,7 +58,7 @@ func (w *World) notice(seer, unseen *Civ) {
 	if seer.Met[unseen.ID] {
 		return
 	}
-	seer.Met[unseen.ID] = true
+	addMet(seer, unseen.ID)
 	seer.Reached[unseen.ID] = true
 	seer.Tally.MetTouch++
 	w.noticed(seer, unseen, -1).with(P{"way": "unseen", "hidden": seer.Species.Is(species.Antimemetic)})
@@ -78,7 +78,7 @@ func (w *World) unveil(c *Civ) {
 			continue
 		}
 		if e.Met[c.ID] || w.touch(c, e) || w.hear(c, e) {
-			c.Met[e.ID] = true
+			addMet(c, e.ID)
 			c.Reached[e.ID] = e.Reached[c.ID]
 			w.meeting(c, e, -1, "touch").with(P{"way": "unveiled"})
 			w.observe(c, e, e.Home, 0.5)
@@ -105,10 +105,9 @@ func (w *World) veil(c *Civ) {
 		if c.Trade[e.ID] {
 			w.cutTrade(c, e, because("forgetting"))
 			w.cutTrade(e, c, because("forgetting"))
-			delete(c.Trade, e.ID)
-			delete(e.Trade, c.ID)
+			endTrade(c, e)
 		}
-		delete(c.Met, e.ID)
+		dropMet(c, e.ID)
 		delete(c.Reached, e.ID)
 		delete(c.Fathomed, e.ID)
 		delete(c.Intel, e.ID)

@@ -166,8 +166,7 @@ func (w *World) declare(c, e *Civ, cause reason) *War {
 	w.stir(e)
 	w.cutTrade(c, e, because("war"))
 	w.cutTrade(e, c, because("war"))
-	delete(c.Trade, e.ID)
-	delete(e.Trade, c.ID)
+	endTrade(c, e)
 	delete(c.Watched, e.ID)
 	w.recallSurveys(c)
 	w.recallSurveys(e)
@@ -447,9 +446,9 @@ func (w *World) ride(p, h *Civ) {
 	if p.Own >= 0 && h.Infections[p.Own] == nil && !h.Immune[p.Own] {
 		w.infect(h, w.Plagues[p.Own], p, "ridden")
 	}
-	for _, eid := range sortedInts(h.Met) {
+	for _, eid := range metOf(h) {
 		if eid != p.ID && !p.Met[eid] {
-			p.Met[eid] = true // the rider sees with the host's eyes
+			addMet(p, eid) // the rider sees with the host's eyes
 			w.noticed(p, w.Civs[eid], -1)
 		}
 	}

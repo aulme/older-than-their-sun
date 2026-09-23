@@ -103,7 +103,7 @@ func (w *World) believeSky(c, e *Civ, star int) (ships, guns, relief float64) {
 // partners see each other, and a people that watched a young species from
 // orbit keeps watching.
 func (w *World) intelStep(c *Civ) {
-	for _, eid := range sortedInts(c.Met) {
+	for _, eid := range metOf(c) {
 		e := w.Civs[eid]
 		if !e.Active() {
 			continue

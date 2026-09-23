@@ -3,6 +3,7 @@ package history
 import (
 	"math"
 	"os"
+	"slices"
 	"testing"
 	"time"
 
@@ -57,6 +58,20 @@ func walked(w *World, c *Civ) (dialUnits, int) {
 	return u, n
 }
 
+// walkedSick is the kept sickness tales computed the long way: the
+// tales the suspicion pass would find if it walked the telling, in the
+// telling's order, which is the order it read them in before the list
+// was kept.
+func walkedSick(w *World, c *Civ) []*Tale {
+	var out []*Tale
+	for _, t := range c.Lore {
+		if sickTale(c, w.Events[t.Fact]) {
+			out = append(out, t)
+		}
+	}
+	return out
+}
+
 // TestSummariesAreKept is the gate for summaries.go: at every tick of a
 // whole age, every people whose kept summaries claim to be good holds
 // exactly what a walk of its telling gives. The totals are integers, so
@@ -77,6 +92,12 @@ func TestSummariesAreKept(t *testing.T) {
 			// fact's own, and no change of judgment moves it
 			if n != c.experience {
 				t.Fatalf("at %d, %s keeps %d griefs and its telling gives %d", w.Now, c.Tok(), c.experience, n)
+			}
+			// the sickness tales are right at every moment too, and in
+			// the telling's own order: what the suspicion pass reads
+			// must be what a walk would have handed it
+			if sick := walkedSick(w, c); !slices.Equal(sick, c.sickLore) {
+				t.Fatalf("at %d, %s keeps %d sickness tales and its telling gives %d", w.Now, c.Tok(), len(c.sickLore), len(sick))
 			}
 			if !c.loreKept {
 				continue // a whole telling moved, or a mind: the next read takes the dials again

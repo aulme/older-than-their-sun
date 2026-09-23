@@ -487,7 +487,7 @@ func (w *World) spread(f *Event) {
 	for _, pid := range parties {
 		p := w.Civs[pid]
 		slant := w.regard(p, p.other(f))
-		for _, eid := range sortedInts(p.Met) {
+		for _, eid := range metOf(p) {
 			e := w.Civs[eid]
 			if !e.Active() || eid == f.Subject || eid == f.Object {
 				continue
@@ -892,7 +892,7 @@ func (w *World) wearStep(c *Civ, t *Tale, f *Event) {
 // as a monster. -1 when there is nobody.
 func (w *World) foe(c *Civ) int {
 	best, bg := -1, 0.3
-	for _, id := range sortedInts(c.Met) {
+	for _, id := range metOf(c) {
 		if g := c.Grudge[id]; g > bg && w.perceives(c, w.Civs[id]) {
 			best, bg = id, g
 		}
@@ -1065,6 +1065,7 @@ func (w *World) prune(c *Civ) {
 	}
 	c.Lore = keep
 	if len(c.Lore) <= 500 {
+		w.resick(c) // the dropped tales leave the kept sickness list with them
 		return
 	}
 	sort.SliceStable(c.Lore, func(i, j int) bool {
@@ -1077,6 +1078,7 @@ func (w *World) prune(c *Civ) {
 	}
 	c.Lore = c.Lore[:500]
 	sort.SliceStable(c.Lore, func(i, j int) bool { return c.Lore[i].Learned < c.Lore[j].Learned })
+	w.resick(c) // the telling has been reordered and cut; the kept list follows it
 }
 
 // dread is whether a people remembers a star as somewhere its surveyors

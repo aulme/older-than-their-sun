@@ -36,7 +36,7 @@ func (w *World) presenceCouncil(c *Civ) {
 	var cands []cand
 	var verdicts []mind.Verdict
 	compelled := w.R.Float64() < mind.Compulsion(c.posture() == mind.Conqueror, c.Wis, t)
-	for _, eid := range sortedInts(c.Met) {
+	for _, eid := range metOf(c) {
 		e := w.Civs[eid]
 		if !e.Active() || !e.Free() || c.Wars[eid] || w.allied(c, e) || c.Truce[eid] > w.Now || !e.Met[c.ID] {
 			continue

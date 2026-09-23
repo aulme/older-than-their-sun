@@ -534,7 +534,7 @@ func (w *World) ask(c *Civ) {
 func (w *World) fleetSeller(c *Civ, star, ships int, against *Civ) *Civ {
 	var best *Civ
 	bestIdle := 0
-	for _, eid := range sortedInts(c.Met) {
+	for _, eid := range metOf(c) {
 		e := w.Civs[eid]
 		if e == against || !w.dealable(c, e) || w.allied(e, against) {
 			continue
@@ -604,7 +604,7 @@ func (w *World) wantStrike(c *Civ) (*Civ, Term) {
 // grudge against the asker.
 func (w *World) teacher(c *Civ, key string) *Civ {
 	var best *Civ
-	for _, eid := range sortedInts(c.Met) {
+	for _, eid := range metOf(c) {
 		e := w.Civs[eid]
 		if !e.Known[key] || !w.dealable(c, e) {
 			continue
@@ -703,7 +703,7 @@ func (w *World) wantFlow(c *Civ) (*Civ, Term) {
 		}
 		var best *Civ
 		bestSpare := 0.0
-		for _, eid := range sortedInts(c.Met) {
+		for _, eid := range metOf(c) {
 			e := w.Civs[eid]
 			if !w.dealable(c, e) {
 				continue
@@ -853,7 +853,7 @@ func (w *World) newContract(buyer, seller *Civ, ask, pay Term, by *Civ) *Contrac
 func (w *World) offerGuard(c *Civ) {
 	var best, against *Civ
 	bestGap, bestStar := 0.0, -1
-	for _, eid := range sortedInts(c.Met) {
+	for _, eid := range metOf(c) {
 		e := w.Civs[eid]
 		if !w.dealable(c, e) || len(e.Wars) > 0 {
 			continue
@@ -976,7 +976,7 @@ func (w *World) sightingBuyer(c *Civ, x *Expedition) *Civ {
 			return e
 		}
 	}
-	for _, eid := range sortedInts(c.Met) {
+	for _, eid := range metOf(c) {
 		e := w.Civs[eid]
 		if e != owner && e.Wars[owner.ID] && traded(e) && w.dealable(c, e) {
 			return e

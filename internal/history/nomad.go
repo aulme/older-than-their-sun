@@ -247,7 +247,7 @@ func (w *World) moveFleet(c *Civ, x *Expedition, t int) {
 // carry is what nomads do to the tree of everyone they trade with: a node
 // passes now and then from one to the other.
 func (w *World) carry(c *Civ, hop float64) {
-	for _, eid := range sortedInts(c.Trade) {
+	for _, eid := range tradeOf(c) {
 		e := w.Civs[eid]
 		if !e.Active() || !w.chance(0.003) {
 			continue

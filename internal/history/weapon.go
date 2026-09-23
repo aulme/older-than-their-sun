@@ -120,7 +120,7 @@ func (w *World) armPlagues(c *Civ) {
 // plague for, with the aim the reason sets; with road, only one it has a
 // road to.
 func (w *World) plagueTarget(c *Civ, memetic, road bool) (*Civ, plague.Aim) {
-	for _, eid := range sortedInts(c.Met) {
+	for _, eid := range metOf(c) {
 		e := w.Civs[eid]
 		if !e.Active() || e.Own >= 0 || w.allied(c, e) || c.Truce[eid] > w.Now || e.Master == c.ID {
 			continue

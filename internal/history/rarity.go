@@ -140,7 +140,7 @@ func (w *World) rarities(c *Civ) []had {
 			take(s, -1)
 		}
 	}
-	for _, pid := range sortedInts(c.Trade) {
+	for _, pid := range tradeOf(c) {
 		p := w.Civs[pid]
 		if !p.Active() {
 			continue

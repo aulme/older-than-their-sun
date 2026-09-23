@@ -163,7 +163,7 @@ func (w *World) pactWith(c, e *Civ) *Pact {
 func (w *World) threat(c *Civ) *Civ {
 	var worst *Civ
 	worstMil := 0.0
-	for _, eid := range sortedInts(c.Met) {
+	for _, eid := range metOf(c) {
 		e := w.Civs[eid]
 		if !e.Active() || !e.Free() || w.allied(c, e) || e.Master == c.ID {
 			continue
@@ -199,7 +199,7 @@ func (w *World) proposePact(c *Civ) {
 		return // a stiff people makes no new kind of promise
 	}
 	if kind == Aggressive {
-		for _, eid := range sortedInts(c.Met) {
+		for _, eid := range metOf(c) {
 			e := w.Civs[eid]
 			if !e.Active() || !e.Free() || w.allied(c, e) || c.Truce[eid] > w.Now {
 				continue
@@ -215,7 +215,7 @@ func (w *World) proposePact(c *Civ) {
 	if target == nil {
 		return
 	}
-	for _, fid := range sortedInts(c.Met) {
+	for _, fid := range metOf(c) {
 		f := w.Civs[fid]
 		if f == target || !f.Active() || !f.Free() || f.Wars[c.ID] || w.allied(c, f) || c.hates(f) || f.hates(c) || !w.mutual(c, f) {
 			continue
@@ -313,7 +313,7 @@ func (w *World) formPact(c, f *Civ, kind PactKind, target int, pid int) {
 	c.Tally.Pacts++
 	f.Tally.Pacts++
 	if c.Species.Profile().Can(species.Trades) && f.Species.Profile().Can(species.Trades) {
-		c.Trade[f.ID], f.Trade[c.ID] = true, true // a pact opens the road, for two peoples that have anything the sim counts to give
+		startTrade(c, f) // a pact opens the road, for two peoples that have anything the sim counts to give
 	}
 	w.fact(FPact, c, f, -1).with(P{"pact": kind.String(), "against": target})
 	if target >= 0 && c.Wars[target] {
@@ -448,8 +448,7 @@ func (w *World) breakPacts(c, h *Civ) {
 	}
 	w.cutTrade(c, h, because("pact_left"))
 	w.cutTrade(h, c, because("pact_left"))
-	delete(c.Trade, h.ID)
-	delete(h.Trade, c.ID)
+	endTrade(c, h)
 }
 
 // warEnded is the pact side of a war's end: a principal's peace binds its

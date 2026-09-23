@@ -13,13 +13,22 @@ import (
 // knownOf lists what a civilisation knows in tree order. Ranging over the
 // map directly would let Go's map order into the random stream and make a
 // seed irreproducible; every loop that draws from the RNG uses this.
+//
+// The list changes only when a node is learned or lost, and it is read
+// many times a tick by every people, so it is kept on the people beside
+// useNodes (flow.go) and dropped by the same two writers, know and
+// forgetNode. Nothing else may write Civ.Known.
 func knownOf(c *Civ) []string {
-	var out []string
+	if c.knownOK && len(c.knownKeys) == len(c.Known) {
+		return c.knownKeys // the size beside the flag, for the same reason as keptIDs.of
+	}
+	out := make([]string, 0, len(c.Known))
 	for _, n := range tech.Nodes {
 		if c.Known[n.Key] {
 			out = append(out, n.Key)
 		}
 	}
+	c.knownKeys, c.knownOK = out, true
 	return out
 }
 

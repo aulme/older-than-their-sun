@@ -51,7 +51,7 @@ func (w *World) sendGoods(a *Civ) {
 	}
 	var partners []*Civ
 	var choices []mind.TradeChoice
-	for _, pid := range sortedInts(a.Trade) {
+	for _, pid := range tradeOf(a) {
 		b := w.Civs[pid]
 		if !b.Active() {
 			continue
@@ -198,8 +198,7 @@ func (w *World) embargoStep(a, b *Civ, ch mind.TradeChoice, spare flow.Income) {
 // ends. No fact: nobody closed a port; the holders are what they are.
 func (w *World) tire(b, a *Civ) {
 	delete(a.Refused, b.ID)
-	delete(a.Trade, b.ID)
-	delete(b.Trade, a.ID)
+	endTrade(a, b)
 	w.cutTrade(a, b, because("tired_of").By(b))
 	w.event(KTired, b, a, -1, P{})
 }

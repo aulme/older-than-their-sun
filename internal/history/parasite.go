@@ -164,7 +164,7 @@ func (w *World) rideAll(c *Civ) {
 	tried := map[int]bool{}
 	if w.Plagues[c.Own].Kind == plague.Biological {
 		for _, a := range eyes {
-			for _, eid := range sortedInts(a.Trade) {
+			for _, eid := range tradeOf(a) {
 				e := w.Civs[eid]
 				if e.Active() && !tried[eid] && a.From[eid].Total()+e.From[a.ID].Total() > 0 {
 					tried[eid] = true
@@ -175,7 +175,7 @@ func (w *World) rideAll(c *Civ) {
 		return
 	}
 	for _, a := range eyes {
-		for _, eid := range sortedInts(a.Met) {
+		for _, eid := range metOf(a) {
 			if e := w.Civs[eid]; e.Active() && !tried[eid] && w.hear(a, e) {
 				tried[eid] = true
 				w.tryRide(c, e, "signal")

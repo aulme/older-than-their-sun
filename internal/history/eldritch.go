@@ -233,7 +233,8 @@ func (w *World) rouse(c, by *Civ) {
 	w.recompute(c)
 	w.event(KRoused, c, by, -1, P{})
 	if by != nil && by.Active() && !(c.Met[by.ID] && by.Met[c.ID]) {
-		c.Met[by.ID], by.Met[c.ID] = true, true
+		addMet(c, by.ID)
+		addMet(by, c.ID)
 		w.meeting(c, by, c.Home, "touch")
 	}
 	if w.canWake(c) {
@@ -265,7 +266,8 @@ func (w *World) wakeOnAll(c, first *Civ) {
 			if !(c.Met[e.ID] && e.Met[c.ID]) {
 				w.meeting(c, e, worlds[0], "touch")
 			}
-			c.Met[e.ID], e.Met[c.ID] = true, true
+			addMet(c, e.ID)
+			addMet(e, c.ID)
 			w.waking(c, e, worlds)
 		}
 	}

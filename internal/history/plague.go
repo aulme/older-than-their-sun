@@ -353,7 +353,7 @@ func (w *World) dirt(c *Civ) float64 {
 // partnerCured says whether a fathomed trade partner has been rid of the
 // plague: the cure travels with the goods.
 func (w *World) partnerCured(c *Civ, pid int) bool {
-	for _, eid := range sortedInts(c.Trade) {
+	for _, eid := range tradeOf(c) {
 		if c.Fathomed[eid] && w.Civs[eid].Immune[pid] {
 			return true
 		}
@@ -561,7 +561,7 @@ func (w *World) contagion(c *Civ) {
 			continue // a plague that is a people chooses when to try
 		}
 		if p.Kind == plague.Biological {
-			for _, eid := range sortedInts(c.Trade) {
+			for _, eid := range tradeOf(c) {
 				e := w.Civs[eid]
 				if !e.Active() {
 					continue
@@ -574,7 +574,7 @@ func (w *World) contagion(c *Civ) {
 			}
 			continue
 		}
-		for _, eid := range sortedInts(c.Met) {
+		for _, eid := range metOf(c) {
 			e := w.Civs[eid]
 			if e.Active() && w.hear(c, e) {
 				w.offer(c, e, p, "signal")
@@ -659,14 +659,16 @@ func (w *World) shutTo(to, from *Civ) bool {
 func (w *World) suspicion(c *Civ) {
 	sick := map[int]int{}   // people -> the plague
 	cured := map[int]Year{} // the newest cure known of each people
-	// One walk of the telling, not two: the cures and the sicknesses
-	// are gathered together, and the sicknesses weighed against the
-	// cures after, since a cure heard of at any point in the telling
-	// answers a sickness anywhere in it. The sicknesses are kept in the
-	// order the telling holds them, which is the order the second walk
-	// read them in, so the last word on a people is the same one.
+	// No walk of the telling at all: the tales that bear on sickness are
+	// kept as the telling changes (summaries.go, c.sickLore), in the
+	// order the telling holds them, which is the order a walk would read
+	// them in. The cures and the sicknesses are gathered together and
+	// the sicknesses weighed against the cures after, since a cure heard
+	// of at any point in the telling answers a sickness anywhere in it;
+	// keeping the sicknesses in the telling's order is what makes the
+	// last word on a people the same one.
 	var plagues []*Event
-	for _, t := range c.Lore {
+	for _, t := range c.sickLore {
 		if t.Forgot {
 			continue
 		}
@@ -693,9 +695,9 @@ func (w *World) suspicion(c *Civ) {
 	for eid, name := range sick {
 		suspects[eid] = name
 	}
-	for _, pid := range sortedInts(c.Trade) {
+	for _, pid := range tradeOf(c) {
 		if name, ok := sick[pid]; ok {
-			for _, qid := range sortedInts(w.Civs[pid].Trade) {
+			for _, qid := range tradeOf(w.Civs[pid]) {
 				if qid != c.ID {
 					if _, ok := suspects[qid]; !ok {
 						suspects[qid] = name

@@ -31,7 +31,8 @@ func (w *World) contacts() {
 			}
 			if !w.touch(a, b) {
 				if !(a.Met[b.ID] && b.Met[a.ID]) && w.hear(a, b) {
-					a.Met[b.ID], b.Met[a.ID] = true, true
+					addMet(a, b.ID)
+					addMet(b, a.ID)
 					a.Tally.MetHeard++
 					b.Tally.MetHeard++
 					w.hearing(a, b)
@@ -91,7 +92,8 @@ func (w *World) meet(a, b *Civ, at int) {
 	}
 	watched := (a.Met[b.ID] || b.Met[a.ID]) && !(a.Met[b.ID] && b.Met[a.ID])
 	heard := a.Met[b.ID] && b.Met[a.ID]
-	a.Met[b.ID], b.Met[a.ID] = true, true
+	addMet(a, b.ID)
+	addMet(b, a.ID)
 	a.Reached[b.ID], b.Reached[a.ID] = true, true
 	w.encounter(a, b, watched, heard, at)
 }
@@ -181,14 +183,16 @@ func (w *World) hearing(a, b *Civ) {
 func (w *World) primitives(old, young *Civ) bool {
 	switch {
 	case old.hates(young) && w.R.Float64() < 0.3:
-		old.Met[young.ID], young.Met[old.ID] = true, true
+		addMet(old, young.ID)
+		addMet(young, old.ID)
 		w.meeting(old, young, young.Home, "touch").with(P{"way": "scoured"})
 		w.fact(FScoured, old, young, young.Home).with(P{"way": "primitives"})
 		w.setBio(young.Home, BioSimple)
 		w.endCiv(young, Extinct, because("scoured_young").At(young.Home).By(old))
 		return true
 	case old.hostile() && !young.Has("swarming") && !young.Species.Is(species.Planetary) && young.treats() && w.R.Float64() < 0.3*(0.5+old.Dials.Greed):
-		old.Met[young.ID], young.Met[old.ID] = true, true
+		addMet(old, young.ID)
+		addMet(young, old.ID)
 		w.meeting(old, young, young.Home, "touch").with(P{"way": "taken"})
 		if old.Own >= 0 {
 			w.ride(old, young)
@@ -198,7 +202,7 @@ func (w *World) primitives(old, young *Civ) bool {
 		return true
 	}
 	if !old.Met[young.ID] {
-		old.Met[young.ID] = true // one-sided: the old know, the young do not
+		addMet(old, young.ID) // one-sided: the old know, the young do not
 		w.noticed(old, young, young.Home).with(P{"way": "watched"})
 		w.observe(old, young, young.Home, 0.2)
 	}

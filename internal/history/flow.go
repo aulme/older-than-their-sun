@@ -78,7 +78,7 @@ func (w *World) direct(c *Civ, uses []flow.Use, rareChanged bool) {
 	if c.Upkeep.Total() > c.highUpkeep {
 		c.highUpkeep = c.Upkeep.Total()
 		c.HighIncome, c.HighUpkeep, c.HighWant = c.Income, c.Upkeep, c.Want
-		c.PeakTrade = sortedInts(c.Trade)
+		c.PeakTrade = append([]int(nil), tradeOf(c)...) // kept for the dossier, so a copy: tradeOf's slice is the people's own
 	}
 	changed := w.setShed(c, uses, a)
 	if changed || rareChanged {
@@ -291,7 +291,7 @@ func (w *World) order(c *Civ) mind.Direction {
 // hostileNear is true when a people this one has met strikes first and
 // can reach its seat.
 func (w *World) hostileNear(c *Civ) bool {
-	for _, id := range sortedInts(c.Met) {
+	for _, id := range metOf(c) {
 		e := w.Civs[id]
 		if e.Active() && e.hostile() && w.inReach(e, c.Home) {
 			return true

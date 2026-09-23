@@ -309,7 +309,7 @@ func (w *World) openPair(a, b *Civ) {
 	if !a.Species.Profile().Can(species.Trades) || !b.Species.Profile().Can(species.Trades) {
 		return // nothing the sim counts to give
 	}
-	a.Trade[b.ID], b.Trade[a.ID] = true, true
+	startTrade(a, b)
 	w.fact(FTrade, a, b, -1)
 	if !a.Reached[b.ID] {
 		return // heard only: the trade is by signal, and nothing crosses with it

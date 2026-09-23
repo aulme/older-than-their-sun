@@ -196,6 +196,23 @@ type Civ struct {
 	// the people's judgment has, and the next read takes them again.
 	loreUnits dialUnits
 	loreKept  bool
+	// sickLore is the third kept thing: the tales of who was struck by
+	// a plague and who was rid of one, in the order the telling holds
+	// them, so the suspicion pass reads a handful of tales instead of
+	// walking the whole telling every tick. Kept by learned and rebuilt
+	// by resum and prune; see summaries.go.
+	sickLore []*Tale
+	// knownKeys is what this people knows, in the tree's own order: the
+	// answer knownOf gives, kept beside useNodes and dropped by the same
+	// two writers. A rebuild takes a new slice, so a caller holding the
+	// old one holds the snapshot it asked for.
+	knownKeys []string
+	knownOK   bool
+	// tradeOrder and metOrder are Trade's and Met's ids in order, kept
+	// for the same reason and dropped by startTrade, endTrade, meet and
+	// unmeet; see kept.go.
+	tradeOrder keptIDs
+	metOrder   keptIDs
 	// useNodes is what this people knows that the upkeep pass walks, in
 	// the order it learned them: the answer to a scan of every node of
 	// the tree and a sort, which the pass wanted afresh every tick
