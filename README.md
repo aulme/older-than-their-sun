@@ -6,6 +6,8 @@ It lays out a real field of stars, runs tens of millions of years of rise and fa
 
 A learning project in procedural world generation, in the spirit of Dwarf Fortress's legends mode and Caves of Qud: simulate the big picture first, generate the details on demand from that history. The goal for now is a good generator, not a game.
 
+**For now this project is almost exclusively vibe coded. It's an exploration of procedural history generation in principle and how far it can go. **
+
 ## Run it
 
 ```sh
