@@ -25,7 +25,7 @@ func (w *World) heir(old *Civ, home int, origin string) *Civ {
 	w.setLine(nc, append(append([]int(nil), old.Line...), old.ID))
 	nc.Systems, nc.Peak = nil, 0
 	nc.Own = old.Own
-	nc.Morality = old.Morality
+	nc.think(old.Morality)
 	nc.KnowsCycle = old.KnowsCycle
 	nc.Starfaring = old.Starfaring
 	nc.DarkAges, nc.Renaissances = old.DarkAges, old.Renaissances // the institutions are the old ones', however new the name
@@ -503,6 +503,7 @@ func (w *World) shatter(c *Civ, why reason, forgotten []string) {
 		for _, tl := range h.Lore {
 			tl.Wear = min(2, tl.Wear+1) // a step more worn than the old people held it
 		}
+		h.loreKept = false // every tale at once: the summaries are taken again, not amended
 		w.setStage(h, Emergent)
 		w.recompute(h)
 		ids, stars := shardIDs(d.heirs)

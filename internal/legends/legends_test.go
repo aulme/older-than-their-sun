@@ -28,10 +28,19 @@ import (
 // decline index took over the waning and the end (and the waning's line
 // began to say what it read), and the wearing went to every fourth
 // tick: every history was renumbered once.
+// It was re-pinned a third time at step 7's summaries, and the move is
+// worth the note, since almost nothing moved: three lines of this seed's
+// forty-nine thousand, all of them a people reading "a wise people" at
+// the end that did not before. Wisdom counts a people's own woes and
+// follies, and that count used to be left by the reckoning in the lore
+// step, which runs after the levels are derived — so the level read a
+// count a tick old. Kept as the telling changes, it is the count now,
+// and three peoples of this seed cross eight. Not an event of the
+// chronicle moved, here or in seed 11.
 // A step that must not change what the view prints keeps it green; one
 // that changes the view or the history on purpose re-pins it and says
 // so in its commit.
-const sameLegendsDigest = "5bdadbd50f9d0b751d798120f829a83b127e6ebadca7aa66bbc50163e6093fff"
+const sameLegendsDigest = "611564833d41cfffdb8c88b969dc0fd043532338174f96e67177205231f4e5ac"
 
 // run is seed 5 at 200 stars, written to a directory and read back, so
 // that the view is tested on the files alone.

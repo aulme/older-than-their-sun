@@ -189,6 +189,13 @@ type Civ struct {
 	inscribed  map[int]bool // remains whose testament this people has read
 	foeNow     int          // the enemy of the day, or -1; a new one gets the old blame
 	monsters   map[int]bool // peoples remembered as things that do harm
+	// the kept summaries of the telling (summaries.go): the dials it
+	// pulls and the count of one's own griefs, held as tales are
+	// learned, worn and forgotten rather than summed afresh every tick.
+	// loreKept is false when a whole telling has moved at once, or when
+	// the people's judgment has, and the next read takes them again.
+	loreUnits dialUnits
+	loreKept  bool
 	// useNodes is what this people knows that the upkeep pass walks, in
 	// the order it learned them: the answer to a scan of every node of
 	// the tree and a sort, which the pass wanted afresh every tick
@@ -580,6 +587,7 @@ type World struct {
 	regardOf   []int8
 	regardSeen []uint32
 	regardGen  uint32
+	crimes     tally // the reckoning's scratch sum by people; see summaries.go
 
 	// the random streams, one per phase and one per people; see streams.go
 	streams map[string]*rand.Rand

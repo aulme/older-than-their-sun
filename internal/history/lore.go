@@ -370,6 +370,7 @@ func (w *World) hold(c *Civ, f *Event, src Provenance, from int, slant int8, wea
 	}
 	c.Lore = append(c.Lore, t)
 	c.Tally.Tales++
+	w.learned(c, f, t)
 	w.takeToHeart(c, f, t)
 	if len(c.Lore) > 600 {
 		w.prune(c)
@@ -418,11 +419,15 @@ func (w *World) monster(c, e *Civ) bool {
 	return c.monsters[e.ID] || w.unfathomed(c, e) || e.Species.Profile().Monster
 }
 
-// reckon works out whom a people remembers as monsters, and counts what
-// it went through.
+// reckon works out whom a people remembers as monsters. It is the one
+// summary of a telling that is still walked every tick: what a crime
+// weighs turns on whom it was done to — a trading partner, an ally — and
+// on whether the doer can be perceived at all, and those move under the
+// telling from tick to tick, so a tale's part in it cannot be kept. See
+// summaries.go for the two that can.
 func (w *World) reckon(c *Civ) {
-	w.experienced(c)
-	x := map[int]float64{}
+	x := &w.crimes
+	x.start(len(w.Civs))
 	for _, t := range c.Lore {
 		if t.Forgot {
 			continue
@@ -437,7 +442,7 @@ func (w *World) reckon(c *Civ) {
 			if f.Subject == c.ID {
 				v = 2
 			}
-			x[t.Blamed] += v * wt / 3 * (1 + 0.5*float64(t.Wear))
+			x.add(t.Blamed, v*wt/3*(1+0.5*float64(t.Wear)))
 			continue
 		}
 		if c.ofLine(f.Subject) || (s != Crime && s != Folly) {
@@ -457,11 +462,15 @@ func (w *World) reckon(c *Civ) {
 		if who < 0 {
 			continue // a crime with no doer is held against nobody, until somebody is blamed for it
 		}
-		x[who] += v * wt / 3 * (1 + 0.5*float64(t.Wear))
+		x.add(who, v*wt/3*(1+0.5*float64(t.Wear)))
 	}
-	c.monsters = map[int]bool{}
-	for id, v := range x {
-		if v >= 3 {
+	if c.monsters == nil {
+		c.monsters = map[int]bool{} // nil until the first reckoning; export.go reads that
+	} else {
+		clear(c.monsters)
+	}
+	for _, id := range x.touched {
+		if x.sum[id] >= 3 {
 			c.monsters[id] = true
 		}
 	}
@@ -668,8 +677,7 @@ func (w *World) restore(c *Civ, fact int, was Tale) bool {
 		if !t.Forgot && t.Wear <= was.Wear {
 			return false
 		}
-		t.Forgot = false
-		t.Wear = was.Wear
+		w.amend(c, t, func(t *Tale) { t.Forgot, t.Wear = false, was.Wear })
 		t.Blamed = was.Blamed
 		t.Source = Inherited
 		c.Tally.Restored++
@@ -842,11 +850,11 @@ func over(p float64, n int) float64 {
 // hang the blame on whoever is the enemy now.
 func (w *World) wearStep(c *Civ, t *Tale, f *Event) {
 	if t.Wear >= 2 {
-		t.Forgot = true
+		w.amend(c, t, func(t *Tale) { t.Forgot = true })
 		c.Tally.Forgot++
 		return
 	}
-	t.Wear++
+	w.amend(c, t, func(t *Tale) { t.Wear++ })
 	if t.Wear < 2 {
 		return
 	}
@@ -993,7 +1001,7 @@ func (w *World) revise(c *Civ) {
 		t.Revised++
 		c.Tally.Revised++
 		if t.Wear < 2 && w.R.Float64() < 0.5 {
-			t.Wear++
+			w.amend(c, t, func(t *Tale) { t.Wear++ })
 		}
 	}
 }
@@ -1064,7 +1072,7 @@ func (w *World) prune(c *Civ) {
 		return w.dearness(c, fi, c.Lore[i]) > w.dearness(c, fj, c.Lore[j])
 	})
 	for _, t := range c.Lore[500:] {
-		t.Forgot = true
+		w.amend(c, t, func(t *Tale) { t.Forgot = true })
 		c.Tally.Forgot++
 	}
 	c.Lore = c.Lore[:500]
@@ -1099,53 +1107,6 @@ func (w *World) dread(c *Civ, star int) bool {
 		}
 	}
 	return false
-}
-
-// loreDials is what a people's telling does to its temperament: what it
-// remembers suffering makes it fearful and hating, what it remembers
-// winning makes it bold, remembered promises make it loyal and remembered
-// betrayals the reverse. Myth counts for more than memory.
-func (w *World) loreDials(c *Civ) Dials {
-	var d Dials
-	for _, t := range c.Lore {
-		if t.Forgot {
-			continue
-		}
-		f := w.Events[t.Fact]
-		s, _ := sortFor(c, f)
-		k := 1 + 0.5*float64(t.Wear)
-		self := f.Subject == c.ID
-		switch {
-		case f.Kind == FBetrayal && f.Object == c.ID && s == Crime:
-			d.Loyalty -= 0.10 * k
-			d.Fear += 0.06 * k
-		case s == Crime && f.Object == c.ID:
-			d.Hate += 0.06 * k
-			d.Fear += 0.04 * k
-			d.Patience += 0.04 * k
-		case self && (f.Kind == FTaken || f.Kind == FHomeBroken || f.Kind == FYield):
-			d.Aggression += 0.06 * k
-			d.Greed += 0.04 * k
-		case self && s == Folly:
-			d.Risk -= 0.10 * k
-		case self && s == Woe:
-			d.Fear += 0.04 * k
-			d.Risk -= 0.04 * k
-		case self && (f.Kind == FFind || f.Kind == FMastered || f.Kind == FCycle):
-			d.Hunger += 0.06 * k
-		case s == Bond && (self || f.Object == c.ID):
-			d.Loyalty += 0.04 * k
-		}
-	}
-	d.Aggression = clamp(d.Aggression, -0.3, 0.3)
-	d.Risk = clamp(d.Risk, -0.3, 0.3)
-	d.Greed = clamp(d.Greed, -0.3, 0.3)
-	d.Fear = clamp(d.Fear, -0.3, 0.3)
-	d.Loyalty = clamp(d.Loyalty, -0.3, 0.3)
-	d.Hunger = clamp(d.Hunger, -0.3, 0.3)
-	d.Patience = clamp(d.Patience, -0.3, 0.3)
-	d.Hate = clamp(d.Hate, -0.3, 0.3)
-	return d
 }
 
 // lore is the tick step for a people's telling.

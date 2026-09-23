@@ -132,23 +132,6 @@ func (w *World) setWisdom(c *Civ, tree float64) {
 	c.PeakWis = max(c.PeakWis, c.Wis)
 }
 
-// experienced counts the tales a people holds of its own woes and
-// follies: what it went through, whatever it tells itself about whose
-// fault it was. Called from reckon, which walks the same tales.
-func (w *World) experienced(c *Civ) {
-	n := 0
-	for _, t := range c.Lore {
-		if t.Forgot {
-			continue
-		}
-		f := w.Events[t.Fact]
-		if f.Subject == c.ID && (f.sort() == Woe || f.sort() == Folly) {
-			n++
-		}
-	}
-	c.experience = n
-}
-
 // WisdomParts is where a people's Wisdom comes from, as last derived:
 // species, tech, experience, boons, scars.
 func WisdomParts(c *Civ) [5]float64 {

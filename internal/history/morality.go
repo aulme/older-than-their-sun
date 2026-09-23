@@ -340,7 +340,7 @@ func (c *Civ) fixed(object string) bool {
 func (w *World) bornMorality(c *Civ) {
 	h := noHints
 	h.Sight = c.Species.Miracle() == "foresight"
-	c.Morality = rollMorality(w.R, c.Species, h)
+	c.think(rollMorality(w.R, c.Species, h))
 	w.event(KMorality, c, nil, -1, P{"way": "born", "morality": c.Morality})
 }
 
@@ -348,7 +348,7 @@ func (w *World) bornMorality(c *Civ) {
 // with a chance rolls again, leaning away from it; a branch of a people
 // that found much leans to the old things.
 func (w *World) branchMorality(nc, parent *Civ) {
-	nc.Morality = parent.Morality
+	nc.think(parent.Morality)
 	if w.R.Float64() >= 0.3 {
 		return
 	}
@@ -356,7 +356,7 @@ func (w *World) branchMorality(nc, parent *Civ) {
 	h.Against = parent.Morality.Kind
 	h.Sight = parent.miracle("foresight")
 	h.FoundMuch = parent.Tally.FindSurvey+parent.Tally.FindSettle+parent.Tally.FindChance >= 3
-	nc.Morality = rollMorality(w.R, nc.Species, h)
+	nc.think(rollMorality(w.R, nc.Species, h))
 	if nc.Morality != parent.Morality {
 		w.event(KMorality, nc, parent, -1, P{"way": "branch", "morality": nc.Morality})
 	}
@@ -372,7 +372,7 @@ func (w *World) churchMorality(c *Civ) {
 	if c.Morality == m {
 		return
 	}
-	c.Morality = m
+	c.think(m)
 	w.event(KMorality, c, nil, -1, P{"way": "church", "morality": m})
 }
 
@@ -382,7 +382,7 @@ func (w *World) upliftMorality(nc, by *Civ) {
 	if w.R.Float64() >= 0.5 || nc.Morality == by.Morality {
 		return
 	}
-	nc.Morality = by.Morality
+	nc.think(by.Morality)
 	w.event(KMorality, nc, by, -1, P{"way": "taught", "morality": nc.Morality})
 }
 
@@ -392,7 +392,7 @@ func (w *World) machineMorality(nc, makers *Civ) {
 	h := noHints
 	h.FixationMul = 3
 	h.Object = w.doing(makers)
-	nc.Morality = rollMorality(w.R, nc.Species, h)
+	nc.think(rollMorality(w.R, nc.Species, h))
 	if nc.Morality.Kind == Fixation {
 		w.event(KMorality, nc, makers, -1, P{"way": "machine", "morality": nc.Morality})
 	} else {
