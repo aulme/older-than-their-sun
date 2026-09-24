@@ -5,8 +5,8 @@
 
 ## Where things stand
 
-- **On master**: stages 0, 1 and 2 of `war.md` (steps 10 and 11's first half), last commit `990b31b`.
-- **On the branch `war-stage3-wip`** (`c36110c`, unpushed, not merged): stage 3, clients and the cold war, built and tested but parked with the gate short. Its "As built (stage 3)" draft is in that branch's `war.md` (the gate table is a placeholder). The branch does not re-pin `TestSameHistory` or the legends digest; landing it means re-pinning both, regenerating `reports/tech`, and the plan row.
+- **On master**: stages 0, 1 and 2 of `war.md` (steps 10 and 11's first half), stage 2 landed as `a90c1fd`.
+- **On the branch `war-stage3-wip`** (`c36110c`, branched from stage 2 before the push rebased master; unpushed, not merged): stage 3, clients and the cold war, built and tested but parked with the gate short. Its "As built (stage 3)" draft is in that branch's `war.md` (the gate table is a placeholder). The branch does not re-pin `TestSameHistory` or the legends digest; landing it means re-pinning both, regenerating `reports/tech`, and the plan row.
 - The user parked the work here on 2026-09-24 and asked for these results to be kept for a follow-up tuning, together with the other variable tuning work (the rows listed at the end of `war.md`).
 
 ## A new definition of a world war (the user's, not yet built)
