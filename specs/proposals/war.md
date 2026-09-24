@@ -1,6 +1,6 @@
 # War: how peoples fight, and how a war ends
 
-**Status:** Stages 0, 1 and 2 built (2026-09-24); stage 3 open. Placed in `specs/plan.md` as steps 10 and 11, after `leaders.md` (a leader at the front is one of the things a war council reads) and before `empires.md`, whose conquest wave and coalitions ride on the machinery here and whose tuning pass is read against the wars this leaves. Read by `art.md` (a war is most of the circumstances worth making anything about) and `miracles.md`.
+**Status:** Stages 0, 1 and 2 built (2026-09-24); stage 3 built and parked on the branch `war-stage3-wip` with its gate short, and the tuning of all four gathered for a follow-up in `specs/notes/war-tuning-followup.md`. Placed in `specs/plan.md` as steps 10 and 11, after `leaders.md` (a leader at the front is one of the things a war council reads) and before `empires.md`, whose conquest wave and coalitions ride on the machinery here and whose tuning pass is read against the wars this leaves. Read by `art.md` (a war is most of the circumstances worth making anything about) and `miracles.md`.
 **Last updated:** 2026-09-24
 
 ## Problem
@@ -325,6 +325,8 @@ Allies (seeds 1–20): 865 wars joined by pact, 36% fought, the ally sending a c
 - ~~**Whether the muster should declare at the launch**~~ Answered at stage 1: it does; a muster that stands down has started nothing.
 
 ## Tuning left for later
+
+The research for this tuning — the variants tried and their numbers, the stage 3 batches, the loops, the new definition of a world war (more than half the galaxy's worlds held by peoples at war in one system), and how to read the gate on forty seeds — is `specs/notes/war-tuning-followup.md`.
 
 Stage 1 was landed with three of its rows short, to be tuned with the scenarios and the watch's tally rather than knob by knob: at twelve seeds two batches of near-identical rules differ by more than one number moves the result (two knob batches were tried and dropped; see the handover note), so each is to be worked through its mechanism and read on twenty seeds.
 
