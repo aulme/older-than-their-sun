@@ -136,8 +136,15 @@ func (w *World) bar(c, e *Civ) (bar float64, wants, far bool) {
 		Posture: c.posture(), Hates: c.hates(e), Grudge: c.Grudge[e.ID] > 0 || e.Embargo[c.ID], Aloft: c.Aloft, NoShips: w.standing(c) == 0 && w.bodyGuns(c) == 0, Wis: c.Wis,
 		Claim: w.claims(c, e), Kin: w.kin(c, e) && !w.feud(c, e),
 		Stiff: c.Stiff, Fought: c.Fought[e.ID] > 0, Sailed: c.Tally.Fleets > 0,
-		Appetite: mind.Appetite(c.Appetite, w.Cfg.Tuning), Wary: c.Wary[e.ID],
+		Appetite: mind.Appetite(c.Appetite, w.Cfg.Tuning), Wary: c.Wary[e.ID], Rival: w.rival(c, e),
 	}, w.Cfg.Tuning)
+}
+
+// rival says whether two peoples are old enemies: wars enough fought
+// between them and a grudge standing on either side. The grudge's
+// decay ends the rivalry when nothing renews it.
+func (w *World) rival(c, e *Civ) bool {
+	return c.Fought[e.ID] >= w.Cfg.Tuning.War.RivalWars && (c.Grudge[e.ID] > 0 || e.Grudge[c.ID] > 0)
 }
 
 // explain logs a decision's reason under -ai, and hands it to a

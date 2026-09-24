@@ -1071,9 +1071,9 @@ func (w *World) prune(c *Civ) {
 }
 
 // dread is whether a people remembers a star as somewhere its surveyors
-// do not come back from: something let loose there, a survey lost, a
-// world emptied by a plague, the Signal heard from there, or a deed at
-// it by a people it remembers as a monster. A tale that has worn to myth
+// do not come back from: something let loose there, a survey or a ship
+// lost, a world emptied by a plague, the Signal heard from there, or a
+// deed at it by a people it remembers as a monster. A tale that has worn to myth
 // no longer keeps anyone away.
 func (w *World) dread(c *Civ, star int) bool {
 	for _, t := range c.Lore {
@@ -1085,8 +1085,8 @@ func (w *World) dread(c *Civ, star int) bool {
 			continue
 		}
 		switch f.Kind {
-		case FUnleashed, FSurveyLost, FPlagueWorld:
-			return true
+		case FUnleashed, FSurveyLost, FPlagueWorld, FShipLost:
+			return true // a ship lost there with no trace makes the star one ships do not come back from: nobody settles it (step 11's batches, seed 7: three peoples sent settlers to an unseen people's home for a million years, and hunted it for each)
 		case FScarred, FDeclined:
 			if f.Legacy >= 0 {
 				return true // the Signal, from there

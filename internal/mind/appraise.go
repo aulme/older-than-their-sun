@@ -167,14 +167,18 @@ type BarInput struct {
 	Sailed   bool    // this people has sent a fleet before
 	Appetite float64 // worlds taken of late: the bar's discount; see Appetite
 	Wary     float64 // the wars it came off worst in against the target, fading; see WarTuning.WaryBar
+	Rival    bool    // an old enemy: wars fought before and a grudge standing between them; see Rival
 }
 
 // Bar is the posture's bar (barOf), less the appetite of a people that
 // keeps winning and more the warier it is of a people that beat it. The
-// wariness can lift the bar past certainty: a people that has come off
-// worst against another often enough does not go to war with it again,
+// wariness can lift the bar past certainty, and past WaryStop wars come
+// off worst a people does not go to war with that enemy again at all,
 // however sure of winning it believes itself.
 func Bar(in BarInput, t *Tuning) (bar float64, wants, far bool) {
+	if in.Wary >= t.War.WaryStop {
+		return 0, false, false // beaten often enough: the prize of a claimed world does not bring it back (step 11's batches, seed 12: twenty-nine wars at 0.8 odds against a bar the prize had brought down)
+	}
 	bar, wants, far = barOf(in, t)
 	if wants {
 		bar = min(1, max(0, bar-in.Appetite)) + Wariness(in.Wary, t)
@@ -221,6 +225,13 @@ func barOf(in BarInput, t *Tuning) (bar float64, wants, far bool) {
 	}
 	if wants && in.Grudge && in.Posture != Vengeful {
 		bar -= b.GrudgeDiscount * max(0, 1-in.Wis/t.Wisdom.GrudgeFade)
+	}
+	if in.Rival && in.Posture != Submissive {
+		if wants {
+			bar -= b.RivalDiscount // the old enemy is always a little nearer war
+		} else {
+			bar, wants = b.Rival, true // and wanted at all, by a people that would strike nobody else
+		}
 	}
 	if wants && in.Stiff > 1 && !in.Fought {
 		bar = min(1, bar+b.StiffNew*(in.Stiff-1))

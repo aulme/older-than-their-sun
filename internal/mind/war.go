@@ -61,6 +61,7 @@ type WarInput struct {
 	Appetite float64 // worlds taken of late, as the bar's discount; see Appetite
 	Wary     float64 // the wars it came off worst in against this enemy, fading
 	Treats   bool    // terms can pass between the two: each understands the other and both make terms
+	Bound    float64 // an ally's: what the alliance is worth to it, 0 to 1, which a separate peace would throw away; see Bound
 }
 
 // WarVerdict is the council's answer, with what it weighed.
@@ -130,18 +131,19 @@ func WarCouncil(in WarInput, t *Tuning) WarVerdict {
 	bar, presses := PressBar(in, t)
 	v.Bar = bar
 	proud := in.Posture == Unyielding || in.Hates || in.Aim == AimEnding
+	stay := 1 - p.AllyStay*in.Bound // an ally sues alone only for the stronger reasons, the more so the more the alliance is worth
 	switch {
 	case in.Treats && in.Met:
 		v.Choice, v.Key, v.Reason = Sue, "met", "the aim is met: peace on the lines"
 		return v
-	case in.Treats && !proud && in.Will < p.SueWill:
+	case in.Treats && !proud && in.Will < p.SueWill*stay:
 		v.Choice, v.Key, v.Reason = Sue, "will", "the will is nearly gone"
 		return v
-	case in.Treats && !proud && (in.Fought || in.Lost > 0) && in.Acted < v.Sue && !in.Out:
+	case in.Treats && !proud && (in.Fought || in.Lost > 0) && in.Acted < v.Sue*stay && !in.Out:
 		v.Choice, v.Key, v.Reason = Sue, "afraid", "afraid, and the balance is against it"
 		return v
 	}
-	stale := in.Treats && !in.Out && in.Idle >= p.IdleSue && in.Posture != Unyielding && !in.Hates
+	stale := in.Treats && !in.Out && in.Idle*stay >= p.IdleSue && in.Posture != Unyielding && !in.Hates
 	building := presses && in.Reach && in.Acted >= bar && !in.Ready // the odds are there and the ships are coming
 	if building && in.Idle < p.IdleSue*p.BuildWait {
 		stale = false
@@ -168,6 +170,56 @@ func WarCouncil(in WarInput, t *Tuning) WarVerdict {
 	return v
 }
 
+// BoundInput is what an ally in a war joined by pact reads of the
+// alliance.
+type BoundInput struct {
+	Age      float64 // years since the pact was made
+	Members  int     // its members
+	Menace   bool    // the enemy menaces the ally itself
+	Renown   float64 // the principal's
+	Betrayed bool    // the principal has broken faith with the ally
+}
+
+// Bound is what an alliance is worth to an ally in its principal's war,
+// from 0 to 1: the more, the older and larger the pact, the more the
+// enemy menaces the ally on its own account and the more the principal
+// has kept faith. A separate peace throws it away, and the record counts
+// it a betrayal every member weighs; so the ally that holds it dear
+// stays in a war it would leave on its own account.
+func Bound(in BoundInput, t *Tuning) float64 {
+	p := &t.War
+	b := p.AllyBase + p.AllyAge*min(1, in.Age/100_000) + p.AllyMembers*float64(min(3, max(0, in.Members-2))) + p.AllyRenown*min(1, in.Renown)
+	if in.Menace {
+		b += p.AllyMenace
+	}
+	if in.Betrayed {
+		b -= p.AllyBetrayed
+	}
+	return min(1, max(0, b))
+}
+
+// Escalate is the aim of a war between old enemies: the second war
+// between two with a grudge standing is at least for redress, and the
+// third and after for the whole when the declarer has grown to many
+// times the other (the Punic pattern: Rome was the larger by the third
+// war). Between rivals of a size the third is redress again: a war for
+// the whole between equals ended the rivalries it was meant to carry
+// (step 11's batches: old enemies 104 pairs with it, 188 without). A war
+// for a total aim, or an ally's, stays as it is. Size is the declarer's
+// worlds over the other's.
+func Escalate(aim string, nth int, grudge bool, size float64, t *Tuning) string {
+	if !grudge || !Limited(aim) {
+		return aim
+	}
+	switch {
+	case nth >= t.War.Escalate && size >= t.War.EscalateSize:
+		return AimSubmission
+	case nth >= 2 && aim != AimRedress:
+		return AimRedress
+	}
+	return aim
+}
+
 // TermsInput is an offer of terms before the council of the side it is
 // made to.
 type TermsInput struct {
@@ -177,7 +229,8 @@ type TermsInput struct {
 	Posture string
 	Hates   bool
 	Greed   float64
-	Presses bool // its council would press on: a side that would not has nothing to refuse with
+	Presses bool    // its council would press on: a side that would not has nothing to refuse with
+	Bound   float64 // an ally's: what the alliance is worth to it; peace alone would be a separate peace
 }
 
 // TermsAnswer is the answer.
@@ -210,6 +263,7 @@ func AnswerTerms(in TermsInput, t *Tuning) TermsAnswer {
 	if !in.Presses {
 		a.Score += p.NoPress
 	}
+	a.Score -= p.AllyTerms * in.Bound
 	switch {
 	case in.Hates && in.Will > 0:
 		a.Score = min(a.Score, -1)

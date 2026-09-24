@@ -1,0 +1,12 @@
+{
+  "name": "rivals",
+  "ticks": 300,
+  "peoples": [
+    {"name": "Carthage", "traits": ["defensive"], "worlds": 4, "ships": 8},
+    {"name": "Rome", "traits": ["defensive"], "worlds": 4, "ships": 8, "dist": 12}
+  ],
+  "bonds": [
+    {"a": "Carthage", "b": "Rome", "grudge": 1, "fought": 2},
+    {"a": "Rome", "b": "Carthage", "grudge": 1}
+  ]
+}

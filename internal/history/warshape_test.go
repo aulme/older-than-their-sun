@@ -3,6 +3,7 @@ package history
 import (
 	"os"
 	"path/filepath"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"sync"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	"worldgen/internal/mind"
+	"worldgen/internal/record"
 	"worldgen/internal/warshape"
 )
 
@@ -22,9 +24,12 @@ import (
 //
 //	WAR=1 go test ./internal/history -run TestWarShape -v -timeout 6h
 //
-// WAR_STARS (400), WAR_SEEDS (20) and WAR_FROM (1) set the batch;
+// WAR_STARS (400), WAR_SEEDS (20) and WAR_FROM (1) set the batch, or
+// WAR_LIST=1,5,9 names its seeds;
 // WAR_TUNE=Group.Field=v,... sets the mind's tuning for the batch;
-// WAR_WATCH=dir runs the watchers (watch.go) on every seed and writes
+// WAR_OUT=dir writes each seed's record to dir/seed-N, for cmd/warshape
+// to read again without running it; WAR_SAVE=file keeps the batch's gate and WAR_BASE=file prints an
+// earlier one's beside it; WAR_WATCH=dir runs the watchers (watch.go) on every seed and writes
 // what they catch to dir/seed-N.txt, with a line per catch in the log.
 func TestWarShape(t *testing.T) {
 	if os.Getenv("WAR") == "" {
@@ -39,6 +44,21 @@ func TestWarShape(t *testing.T) {
 	}
 	if s := os.Getenv("WAR_FROM"); s != "" {
 		from, _ = strconv.Atoi(s)
+	}
+	list := make([]uint64, 0, seeds)
+	if s := os.Getenv("WAR_LIST"); s != "" {
+		for _, x := range strings.Split(s, ",") {
+			n, err := strconv.Atoi(x)
+			if err != nil {
+				t.Fatal(err)
+			}
+			list = append(list, uint64(n))
+		}
+		seeds = len(list)
+	} else {
+		for i := range seeds {
+			list = append(list, uint64(from+i))
+		}
 	}
 	var tunes []string
 	if s := os.Getenv("WAR_TUNE"); s != "" {
@@ -62,11 +82,17 @@ func TestWarShape(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
+			defer func() {
+				if p := recover(); p != nil {
+					t.Errorf("seed %d panicked: %v\n%s", list[i], p, debug.Stack()) // the rest of the batch is still read
+					out[i] = nil
+				}
+			}()
 			cfg := DefaultConfig()
 			cfg.Stars = stars
 			cfg.Tuning = tuning
 			if watchDir != "" {
-				f, err := os.Create(filepath.Join(watchDir, sprintf("seed-%d.txt", from+i)))
+				f, err := os.Create(filepath.Join(watchDir, sprintf("seed-%d.txt", list[i])))
 				if err != nil {
 					t.Error(err)
 					return
@@ -77,15 +103,43 @@ func TestWarShape(t *testing.T) {
 				defer func() { fired[i], watches[i] = wt.Fired, wt }()
 			}
 			start := time.Now()
-			w := Generate(uint64(from+i), cfg)
+			w := Generate(list[i], cfg)
 			took := time.Since(start)
-			out[i] = warshape.Read(w.Export(cfg.Region))
+			r := w.Export(cfg.Region)
+			if dir := os.Getenv("WAR_OUT"); dir != "" {
+				if err := record.Write(filepath.Join(dir, sprintf("seed-%d", list[i])), r); err != nil {
+					t.Error(err)
+				}
+			}
+			out[i] = warshape.Read(r)
 			out[i].Took = took
 		}()
 	}
 	wg.Wait()
+	read := out[:0:0]
+	for _, x := range out {
+		if x != nil {
+			read = append(read, x)
+		}
+	}
+	out = read
 	for _, l := range warshape.Report(out) {
 		t.Log(l)
+	}
+	gate := warshape.Gate(out)
+	var base []warshape.Row
+	if p := os.Getenv("WAR_BASE"); p != "" {
+		if base, err = warshape.LoadGate(p); err != nil {
+			t.Error(err)
+		}
+	}
+	for _, l := range warshape.GateLines(gate, base) {
+		t.Log(l)
+	}
+	if p := os.Getenv("WAR_SAVE"); p != "" {
+		if err := warshape.SaveGate(p, gate); err != nil {
+			t.Error(err)
+		}
 	}
 	for _, f := range fired {
 		for _, l := range f {

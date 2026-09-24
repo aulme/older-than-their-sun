@@ -32,6 +32,7 @@ type Battle struct {
 	Gap                float64 // the attacker's levels less the defender's
 	Won                bool    // the attacker won the roll
 	Outcome            string  // empty (taken without a battle), taken, withdrew (the fleets did, the guns stand), guns (a gun stands and any fleet stayed behind it), held (the defender won the roll), broken (the attacker is gone)
+	Relief             []int   // the allies whose relief stood in the defender's sky
 }
 
 // sky is what holds a world: its guns, the guard, the relief, and their
@@ -119,6 +120,16 @@ func (w *World) fight(x *Expedition, t int) {
 	s := w.skyAt(e, t)
 	rec := &Battle{Year: w.Now, Star: t, Attacker: c.ID, Defender: e.ID, Ships: x.Ships, Held: s.ships(), Gap: w.levelGap(c, e)}
 	w.Battles = append(w.Battles, rec)
+	for _, r := range s.relief {
+		if !contains(rec.Relief, r.Owner) {
+			rec.Relief = append(rec.Relief, r.Owner)
+			if ar := w.warBetween(r.Owner, c.ID); ar != nil {
+				ar.Battles++ // an ally's relief fighting at its principal's world is its own war fought
+				ar.Fought = w.Now
+				w.summon(ar)
+			}
+		}
+	}
 	x.Battles++
 	c.Tally.Battles++
 	w.observe(c, e, t, 0.3)
@@ -301,7 +312,9 @@ func (w *World) take(wr *War, x *Expedition, c, e *Civ, t int, empty bool) {
 	w.takeWorld(wr, c, e, t)
 	w.fleet, w.emptySky = nil, false
 	if w.Owner[t] == c.ID {
-		x.Held = append(x.Held, t)
+		if !contains(x.Held, t) {
+			x.Held = append(x.Held, t) // once, however often it is lost and taken again
+		}
 		x.Base = t
 	}
 	if wr.Over || !e.Active() {

@@ -780,6 +780,7 @@ type Battle struct {
 	Gap      float64 `json:"gap"`
 	Won      bool    `json:"won"`
 	Outcome  string  `json:"outcome"`
+	Relief   []int   `json:"relief,omitempty"` // the allies whose relief stood in the defender's sky
 }
 
 // Meeting is one battle in the dark.

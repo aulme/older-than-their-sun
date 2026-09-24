@@ -99,11 +99,30 @@ func Report(ss []*Shape) []string {
 	add("**3 World wars.** %d systems of wars; peoples at war at once in a system: %s; %d world wars, in %d of %d seeds. The widest: %s.",
 		len(sys), histogram(peaks, []int{2, 3, 4, 6, 8, 12}), worldWars(sys), seeds(func(s *Shape) bool { return worldWars(s.Systems) > 0 }), len(ss), widest(sys, 5))
 
+	pacts, pmax, sep, absent, relief := 0, 0, 0, 0, 0
+	for _, s := range ss {
+		pacts += s.Pacts
+		pmax = max(pmax, s.PactMax)
+		sep += s.Separate
+		absent += s.Absent
+		relief += s.Relief
+	}
+	joined := countW(all, func(w *War) bool { return w.Principal >= 0 })
+	jf := fought(filterW(all, func(w *War) bool { return w.Principal >= 0 }))
+	jc := countW(all, func(w *War) bool { return w.Principal >= 0 && w.Campaigns[0] > 0 })
+	add("Allies: %d pacts, the largest %d members at the end; %d wars joined by pact (%s of wars), %s of them fought, the ally sending a campaign in %s; they ended: %s. Separate peaces %d; allies called that did not come %d; relief fleets %d.",
+		pacts, pmax, joined, pct(joined, len(all)), pct(len(jf), joined), pct(jc, joined), results(filterW(all, func(w *War) bool { return w.Principal >= 0 })), sep, absent, relief)
+	add("Rivalries: wars by their place between the pair, and their aims: %s.", rivalries(all))
+
 	b := border(all)
 	add("**4 Border disputes.** %d wars between realms of %d worlds or more: %s. Those for a world (the aim, or before the record held it the cause \"a border\"): %d.", b.large, large, b.kinds(), b.cause)
 
-	add("**5 Cold wars.** %d pairs with a cold war, in %d of %d seeds; %d quiet pairs. Battles fought in no war between their two: %d. The build-up between them is not in the record until stage 3.",
-		cold, seeds(func(s *Shape) bool { return s.Cold > 0 }), len(ss), quiet, stray)
+	dark := 0
+	for _, s := range ss {
+		dark += s.Dark
+	}
+	add("**5 Cold wars.** %d pairs with a cold war, in %d of %d seeds; %d quiet pairs. Battles fought in no war between their two: %d; fleets meeting in the dark in no war: %d. The build-up between them is not in the record until stage 3.",
+		cold, seeds(func(s *Shape) bool { return s.Cold > 0 }), len(ss), quiet, stray, dark)
 
 	add("**6 Proxy wars.** %d wars between vassals of different masters; %d with a master's ships in them; %d proxy wars, the masters not at war.", vw, mi, px)
 
@@ -122,6 +141,15 @@ func Report(ss []*Shape) []string {
 		mean(all, func(w *War) float64 { return float64(w.Battles) }), quartiles(ints(all, func(w *War) int { return w.Battles })), mean(all, func(w *War) float64 { return float64(w.Taken) }),
 		ratio(first, pairs), ratio(1000*len(all), pt))
 	add("How wars ended: %s.", results(all))
+	terms := map[string]int{}
+	nt := 0
+	for _, s := range ss {
+		for k, v := range s.Terms {
+			terms[k] += v
+			nt += v
+		}
+	}
+	add("Terms by what was given: %s. Fought wars by aim, the share long and short: %s.", counts(terms, nt), byAim(f))
 	var took time.Duration
 	capped := 0
 	for _, s := range ss {
@@ -157,6 +185,35 @@ func fleetWars(ws []*War) []*War {
 		}
 	}
 	return out
+}
+
+func filterW(ws []*War, ok func(*War) bool) []*War {
+	var out []*War
+	for _, w := range ws {
+		if ok(w) {
+			out = append(out, w)
+		}
+	}
+	return out
+}
+
+// rivalries is the wars by their place between the pair (first, second,
+// third and later), each with the share fought and its aims: the
+// rivalry's escalation, read.
+func rivalries(ws []*War) string {
+	var parts []string
+	for _, band := range []struct {
+		name   string
+		lo, hi int
+	}{{"first", 1, 1}, {"second", 2, 2}, {"third and later", 3, 1 << 30}} {
+		b := filterW(ws, func(w *War) bool { return w.Nth >= band.lo && w.Nth <= band.hi && w.Principal < 0 })
+		m := map[string]int{}
+		for _, w := range b {
+			m[w.Aim]++
+		}
+		parts = append(parts, fmt.Sprintf("%s %d, fought %s, for %s", band.name, len(b), pct(len(fought(b)), len(b)), counts(m, len(b))))
+	}
+	return strings.Join(parts, "; ")
 }
 
 func unfought(ws []*War) []*War {
@@ -278,6 +335,23 @@ func border(ws []*War) borders {
 
 func (b borders) kinds() string {
 	return counts(b.kind, b.large)
+}
+
+// byAim is the fought wars by aim, each with its share long and short.
+func byAim(f []*War) string {
+	var parts []string
+	for _, aim := range []string{"world", "tribute", "redress", "submission", "ending", "defence", "hold", ""} {
+		ws := filterW(f, func(w *War) bool { return w.Aim == aim })
+		if len(ws) == 0 {
+			continue
+		}
+		name := aim
+		if name == "" {
+			name = "(none)"
+		}
+		parts = append(parts, fmt.Sprintf("%s %d, long %s, short %s", name, len(ws), pct(countW(ws, func(w *War) bool { return w.Ticks >= longTicks }), len(ws)), pct(countW(ws, func(w *War) bool { return w.Ticks <= shortTicks }), len(ws))))
+	}
+	return strings.Join(parts, "; ")
 }
 
 func origins(bs []Bond) string {

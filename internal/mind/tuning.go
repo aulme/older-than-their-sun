@@ -94,6 +94,8 @@ type BarTuning struct {
 	GrudgeDiscount float64 // off the bar when there is a grudge
 	StiffNew       float64 // what a stiff people adds to the bar per point of stiffness past one against a people it never fought: it prefers the wars it knows
 	StiffNoFirst   float64 // stiffness from which a people that never sent a fleet sends none
+	Rival          float64 // an old enemy, for a posture that wants no other war
+	RivalDiscount  float64 // off the bar against an old enemy for one that does
 }
 
 // WarTuning: the war council, will, terms and momentum; see war.go.
@@ -140,8 +142,20 @@ type WarTuning struct {
 	TruceWorld      float64 // years of truce per world given up in terms
 	WaryBar         float64 // on the bars against a people, per war come off worst in against it
 	WaryMax         float64 // at most
+	WaryStop        float64 // wars come off worst against a people, fading, from which it is not struck again at all
 	WaryDecay       float64 // what the wariness keeps per thousand years: slower than a grudge, since a beating is remembered longer than a wrong
 	Yields          int     // yields to the same power after which the next makes the loser its vassal
+	RivalWars       int     // wars fought between two, a grudge standing, that make them rivals
+	Escalate        int     // the war between old enemies, a grudge standing, from which it is for the whole
+	EscalateSize    float64 // when the declarer holds this many times the other's worlds
+	AllyStay        float64 // how much of the ally's reasons to sue alone the alliance's worth takes away, at its fullest
+	AllyTerms       float64 // what the alliance's worth, at its fullest, takes off terms offered an ally alone
+	AllyBase        float64 // an alliance's worth to an ally in its war: to begin with
+	AllyAge         float64 // and this much more for a pact a hundred thousand years old
+	AllyMembers     float64 // and this much per member past two, up to three
+	AllyMenace      float64 // and this much when the enemy menaces the ally itself
+	AllyRenown      float64 // and this much per point of the principal's renown, up to one
+	AllyBetrayed    float64 // less this much when the principal has broken faith with it
 }
 
 // CouncilTuning: when a people decides, and how boldly.
@@ -622,7 +636,7 @@ func Default() *Tuning {
 	return &Tuning{
 		Belief:   BeliefTuning{UnknownBase: 1, UnknownPerEra: 1.2, UnknownSpread: 3, Spread: 0.3, SpreadPerKyr: 0.1, MaxSpread: 3, UnknownShips: 1, UnknownShipsPerEra: 1, UnknownGuns: 2, UnknownGunsEra: 2},
 		Appraise: AppraiseTuning{Weakened: 1, OtherWar: 0.3, AllyShare: 0.5, Scale: 2, DarkAge: 50_000, PrizeWeight: 0.02, PrizeMax: 0.15, Stiff: 1.5},
-		Bar:      BarTuning{Hate: 0.35, Opportunist: 0.75, Conqueror: 0.4, Vengeful: 0.3, GrudgeDiscount: 0.1, StiffNew: 0.2, StiffNoFirst: 2},
+		Bar:      BarTuning{Hate: 0.35, Opportunist: 0.75, Conqueror: 0.4, Vengeful: 0.3, GrudgeDiscount: 0.1, StiffNew: 0.2, StiffNoFirst: 2, Rival: 0.6, RivalDiscount: 0.1},
 		Council:  CouncilTuning{Cadence: 0.3, Compulsion: 0.1, Compelled: 0.25},
 		Scout:    ScoutTuning{KeepHome: 1, FearBar: 0.8, FearShips: 3, SightNoise: 0.1},
 		Campaign: CampaignTuning{Floor: 0.1, MinFloor: 1, FearCap: 0.4, MaxLag: 20_000, ConquerorLag: 40_000, MusterMax: 30_000},
@@ -684,7 +698,8 @@ func Default() *Tuning {
 			Idle: 0.1, IdleUnyielding: 0.5, IdleRamp: 5, HomeResolve: 0.5, FarAim: 1.5, ShipLoss: 0.2, LeaderLost: 0.3, LeaderWon: 0.1,
 			YokeOdds: 0.85, YokeSize: 3, YokeWorlds: 5, YokeBar: 0.3, YokeFear: 0.3, YokeMeek: 0.2, YokeAgain: 30_000,
 			Appetite: 0.03, AppetiteMax: 0.15, AppetiteHalf: 20_000, AppetiteWill: 0.1,
-			TruceWorld: 3000, WaryBar: 0.1, WaryMax: 0.8, WaryDecay: 0.998, Yields: 2,
+			TruceWorld: 3000, WaryBar: 0.1, WaryMax: 0.8, WaryStop: 5, WaryDecay: 0.998, Yields: 2,
+			RivalWars: 2, Escalate: 3, EscalateSize: 2, AllyStay: 0.8, AllyTerms: 1, AllyBase: 0.3, AllyAge: 0.2, AllyMembers: 0.05, AllyMenace: 0.3, AllyRenown: 0.1, AllyBetrayed: 0.5,
 		},
 		Decline: DeclineTuning{BirthWindow: 2, WaningBar: 0.35, EndBar: 0.55, HoldMyr: 1},
 		Kinds: KindsTuning{

@@ -53,6 +53,7 @@ type War struct {
 	Vassal       [2]bool // held as a vassal rather than a slave
 	Pact         int
 	Principal    int
+	Nth          int // the nth war between the two
 }
 
 // Fought says whether a battle was fought in it.
@@ -65,6 +66,8 @@ type System struct {
 	Wars   int
 	Peak   int
 	Fronts int
+	At     record.Year // the widest moment
+	IDs    []int       // its wars
 }
 
 // Bond is one people held by another, from the record's changes of
@@ -97,6 +100,7 @@ type Shape struct {
 
 	Wars       []*War
 	Stray      int   // battles in no war between their two
+	Dark       int   // fleets meeting in the dark in no war between their two: incidents too
 	PairWars   []int // wars per pair that fought, each pair once
 	PairFought []int // fought wars per pair
 	Systems    []System
@@ -108,7 +112,14 @@ type Shape struct {
 	Waves      []int // for each people that made a wave, the most peoples it took from in one span
 	Bonds      []Bond
 	Attacks    []Attack
-	Tributes   int // tribute facts: a yielding people paying in a commodity
+	Tributes   int            // tribute facts: a yielding people paying in a commodity
+	Terms      map[string]int // settlements by what was given: worlds, tribute, artifact, vassal, lines
+
+	Pacts    int // pacts made
+	PactMax  int // the most members a pact had at the end
+	Separate int // separate peaces: an ally making its own peace while its principal fought on
+	Absent   int // allies called that did not come
+	Relief   int // relief fleets sent
 }
 
 // span is a stretch of a quantity's history: from a year on, the value.
@@ -208,6 +219,11 @@ func Read(r *record.Run) *Shape {
 			}
 		case record.FTribute:
 			s.Tributes++
+		case record.FSettled:
+			if s.Terms == nil {
+				s.Terms = map[string]int{}
+			}
+			s.Terms[e.Str("terms")]++
 		}
 	}
 	for _, h := range [](map[int][]span){worlds, masters, vassal} {
@@ -234,7 +250,7 @@ func Read(r *record.Run) *Shape {
 	byPair := map[pair][]*War{}
 	for _, wr := range st.Wars {
 		w := &War{ID: wr.ID, Sides: wr.Sides, Began: wr.Began, End: wr.Ended, Over: wr.Over, Taken: wr.Taken[0] + wr.Taken[1],
-			Cause: wr.Cause, Aim: wr.Aim, Result: wr.Result, Pact: wr.Pact, Principal: wr.Principal, Fleets: sails(wr.Sides[0]) && sails(wr.Sides[1])}
+			Cause: wr.Cause, Aim: wr.Aim, Result: wr.Result, Pact: wr.Pact, Principal: wr.Principal, Nth: wr.Nth, Fleets: sails(wr.Sides[0]) && sails(wr.Sides[1])}
 		if !wr.Over {
 			w.End, w.Result = d.Present, "unfinished"
 		}
@@ -264,7 +280,19 @@ func Read(r *record.Run) *Shape {
 	}
 	ticks := map[*War]map[record.Year]bool{}
 	stray := map[pair][]record.Year{}
+	joinBattle := func(w *War, y record.Year) {
+		w.Battles++
+		if ticks[w] == nil {
+			ticks[w] = map[record.Year]bool{}
+		}
+		ticks[w][y/step] = true
+	}
 	for _, b := range st.Battles {
+		for _, r := range b.Relief {
+			if w := warOf(r, b.Attacker, b.Year); w != nil {
+				joinBattle(w, b.Year) // an ally's relief in the defender's sky fought its own war too
+			}
+		}
 		w := warOf(b.Attacker, b.Defender, b.Year)
 		if w == nil {
 			s.Stray++
@@ -272,11 +300,15 @@ func Read(r *record.Run) *Shape {
 			stray[k] = append(stray[k], b.Year)
 			continue
 		}
-		w.Battles++
-		if ticks[w] == nil {
-			ticks[w] = map[record.Year]bool{}
+		joinBattle(w, b.Year)
+	}
+	for _, m := range st.Meetings {
+		if m.Owner < 0 || m.Seer < 0 || m.Owner == m.Seer || warOf(m.Owner, m.Seer, m.Year) != nil {
+			continue
 		}
-		ticks[w][b.Year/step] = true
+		s.Dark++
+		k := pairOf(m.Owner, m.Seer)
+		stray[k] = append(stray[k], m.Year) // an interception between peoples at peace is an incident
 	}
 	for w, t := range ticks {
 		w.BattleTicks = len(t)
@@ -351,6 +383,25 @@ func Read(r *record.Run) *Shape {
 		}
 		if !atWar {
 			s.Proxy++
+		}
+	}
+
+	// Allies: the pacts, the betrayals of them and the relief sent.
+	s.Pacts = len(st.Pacts)
+	for _, p := range st.Pacts {
+		s.PactMax = max(s.PactMax, len(p.Members))
+	}
+	for _, b := range st.Betrayals {
+		switch b.Shape {
+		case "separate_peace":
+			s.Separate++
+		case "absent":
+			s.Absent++
+		}
+	}
+	for _, x := range st.Fleets {
+		if x.Kind == "relief" {
+			s.Relief++
 		}
 	}
 
@@ -430,6 +481,10 @@ func systems(ws []*War) []System {
 	var out []System
 	for _, g := range groups {
 		sys := System{Wars: len(g)}
+		for _, w := range g {
+			sys.IDs = append(sys.IDs, w.ID)
+		}
+		sort.Ints(sys.IDs)
 		for _, t := range g {
 			peoples := map[int]bool{}
 			fronts := 0
@@ -442,7 +497,7 @@ func systems(ws []*War) []System {
 				}
 			}
 			if len(peoples) > sys.Peak || len(peoples) == sys.Peak && fronts > sys.Fronts {
-				sys.Peak, sys.Fronts = len(peoples), fronts
+				sys.Peak, sys.Fronts, sys.At = len(peoples), fronts, t.Began
 			}
 		}
 		out = append(out, sys)
@@ -469,7 +524,8 @@ func sortSystems(sys []System) {
 // cold reads the pairs that have fought, between their long wars: a
 // stretch of fifty thousand years or more with both large and no war
 // longer than a short one between them. With an incident in it — a short
-// war, or a battle with no war — it is a cold war; without, a quiet one.
+// war, a battle with no war, or fleets meeting in the dark with no war —
+// it is a cold war; without, a quiet one.
 // The build-up the proposal asks of a cold war is not in the record
 // until stage 3 gives a people a rival it watches.
 func cold(byPair map[pair][]*War, stray map[pair][]record.Year, worldsAt func(int, record.Year) int, ended func(int) record.Year, step record.Year) (int, int) {

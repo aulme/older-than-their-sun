@@ -51,6 +51,8 @@ type War struct {
 	Seized    [2][]int  // the worlds each side took in it
 	Fought    Year      // the year of the last
 	Gap       *Gap      // set for a hunt: the first side fights a region, not a people it can name; see gap.go
+	Escalated bool      // the aim was raised because the two are old enemies
+	Asks      int       // for redress, the worlds it asks: what the declarer lost to the other in their last war, one to three
 	// the slights of the war: see slight.go
 	Slights    map[int]float64 // the slight each partner of the target took at the declaration
 	Sent       map[int]float64 // what the target was sending each the tick before
@@ -177,6 +179,13 @@ func (w *World) declare(c, e *Civ, cause reason) *War {
 	wr := &War{ID: len(w.Wars), Sides: [2]int{c.ID, e.ID}, Began: w.Now, Cause: cause.key, CauseOf: cause.by, Nth: c.Fought[e.ID], Named: -1, Pact: -1, Principal: -1, Hire: -1, Winner: -1, Contested: map[int]int{}, Called: map[int]bool{},
 		Slights: map[int]float64{}, Sent: map[int]float64{}, Slighted: map[int]float64{}, SlightTold: map[int]bool{}}
 	wr.Aim = w.aimOf(c, e, cause.key)
+	size := float64(len(c.Systems)) / float64(max(1, len(e.Systems)))
+	if aim := mind.Escalate(wr.Aim, wr.Nth, c.Grudge[e.ID] > 0 || e.Grudge[c.ID] > 0, size, w.Cfg.Tuning); aim != wr.Aim {
+		wr.Aim, wr.Escalated = aim, true // old enemies: each war between them asks more than the last
+	}
+	if wr.Aim == mind.AimRedress {
+		wr.Asks = min(3, max(1, c.LostTo[e.ID])) // what was lost taken back
+	}
 	wr.Will = [2]float64{w.initialWill(c, e, true), w.initialWill(e, c, false)}
 	wr.Summon[1] = true // the side declared on answers
 	w.addWar(wr)
@@ -263,13 +272,18 @@ func (w *World) drain(wr *War, i int) {
 		wr.Will[i] = 0 // nothing worth fighting for
 		return
 	}
-	if wr.Battles > 0 && w.Now-wr.Fought < Year(w.dt*1000) {
+	pw := w.principalWar(wr)
+	fought := wr.Fought
+	if pw != nil {
+		fought = max(fought, pw.Fought) // an ally's war is its principal's: fought when that is
+	}
+	if fought > 0 && w.Now-fought < Year(w.dt*1000) {
 		return // fought this tick
 	}
-	if w.fleetInFlight(c, e) || w.fleetInFlight(e, c) {
+	if w.fleetInFlight(c, e) || w.fleetInFlight(e, c) || (pw != nil && w.inFlight(pw)) {
 		return // a fleet is on its way; nobody tires of a war that has not begun
 	}
-	idle := float64(w.Now-max(wr.Began, wr.Fought)) / 1000
+	idle := float64(w.Now-max(wr.Began, fought)) / 1000
 	d := t.Idle * w.dt * (1 + idle/t.IdleRamp)
 	if w.Now-wr.Began > 50_000 {
 		d *= 2
@@ -668,10 +682,7 @@ func (w *World) yield(wr *War, li int) {
 func (w *World) capitulate(wr *War, l, v *Civ) {
 	vi := wr.side(v.ID)
 	wr.Winner = v.ID
-	if l.Yields == nil {
-		l.Yields = map[int]int{}
-	}
-	if l.Yields[v.ID]++; l.Yields[v.ID] > w.Cfg.Tuning.War.Yields && w.bends(l) && v.Own < 0 && !v.hates(l) && !v.Has("pacifist") {
+	if w.yielded(l, v) > w.Cfg.Tuning.War.Yields && w.takesClient(v, l) && w.bends(l) {
 		// a people that keeps yielding to the same power is its client in all but name, and now in name
 		w.event(KYielded, l, v, -1, P{"outcome": "vassal"}).with(w.warSpanP(wr))
 		w.vassal(v, l)
@@ -733,6 +744,22 @@ func (w *World) capitulate(wr *War, l, v *Civ) {
 		w.enslave(v, l)
 		w.endWar(wr, "enslaved")
 	}
+}
+
+// yielded counts one more yield of l to v, and says how many there have
+// been: by capitulation, or by terms that bought the war off.
+func (w *World) yielded(l, v *Civ) int {
+	if l.Yields == nil {
+		l.Yields = map[int]int{}
+	}
+	l.Yields[v.ID]++
+	return l.Yields[v.ID]
+}
+
+// takesClient says whether v would keep l as a vassal: not a rider, not
+// the hating, not a pacifist.
+func (w *World) takesClient(v, l *Civ) bool {
+	return v.Own < 0 && !v.hates(l) && !v.Has("pacifist")
 }
 
 // cede hands up to limit of l's front worlds to v, the home never, and
@@ -828,10 +855,22 @@ func (w *World) endWar(wr *War, result string) {
 	delete(b.Wars, a.ID)
 	if wr.Gap != nil {
 		a.HuntEnded = w.Now
+		if wr.Taken[0]+wr.Glassed[0] == 0 {
+			if a.HuntsFailed == nil {
+				a.HuntsFailed = map[int]int{}
+			}
+			a.HuntsFailed[b.ID]++
+		}
 	}
 	truce := Year(5000 + w.R.IntN(10000))
 	a.Truce[b.ID] = w.Now + truce
 	b.Truce[a.ID] = w.Now + truce
+	for i, c := range []*Civ{a, b} {
+		if c.LostTo == nil {
+			c.LostTo = map[int]int{}
+		}
+		c.LostTo[wr.Sides[1-i]] = wr.Lost[i] // the last war's loss: what a redress would ask back
+	}
 	gained := func(i int) bool { return wr.Taken[i]+wr.Glassed[i] > 0 }
 	// ahead: the side the other yielded to, or with nobody yielding one
 	// that has what it went for and gave up less than it took
@@ -871,6 +910,21 @@ func (w *World) endWar(wr *War, result string) {
 // or one gathering.
 func (w *World) hasFleetAgainst(c, e *Civ) bool {
 	return w.fleetInFlight(c, e) || w.fleetAtBase(c, e) || (c.Muster != nil && c.Muster.Target == e.ID)
+}
+
+// principalWar is the war an ally's war was joined to: its principal's
+// against the same enemy, while it runs; nil for a war of its own.
+func (w *World) principalWar(wr *War) *War {
+	if wr.Principal < 0 {
+		return nil
+	}
+	return w.warBetween(wr.Principal, wr.Sides[1])
+}
+
+// inFlight says whether either side of a war has a campaign on its way.
+func (w *World) inFlight(wr *War) bool {
+	a, b := w.Civs[wr.Sides[0]], w.Civs[wr.Sides[1]]
+	return w.fleetInFlight(a, b) || w.fleetInFlight(b, a)
 }
 
 func (w *World) fleetInFlight(c, e *Civ) bool {

@@ -455,6 +455,9 @@ func TestVoicelessNamed(t *testing.T) {
 			metBy := false
 			for _, f := range w.Events {
 				if f.Kind == history.FMet && (f.Object == c.ID || f.Subject == c.ID) && f.Object >= 0 {
+					if f.Subject == c.ID && f.P["how"] == "noticed" {
+						continue // it noticed them, unseen: they never met it, and have nothing to call it
+					}
 					o := f.Subject
 					if o == c.ID {
 						o = f.Object

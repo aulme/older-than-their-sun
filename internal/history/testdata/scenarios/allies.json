@@ -1,0 +1,17 @@
+{
+  "name": "allies",
+  "ticks": 60,
+  "stars": 60,
+  "peoples": [
+    {"name": "Crown", "traits": ["defensive"], "worlds": 4, "ships": 10},
+    {"name": "Khan", "traits": ["conqueror"], "worlds": 4, "ships": 12, "near": "Crown", "dist": 12},
+    {"name": "Ward", "traits": ["defensive"], "worlds": 3, "ships": 6, "near": "Khan", "dist": 10},
+    {"name": "Kin", "traits": ["confederate"], "worlds": 3, "ships": 6, "near": "Crown", "dist": 10}
+  ],
+  "bonds": [
+    {"a": "Crown", "b": "Ward", "pact": "defence"},
+    {"a": "Crown", "b": "Kin", "pact": "defence"},
+    {"a": "Ward", "b": "Khan"}, {"a": "Kin", "b": "Khan"}, {"a": "Ward", "b": "Kin"}
+  ],
+  "wars": [{"by": "Khan", "on": "Crown", "cause": "conquest"}]
+}

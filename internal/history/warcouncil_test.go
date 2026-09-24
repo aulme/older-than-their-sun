@@ -220,6 +220,7 @@ func TestBoughtOffWins(t *testing.T) {
 		t.Fatalf("a revenge war's aim is %q", wr.Aim)
 	}
 	c.Grudge[e.ID] = 2
+	wr.Asks = 2 // two worlds lost last time, two asked back
 	o := offer{kind: "worlds", worlds: []int{colony}}
 	paid := worth(wr, 0, o)
 	if paid >= 1 {
@@ -231,5 +232,28 @@ func TestBoughtOffWins(t *testing.T) {
 	}
 	if wr.Winner != c.ID || c.Grudge[e.ID] > 0 {
 		t.Errorf("winner %d (want %d), grudge %.2f", wr.Winner, c.ID, c.Grudge[e.ID])
+	}
+}
+
+// TestBoughtOffBends: a people that has bought the same power off twice
+// offers itself as a vassal the third time, before its worlds, and the
+// terms it buys the war off with count as its yields (step 11's batches:
+// a realm bought the same neighbour off twenty times, a world or two at
+// a time).
+func TestBoughtOffBends(t *testing.T) {
+	w, c, e, colony, wr := atWar(t, 67, 30, 1, "border")
+	o := offer{kind: "worlds", worlds: []int{colony}}
+	w.settleTerms(wr, e, c, o, worth(wr, 0, o))
+	if e.Yields[c.ID] != 1 {
+		t.Fatalf("a war bought off with a world is no yield: %d", e.Yields[c.ID])
+	}
+	e.Yields[c.ID] = w.Cfg.Tuning.War.Yields
+	c.Truce[e.ID], e.Truce[c.ID] = 0, 0
+	wr = w.declare(c, e, because("border"))
+	if wr == nil {
+		t.Fatal("no second war")
+	}
+	if o := w.offerFor(wr, 1); o.kind != "vassal" {
+		t.Errorf("bought off %d times, it offers %s", e.Yields[c.ID], o.kind)
 	}
 }

@@ -634,7 +634,7 @@ func (r *Run) tell() {
 // warReason says whether a reason is the war's or the council's: the
 // ones a narrative of war tells by default.
 func warReason(what string) bool {
-	for _, p := range []string{"at war with", "offered", "council", "strike", "war on", "pact", "call", "yoke", "truce", "muster", "campaign", "intercept"} {
+	for _, p := range []string{"at war with", "offered", "council", "strike", "war on", "pact", "call", "yoke", "truce", "muster", "campaign", "intercept", "on the ", "sizing", "meeting of"} { // "on the" is the council's verdict on a people it might strike
 		if strings.Contains(what, p) {
 			return true
 		}

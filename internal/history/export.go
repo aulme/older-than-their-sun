@@ -235,7 +235,7 @@ func (w *World) exportState() *record.State {
 	}
 	st.Battles = []record.Battle{}
 	for _, b := range w.Battles {
-		st.Battles = append(st.Battles, record.Battle{Year: b.Year, Star: b.Star, Attacker: b.Attacker, Defender: b.Defender, Ships: b.Ships, Held: b.Held, Gap: b.Gap, Won: b.Won, Outcome: b.Outcome})
+		st.Battles = append(st.Battles, record.Battle{Year: b.Year, Star: b.Star, Attacker: b.Attacker, Defender: b.Defender, Ships: b.Ships, Held: b.Held, Gap: b.Gap, Won: b.Won, Outcome: b.Outcome, Relief: b.Relief})
 	}
 	st.Meetings = []record.Meeting{}
 	for _, m := range w.Meetings {

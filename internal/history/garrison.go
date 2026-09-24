@@ -25,6 +25,7 @@ type Muster struct {
 	World  int    // the world the campaign is for
 	Cause  reason // why the war will be declared when the fleet is gathered
 	Since  Year
+	War    int // the war it gathers for, or -1 for a war to be declared when it sails
 }
 
 // garrison is the civ step after the council: the muster it ordered, the
@@ -175,7 +176,10 @@ func (w *World) guardWith(c *Civ, star, n int) *Expedition {
 // fleet sails: a muster that stands down has started nothing.
 func (w *World) muster(c, e *Civ, world int, cause reason, n int) {
 	star, _ := w.nearest(c, world)
-	c.Muster = &Muster{Star: star, Ships: n, Target: e.ID, World: world, Cause: cause, Since: w.Now}
+	c.Muster = &Muster{Star: star, Ships: n, Target: e.ID, World: world, Cause: cause, Since: w.Now, War: -1}
+	if wr := w.warBetween(c.ID, e.ID); wr != nil {
+		c.Muster.War = wr.ID
+	}
 	c.Tally.Musters++
 	have := 0
 	if g := w.guardAt(c, star); g != nil && !g.LaidUp {
@@ -220,7 +224,8 @@ func (w *World) musterStep(c *Civ) {
 	}
 	coming := w.comingTo(c, m.Star)
 	holds := false
-	if e.Active() && e.Free() && w.holds(e, m.World) && (w.warBetween(c.ID, e.ID) != nil || c.Truce[e.ID] <= w.Now) {
+	over := m.War >= 0 && w.Wars[m.War].Over // gathered for a war that has ended: it declares no new one (step 11's batches, seed 12: a muster outliving each war it was called in opened the next, twenty-nine times)
+	if !over && e.Active() && e.Free() && w.holds(e, m.World) && (w.warBetween(c.ID, e.ID) != nil || c.Truce[e.ID] <= w.Now) {
 		if k := w.sizeAt(c, e, m.World); k.Send {
 			holds = true
 			m.Ships = k.Share

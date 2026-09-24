@@ -1,6 +1,6 @@
 # War: how peoples fight, and how a war ends
 
-**Status:** Stages 0 and 1 built (2026-09-24); stages 2 and 3 open. Placed in `specs/plan.md` as steps 10 and 11, after `leaders.md` (a leader at the front is one of the things a war council reads) and before `empires.md`, whose conquest wave and coalitions ride on the machinery here and whose tuning pass is read against the wars this leaves. Read by `art.md` (a war is most of the circumstances worth making anything about) and `miracles.md`.
+**Status:** Stages 0, 1 and 2 built (2026-09-24); stage 3 open. Placed in `specs/plan.md` as steps 10 and 11, after `leaders.md` (a leader at the front is one of the things a war council reads) and before `empires.md`, whose conquest wave and coalitions ride on the machinery here and whose tuning pass is read against the wars this leaves. Read by `art.md` (a war is most of the circumstances worth making anything about) and `miracles.md`.
 **Last updated:** 2026-09-24
 
 ## Problem
@@ -207,6 +207,7 @@ And the health of it, printed beside, with its baseline:
 - *Done*: see "As built (stage 1)"; three of the gate's rows are left to the tuning at the end.
 
 **Stage 2: allies and old enemies.** The ally's aim, its own council, the cascade read and tuned; the rivalry, its lower bar and its escalating aim. Patterns 2 and 3.
+- *Done*: see "As built (stage 2)"; world wars in most seeds is not reached, and a question for the user.
 
 **Stage 3: cold war and clients.** The deterrence term in the want, the rival watched, the incident as a limited war; the vassal's council on its leash; vassalage as a bargain — the vassal's standing tribute on its whole income at a rate set by the patron's character, the circumstances of the bond and noise, part of the terms, and reviewed with the patron's regard; its place in the vassal's direction and the patron's anger at a tribute paid short; the patron's guarantee (summoned, joining or sending ships, the attacker's offence, the betrayal of staying out), the guarantee read by every council weighing an attack on a client, and the small people's weighing of protection against tribute. Patterns 5 and 6.
 
@@ -269,6 +270,40 @@ The gate on twenty seeds at 400 stars, against stage 0:
 
 What the ticks of a long fought war were: fought 23%, a fleet in flight 20%, a side waiting on its docks for the fleet it wants about a quarter, a side with its aim met offering the lines and refused about a tenth.
 
+## As built (stage 2)
+
+Allies and old enemies, as `internal/mind/war.go` (`Bound`, `Escalate`, the rival's bar in `mind.Bar`) and `internal/history` (`warcouncil.go`, `pact.go`, `appraise.go`), every number in `mind.Tuning.War` and `mind.Tuning.Bar`. The choices made on the way:
+
+- **The ally's council** is the war council every war already had, for the aim defence. What it adds is what the alliance is worth to the ally (`mind.Bound`, 0 to 1): 0.3 to begin with, 0.2 more for a pact a hundred thousand years old, 0.05 a member past two up to three, 0.3 when the enemy menaces the ally itself, 0.1 a point of the principal's renown; 0.5 less when the principal has broken faith with it. At its fullest it takes 80% off the ally's reasons to sue alone (the will, the fear, the idle ticks) and 1 off any terms offered it alone, since peace alone is a separate peace. An ally's war counts as fought while its principal's is, so the ally does not tire of a war its principal is fighting.
+- **An ally too small to carry the war** to the enemy (its council holding for the odds, the ships or the reach) sends ships to stand at its principal's home, sized as a call's relief and never leaving its own home unsafe. A battle records the allies whose relief stood in the defender's sky (`Battle.Relief`, in `FORMAT.md`), and the battle counts for the ally's own war, in the history and in the instrument.
+- **The rivalry** is two peoples with two wars fought between them and a grudge standing on either side (`rival`). A posture that wants war strikes its old enemy at a bar 0.1 lower; one that wants no other war (the defensive, the confederate, the unyielding) wants its old enemy at 0.6. Not the submissive, not a pacifist.
+- **The escalating aim** (`mind.Escalate`): the second war between two with a grudge standing is for redress at least; the third and after is for the whole only when the declarer holds twice the other's worlds — Rome was the larger by the third Punic war — and for redress again between rivals of a size. The whole at the third war regardless ended the rivalries it was meant to carry: over twenty seeds, 104 old-enemy pairs with it and 188 without, and 5569 wars against 7194.
+- **Redress asks back what was lost** (`War.Asks`): the worlds the declarer lost to the other in their last war, one to three, is what meets the aim and what terms must give. Met at one world whatever was lost, the rivals' wars were over as they began (fought redress wars 58% short, 8% long); at two for every redress a third of the wars went, and the old enemies with them.
+- **Tried and taken back**: an ally that comes with relief going to war in its own name. It filled the systems of wars with belligerents that fought nothing (joined wars fought in 19%) and gave fewer world wars, not more.
+- **Loops cut** (each a test that fails without it): a master hunting its own anti-memetic slave for the settlers it lost at the slave's world, and enslaving it again twenty times (a loss at the hands of a people the victim holds is no hole in its ledger); the same hole hunted every hundred and fifty thousand years because the wariness that stopped it faded as fast as each failed hunt added to it (failed hunts are remembered, `Civ.HuntsFailed`); a realm buying the same neighbour off twenty times, a world at a time (a war bought off is a yield, and a people bought off twice offers itself as a vassal); three peoples sending settlers for a million years to a world an unseen people held (a ship lost without trace makes the star one ships do not come back from, `dread`); a muster outliving the war it was called in and opening the next (a muster knows its war, and stands down when it ends); and a submissive heir striking its sibling for a claimed world twenty-nine times, each war given up in two ticks, because the prize of the claim brought the bar down under a wariness capped at 0.8 (past five wars come off worst, fading, a people does not go to war with that enemy again at all: `War.WaryStop`). The watch's reasons now keep the council's verdict on a people it might strike, which is what that last one needed to be read.
+- **The tools grew**: `TestWarShape` prints the gate with a verdict per row (`warshape.Gate`), keeps it (`WAR_SAVE`) and prints an earlier one beside it (`WAR_BASE`), takes a list of seeds (`WAR_LIST`), and writes every seed's record (`WAR_OUT`); `cmd/warshape` reads those records again in seconds — the report and the gate, the widest systems of wars war by war (`-systems`), the pairs past a count (`-pairs`), a people's chronicle over a span (`-events`), and how many peoples send fleets (`-census`). The report gains the allies (pacts, joined wars, separate peaces, relief) and the rivalries (wars by their place between the pair, and their aims).
+
+The gate on twenty seeds at 400 stars, against stage 1 on the same seeds; and, since one batch of twenty swings by more than the differences read here, both stages again on seeds 21 to 40 (stage 2's on the code before the last two changes, redress's ask and the lost fleet's worlds, with two seeds lost to the bug the second fixed):
+
+| | stage 1 (1–20) | stage 2 (1–20) | stage 1 (21–40) | stage 2 (21–40, 18 seeds) | wanted |
+|---|---|---|---|---|---|
+| fought, of fleet wars | 64% | 60% (59.8) | 62% | 62% | 60% |
+| short / long of fought | 35% / 28% | 42% / 20% | 38% / 26% | 44% / 17% | a quarter each |
+| short / long, in most seeds | 14 / 8 | 15 / 6 | 14 / 16 | 15 / 7 | 14 each |
+| a long war's ticks carried | 34% | 40% | 41% | 44% | a third ✓ |
+| old enemies; loop pairs | 127, 17 seeds; 0 | 122, 18 seeds; 0 | 66, 15 seeds; 3 | 100, 13 seeds; 0 | 100+, most seeds; none |
+| world wars | 27, 6 seeds | 32, 6 seeds | 11, 5 seeds | 26, 6 seeds | most seeds |
+| border disputes | 25% | 23% | 30% | 25% | a third |
+| conquest waves | 53, 5 seeds | 35, 6 seeds | 1, 1 seed | 26, 7 seeds | 5+, 3+ seeds |
+| side declared on strikes back | 16% | 13% | 10% | 10% | a third |
+| the age | 28–70 Myr | 20–67 Myr | 25–66 Myr | 19–50 Myr | 20 to 80 |
+
+Allies (seeds 1–20): 865 wars joined by pact, 36% fought, the ally sending a campaign in 19%; they ended in its principal's peace in 44%; 141 separate peaces; 5491 relief fleets. Rivalries: second wars fought 74%, third and later 82%.
+
+**What moved, and what did not.** Old enemies rose and the loops went, on both samples; world wars rose on the second. **Long wars fell** on both, 28% to 20% and 26% to 17% of fought wars: more wars between old enemies, and those for redress or a world short. It is the one row stage 2 made worse, and goes to the tuning below.
+
+**World wars in most seeds is not reached, and cannot be by the cascade.** In fourteen of the twenty seeds between 12 and 34 peoples ever send a campaign in the whole age, and no more than 10 to 27 send fleets of any kind in their busiest million years (`cmd/warshape -census`); a system of eight peoples at war at once on three fought fronts would need a third or more of them in one conflict. The world wars come in the crowded seeds: 5 of the 6 with 38 or more fleet senders in a million years, and one other. Whether the row should be read over the seeds that have the peoples for one, or left to `empires.md`, which is what fills the quiet seeds, is the user's to decide.
+
 ## Settled in review (2026-09-23)
 
 - **The time scale.** A war stays one war; a long one is a string of campaigning seasons a tick each, and a tick nobody fights in costs both sides, so staring ends in terms. The gate reads battles per tick of war.
@@ -297,3 +332,5 @@ Stage 1 was landed with three of its rows short, to be tuned with the scenarios 
 - **Border disputes** (25% of the wars between large realms; wanted a third and the most common kind): a border war between two large realms settles by a ceded world at tick four or five, just past the row's three, because a side waits three idle ticks before it sues and sits on the cadence; and 60% of large realms' wars run long.
 - **The side declared on striking back** (16% of fought wars; wanted a third): it reads its odds against the declarer, which picked the fight, and seldom clears its bar.
 - **Old enemies and the long war's battles** were settled at stage 1 (above) and are to be improved later too: the rivalry at stage 2, and battles in a long war's ticks beyond the fleets in flight.
+- **Long wars, again** (stage 2): a fifth of fought wars on both samples, down from over a quarter. The wars stage 2 adds are old enemies' for redress or a world, and short; the long ones are the total aims' and the allies'.
+- **Read the gate on forty seeds.** Two samples of twenty differ by more than most of the rows move (old enemies 127 and 66 under the same rules, conquest waves 53 and 1): a row should be read on seeds 1 to 40 before a change is kept or dropped for it.

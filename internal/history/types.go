@@ -168,32 +168,34 @@ type Civ struct {
 	Seen     int // master declines this civ has reacted to
 
 	// war and diplomacy: see dials.go, intel.go, war.go, expedition.go, pact.go
-	Dials      Dials           // temperament as numbers
-	Intel      map[int]*Intel  // what this people believes about each other people
-	Grudge     map[int]float64 // what each other people has done to them
-	Truce      map[int]Year    // no new war with each before this
-	Fought     map[int]int     // wars fought with each
-	Watched    map[int]bool    // looked at hard and left alone, until beliefs change
-	Asked      map[int]Year    // when each was last offered a pact
-	Yoked      map[int]Year    // when each was last weighed for vassalage without a war; see warcouncil.go
-	Appetite   float64         // worlds taken in war of late, halving: momentum; see warcouncil.go
-	Wary       map[int]float64 // the wars it came off worst in against each, fading slower than a grudge; see endWar
-	HuntEnded  Year            // when its last hunt ended: the losses before it were that hunt's evidence, spent; see gap.go
-	Yields     map[int]int     // times it yielded to each; see capitulate
-	Scouted    map[int]Year    // when a scout last reported on each
-	Ridden     map[int]bool    // for parasites: peoples taken as hosts
-	Charted    map[int]Year    // stars read: worlds and who is on them known; see explore.go
-	Marked     map[int]bool    // stars the Sight showed something at, for the surveyors to visit
-	Searching  bool            // the Sight is turned outward, reading stars, not watching borders
-	Starfaring Year            // when reach first touched another star; 0 if never
-	Pacts      []int
-	Tally      Tally
-	Lore       []*Tale      // what this people knows of what happened; see lore.go
-	LoreDials  Dials        // what the telling does to the temperament
-	lore       map[int]bool // facts held, forgotten or not
-	inscribed  map[int]bool // remains whose testament this people has read
-	foeNow     int          // the enemy of the day, or -1; a new one gets the old blame
-	monsters   map[int]bool // peoples remembered as things that do harm
+	Dials       Dials           // temperament as numbers
+	Intel       map[int]*Intel  // what this people believes about each other people
+	Grudge      map[int]float64 // what each other people has done to them
+	Truce       map[int]Year    // no new war with each before this
+	Fought      map[int]int     // wars fought with each
+	Watched     map[int]bool    // looked at hard and left alone, until beliefs change
+	Asked       map[int]Year    // when each was last offered a pact
+	Yoked       map[int]Year    // when each was last weighed for vassalage without a war; see warcouncil.go
+	Appetite    float64         // worlds taken in war of late, halving: momentum; see warcouncil.go
+	Wary        map[int]float64 // the wars it came off worst in against each, fading slower than a grudge; see endWar
+	HuntEnded   Year            // when its last hunt ended: the losses before it were that hunt's evidence, spent; see gap.go
+	Yields      map[int]int     // times it yielded to each, or bought it off; see capitulate and settleTerms
+	HuntsFailed map[int]int     // hunts on each that came to nothing, remembered: see gap.go
+	LostTo      map[int]int     // the worlds it lost to each in their last war: what a redress asks back
+	Scouted     map[int]Year    // when a scout last reported on each
+	Ridden      map[int]bool    // for parasites: peoples taken as hosts
+	Charted     map[int]Year    // stars read: worlds and who is on them known; see explore.go
+	Marked      map[int]bool    // stars the Sight showed something at, for the surveyors to visit
+	Searching   bool            // the Sight is turned outward, reading stars, not watching borders
+	Starfaring  Year            // when reach first touched another star; 0 if never
+	Pacts       []int
+	Tally       Tally
+	Lore        []*Tale      // what this people knows of what happened; see lore.go
+	LoreDials   Dials        // what the telling does to the temperament
+	lore        map[int]bool // facts held, forgotten or not
+	inscribed   map[int]bool // remains whose testament this people has read
+	foeNow      int          // the enemy of the day, or -1; a new one gets the old blame
+	monsters    map[int]bool // peoples remembered as things that do harm
 	// the kept summaries of the telling (summaries.go): the dials it
 	// pulls and the count of one's own griefs, held as tales are
 	// learned, worn and forgotten rather than summed afresh every tick.

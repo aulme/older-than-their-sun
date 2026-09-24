@@ -372,6 +372,7 @@ func (w *World) arms(m, e *Civ) bool {
 
 // answerCall is an ally deciding whether to come: join at the front if it
 // has one, send relief if that helps and home stays safe, or not come.
+// An ally at war holds its own war council on it (warcouncil.go).
 func (w *World) answerCall(m, v, a *Civ) {
 	if !m.Active() || !v.Active() || !a.Active() || m.Wars[a.ID] || !w.allied(m, v) || !v.Wars[a.ID] {
 		return

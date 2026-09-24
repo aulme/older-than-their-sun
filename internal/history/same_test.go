@@ -22,10 +22,13 @@ import (
 // people can follow a named leader and faces the succession when it is
 // lost; and at the war council (step 10, stage 1), where each side of
 // every war presses, holds or sues, wars have aims and end on terms, and
-// will follows the fighting. A refactor that must not
+// will follows the fighting; and at allies and old enemies (step 11,
+// stage 2), where an ally prices a separate peace and stands with its
+// principal, and old enemies want each other and ask more each war. A
+// refactor that must not
 // change behaviour keeps it green; a step that changes the sim on purpose
 // re-pins it and says so in its commit.
-const sameHistoryDigest = "49485fa7154c503a1fa81e2108be9d1b70c6233eaa1baa9147229acf082a01ec"
+const sameHistoryDigest = "183078843f52008a74144f637677f9e61e33f8e638d76a5362426ccb2c541d66"
 
 func historyDigest(w *World) string {
 	h := sha256.New()

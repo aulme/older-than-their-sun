@@ -822,6 +822,7 @@ One side of a bargain.
 | `gap` | number | the attacker's levels less the defender's |
 | `won` | bool | the attacker won the roll |
 | `outcome` | key | taken, withdrew, guns, held, broken, or none for a world taken without a battle |
+| `relief` | [int] | the allies whose relief stood in the defender's sky, when any did |
 
 ### Meeting
 

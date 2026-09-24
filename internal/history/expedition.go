@@ -362,8 +362,8 @@ func (w *World) resolve(x *Expedition) {
 	c := w.Civs[x.Owner]
 	var held []int
 	for _, s := range x.Held {
-		if w.Owner[s] == c.ID && s != c.Home {
-			held = append(held, s)
+		if w.Owner[s] == c.ID && s != c.Home && !contains(held, s) {
+			held = append(held, s) // a world lost and taken again is one world
 		}
 	}
 	x.Held = held
@@ -420,8 +420,8 @@ func (w *World) goNative(x *Expedition) {
 	}
 	var held []int
 	for _, s := range x.Held {
-		if w.Owner[s] == c.ID && s != c.Home {
-			held = append(held, s)
+		if w.Owner[s] == c.ID && s != c.Home && !contains(held, s) {
+			held = append(held, s) // a world lost and taken again is one world (seed 37 of step 11's batches: a lost fleet's people held a star seven times over, and its heirs shattered onto it twice)
 		}
 	}
 	if len(held) == 0 {

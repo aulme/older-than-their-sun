@@ -224,3 +224,63 @@ func TestWarBecomesHunt(t *testing.T) {
 		t.Fatal("the node did not give the hunt its quarry back")
 	}
 }
+
+// TestNoHuntInOwnHouse: settlers lost at a world its own anti-memetic
+// slave holds are no hole in a master's ledger: it does not hunt its own
+// house (step 11's first batch, seed 7: the slave hunted and enslaved
+// again twenty times over).
+func TestNoHuntInOwnHouse(t *testing.T) {
+	w, c, x := antimemeticPair(t, 65, 1, 2)
+	w.enslave(c, x)
+	for range 6 {
+		w.fact(FShipLost, c, x, x.Home).with(P{"species": c.Species.ID})
+	}
+	if losses, _, behind := w.ledger(c); len(losses) > 0 || len(behind) > 0 {
+		t.Fatalf("the master's ledger holds %d losses to its own slave", len(losses))
+	}
+	w.setMaster(x, -1, false)
+	if losses, _, _ := w.ledger(c); len(losses) == 0 {
+		t.Fatal("and freed, the slave's doing is still no loss")
+	}
+}
+
+// TestHuntsFailedRemembered: a hunter whose hunts on a hole came to
+// nothing three times does not hunt it again, however long ago, while
+// the wariness that once kept it off fades (step 11's batches: the same
+// hole hunted every hundred and fifty thousand years, twenty times).
+func TestHuntsFailedRemembered(t *testing.T) {
+	w, c, x := antimemeticPair(t, 63, 1, 2)
+	w.addGuard(c, c.Home, 30)
+	w.addGuard(x, x.Home, 3)
+	for n := 0; n < 3; n++ {
+		losses(w, c, x, x.Home, 3)
+		w.deduce(c)
+		wr := w.warBetween(c.ID, x.ID)
+		if wr == nil || wr.Gap == nil {
+			t.Fatalf("hunt %d not declared", n+1)
+		}
+		w.endWar(wr, "exhaustion")
+		c.Truce[x.ID] = 0
+		c.Wary[x.ID] = 0 // faded
+	}
+	losses(w, c, x, x.Home, 3)
+	w.deduce(c)
+	if wr := w.warBetween(c.ID, x.ID); wr != nil {
+		t.Fatalf("a fourth hunt, after three came to nothing (failed %d)", c.HuntsFailed[x.ID])
+	}
+}
+
+// TestLostShipDread: a settler ship lost without a trace at a world an
+// unseen people holds makes the star one the people does not settle
+// again (step 11's batches, seed 7: three peoples sent settlers to an
+// unseen people's home for a million years, and hunted it for each).
+func TestLostShipDread(t *testing.T) {
+	w, c, x := antimemeticPair(t, 65, 1, 2)
+	if w.dread(c, x.Home) {
+		t.Fatal("dread before any loss")
+	}
+	w.fact(FShipLost, c, x, x.Home).with(P{"species": c.Species.ID})
+	if !w.dread(c, x.Home) {
+		t.Fatal("a ship lost without trace, and the star is still settled")
+	}
+}

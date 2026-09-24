@@ -34,6 +34,9 @@ func (w *World) lossOf(c *Civ, f *Event) bool {
 	if f.Star < 0 || !w.veiled(c, f) {
 		return false
 	}
+	if o := c.other(f); o >= 0 && w.Civs[o].Master == c.ID {
+		return false // its own held people's doing: a master does not hunt in its own house (seed 7 of step 11's first batch: a master's settlers lost at its slave's world, the slave hunted and enslaved again twenty times)
+	}
 	switch f.Kind {
 	case FTaken, FBurned, FHomeBroken, FScoured, FStripped, FUnmade, FWaking:
 		return f.Object == c.ID
@@ -92,8 +95,8 @@ func (w *World) deduce(c *Civ) {
 	if !e.Active() || c.Truce[e.ID] > w.Now {
 		return
 	}
-	if c.Wary[e.ID] >= w.Cfg.Tuning.Kinds.HuntWary {
-		return // hunts that came to nothing, often enough: the hole is let be
+	if c.Wary[e.ID] >= w.Cfg.Tuning.Kinds.HuntWary || c.HuntsFailed[e.ID] >= int(w.Cfg.Tuning.Kinds.HuntWary) {
+		return // hunts that came to nothing, often enough: the hole is let be, and for good (a wariness that fades let seed 12 of step 11's batches hunt the same hole every hundred and fifty thousand years)
 	}
 	if c.posture() == mind.Pacifist && !w.inReach(e, c.Home) {
 		return // what the hole holds does not reach the home: a pacifist has nothing to hunt it for (drainHunt)

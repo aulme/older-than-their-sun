@@ -252,6 +252,29 @@ func TestMuster(t *testing.T) {
 	if c.Muster != nil {
 		t.Errorf("the odds went and the muster stands")
 	}
+	// a muster gathered for a war that has ended stands down, and declares
+	// no new one when its ships arrive (step 11's batches, seed 12: a muster
+	// outliving each war it was called in opened the next, twenty-nine times)
+	w, c, e, colony = twoPeoples(t, 57)
+	w.guardAt(c, c.Home).Ships = 2
+	w.Owner[colony] = c.ID
+	e.Systems = e.Systems[:1]
+	c.Systems = append(c.Systems, colony)
+	w.addGuard(c, colony, 2)
+	w.addGuard(e, e.Home, 3)
+	c.Intel[e.ID] = &Intel{Mil: 6, Ships: 3, Total: 3, Star: e.Home, Year: w.Now, Sick: -1}
+	wr := w.declare(c, e, because("border"))
+	w.muster(c, e, e.Home, because("border"), 3)
+	if c.Muster == nil || c.Muster.War != wr.ID {
+		t.Fatalf("the muster does not know its war: %+v", c.Muster)
+	}
+	w.endWar(wr, "peace")
+	c.Truce[e.ID], e.Truce[c.ID] = 0, 0
+	w.guardAt(c, colony).Ships = 3
+	w.musterStep(c)
+	if c.Muster != nil || w.warBetween(c.ID, e.ID) != nil {
+		t.Errorf("a muster outlived its war: muster %+v, a new war %v", c.Muster, w.warBetween(c.ID, e.ID) != nil)
+	}
 }
 
 // TestIdleDrains: a tick nobody fights in costs will; a tick with a
@@ -286,5 +309,44 @@ func TestIdleDrains(t *testing.T) {
 	w.drain(wr, 0)
 	if wr.Will[0] != 5 {
 		t.Errorf("a tick with a fleet on its way drained %.3f", 5-wr.Will[0])
+	}
+}
+
+// TestGoNativeOnce: a fleet that took a world, lost it and took it again
+// holds it once, and the people it becomes holds it once (seed 37 of
+// step 11's batches: a lost fleet's people held a star seven times over,
+// and its heirs shattered onto it twice, one of them left with nothing).
+func TestGoNativeOnce(t *testing.T) {
+	w, c, e, colony := twoPeoples(t, 73)
+	e.Systems = remove(e.Systems, colony)
+	w.setOwner(colony, c.ID)
+	c.Systems = append(c.Systems, colony)
+	x := w.launch(c, Campaign, e, e.Home, 1)
+	if x == nil {
+		t.Fatal("no fleet")
+	}
+	other := -1
+	for s := range w.G.Stars {
+		if w.Owner[s] < 0 && s != colony {
+			other = s
+			break
+		}
+	}
+	w.setOwner(other, c.ID)
+	c.Systems = append(c.Systems, other)
+	x.Held, x.Base = []int{other, other, other, colony}, colony // the last held is the new home
+	w.goNative(x)
+	nc := w.Civs[len(w.Civs)-1]
+	if nc == c || nc == e {
+		t.Fatal("no people of the lost fleet")
+	}
+	n := 0
+	for _, s := range nc.Systems {
+		if s == other {
+			n++
+		}
+	}
+	if n != 1 {
+		t.Errorf("the lost fleet's people holds a world %d times: %v", n, nc.Systems)
 	}
 }

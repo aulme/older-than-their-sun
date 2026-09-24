@@ -5,8 +5,10 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
 
+	"worldgen/internal/mind"
 	"worldgen/internal/plague"
 )
 
@@ -303,4 +305,70 @@ func TestScenarioPactCascade(t *testing.T) {
 			fewWars(t, r, "Crown", "Rival", 8)
 		})
 	}
+}
+
+// Stage 2 (step 11): allies and old enemies.
+
+// TestScenarioRivals: two defensive peoples with two wars behind them
+// and a grudge standing go to war again, though neither would strike
+// anyone else (not without the rivalry: no seed has a war then); the
+// third war between rivals of a size is for redress, not the whole
+// (TestEscalate has the larger declarer's); and the rivalry is a handful
+// of wars, not a loop.
+func TestScenarioRivals(t *testing.T) {
+	var warred atomic.Int32
+	t.Cleanup(func() {
+		if n := warred.Load(); n < 2 {
+			t.Errorf("old enemies went to war again in %d of %d seeds, want 2 or more", n, len(seeds))
+		}
+	})
+	eachSeed(t, "rivals", func(t *testing.T, r *Run) {
+		ws := r.Wars("Carthage", "Rome")
+		if len(ws) > 0 {
+			warred.Add(1)
+		}
+		fewWars(t, r, "Carthage", "Rome", 6)
+		for _, wr := range ws {
+			if wr.Nth == 3 && wr.Aim != mind.AimRedress { // the third, declared between equals; a later one may follow a war that made one the larger
+				t.Errorf("war %d, the %s between old enemies of a size, is for %s, want redress", wr.ID, ordinal(wr.Nth), wr.Aim)
+			}
+		}
+	})
+}
+
+// TestScenarioAllies: a conqueror declares on a people with two allies
+// in defence pacts, one near the conqueror and one near the principal.
+// Each ally with a front goes to war in its own name, for defence; one
+// too small to carry the war to the enemy sends ships to stand with its
+// principal; and its war ends with its principal's, in its own defeat,
+// or when its will is spent in a separate peace the record counts
+// against it.
+func TestScenarioAllies(t *testing.T) {
+	var joined, stood atomic.Int32
+	t.Cleanup(func() {
+		if n := joined.Load(); n < 3 {
+			t.Errorf("allies joined the war in %d of %d seeds, want 3 or more", n, len(seeds))
+		}
+		if n := stood.Load(); n < 3 {
+			t.Errorf("an ally too small to press stood with its principal in %d of %d seeds, want 3 or more", n, len(seeds))
+		}
+	})
+	eachSeed(t, "allies", func(t *testing.T, r *Run) {
+		for _, x := range r.W.Expeditions {
+			if x.Kind == Relief && x.Target == r.Civ("Crown").ID && (x.Owner == r.Civ("Ward").ID || x.Owner == r.Civ("Kin").ID) {
+				stood.Add(1)
+				break
+			}
+		}
+		for _, ally := range []string{"Ward", "Kin"} {
+			for _, wr := range r.Wars(ally, "Khan") {
+				if wr.Principal >= 0 {
+					joined.Add(1)
+					if wr.Aim != mind.AimDefence {
+						t.Errorf("%s's war %d, joined by pact, is for %s", ally, wr.ID, wr.Aim)
+					}
+				}
+			}
+		}
+	})
 }

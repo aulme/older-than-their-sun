@@ -3,6 +3,7 @@ package history
 import (
 	"math"
 
+	"worldgen/internal/battle"
 	"worldgen/internal/flow"
 	"worldgen/internal/mind"
 	"worldgen/internal/species"
@@ -37,10 +38,12 @@ func (w *World) aimOf(c, e *Civ, cause string) string {
 
 // openWar is a war declared with its first fleet: a conqueror whose fleet
 // sails for a border world and not the home fights for that world, and a
-// war for submission is only one where the home is the first target.
+// war for submission is only one where the home is the first target —
+// but between old enemies, whose third war is for the whole wherever it
+// begins.
 func (w *World) openWar(c, e *Civ, cause reason, target int) *War {
 	wr := w.declare(c, e, cause)
-	if wr != nil && wr.Aim == mind.AimSubmission && target != e.Home {
+	if wr != nil && wr.Aim == mind.AimSubmission && target != e.Home && !wr.Escalated {
 		wr.Aim = mind.AimWorld
 	}
 	return wr
@@ -55,13 +58,16 @@ func (wr *War) aim(i int) string {
 }
 
 // aimMet says whether a side has what it went to war for, short of the
-// enemy's end: a world taken for a border, tribute or redress, and for
-// the side declared on more taken than it lost.
+// enemy's end: a world taken for a border or tribute, for redress the
+// worlds lost in the last war, and for the side declared on more taken
+// than it lost.
 func (wr *War) aimMet(i int) bool {
 	took := wr.Taken[i] + wr.Glassed[i]
 	switch wr.aim(i) {
-	case mind.AimWorld, mind.AimTribute, mind.AimRedress:
+	case mind.AimWorld, mind.AimTribute:
 		return took >= 1
+	case mind.AimRedress:
+		return took >= max(1, wr.Asks) // what was lost taken back (step 11's batches: met at one world whatever was lost, the rivals' wars were over as they began; at two for all, a third of the wars went)
 	case mind.AimHold:
 		return took > 0 && took >= wr.Lost[i]
 	}
@@ -141,12 +147,15 @@ func (w *World) warInput(wr *War, c, e *Civ, i int) (mind.WarInput, int) {
 	}
 	_, _, far := w.bar(c, e)
 	since := max(wr.Began, wr.Fought)
+	if pw := w.principalWar(wr); pw != nil {
+		since = max(since, pw.Fought) // an ally is not idle while its principal fights
+	}
 	in := mind.WarInput{
 		Aim: aim, Declarer: i == 0, Posture: c.posture(), Hates: c.hates(e),
 		Acted: ap.Acted, Reach: c.launches() && w.holds(e, target) && (len(ap.Front) > 0 || far || ap.Lag < t.Campaign.MaxLag), Out: w.campaignOut(c, e),
 		Met: wr.aimMet(i), Fought: wr.Battles > 0, Idle: float64(w.Now-since) / (w.dt * 1000), Will: wr.Will[i], Fear: c.Dials.Fear,
 		Lost: wr.Lost[i], Taken: wr.Taken[i] + wr.Glassed[i], Appetite: mind.Appetite(c.Appetite, t), Wary: c.Wary[e.ID],
-		Treats: w.canTreat(wr) && !w.noTerms(wr),
+		Treats: w.canTreat(wr) && !w.noTerms(wr), Bound: w.alliance(wr, c),
 	}
 	if in.Reach && !in.Out {
 		k := w.sizeAt(c, e, target)
@@ -169,6 +178,11 @@ func (w *World) warCouncil(wr *War, c, e *Civ, i int) {
 	if in.Out && w.tracing() {
 		v.Reason += "; " + w.outWhy(c, e)
 	}
+	if v.Choice == mind.Hold && in.Aim == mind.AimDefence && wr.Principal >= 0 && (v.Key == "ships" || v.Key == "odds" || v.Key == "reach") {
+		if pr := w.Civs[wr.Principal]; pr.Active() {
+			v.Reason += "; " + w.standWith(c, pr, e)
+		}
+	}
 	w.explain(c, sprintf("at war with the %s (war %d, for %s)", e.Tok(), wr.ID, in.Aim), v)
 	wr.Verdict[i], wr.Why[i] = v.Choice, v.Key
 	switch v.Choice {
@@ -177,6 +191,44 @@ func (w *World) warCouncil(wr *War, c, e *Civ, i int) {
 			w.sue(wr, i)
 		}
 	}
+}
+
+// alliance is what the alliance is worth to c, when c is an ally in a war
+// joined by pact and its principal fights on: the pact's age and size,
+// the principal's renown and faith, the enemy's menace to c itself. A
+// separate peace would throw it away. Nothing for anyone else.
+func (w *World) alliance(wr *War, c *Civ) float64 {
+	if wr.Principal < 0 || wr.Sides[0] != c.ID || w.principalWar(wr) == nil {
+		return 0
+	}
+	pr, e := w.Civs[wr.Principal], w.Civs[wr.Sides[1]]
+	p := w.pactWith(c, pr)
+	if p == nil {
+		return 0
+	}
+	mil, _ := w.believe(c, e)
+	menace := mind.Threatens(mind.ThreatInput{Believed: mil, Mil: c.Mil, Hostile: e.hostile(), Hates: e.hates(c), AtWar: true, Rules: e.Ruled > 0, Grudge: c.Grudge[e.ID] > 0}, w.Cfg.Tuning)
+	return mind.Bound(mind.BoundInput{Age: float64(w.Now - p.Formed), Members: len(p.Members), Menace: menace, Renown: w.renown(pr), Betrayed: w.betrayed(c, pr)}, w.Cfg.Tuning)
+}
+
+// standWith is an ally at war that cannot carry the war to the enemy
+// sending ships to stand at its principal's home instead, as the relief
+// a call brings: it fights there when the enemy comes, and that battle is
+// its war's too (battle.go). Once, while its relief stands; never
+// leaving its own home unsafe.
+func (w *World) standWith(m, v, a *Civ) string {
+	for _, x := range w.fleetsOf(m) {
+		if x.Kind == Relief && x.Target == v.ID && !x.Returning {
+			return "its ships stand with the " + v.Tok() + " already"
+		}
+	}
+	milA, _ := w.believe(m, a)
+	k := mind.AnswerCall(mind.CallInput{Ships: w.standing(m), Total: w.ships(m), Q: w.quality(m), Victim: battle.Strength(w.standing(v), w.quality(v)), Believed: milA + a.warBonus() + mind.ShipLevels(w.believeShips(m, a)), Confederate: m.posture() == mind.Confederate, Dials: m.Dials}, w.Cfg.Tuning)
+	if !k.Safe || k.Share > w.standing(m) {
+		return "no ships to spare to stand with the " + v.Tok()
+	}
+	w.launch(m, Relief, v, v.Home, k.Share)
+	return sprintf("%d ships go to stand with the %s", k.Share, v.Tok())
 }
 
 // campaignOut says whether c has a campaign against e that is doing
@@ -258,6 +310,9 @@ func (w *World) offerFor(wr *War, li int) offer {
 	if wr.aimMet(li) {
 		return offer{kind: "lines"}
 	}
+	if l.Yields[v.ID] >= w.Cfg.Tuning.War.Yields && w.takesClient(v, l) && w.bends(l) {
+		return offer{kind: "vassal"} // bought off often enough: it offers itself before its worlds (seed 15 of step 11's batches: a realm bought the same neighbour off twenty times, a world or two at a time)
+	}
 	var wants []string
 	switch wr.aim(1 - li) {
 	case mind.AimWorld:
@@ -276,7 +331,11 @@ func (w *World) offerFor(wr *War, li int) offer {
 				continue // a horde holds no worlds: it takes them by stripping, not by treaty
 			}
 			n := 1
-			if wr.aim(1-li) != mind.AimWorld {
+			switch wr.aim(1 - li) {
+			case mind.AimRedress:
+				n = max(1, wr.Asks)
+			case mind.AimWorld:
+			default:
 				n = 2
 			}
 			if ws := w.cedable(l, v, n); len(ws) > 0 {
@@ -359,7 +418,8 @@ func worth(wr *War, j int, o offer) float64 {
 	case mind.AimTribute:
 		x = map[string]float64{"worlds": 0.9, "tribute": 1, "artifact": 0.9, "vassal": 1, "lines": min(1, 0.8*took)}[o.kind]
 	case mind.AimRedress:
-		x = map[string]float64{"worlds": 0.5 * (n + took), "tribute": 0.6, "artifact": 0.6, "vassal": 1, "lines": 0.5 * took}[o.kind]
+		asks := float64(max(1, wr.Asks))
+		x = map[string]float64{"worlds": (n + took) / asks, "tribute": 0.6, "artifact": 0.6, "vassal": 1, "lines": took / asks}[o.kind]
 	case mind.AimSubmission:
 		x = map[string]float64{"worlds": 0.25 * (n + took), "tribute": 0.3, "artifact": 0.3, "vassal": 1, "lines": 0.2 * took}[o.kind]
 	case mind.AimDefence:
@@ -382,7 +442,7 @@ func (w *World) sue(wr *War, i int) {
 	in, _ := w.warInput(wr, v, l, j)
 	bar, ok := mind.PressBar(in, w.Cfg.Tuning)
 	a := mind.AnswerTerms(mind.TermsInput{Worth: worth(wr, j, o), Acted: in.Acted, Will: wr.Will[j], Posture: v.posture(), Hates: v.hates(l), Greed: v.Dials.Greed,
-		Presses: in.Out || (ok && in.Reach && in.Ready && in.Acted >= bar)}, w.Cfg.Tuning)
+		Presses: in.Out || (ok && in.Reach && in.Ready && in.Acted >= bar), Bound: in.Bound}, w.Cfg.Tuning)
 	w.explain(v, "offered "+o.kind+" by the "+l.Tok(), a)
 	if !a.Accept {
 		w.event(KTermsRefused, l, v, -1, P{"terms": o.kind, "war": wr.ID})
@@ -428,6 +488,9 @@ func (w *World) settleTerms(wr *War, l, v *Civ, o offer, paid float64) {
 		wr.Winner = l.ID
 	} else {
 		wr.Winner = v.ID
+	}
+	if wr.Winner == v.ID && o.kind != "lines" && o.kind != "vassal" {
+		w.yielded(l, v) // a war bought off is a yield, and counts toward the knee bent
 	}
 	w.renounce(v, l) // a claim settled by treaty is a claim given up
 	w.endWar(wr, "terms")
