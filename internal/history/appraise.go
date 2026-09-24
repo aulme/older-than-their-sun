@@ -31,6 +31,11 @@ func (w *World) strength(c, e *Civ) float64 {
 			}
 		}
 	}
+	if c.Vassal && c.Master >= 0 && c.Master != e.ID {
+		if p := w.Civs[c.Master]; p.Active() {
+			in.Allies = append(in.Allies, w.levelOf(p)*mind.ComeRate(p.ClientCame, p.ClientCalls, w.Cfg.Tuning)) // and a client strikes with its patron behind it, as far as the patron comes
+		}
+	}
 	for eid := range c.Wars {
 		if eid != e.ID {
 			in.OtherWars++
@@ -73,6 +78,7 @@ func (w *World) appraise(c, e *Civ, target int) Appraisal {
 		Weakened: w.plagued(e) || float64(w.Now-e.LastDark) < w.Cfg.Tuning.Appraise.DarkAge || e.Stiff >= w.Cfg.Tuning.Appraise.Stiff, // their ways have set; a fleet sent there would find the answer late
 	}
 	in.Ships, in.Guns, in.Relief = w.believeSky(c, e, a.Target)
+	in.Relief += w.guarantee(c, e) // a client is struck with its patron's fleet reckoned over it
 	for eid := range e.Wars {
 		if eid != c.ID {
 			in.OtherWars++
@@ -136,7 +142,7 @@ func (w *World) bar(c, e *Civ) (bar float64, wants, far bool) {
 		Posture: c.posture(), Hates: c.hates(e), Grudge: c.Grudge[e.ID] > 0 || e.Embargo[c.ID], Aloft: c.Aloft, NoShips: w.standing(c) == 0 && w.bodyGuns(c) == 0, Wis: c.Wis,
 		Claim: w.claims(c, e), Kin: w.kin(c, e) && !w.feud(c, e),
 		Stiff: c.Stiff, Fought: c.Fought[e.ID] > 0, Sailed: c.Tally.Fleets > 0,
-		Appetite: mind.Appetite(c.Appetite, w.Cfg.Tuning), Wary: c.Wary[e.ID], Rival: w.rival(c, e),
+		Appetite: mind.Appetite(c.Appetite, w.Cfg.Tuning), Wary: c.Wary[e.ID], Rival: w.rival(c, e), Worsted: c.Worsted[e.ID],
 	}, w.Cfg.Tuning)
 }
 

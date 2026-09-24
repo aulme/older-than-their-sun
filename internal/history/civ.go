@@ -94,7 +94,7 @@ func (w *World) newCiv(home int, sp *species.Species, maker int) *Civ {
 	w.register(sp)
 	c := &Civ{
 		ID: len(w.Civs), Species: sp, Home: home,
-		Cradle: home, Born: w.Now, Renewed: w.Now, Still: w.Now, Systems: []int{home}, Peak: 1, Master: maker,
+		Cradle: home, Born: w.Now, Renewed: w.Now, Still: w.Now, Systems: []int{home}, Peak: 1, Master: maker, Rival: -1,
 		Known: map[string]bool{}, Learned: map[string]Year{}, Focus: map[string]float64{}, Locked: map[string]bool{},
 		Structures: map[string]int{}, Found: map[int]bool{}, Heard: map[int]bool{},
 		Wars: map[int]bool{}, Met: map[int]bool{}, Reached: map[int]bool{}, Trade: map[int]bool{},

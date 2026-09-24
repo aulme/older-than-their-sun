@@ -1,0 +1,11 @@
+{
+  "name": "client",
+  "ticks": 80,
+  "stars": 60,
+  "peoples": [
+    {"name": "Patron", "traits": ["defensive"], "worlds": 4, "ships": 14, "mil": 7},
+    {"name": "Client", "traits": ["defensive"], "worlds": 2, "ships": 3, "near": "Patron", "dist": 12, "master": "Patron", "vassal": true},
+    {"name": "Raider", "traits": ["conqueror"], "worlds": 3, "ships": 16, "near": "Client", "dist": 10}
+  ],
+  "bonds": [{"a": "Raider", "b": "Client"}, {"a": "Raider", "b": "Patron"}, {"a": "Patron", "b": "Client"}]
+}

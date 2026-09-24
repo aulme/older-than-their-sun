@@ -61,6 +61,7 @@ type PicketInput struct {
 	InReach bool    // the enemy can strike this people's home
 	Fear    float64 // this people's fear
 	Ships   int     // ships manned at home
+	Rival   bool    // the enemy is the rival this people builds against: it is watched harder
 }
 
 // PicketWant is the answer.
@@ -80,7 +81,7 @@ func (p PicketWant) Why() string {
 // WantPicket says whether a people keeps a picket against an enemy: at
 // war with one it has no front with, or with any enemy once it has been
 // caught by a fleet, or for the fearful against any hostile neighbour in
-// reach in peacetime; and a ship must stay home.
+// reach in peacetime, or against its rival; and a ship must stay home.
 func WantPicket(in PicketInput, t *Tuning) PicketWant {
 	p := &t.Picket
 	var why string
@@ -91,6 +92,8 @@ func WantPicket(in PicketInput, t *Tuning) PicketWant {
 		why = "caught by a fleet before"
 	case in.Fear > p.FearBar && in.Hostile && in.InReach:
 		why = "a hostile neighbour in reach"
+	case in.Rival:
+		why = "the rival, watched"
 	default:
 		return PicketWant{Reason: "nothing to watch for"}
 	}

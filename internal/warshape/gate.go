@@ -102,10 +102,33 @@ func Gate(ss []*Shape) []Row {
 		}
 	}
 	add("border", bs >= 1.0/3 && commonest, "a third, the most common", "%s (long %s)", frac(bs), pct(b.kind["long"], b.large))
-	cs := seeds(func(s *Shape) bool { return s.Cold > 0 })
-	add("cold wars", most(cs, n), "most seeds, with the build-up", "%d pairs, %d seeds", cold, cs)
+	cs := seeds(func(s *Shape) bool { return s.ColdBuilt > 0 })
+	built := 0
+	for _, s := range ss {
+		built += s.ColdBuilt
+	}
+	add("cold wars", most(cs, n), "most seeds, with the build-up", "%d pairs, %d with the build-up in %d seeds", cold, built, cs)
 	ps := seeds(func(s *Shape) bool { return s.Proxy > 0 })
 	add("proxy wars", px >= 5 && ps >= 3, "5+, 3+ seeds", "%d, %d seeds", px, ps)
+	var attacks []Attack
+	for _, s := range ss {
+		attacks = append(attacks, s.Attacks...)
+	}
+	smaller, came, struck := 0, 0, 0
+	for _, a := range attacks {
+		if a.By == "patron" {
+			continue
+		}
+		struck++
+		if a.By == "smaller" {
+			smaller++
+		}
+		if a.Patron != "stayed out" {
+			came++
+		}
+	}
+	add("clients", struck > 0 && share(smaller, struck) < 0.2 && share(came, struck) > 0.5, "a smaller attacker under a fifth, the patron coming in most",
+		"%d attacks: smaller %s, the patron came %s", struck, pct(smaller, struck), pct(came, struck))
 	vs := seeds(func(s *Shape) bool { return len(s.Waves) > 0 })
 	add("waves", len(wv) >= 5 && vs >= 3, "5+, 3+ seeds", "%d, %d seeds", len(wv), vs)
 	sb := share(countW(f, func(w *War) bool { return w.Campaigns[1] > 0 }), len(f))

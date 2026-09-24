@@ -372,3 +372,67 @@ func TestScenarioAllies(t *testing.T) {
 		}
 	})
 }
+
+// Stage 3 (step 11): clients and the cold war.
+
+// TestScenarioClient: a conqueror strikes a great power's client. The
+// client calls on its patron, whose council answers — joining the war,
+// or, against a raider it would rather not face directly, sending ships
+// to stand with the client — and never leaves it to the raider; the
+// attack is an offence to the patron whatever it does.
+func TestScenarioClient(t *testing.T) {
+	var struck atomic.Int32
+	t.Cleanup(func() {
+		if n := struck.Load(); n < 3 {
+			t.Errorf("the client was struck in %d of %d seeds, want 3 or more", n, len(seeds))
+		}
+	})
+	eachSeed(t, "client", func(t *testing.T, r *Run) {
+		p, cl, a := r.Civ("Patron"), r.Civ("Client"), r.Civ("Raider")
+		if len(r.Wars("Raider", "Client")) == 0 {
+			return
+		}
+		struck.Add(1)
+		joined := len(r.Wars("Patron", "Raider")) > 0
+		backed := false
+		for _, x := range r.W.Expeditions {
+			if x.Owner == p.ID && x.Kind == Relief && x.Target == cl.ID {
+				backed = true
+			}
+		}
+		for _, b := range r.W.Betrayals {
+			if b.By == p.ID && b.Against == cl.ID && b.Shape == "abandoned" {
+				t.Errorf("the patron abandoned its client")
+			}
+		}
+		if !joined && !backed {
+			t.Errorf("the patron neither joined nor sent ships")
+		}
+		if p.Grudge[a.ID] <= 0 && !p.Wars[a.ID] && len(r.Wars("Patron", "Raider")) == 0 {
+			t.Errorf("the attack on its client gave the patron no grievance")
+		}
+	})
+}
+
+// TestScenarioGuarantee: an opportunist next to a weak people strikes it
+// when it stands alone, and does not dare when it is a great power's
+// client: the patron's fleet is reckoned over the client's world.
+func TestScenarioGuarantee(t *testing.T) {
+	count := func(spec string) int {
+		n := 0
+		for _, seed := range seeds {
+			r, out := scenario(t, spec, seed)
+			r.Ticks(r.S.Ticks)
+			if len(r.Wars("Jackal", "Ward")) > 0 {
+				n++
+			} else if spec == "unguarded" {
+				told(t, out)
+			}
+		}
+		return n
+	}
+	alone, guarded := count("unguarded"), count("guarantee")
+	if alone < 3 || guarded > 1 {
+		t.Errorf("the jackal struck the weak people alone in %d seeds and the great power's client in %d; want 3 or more and 1 at most", alone, guarded)
+	}
+}

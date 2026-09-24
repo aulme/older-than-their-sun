@@ -53,6 +53,7 @@ type Tuning struct {
 	Continuity ContinuityTuning
 	Leaders    LeaderTuning
 	War        WarTuning
+	Client     ClientTuning
 	Decline    DeclineTuning
 	Kinds      KindsTuning
 	Plague     plague.Tuning // the plagues' own numbers, kept here so one table tunes everything
@@ -142,7 +143,7 @@ type WarTuning struct {
 	TruceWorld      float64 // years of truce per world given up in terms
 	WaryBar         float64 // on the bars against a people, per war come off worst in against it
 	WaryMax         float64 // at most
-	WaryStop        float64 // wars come off worst against a people, fading, from which it is not struck again at all
+	WaryStop        float64 // wars come off worst against a people, remembered, from which it is not struck again at all
 	WaryDecay       float64 // what the wariness keeps per thousand years: slower than a grudge, since a beating is remembered longer than a wrong
 	Yields          int     // yields to the same power after which the next makes the loser its vassal
 	RivalWars       int     // wars fought between two, a grudge standing, that make them rivals
@@ -701,6 +702,7 @@ func Default() *Tuning {
 			TruceWorld: 3000, WaryBar: 0.1, WaryMax: 0.8, WaryStop: 5, WaryDecay: 0.998, Yields: 2,
 			RivalWars: 2, Escalate: 3, EscalateSize: 2, AllyStay: 0.8, AllyTerms: 1, AllyBase: 0.3, AllyAge: 0.2, AllyMembers: 0.05, AllyMenace: 0.3, AllyRenown: 0.1, AllyBetrayed: 0.5,
 		},
+		Client:  defaultClient(),
 		Decline: DeclineTuning{BirthWindow: 2, WaningBar: 0.35, EndBar: 0.55, HoldMyr: 1},
 		Kinds: KindsTuning{
 			Appear: 0.0005, Deepen: 0.0005, Tithe: 0.1, TitheGrudge: 0.01, TitheHazard: 0.01, WoundWear: 0.001, Mirror: 0.5, MirrorWis: 2,

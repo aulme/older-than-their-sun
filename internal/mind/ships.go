@@ -26,6 +26,7 @@ type WantInput struct {
 	Campaign  int     // the need of the campaign the council last sized and could not man
 	Explorers int     // one per exploring policy that wants a ship out
 	Fear      float64 // the floor rises with fear
+	Deter     int     // the ships built toward against the rival; see Deterrence
 }
 
 // Want is how many ships a people builds toward, and why.
@@ -35,19 +36,21 @@ type Want struct {
 	Campaign  int
 	Explorers int
 	Floor     int
+	Deter     int
 }
 
 // Why says the want in a line.
 func (w Want) Why() string {
-	return fmt.Sprintf("wants %d ships: %d for the garrisons, %d for the campaign, %d for the explorers, a floor of %d", w.Ships, w.Garrisons, w.Campaign, w.Explorers, w.Floor)
+	return fmt.Sprintf("wants %d ships: %d for the garrisons, %d for the campaign, %d for the explorers, %d against the rival, a floor of %d", w.Ships, w.Garrisons, w.Campaign, w.Explorers, w.Deter, w.Floor)
 }
 
 // WantShips sums the wants: the garrisons, the campaign, the explorers,
-// and a floor of one plus fear rounded.
+// the deterrent against a rival, and a floor of one plus fear rounded.
 func WantShips(in WantInput, t *Tuning) Want {
 	p := &t.Want
 	w := Want{Garrisons: in.Garrisons, Campaign: in.Campaign, Explorers: in.Explorers, Floor: p.Floor + int(p.FearWeight*in.Fear+0.5)}
-	w.Ships = w.Garrisons + w.Campaign + w.Explorers + w.Floor
+	w.Deter = in.Deter
+	w.Ships = w.Garrisons + w.Campaign + w.Explorers + w.Floor + w.Deter
 	return w
 }
 

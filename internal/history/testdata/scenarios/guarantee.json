@@ -1,0 +1,11 @@
+{
+  "name": "guarantee",
+  "ticks": 60,
+  "stars": 60,
+  "peoples": [
+    {"name": "Great", "traits": ["defensive"], "worlds": 4, "ships": 30, "mil": 8},
+    {"name": "Ward", "traits": ["defensive"], "worlds": 2, "ships": 1, "near": "Great", "dist": 12, "master": "Great", "vassal": true},
+    {"name": "Jackal", "traits": ["opportunist"], "worlds": 3, "ships": 6, "near": "Ward", "dist": 9}
+  ],
+  "bonds": [{"a": "Jackal", "b": "Ward"}, {"a": "Jackal", "b": "Great"}, {"a": "Great", "b": "Ward"}]
+}

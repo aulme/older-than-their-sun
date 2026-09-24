@@ -230,15 +230,15 @@ func (w *World) encounter(a, b *Civ, watched, heard bool, at int) {
 	switch {
 	case a.miracle("chorus") && !b.miracle("chorus") && !b.Species.Is(species.Hive) && !b.Species.Is(species.Unconscious) && b.treats() && w.R.Float64() < 0.6:
 		met.P["way"] = "chorus"
-		w.vassal(a, b)
+		w.vassal(a, b, "offer")
 		return
 	case b.miracle("chorus") && !a.miracle("chorus") && !a.Species.Is(species.Hive) && !a.Species.Is(species.Unconscious) && a.treats() && w.R.Float64() < 0.6:
 		met.P["way"] = "chorus_weak"
-		w.vassal(b, a)
+		w.vassal(b, a, "offer")
 		return
 	case a.miracle("unmaking") && b.hostile() && !b.miracle("unmaking") && b.treats():
 		met.P["way"] = "unmaking"
-		w.vassal(a, b)
+		w.vassal(a, b, "offer")
 		return
 	case b.Has("pacifist") && a.hostile() && gap >= 1 && !a.Has("pacifist") && w.inReach(a, b.Home):
 		met.P["way"] = "pacifist"
@@ -246,7 +246,7 @@ func (w *World) encounter(a, b *Civ, watched, heard bool, at int) {
 		return
 	case b.Has("submissive") && a.hostile() && gap >= 2 && w.inReach(a, b.Home):
 		met.P["way"] = "submissive"
-		w.vassal(a, b)
+		w.vassal(a, b, "sought")
 		return
 	}
 	met.P["way"] = "equals"
@@ -271,6 +271,7 @@ func (w *World) encounter(a, b *Civ, watched, heard bool, at int) {
 }
 
 func (w *World) enslave(m, s *Civ) {
+	m = w.overlord(m)
 	m.Ruled++
 	w.setMaster(s, m.ID, false)
 	s.Seen = m.Declines
@@ -297,13 +298,27 @@ func (w *World) enslave(m, s *Civ) {
 	w.fact(FEnslaved, m, s, s.Home)
 }
 
-func (w *World) vassal(m, s *Civ) {
+// vassal makes s the vassal of m (or of the patron at the top of m's
+// chain), owing it the standing tribute the bond sets; how is surrender,
+// offer or sought (tribute.go).
+func (w *World) vassal(m, s *Civ, how string) {
+	m = w.overlord(m)
 	m.Ruled++
 	w.setMaster(s, m.ID, true)
 	s.Seen = m.Declines
 	delete(m.Wars, s.ID)
 	delete(s.Wars, m.ID)
 	w.fact(FVassal, m, s, s.Home)
+	w.bond(m, s, how)
+}
+
+// overlord is the people that holds what m takes: m itself if free, else
+// the master at the top of its chain. A client's conquest is its patron's.
+func (w *World) overlord(m *Civ) *Civ {
+	for n := 0; !m.Free() && n < 8; n++ {
+		m = w.Civs[m.Master]
+	}
+	return m
 }
 
 // revolt: slaves and vassals watch their master. A master's decline is the
@@ -351,6 +366,7 @@ func (w *World) uplift(c *Civ) {
 			nc := w.spawnCiv(t, sp, c.ID)
 			w.setMaster(nc, c.ID, true)
 			nc.Seen = c.Declines
+			defer w.bond(c, nc, "sought") // an uplifted client owes its maker, once it is whole
 			for _, k := range knownOf(c) {
 				if w.R.Float64() < 0.5 {
 					w.know(nc, k)

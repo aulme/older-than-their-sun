@@ -24,6 +24,7 @@ import (
 //
 //	WAR=1 go test ./internal/history -run TestWarShape -v -timeout 6h
 //
+// WAR_LIMIT=20m stops a seed that runs longer and reports where it was;
 // WAR_STARS (400), WAR_SEEDS (20) and WAR_FROM (1) set the batch, or
 // WAR_LIST=1,5,9 names its seeds;
 // WAR_TUNE=Group.Field=v,... sets the mind's tuning for the batch;
@@ -68,6 +69,12 @@ func TestWarShape(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	var limit time.Duration
+	if s := os.Getenv("WAR_LIMIT"); s != "" {
+		if limit, err = time.ParseDuration(s); err != nil {
+			t.Fatal(err)
+		}
+	}
 	watchDir := os.Getenv("WAR_WATCH")
 	if watchDir != "" {
 		if err := os.MkdirAll(watchDir, 0o755); err != nil {
@@ -103,6 +110,23 @@ func TestWarShape(t *testing.T) {
 				defer func() { fired[i], watches[i] = wt.Fired, wt }()
 			}
 			start := time.Now()
+			if limit > 0 {
+				prior := cfg.Sample
+				cfg.Sample = func(w *World) {
+					if prior != nil {
+						prior(w)
+					}
+					if time.Since(start) > limit {
+						open := 0
+						for _, wr := range w.Wars {
+							if !wr.Over {
+								open++
+							}
+						}
+						panic(sprintf("over the time limit %s at year %d, %d wars of %d open", limit, w.Now, open, len(w.Wars)))
+					}
+				}
+			}
 			w := Generate(list[i], cfg)
 			took := time.Since(start)
 			r := w.Export(cfg.Region)

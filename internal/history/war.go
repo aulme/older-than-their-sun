@@ -94,6 +94,9 @@ func (w *World) front(c, e *Civ) []int {
 		reach = min(max(c.Reach, 3), 20) // a hop from a fleet
 	}
 	for _, s := range w.holdings(e) {
+		if w.protected(c, e, s) {
+			continue
+		}
 		_, d := w.nearest(c, s)
 		if d <= reach {
 			out = append(out, fw{s, d})
@@ -168,8 +171,8 @@ func (w *World) declare(c, e *Civ, cause reason) *War {
 	if !c.Active() || !e.Active() || c == e {
 		return nil
 	}
-	if (!c.Free() || !e.Free()) && cause.key != "ledger_hole" {
-		return nil // a held people is its master's to make war with or for; a hunt cannot know whose it is
+	if !w.mayWar(c, e, cause.key) {
+		return nil // a slave is its master's to make war with or for, and a vassal is on its leash; see client.go
 	}
 	if e.Asleep {
 		w.rouse(e, nil) // a war brought to a sleeper wakes it; the strike it wakes with is its own council's
@@ -180,11 +183,14 @@ func (w *World) declare(c, e *Civ, cause reason) *War {
 		Slights: map[int]float64{}, Sent: map[int]float64{}, Slighted: map[int]float64{}, SlightTold: map[int]bool{}}
 	wr.Aim = w.aimOf(c, e, cause.key)
 	size := float64(len(c.Systems)) / float64(max(1, len(e.Systems)))
-	if aim := mind.Escalate(wr.Aim, wr.Nth, c.Grudge[e.ID] > 0 || e.Grudge[c.ID] > 0, size, w.Cfg.Tuning); aim != wr.Aim {
+	if aim := mind.Escalate(wr.Aim, wr.Nth, c.Grudge[e.ID] > 0 || e.Grudge[c.ID] > 0, size, w.Cfg.Tuning); aim != wr.Aim && cause.key != "unpaid" {
 		wr.Aim, wr.Escalated = aim, true // old enemies: each war between them asks more than the last
 	}
 	if wr.Aim == mind.AimRedress {
 		wr.Asks = min(3, max(1, c.LostTo[e.ID])) // what was lost taken back
+	}
+	if wr.Aim == mind.AimSubmission && !e.Free() && e.Master != c.ID {
+		wr.Aim = mind.AimWorld // another's client is its patron's: struck for worlds, not taken (stage 3's first batch: two powers took one client off each other a hundred and thirty-five times)
 	}
 	wr.Will = [2]float64{w.initialWill(c, e, true), w.initialWill(e, c, false)}
 	wr.Summon[1] = true // the side declared on answers
@@ -209,6 +215,7 @@ func (w *World) declare(c, e *Civ, cause reason) *War {
 	w.slighted(c, e, wr)
 	w.place(declared) // told after the slight it gives
 	w.callAllies(e, c, wr)
+	w.callPatron(e, c)
 	w.joinAllies(c, e, wr)
 	return wr
 }
@@ -239,8 +246,8 @@ func (w *World) tickWars() {
 			w.endWar(wr, "fall")
 			continue
 		}
-		if (!a.Free() || !b.Free()) && wr.Gap == nil {
-			w.endWar(wr, "held") // a side passed under a master: what it had to fight with and to yield is the master's now
+		if wr.Gap == nil && !w.mayWar(a, b, wr.Cause) {
+			w.endWar(wr, "held") // a side passed under a master the leash forbids this war to: what it had to fight with and to yield is the master's now
 			continue
 		}
 		for i := 0; i < 2 && !wr.Over; i++ {
@@ -516,8 +523,8 @@ func (w *World) homeFalls(wr *War, c, e *Civ) {
 		w.fact(FHomeBroken, c, e, e.Home).with(P{"way": "queen"})
 		w.endCiv(e, Extinct, because("queen_taken").At(e.Home).By(c))
 		w.endWar(wr, "extinction")
-	case c.Has("pacifist"):
-		w.fact(FYield, c, e, e.Home).with(P{"way": "spared"}).with(w.warSpanP(wr))
+	case c.Has("pacifist") || !e.Free() && e.Master != c.ID:
+		w.fact(FYield, c, e, e.Home).with(P{"way": "spared"}).with(w.warSpanP(wr)) // a pacifist spares it, and another's client is its patron's to keep
 		w.endWar(wr, "peace")
 	case c.Own >= 0:
 		w.event(KDefencesBroken, c, e, e.Home, P{"outcome": "ridden"})
@@ -525,7 +532,7 @@ func (w *World) homeFalls(wr *War, c, e *Civ) {
 		w.endWar(wr, "enslaved")
 	case e.Has("submissive") || c.Dials.Greed < 0.3:
 		w.event(KDefencesBroken, c, e, e.Home, P{"outcome": "vassal"})
-		w.vassal(c, e)
+		w.vassal(c, e, "surrender")
 		w.endWar(wr, "vassal")
 	default:
 		w.event(KDefencesBroken, c, e, e.Home, P{"outcome": "enslaved"})
@@ -685,7 +692,7 @@ func (w *World) capitulate(wr *War, l, v *Civ) {
 	if w.yielded(l, v) > w.Cfg.Tuning.War.Yields && w.takesClient(v, l) && w.bends(l) {
 		// a people that keeps yielding to the same power is its client in all but name, and now in name
 		w.event(KYielded, l, v, -1, P{"outcome": "vassal"}).with(w.warSpanP(wr))
-		w.vassal(v, l)
+		w.vassal(v, l, "surrender")
 		w.endWar(wr, "vassal")
 		return
 	}
@@ -717,7 +724,7 @@ func (w *World) capitulate(wr *War, l, v *Civ) {
 	if !l.Active() {
 		return
 	}
-	if !w.canStrikeHome(v, l) {
+	if !w.canStrikeHome(v, l) || !l.Free() && l.Master != v.ID { // another's client cedes worlds, and stays its patron's
 		w.factN(FYield, v, l, -1, n).with(P{"way": "ceded"}).with(w.warSpanP(wr))
 		w.endWar(wr, "capitulation")
 		return
@@ -737,7 +744,7 @@ func (w *World) capitulate(wr *War, l, v *Civ) {
 		w.endWar(wr, "enslaved")
 	case l.Has("submissive") || v.Dials.Greed < 0.3 || l.Has("swarming") || !l.Species.Profile().Can(species.Reseats):
 		w.event(KYielded, l, v, -1, P{"outcome": "vassal"}).with(w.warSpanP(wr))
-		w.vassal(v, l)
+		w.vassal(v, l, "surrender")
 		w.endWar(wr, "vassal")
 	default:
 		w.event(KYielded, l, v, -1, P{"outcome": "enslaved"}).with(w.warSpanP(wr))
@@ -884,6 +891,10 @@ func (w *World) endWar(wr *War, result string) {
 				c.Wary = map[int]float64{}
 			}
 			c.Wary[wr.Sides[1-i]]++ // it came off worst, or went to war for nothing: the next war with them is weighed harder
+			if c.Worsted == nil {
+				c.Worsted = map[int]int{}
+			}
+			c.Worsted[wr.Sides[1-i]]++ // and remembered past the fading
 		}
 	}
 	if wr.Winner >= 0 {
@@ -899,6 +910,10 @@ func (w *World) endWar(wr *War, result string) {
 	} else {
 		b.resent(a.ID, 0.3+0.3*float64(wr.Lost[1]))
 		b.resent(a.ID, 0.5) // being struck first is the deeper wrong
+	}
+	if wr.Cause == "unpaid" {
+		delete(a.Grudge, b.ID) // the punishment is the answer to the tribute paid short: the anger is spent
+		b.PaidShort = 0
 	}
 	w.renew(a, 0.1) // a war fought to its end is something new
 	w.renew(b, 0.1)

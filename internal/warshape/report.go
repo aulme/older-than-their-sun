@@ -121,8 +121,12 @@ func Report(ss []*Shape) []string {
 	for _, s := range ss {
 		dark += s.Dark
 	}
-	add("**5 Cold wars.** %d pairs with a cold war, in %d of %d seeds; %d quiet pairs. Battles fought in no war between their two: %d; fleets meeting in the dark in no war: %d. The build-up between them is not in the record until stage 3.",
-		cold, seeds(func(s *Shape) bool { return s.Cold > 0 }), len(ss), quiet, stray, dark)
+	built := 0
+	for _, s := range ss {
+		built += s.ColdBuilt
+	}
+	add("**5 Cold wars.** %d pairs with a cold war, in %d of %d seeds; %d of them with the build-up (each naming the other its rival in the stretch), in %d seeds; %d quiet pairs. Battles fought in no war between their two: %d; fleets meeting in the dark in no war: %d.",
+		cold, seeds(func(s *Shape) bool { return s.Cold > 0 }), len(ss), built, seeds(func(s *Shape) bool { return s.ColdBuilt > 0 }), quiet, stray, dark)
 
 	add("**6 Proxy wars.** %d wars between vassals of different masters; %d with a master's ships in them; %d proxy wars, the masters not at war.", vw, mi, px)
 
@@ -130,8 +134,27 @@ func Report(ss []*Shape) []string {
 		len(wv), waveFrom, waveSpan/1000, seeds(func(s *Shape) bool { return len(s.Waves) > 0 }), len(ss), top(wv, 5))
 
 	add("")
-	add("**Vassalage.** Bonds begun, by how, vassal and slave: %s. Median years held: vassals %s, slaves %s. Attacks on vassals: %d, by who attacked and what the patron did: %s. Tribute facts (a yielding people paying in a commodity): %d. The tribute's rate, its movement and the ticks paid short are not in the record until stage 3.",
+	var rates []Rate
+	up, down, owed, short, often, owing := 0, 0, 0, 0, 0, 0
+	for _, s := range ss {
+		rates = append(rates, s.Rates...)
+		up += s.RateUp
+		down += s.RateDown
+		owed += s.OwedTicks
+		short += s.ShortTicks
+		often += s.ShortOften
+		owing += s.Owing
+	}
+	add("**Vassalage.** Bonds begun, by how, vassal and slave: %s. Median years held: vassals %s, slaves %s. Attacks on vassals: %d, by who attacked and what the patron did: %s. Tribute facts (a yielding people paying in a commodity): %d.",
 		origins(bonds), medianYears(bonds, true), medianYears(bonds, false), len(attacks), attackKinds(attacks), tr)
+	ab, cw := 0, 0
+	for _, s := range ss {
+		ab += s.Abandoned
+		cw += s.ClientWars
+	}
+	add("Patrons called by a client struck: joined %d wars for it; abandoned it %d times (the betrayal).", cw, ab)
+	add("Standing tributes: %d bonds, the rate %s; by how the bond came about: %s. Reviews raised a rate %d times and lowered one %d. Of %d vassals owing, %d paid short in more than a tenth of their ticks; ticks paid short %d of %d owed (%s).",
+		len(rates), quartilesF(rateOf(rates, "")), rateHows(rates), up, down, owing, often, short, owed, pct(short, owed))
 
 	add("")
 	c0 := countW(f, func(w *War) bool { return w.Campaigns[1] > 0 })
@@ -352,6 +375,32 @@ func byAim(f []*War) string {
 		parts = append(parts, fmt.Sprintf("%s %d, long %s, short %s", name, len(ws), pct(countW(ws, func(w *War) bool { return w.Ticks >= longTicks }), len(ws)), pct(countW(ws, func(w *War) bool { return w.Ticks <= shortTicks }), len(ws))))
 	}
 	return strings.Join(parts, "; ")
+}
+
+func rateOf(rs []Rate, how string) []float64 {
+	var out []float64
+	for _, r := range rs {
+		if how == "" || r.How == how {
+			out = append(out, r.Rate)
+		}
+	}
+	return out
+}
+
+// rateHows is the median rate by how the bond came about.
+func rateHows(rs []Rate) string {
+	var parts []string
+	for _, how := range []string{"surrender", "offer", "sought"} {
+		xs := rateOf(rs, how)
+		if len(xs) == 0 {
+			continue
+		}
+		parts = append(parts, fmt.Sprintf("%s %.2f (%d)", how, median(xs), len(xs)))
+	}
+	if len(parts) == 0 {
+		return "none"
+	}
+	return strings.Join(parts, ", ")
 }
 
 func origins(bs []Bond) string {

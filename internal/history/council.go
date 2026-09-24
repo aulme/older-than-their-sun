@@ -18,7 +18,7 @@ import (
 // level from home.
 func (w *World) council(c *Civ) {
 	t := w.Cfg.Tuning
-	if !c.Active() || !c.Free() {
+	if !c.Active() || !c.sits() {
 		return
 	}
 	if !c.Summoned && !w.chance(t.Council.Cadence) {
@@ -30,6 +30,7 @@ func (w *World) council(c *Civ) {
 		w.proposePact(c)
 		return
 	}
+	w.watchRival(c)
 	type cand struct {
 		e   *Civ
 		ap  Appraisal
@@ -40,7 +41,7 @@ func (w *World) council(c *Civ) {
 	compelled := w.R.Float64() < mind.Compulsion(c.posture() == mind.Conqueror, c.Wis, t)
 	for _, eid := range metOf(c) {
 		e := w.Civs[eid]
-		if !e.Active() || !e.Free() || c.Wars[eid] || w.allied(c, e) || c.Truce[eid] > w.Now || (c.Muster != nil && c.Muster.Target == eid) {
+		if !e.Active() || !w.mayWar(c, e, "") || c.Wars[eid] || w.allied(c, e) || c.Truce[eid] > w.Now || (c.Muster != nil && c.Muster.Target == eid) {
 			continue // a muster against them is the council's answer already
 		}
 		if !e.Met[c.ID] && w.perceives(e, c) {
@@ -68,6 +69,9 @@ func (w *World) council(c *Civ) {
 		default:
 			w.strikeFirst(c, e, ap, cands[i].far, because("defiance"))
 		}
+	}
+	if c.Ruled > 0 {
+		w.punish(c) // a client that pays short long enough is made war on; see tribute.go
 	}
 	w.armPlagues(c)
 	w.proposePact(c)
@@ -103,7 +107,7 @@ func (w *World) weigh(c, e *Civ, ap Appraisal, bar float64, far, compelled bool)
 // consider is the council on one people, at first meeting. Returns whether
 // a war followed.
 func (w *World) consider(c, e *Civ) bool {
-	if !c.Active() || !e.Active() || !c.Free() || !e.Free() {
+	if !c.Active() || !e.Active() || !c.sits() || !w.mayWar(c, e, "") {
 		return false
 	}
 	bar, wants, far := w.bar(c, e)
@@ -186,7 +190,7 @@ func (w *World) maybeCampaign(c, e *Civ, cause reason) bool {
 		targets = []int{e.Home, near} // the home if it can be had, else what can
 	}
 	for _, target := range targets {
-		if w.holds(e, target) && w.sizeCampaign(c, e, cause, target) {
+		if w.holds(e, target) && !w.protected(c, e, target) && w.sizeCampaign(c, e, cause, target) {
 			return true // nobody sails at a star the enemy does not hold
 		}
 	}
@@ -235,9 +239,27 @@ func (w *World) sizeAt(c, e *Civ, target int) mind.Campaign {
 func (w *World) nearestEnemy(c, e *Civ) (float64, int) {
 	best, bd := e.Home, 1e9
 	for _, s := range w.holdings(e) {
+		if w.protected(c, e, s) {
+			continue
+		}
 		if _, d := w.nearest(c, s); d < bd {
 			best, bd = s, d
 		}
 	}
 	return bd, best
+}
+
+// watchRival is the council naming its rival: the neighbour it most
+// fears in reach (threat), which its docks build against (want) and its
+// pickets watch hardest (picket). A change of rival is noted, so the
+// record holds the build-up of a cold war.
+func (w *World) watchRival(c *Civ) {
+	id := -1
+	if e := w.threat(c); e != nil {
+		id = e.ID
+	}
+	if id != c.Rival {
+		c.Rival = id
+		w.note(KRival, c, nil, -1, P{"rival": id})
+	}
 }

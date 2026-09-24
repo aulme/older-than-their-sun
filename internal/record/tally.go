@@ -93,6 +93,8 @@ type Tally struct {
 	Broke         int `json:"broke"`
 	BoughtOff     int `json:"bought_off"`
 	Tributes      int `json:"tributes"`
+	TributeTicks  int `json:"tribute_ticks"` // ticks a standing tribute was owed as a vassal
+	TributeShort  int `json:"tribute_short"` // and paid short
 	SoldSightings int `json:"sold_sightings"`
 	// slights: taken in all; councils the offence alone held back
 	Slights  float64 `json:"slights"`

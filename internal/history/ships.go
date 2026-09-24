@@ -263,7 +263,7 @@ func (w *World) dockUses(c *Civ) []flow.Use {
 
 // want is how many ships a people builds toward: the mind's sum of the
 // garrisons' wants, the campaign it could not man, the explorers it keeps
-// out, and a floor by fear.
+// out, the deterrent against its rival, and a floor by fear.
 func (w *World) want(c *Civ) mind.Want {
 	in := mind.WantInput{Fear: c.Dials.Fear, Explorers: c.SurveyWant, Garrisons: c.GarrisonWant}
 	if len(c.Met) > 0 {
@@ -271,6 +271,11 @@ func (w *World) want(c *Civ) mind.Want {
 	}
 	if c.WantShips > 0 && w.Now-c.WantSince <= wantStands {
 		in.Campaign = c.WantShips
+	}
+	if c.Rival >= 0 {
+		if e := w.Civs[c.Rival]; e.Active() {
+			in.Deter = mind.Deterrence(c.Dials.Fear, w.believeShips(c, e), w.Cfg.Tuning) // the arms race: a share of the rival's fleet as believed
+		}
 	}
 	return mind.WantShips(in, w.Cfg.Tuning)
 }

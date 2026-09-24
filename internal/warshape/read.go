@@ -78,6 +78,13 @@ type Bond struct {
 	Years  record.Year
 }
 
+// Rate is one bond's standing tribute as set: how the bond came about,
+// and the rate.
+type Rate struct {
+	How  string
+	Rate float64
+}
+
 // Attack is a war declared on a vassal: whether the one who declared was
 // smaller than the patron, the patron itself or a power its size or
 // greater, and what the patron did.
@@ -105,6 +112,7 @@ type Shape struct {
 	PairFought []int // fought wars per pair
 	Systems    []System
 	Cold       int   // pairs with a cold war: large, at peace long, with an incident
+	ColdBuilt  int   // of them, each naming the other its rival in the stretch: the build-up
 	Quiet      int   // pairs large and at peace as long with no incident
 	VassalWars int   // wars between vassals of different masters
 	MasterIn   int   // of them, with a master's ships in them
@@ -112,14 +120,23 @@ type Shape struct {
 	Waves      []int // for each people that made a wave, the most peoples it took from in one span
 	Bonds      []Bond
 	Attacks    []Attack
-	Tributes   int            // tribute facts: a yielding people paying in a commodity
 	Terms      map[string]int // settlements by what was given: worlds, tribute, artifact, vassal, lines
+	Tributes   int            // tribute facts: a yielding people paying in a commodity
+	Rates      []Rate         // the standing tributes set at each bond (stage 3 on)
+	RateUp     int            // reviews that raised a rate
+	RateDown   int            // and lowered one
+	OwedTicks  int            // ticks vassals owed a standing tribute
+	ShortTicks int            // and paid it short
+	ShortOften int            // vassals that paid short in more than a tenth of their ticks owed
+	Owing      int            // vassals that owed a tribute at all
 
-	Pacts    int // pacts made
-	PactMax  int // the most members a pact had at the end
-	Separate int // separate peaces: an ally making its own peace while its principal fought on
-	Absent   int // allies called that did not come
-	Relief   int // relief fleets sent
+	Pacts      int // pacts made
+	PactMax    int // the most members a pact had at the end
+	Separate   int // separate peaces: an ally making its own peace while its principal fought on
+	Absent     int // allies called that did not come
+	Abandoned  int // clients whose patron stayed out when they were struck
+	ClientWars int // wars a patron joined for its client
+	Relief     int // relief fleets sent
 }
 
 // span is a stretch of a quantity's history: from a year on, the value.
@@ -157,6 +174,14 @@ func Read(r *record.Run) *Shape {
 	seen := map[pair]bool{}
 	for _, c := range st.Civs {
 		s.PeopleTicks += c.Batch.Tally.Ticks
+		if t := c.Batch.Tally; t.TributeTicks > 0 {
+			s.Owing++
+			s.OwedTicks += t.TributeTicks
+			s.ShortTicks += t.TributeShort
+			if 10*t.TributeShort > t.TributeTicks {
+				s.ShortOften++
+			}
+		}
 		for _, o := range c.Knowledge.Met {
 			if k := pairOf(c.ID, o); k[0] != k[1] && !seen[k] {
 				seen[k] = true
@@ -171,6 +196,7 @@ func Read(r *record.Run) *Shape {
 	masters := map[int][]span{}
 	vassal := map[int][]span{}
 	changes := map[int][]change{}
+	rivals := map[int][]span{}
 	born := map[int]record.Year{}
 	ridden := map[int][]record.Year{}
 	met := map[pair][]record.Year{}
@@ -192,6 +218,16 @@ func Read(r *record.Run) *Shape {
 				n--
 			}
 			worlds[e.Subject] = append(h, span{e.Year, n})
+		case record.KBond:
+			s.Rates = append(s.Rates, Rate{How: e.Str("how"), Rate: e.Float("rate")})
+		case record.KBondRate:
+			if e.Float("rate") > e.Float("was") {
+				s.RateUp++
+			} else {
+				s.RateDown++
+			}
+		case record.KRival:
+			rivals[e.Subject] = append(rivals[e.Subject], span{e.Year, e.Int("rival")})
 		case record.KMaster:
 			m, v := e.Int("master"), e.Bool("vassal")
 			masters[e.Subject] = append(masters[e.Subject], span{e.Year, m})
@@ -226,7 +262,7 @@ func Read(r *record.Run) *Shape {
 			s.Terms[e.Str("terms")]++
 		}
 	}
-	for _, h := range [](map[int][]span){worlds, masters, vassal} {
+	for _, h := range [](map[int][]span){worlds, masters, vassal, rivals} {
 		for k := range h {
 			sort.SliceStable(h[k], func(i, j int) bool { return h[k][i].at < h[k][j].at })
 		}
@@ -361,7 +397,18 @@ func Read(r *record.Run) *Shape {
 	}
 
 	s.Systems = systems(s.Wars)
-	s.Cold, s.Quiet = cold(byPair, stray, worldsAt, ended, step)
+	rivalDuring := func(c, o int, from, to record.Year) bool {
+		if at(rivals[c], from, -1) == o {
+			return true
+		}
+		for _, x := range rivals[c] {
+			if x.at > from && x.at <= to && x.v == o {
+				return true
+			}
+		}
+		return false
+	}
+	s.Cold, s.ColdBuilt, s.Quiet = cold(byPair, stray, worldsAt, ended, step, rivalDuring)
 
 	// Proxy wars: two vassals of different masters, a master's ships in
 	// it, the masters themselves not at war over its span.
@@ -397,6 +444,8 @@ func Read(r *record.Run) *Shape {
 			s.Separate++
 		case "absent":
 			s.Absent++
+		case "abandoned":
+			s.Abandoned++
 		}
 	}
 	for _, x := range st.Fleets {
@@ -405,6 +454,11 @@ func Read(r *record.Run) *Shape {
 		}
 	}
 
+	for _, w := range s.Wars {
+		if w.Cause == "client" {
+			s.ClientWars++
+		}
+	}
 	s.Waves = waves(taken)
 	s.Bonds = bonds(changes, born, ridden, met, warBound, ended)
 
@@ -525,11 +579,11 @@ func sortSystems(sys []System) {
 // stretch of fifty thousand years or more with both large and no war
 // longer than a short one between them. With an incident in it — a short
 // war, a battle with no war, or fleets meeting in the dark with no war —
-// it is a cold war; without, a quiet one.
-// The build-up the proposal asks of a cold war is not in the record
-// until stage 3 gives a people a rival it watches.
-func cold(byPair map[pair][]*War, stray map[pair][]record.Year, worldsAt func(int, record.Year) int, ended func(int) record.Year, step record.Year) (int, int) {
-	coldN, quiet := 0, 0
+// it is a cold war; without, a quiet one. A cold war has its build-up
+// when each of the two named the other its rival in the stretch (the
+// rival note, stage 3 on): each building its fleets against the other.
+func cold(byPair map[pair][]*War, stray map[pair][]record.Year, worldsAt func(int, record.Year) int, ended func(int) record.Year, step record.Year, rivalDuring func(c, o int, from, to record.Year) bool) (int, int, int) {
+	coldN, built, quiet := 0, 0, 0
 	for k, ws := range byPair {
 		var incidents []record.Year
 		for _, y := range stray[k] {
@@ -555,7 +609,7 @@ func cold(byPair map[pair][]*War, stray map[pair][]record.Year, worldsAt func(in
 			gaps = append(gaps, gap{from, last})
 		}
 		slices.Sort(incidents)
-		isCold, isQuiet := false, false
+		isCold, isBuilt, isQuiet := false, false, false
 		for _, g := range gaps {
 			run := record.Year(-1)
 			for y := g.from; y <= g.to; y += step {
@@ -569,6 +623,9 @@ func cold(byPair map[pair][]*War, stray map[pair][]record.Year, worldsAt func(in
 						i := sort.Search(len(incidents), func(i int) bool { return incidents[i] > run })
 						if i < len(incidents) && incidents[i] < end {
 							isCold = true
+							if rivalDuring(k[0], k[1], run, end) && rivalDuring(k[1], k[0], run, end) {
+								isBuilt = true
+							}
 						} else {
 							isQuiet = true
 						}
@@ -579,11 +636,14 @@ func cold(byPair map[pair][]*War, stray map[pair][]record.Year, worldsAt func(in
 		}
 		if isCold {
 			coldN++
+			if isBuilt {
+				built++
+			}
 		} else if isQuiet {
 			quiet++
 		}
 	}
-	return coldN, quiet
+	return coldN, built, quiet
 }
 
 // mastersIn says whether either side's master had ships in the war: a

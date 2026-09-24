@@ -505,6 +505,7 @@ Every field is a count, but where said; `sent` and `got` are Incomes, `searched`
 | `fathomed`, `unfathomed`, `brokered`, `misunderstood`, `leaps` | peoples fathomed, fathomings lost to a dark age, brokered attempts, wars that ended unfathomed, remains sealed by looking before the leap |
 | `dropped`, `judged`, `acted_gap` | messages dropped unread; councils' verdicts; the sum of the acted-on odds' distance from the mean |
 | `hired`, `sold`, `broke`, `bought_off`, `tributes`, `sold_sightings` | contracts bought, sold, broken, sold out of; tributes paid; sightings sold |
+| `tribute_ticks`, `tribute_short` | ticks a vassal owed its patron a standing tribute, and ticks it paid it short |
 | `slights`, `deterred` | slights taken in all; councils the offence alone held back |
 | `sickened`, `cured`, `contained`, `worlds_sick`, `cults` | plagues caught, cured, ticks contained, worlds lost, cults formed |
 | `refusals`, `shut` | senders closed out, messages dropped for a plague |

@@ -646,6 +646,8 @@ var lineFns = map[record.Kind]func(v *view, e *record.Event) string{
 			return "The {O} call on the {S}, who do not come."
 		case "separate":
 			return "The {S} make their own peace with the {enemy:civ} and leave the {O} to fight on."
+		case "abandoned":
+			return "The {O} are struck, and call on the {S}, whom they pay for their protection. The {S} do not come."
 		case "turned":
 			return "The fleet of the {S}, sent to keep {star:star} for the {O}, takes it for themselves."
 		case "sold":

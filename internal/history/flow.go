@@ -29,6 +29,8 @@ func (w *World) flows(c *Civ) {
 	rareChanged := w.rare(c)
 	c.Income = w.sickIncome(c, w.income(c))
 	w.direct(c, w.uses(c), rareChanged)
+	w.payTribute(c)
+	w.reviewTribute(c)
 	w.tallyFlows(c)
 }
 
@@ -227,6 +229,7 @@ func (w *World) uses(c *Civ) []flow.Use {
 	out = append(out, w.works(c)...)
 	out = append(out, w.weaponUses(c)...)
 	out = append(out, w.reservations(c)...)
+	out = append(out, w.tributeUses(c)...)
 	return append(out, w.contractUses(c)...)
 }
 

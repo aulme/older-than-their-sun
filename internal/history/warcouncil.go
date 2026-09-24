@@ -110,7 +110,7 @@ func (w *World) warCouncils(c *Civ) {
 			c.Appetite = 0
 		}
 	}
-	if !c.Active() || !c.Free() || c.Aloft || c.Asleep || len(c.Wars) == 0 {
+	if !c.Active() || !c.sits() || c.Aloft || c.Asleep || len(c.Wars) == 0 {
 		return
 	}
 	for _, eid := range sortedInts(c.Wars) {
@@ -274,7 +274,7 @@ func (w *World) press(wr *War, c, e *Civ, aim string, target int) string {
 		}
 	}
 	for _, s := range targets {
-		if w.holds(e, s) && w.sizeCampaign(c, e, because(wr.Cause), s) {
+		if w.holds(e, s) && !w.protected(c, e, s) && w.sizeCampaign(c, e, because(wr.Cause), s) {
 			if c.Muster != nil && c.Muster.Target == e.ID && c.Muster.Since == w.Now {
 				return "a muster is called"
 			}
@@ -479,7 +479,7 @@ func (w *World) settleTerms(wr *War, l, v *Civ, o offer, paid float64) {
 	p["net"] = net
 	w.fact(FSettled, l, v, -1).with(p).with(w.warSpanP(wr))
 	if o.kind == "vassal" {
-		w.vassal(v, l)
+		w.vassal(v, l, "surrender")
 	}
 	// who won: peace on the lines offered with the offerer's aim met is
 	// its; anything else offered is the offerer buying the war off, and
@@ -556,7 +556,7 @@ func (w *World) tributeTo(l, v *Civ) *Contract {
 // refusal is the war's cause.
 func (w *World) yoke(c, e *Civ, ap Appraisal) (asked bool) {
 	t := &w.Cfg.Tuning.War
-	if !mind.OffersYoke(c.posture(), c.hates(e)) || ap.Acted < t.YokeOdds || !e.Free() || e.Aloft || e.Own >= 0 || c.Own >= 0 {
+	if !mind.OffersYoke(c.posture(), c.hates(e)) || ap.Acted < t.YokeOdds || !c.Free() || !e.Free() || e.Aloft || e.Own >= 0 || c.Own >= 0 {
 		return false
 	}
 	if float64(len(c.Systems)) < max(t.YokeWorlds, t.YokeSize*float64(len(e.Systems))) {
@@ -577,7 +577,7 @@ func (w *World) yoke(c, e *Civ, ap Appraisal) (asked bool) {
 	w.explain(e, "offered the yoke by the "+c.Tok(), a)
 	if a.Accept {
 		w.event(KYoke, c, e, e.Home, P{"answer": "accepted"})
-		w.vassal(c, e)
+		w.vassal(c, e, "offer")
 		return true
 	}
 	w.event(KYoke, c, e, e.Home, P{"answer": "refused"})

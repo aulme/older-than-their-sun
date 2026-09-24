@@ -87,11 +87,11 @@ func TestBar(t *testing.T) {
 		{BarInput{Posture: Conqueror, Aloft: true}, 0.4, true, false},
 		{BarInput{Posture: Vengeful}, 0, false, false},
 		{BarInput{Posture: Vengeful, Grudge: true}, 0.3, true, true},
-		{BarInput{Posture: Defensive, Rival: true}, 0.6, true, false},             // an old enemy is wanted by a posture that wants no other
-		{BarInput{Posture: Opportunist, Rival: true}, 0.65, true, false},          // and a little more readily by one that does
-		{BarInput{Posture: Submissive, Rival: true}, 0, false, false},             // but not by the meek
-		{BarInput{Posture: Pacifist, Rival: true, Grudge: true}, 0, false, false}, // nor a pacifist
-		{BarInput{Posture: Defensive, Claim: true, Wary: 5}, 0, false, false},     // beaten often enough, not even for a claim
+		{BarInput{Posture: Defensive, Rival: true}, 0.6, true, false},                     // an old enemy is wanted by a posture that wants no other
+		{BarInput{Posture: Opportunist, Rival: true}, 0.65, true, false},                  // and a little more readily by one that does
+		{BarInput{Posture: Submissive, Rival: true}, 0, false, false},                     // but not by the meek
+		{BarInput{Posture: Pacifist, Rival: true, Grudge: true}, 0, false, false},         // nor a pacifist
+		{BarInput{Posture: Defensive, Claim: true, Wary: 5, Worsted: 5}, 0, false, false}, // beaten often enough, not even for a claim
 	}
 	for _, c := range cases {
 		bar, wants, far := Bar(c.in, tn)

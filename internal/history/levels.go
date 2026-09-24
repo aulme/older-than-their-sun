@@ -109,19 +109,16 @@ func (w *World) recompute(c *Civ) {
 	if n := len(c.Systems); n > 4 && !ansible && !c.Species.Is(species.Hive) {
 		soc -= min(3, 0.15*float64(n-4))
 	}
-	// dominion: the held feed the master's armies, works and confidence, and
-	// lose more than the master gains; a vassal gives half and loses half
-	slaves, vassals := 0, 0
+	// dominion: slaves feed the master's armies, works and confidence, and
+	// lose more than the master gains; a vassal loses less and gives its
+	// tribute instead, as income (tribute.go)
+	slaves := 0
 	for _, o := range w.Civs {
-		if o.Living() && o.Master == c.ID {
-			if o.Vassal {
-				vassals++
-			} else {
-				slaves++
-			}
+		if o.Living() && o.Master == c.ID && !o.Vassal {
+			slaves++
 		}
 	}
-	held := min(4, float64(slaves)+0.5*float64(vassals))
+	held := min(4, float64(slaves))
 	mil, sur, soc = mil+0.4*held, sur+0.2*held, soc+0.3*held
 	if !c.Free() {
 		if c.Vassal {

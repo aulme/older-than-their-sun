@@ -168,6 +168,7 @@ type BarInput struct {
 	Appetite float64 // worlds taken of late: the bar's discount; see Appetite
 	Wary     float64 // the wars it came off worst in against the target, fading; see WarTuning.WaryBar
 	Rival    bool    // an old enemy: wars fought before and a grudge standing between them; see Rival
+	Worsted  int     // the wars it came off worst in against the target, remembered: past WarTuning.WaryStop it is not struck again
 }
 
 // Bar is the posture's bar (barOf), less the appetite of a people that
@@ -176,8 +177,8 @@ type BarInput struct {
 // off worst a people does not go to war with that enemy again at all,
 // however sure of winning it believes itself.
 func Bar(in BarInput, t *Tuning) (bar float64, wants, far bool) {
-	if in.Wary >= t.War.WaryStop {
-		return 0, false, false // beaten often enough: the prize of a claimed world does not bring it back (step 11's batches, seed 12: twenty-nine wars at 0.8 odds against a bar the prize had brought down)
+	if float64(in.Worsted) >= t.War.WaryStop {
+		return 0, false, false // beaten often enough, and remembered: the prize of a claimed world does not bring it back (step 11's batches, seed 12: twenty-nine wars at 0.8 odds against a bar the prize had brought down; and counted on the fading wariness, a war every hundred thousand years as it faded under the line)
 	}
 	bar, wants, far = barOf(in, t)
 	if wants {

@@ -157,9 +157,7 @@ func printPairs(s *warshape.Shape, n int) {
 			keys = append(keys, k)
 		}
 	}
-	sort.Slice(keys, func(a, b int) bool {
-		return keys[a][0] < keys[b][0] || keys[a][0] == keys[b][0] && keys[a][1] < keys[b][1]
-	})
+	sort.Slice(keys, func(a, b int) bool { return keys[a][0] < keys[b][0] || keys[a][0] == keys[b][0] && keys[a][1] < keys[b][1] })
 	for _, k := range keys {
 		ws := by[k]
 		sort.Slice(ws, func(a, b int) bool { return ws[a].Began < ws[b].Began })

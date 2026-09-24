@@ -336,7 +336,7 @@ func (w *World) recallSurveys(c *Civ) {
 // holds its post for a tour and comes home. Wartime does not recall it.
 func (w *World) picket(c *Civ) {
 	tn := w.Cfg.Tuning
-	if c.Aloft || c.Starfaring == 0 || !c.Free() || !w.chance(tn.Picket.Rate) {
+	if c.Aloft || c.Starfaring == 0 || !c.sits() || !w.chance(tn.Picket.Rate) {
 		return
 	}
 	for _, eid := range metOf(c) {
@@ -346,7 +346,7 @@ func (w *World) picket(c *Civ) {
 		}
 		want := mind.WantPicket(mind.PicketInput{
 			AtWar: c.Wars[eid], Front: len(w.front(c, e)) > 0, Caught: c.Tally.Caught > 0,
-			Hostile: e.hostile(), InReach: w.inReach(e, c.Home), Fear: c.Dials.Fear, Ships: w.standing(c),
+			Hostile: e.hostile(), InReach: w.inReach(e, c.Home), Fear: c.Dials.Fear, Ships: w.standing(c), Rival: eid == c.Rival,
 		}, tn)
 		if !want.Send {
 			continue

@@ -153,7 +153,9 @@
     {"key": "waking", "text": "the waking", "aim": "world"},
     {"key": "unmaking", "text": "the unmaking", "aim": "ending"},
     {"key": "poisoning", "text": "the poisoning", "aim": "redress"},
-    {"key": "defiance", "text": "their refusal to bend the knee", "aim": "submission"}
+    {"key": "defiance", "text": "their refusal to bend the knee", "aim": "submission"},
+    {"key": "client", "text": "their client the {C}", "aim": "defence"},
+    {"key": "unpaid", "text": "the tribute the {C} did not pay", "aim": "tribute"}
   ],
   "war_results": [
     {"key": "terms", "text": "terms"},
@@ -189,6 +191,7 @@
     {"key": "untaught", "text": "did not teach what they were paid to"},
     {"key": "closed", "text": "closed what they had opened"},
     {"key": "bought_off", "text": "sold what they were paid to hold"},
-    {"key": "came", "text": "came when called"}
+    {"key": "came", "text": "came when called"},
+    {"key": "abandoned", "text": "abandoned their client"}
   ]
 }

@@ -339,6 +339,9 @@ func (w *World) campaign(x *Expedition) {
 		t = w.huntNext(c, wr, x.Base) // a hunt goes where the hole is, not where the enemy is
 	} else {
 		t = w.nearestOf(e, x.Base, fleetHop, x.Base)
+		if t >= 0 && w.protected(c, e, t) {
+			t = -1 // another's client's home is its patron's: the campaign takes what else there is, and stops
+		}
 	}
 	if t < 0 && w.Owner[x.Base] == c.ID && x.Base != c.Home {
 		// a conquered world is a base: the fleet stays as its guard, and

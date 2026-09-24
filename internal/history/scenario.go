@@ -201,7 +201,7 @@ func (s *Scenario) Build(out io.Writer) (*Run, error) {
 			return nil, fmt.Errorf("%s: no people %q to be held by", p.Name, p.Master)
 		}
 		if p.Vassal {
-			w.vassal(w.Civs[m], r.Civ(p.Name))
+			w.vassal(w.Civs[m], r.Civ(p.Name), "offer")
 		} else {
 			w.enslave(w.Civs[m], r.Civ(p.Name))
 		}
@@ -697,6 +697,16 @@ func (r *Run) state() []string {
 				k = "vassal"
 			}
 			s += " — " + k + " of " + r.Name(c.Master)
+			if w.tributary(c) {
+				how := "short when it must"
+				if c.PaysFirst {
+					how = "first"
+				}
+				s += sprintf(", tribute %.2f paid %s (short %d of %d ticks)", c.Rate, how, c.Tally.TributeShort, c.Tally.TributeTicks)
+			}
+		}
+		if c.Rival >= 0 {
+			s += ", rival " + r.Name(c.Rival)
 		}
 		out = append(out, s)
 	}

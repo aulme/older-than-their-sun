@@ -48,6 +48,7 @@ const (
 	MsgOffer    // a contract proposed; see contract.go
 	MsgAnswer   // the answer to one, when it was yes
 	MsgTeach    // a node taught under one
+	MsgClient   // a vassal struck, calling on its patron; see client.go
 )
 
 // Message is one thing said across the dark.
@@ -103,9 +104,9 @@ func (w *World) tickMessages() {
 		if !to.Active() || (!from.Living() && m.Kind != MsgNews) {
 			continue
 		}
-		if !to.Fathomed[from.ID] {
+		if !to.Fathomed[from.ID] && !(m.Kind == MsgClient && from.Master == to.ID) {
 			to.Tally.Dropped++
-			continue // a message from a people not understood means nothing on arrival
+			continue // a message from a people not understood means nothing on arrival; a client's call its patron always hears
 		}
 		if w.shutTo(to, from) {
 			continue // dropped unread: nothing in it is heard, and nothing in it is caught
@@ -132,6 +133,10 @@ func (w *World) tickMessages() {
 			w.answered(to, from, m)
 		case MsgTeach:
 			w.taughtNode(to, from, m)
+		case MsgClient:
+			if m.Target >= 0 {
+				w.answerClient(to, from, w.Civs[m.Target])
+			}
 		}
 	}
 	w.Messages = append(w.Messages, keep...)
@@ -165,7 +170,7 @@ func (w *World) threat(c *Civ) *Civ {
 	worstMil := 0.0
 	for _, eid := range metOf(c) {
 		e := w.Civs[eid]
-		if !e.Active() || !e.Free() || w.allied(c, e) || e.Master == c.ID {
+		if !e.Active() || e.slave() || w.allied(c, e) || e.Master == c.ID || c.Master == e.ID {
 			continue
 		}
 		mil, _ := w.believe(c, e)
@@ -186,6 +191,9 @@ func (w *World) threat(c *Civ) *Civ {
 // a threat both can see, conquerors and the vengeful seek partners in war.
 // Only a people that understands and is understood is asked.
 func (w *World) proposePact(c *Civ) {
+	if !c.Free() {
+		return // a vassal's alliances are its patron's
+	}
 	plan := mind.ProposePact(c.posture(), w.Cfg.Tuning)
 	kind := Defensive
 	if plan.Aggressive {
@@ -367,7 +375,7 @@ func (w *World) joinAllies(c, e *Civ, wr *War) {
 // cascade with empty wars.)
 func (w *World) arms(m, e *Civ) bool {
 	t := w.Cfg.Tuning
-	return w.standing(m) > 0 && mind.Wariness(m.Wary[e.ID], t) < t.War.WaryMax
+	return w.standing(m) > 0 && mind.Wariness(m.Wary[e.ID], t) < t.War.WaryMax && float64(m.Worsted[e.ID]) < t.War.WaryStop
 }
 
 // answerCall is an ally deciding whether to come: join at the front if it
@@ -467,15 +475,15 @@ func (w *World) breakPacts(c, h *Civ) {
 // allies, and an ally's own peace is a separate peace.
 func (w *World) warEnded(wr *War) {
 	a, b := w.Civs[wr.Sides[0]], w.Civs[wr.Sides[1]]
-	if wr.Principal < 0 {
-		for _, o := range w.Wars {
-			if o.Over || o.Principal < 0 {
-				continue
-			}
-			if (o.Principal == a.ID && (o.Sides[0] == b.ID || o.Sides[1] == b.ID)) || (o.Principal == b.ID && (o.Sides[0] == a.ID || o.Sides[1] == a.ID)) {
-				w.endWar(o, "pact_peace")
-			}
+	for _, o := range w.Wars {
+		if o.Over || o.Principal < 0 {
+			continue
 		}
+		if (o.Principal == a.ID && (o.Sides[0] == b.ID || o.Sides[1] == b.ID)) || (o.Principal == b.ID && (o.Sides[0] == a.ID || o.Sides[1] == a.ID)) {
+			w.endWar(o, "pact_peace") // a war joined to this one ends with it, whether this was a principal's or itself an ally's: the cascade unwinds as it was wound (stage 3's first batch: allies joined against an ally's war fought on alone, and again at every call)
+		}
+	}
+	if wr.Principal < 0 {
 		return
 	}
 	if wr.Result != "peace" && wr.Result != "capitulation" && wr.Result != "terms" {
