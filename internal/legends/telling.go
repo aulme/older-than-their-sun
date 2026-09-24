@@ -34,6 +34,7 @@ var templates = map[record.Kind]string{
 	record.FScoured:      "{S} scoured {O} from {T}, and left none.",
 	record.FYield:        "{OS} yielded to {s}.",
 	record.FPeace:        "{S} and {O} made peace.",
+	record.FSettled:      "{S} sued {O} for peace, and had it.",
 	record.FEnslaved:     "{S} took {O} and kept {o}.",
 	record.FVassal:       "{OS} bent the knee to {s}.",
 	record.FFreed:        "{S} rose against {O} and were free.",

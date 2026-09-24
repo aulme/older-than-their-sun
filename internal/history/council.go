@@ -40,8 +40,8 @@ func (w *World) council(c *Civ) {
 	compelled := w.R.Float64() < mind.Compulsion(c.posture() == mind.Conqueror, c.Wis, t)
 	for _, eid := range metOf(c) {
 		e := w.Civs[eid]
-		if !e.Active() || !e.Free() || c.Wars[eid] || w.allied(c, e) || c.Truce[eid] > w.Now {
-			continue
+		if !e.Active() || !e.Free() || c.Wars[eid] || w.allied(c, e) || c.Truce[eid] > w.Now || (c.Muster != nil && c.Muster.Target == eid) {
+			continue // a muster against them is the council's answer already
 		}
 		if !e.Met[c.ID] && w.perceives(e, c) {
 			continue // still only watched from orbit; that is the primitives' matter
@@ -59,7 +59,15 @@ func (w *World) council(c *Civ) {
 		verdicts = append(verdicts, v)
 	}
 	if i := mind.Council(verdicts); i >= 0 {
-		w.strikeFirst(c, cands[i].e, cands[i].ap, cands[i].far)
+		e, ap := cands[i].e, cands[i].ap
+		switch {
+		case !w.yoke(c, e, ap):
+			w.strikeFirst(c, e, ap, cands[i].far, w.cause(c, e))
+		case !e.Free():
+			// it bent the knee
+		default:
+			w.strikeFirst(c, e, ap, cands[i].far, because("defiance"))
+		}
 	}
 	w.armPlagues(c)
 	w.proposePact(c)
@@ -69,7 +77,7 @@ func (w *World) council(c *Civ) {
 // weigh is the council's view of one enemy, with the scout or the watch
 // it calls for done at once.
 func (w *World) weigh(c, e *Civ, ap Appraisal, bar float64, far, compelled bool) mind.Verdict {
-	v := mind.Judge(mind.JudgeInput{Appraisal: ap.Appraisal, Bar: bar, Far: far, Front: len(ap.Front), Vengeful: c.posture() == mind.Vengeful, Compelled: compelled, Wis: c.Wis}, w.Cfg.Tuning)
+	v := mind.Judge(mind.JudgeInput{Appraisal: ap.Appraisal, Bar: bar, Far: far, Front: len(ap.Front), Vengeful: c.posture() == mind.Vengeful, Compelled: compelled, Wis: c.Wis, Wary: c.Wary[e.ID]}, w.Cfg.Tuning)
 	w.explain(c, "on the "+e.Tok(), v)
 	if v.Action != mind.Nothing {
 		c.Tally.Judged++
@@ -107,7 +115,7 @@ func (w *World) consider(c, e *Civ) bool {
 	w.explain(c, "at the meeting of the "+e.Tok(), v)
 	switch v.Action {
 	case mind.Strike:
-		return w.strikeFirst(c, e, ap, far)
+		return w.strikeFirst(c, e, ap, far, w.cause(c, e))
 	case mind.ScoutFirst:
 		w.maybeScout(c, e)
 	}
@@ -158,14 +166,14 @@ func (w *World) cause(c, e *Civ) reason {
 // strikeFirst opens the war the council chose, with the fleet that opens
 // it: at the front if there is one, beyond it if the posture sends fleets
 // that far. No war is declared that no fleet follows.
-func (w *World) strikeFirst(c, e *Civ, ap Appraisal, far bool) bool {
+func (w *World) strikeFirst(c, e *Civ, ap Appraisal, far bool, cause reason) bool {
 	if !c.launches() {
 		return w.presenceStrike(c, e, w.inside(c, e))
 	}
 	if len(ap.Front) == 0 && !far {
 		return false
 	}
-	return w.maybeCampaign(c, e, w.cause(c, e))
+	return w.maybeCampaign(c, e, cause)
 }
 
 // maybeCampaign sizes and sends a fleet against e, declaring war first if
@@ -178,8 +186,8 @@ func (w *World) maybeCampaign(c, e *Civ, cause reason) bool {
 		targets = []int{e.Home, near} // the home if it can be had, else what can
 	}
 	for _, target := range targets {
-		if w.sizeCampaign(c, e, cause, target) {
-			return true
+		if w.holds(e, target) && w.sizeCampaign(c, e, cause, target) {
+			return true // nobody sails at a star the enemy does not hold
 		}
 	}
 	return false
@@ -199,11 +207,14 @@ func (w *World) sizeCampaign(c, e *Civ, cause reason, target int) bool {
 		return false
 	}
 	if w.guardWith(c, target, k.Share) == nil {
+		if c.Muster != nil && c.Muster.Target != e.ID {
+			return false // the docks and the guards are gathering for another war
+		}
 		w.muster(c, e, target, cause, k.Share)
 		return true
 	}
 	if w.warBetween(c.ID, e.ID) == nil {
-		w.declare(c, e, cause)
+		w.openWar(c, e, cause, target)
 	}
 	w.launch(c, Campaign, e, target, k.Share)
 	return true
@@ -219,10 +230,11 @@ func (w *World) sizeAt(c, e *Civ, target int) mind.Campaign {
 	}, w.Cfg.Tuning)
 }
 
-// nearestEnemy is e's world nearest to any of c's, and the distance.
+// nearestEnemy is e's world nearest to any of c's, and the distance: for
+// a horde, the nearest of its fleets' bases.
 func (w *World) nearestEnemy(c, e *Civ) (float64, int) {
 	best, bd := e.Home, 1e9
-	for _, s := range e.Systems {
+	for _, s := range w.holdings(e) {
 		if _, d := w.nearest(c, s); d < bd {
 			best, bd = s, d
 		}

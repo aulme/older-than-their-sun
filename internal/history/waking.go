@@ -173,7 +173,7 @@ func (w *World) demand(c, e *Civ, worlds []int) bool {
 // flee.
 func (w *World) waking(c, e *Civ, worlds []int) {
 	t := &w.Cfg.Tuning.Kinds
-	if w.warBetween(c.ID, e.ID) == nil {
+	if w.warBetween(c.ID, e.ID) == nil && c.Fought[e.ID] == 0 { // the first waking is a war; the ones after are blows
 		if w.declare(c, e, because("waking")) == nil {
 			return
 		}

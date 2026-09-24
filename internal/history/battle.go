@@ -107,6 +107,9 @@ func (w *World) fight(x *Expedition, t int) {
 		return // one battle a tick at a world
 	}
 	w.foughtAt[t] = w.Now
+	wr.Battles++
+	wr.Fought = w.Now
+	w.summon(wr) // a battle is news to both councils
 	if e.Asleep {
 		w.rouse(e, c) // a fleet in its sky is a disturbance
 	}
@@ -135,8 +138,19 @@ func (w *World) fight(x *Expedition, t int) {
 	atk := battle.Strength(x.Ships, w.fleetQuality(c, x))
 	won, la, ld := battle.Fight(w.R, atk, s.strength)
 	rec.Won = won
+	if won {
+		wr.Beaten[1-i]++
+	} else {
+		wr.Beaten[i]++
+	}
 	lostA := w.payAttacker(c, x, t, la)
 	gunsD, lostD := w.payDefender(wr, c, e, t, s, ld)
+	tw := &w.Cfg.Tuning.War
+	wr.Will[i] -= tw.ShipLoss * float64(lostA) / float64(max(1, had)) // ships lost against ships had
+	wr.Will[1-i] -= tw.ShipLoss * float64(gunsD+lostD) / float64(max(1, s.ships()))
+	if l := c.Leader; won && l != nil && l.Fleet == x.ID {
+		wr.Will[i] += tw.LeaderWon // a leader at the front who wins
+	}
 	w.fought(c, x, t, won, lostA, had) // a leader riding with it may fall with the field
 	w.heldWith(e, t, !won, gunsD+lostD, s.ships())
 	if x.Ships <= 0 {

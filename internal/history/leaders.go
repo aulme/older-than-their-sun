@@ -472,6 +472,12 @@ func (w *World) loseLeader(c *Civ, end string, star int) {
 	c.Leader = nil
 	c.Bereft = l
 	w.told(FLeaderLost, c, nil, star).with(P{"leader": l.ID, "end": end})
+	for _, eid := range sortedInts(c.Wars) {
+		if wr := w.warBetween(c.ID, eid); wr != nil {
+			wr.Will[wr.side(c.ID)] -= w.Cfg.Tuning.War.LeaderLost // the succession is its own crisis
+			w.summon(wr)
+		}
+	}
 	if mind.Hostile(l.Stance) != mind.Hostile(l.Own) {
 		w.event(KSnappedBack, c, nil, -1, P{"leader": l.ID}) // it had turned the people to war or from it
 	}

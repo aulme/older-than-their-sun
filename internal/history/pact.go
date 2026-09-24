@@ -349,7 +349,7 @@ func (w *World) joinAllies(c, e *Civ, wr *War) {
 		}
 		for _, mid := range p.Members {
 			m := w.Civs[mid]
-			if mid == c.ID || !m.Active() || m.Wars[e.ID] || len(w.front(m, e)) == 0 || !w.perceives(m, e) {
+			if mid == c.ID || !m.Active() || m.Wars[e.ID] || len(w.front(m, e)) == 0 || !w.perceives(m, e) || !w.arms(m, e) {
 				continue
 			}
 			if wr2 := w.declare(m, e, because("pact").By(c)); wr2 != nil {
@@ -359,6 +359,17 @@ func (w *World) joinAllies(c, e *Civ, wr *War) {
 	}
 }
 
+// arms says whether an ally goes to war in its own name beside its
+// principal: it has ships to send, and has not come off worst against the
+// enemy so often that it will not face it again. Otherwise it answers as
+// an ally with no front does. (Stage 2 gives the ally a council of its
+// own; this keeps allies with nothing to fight with from filling the
+// cascade with empty wars.)
+func (w *World) arms(m, e *Civ) bool {
+	t := w.Cfg.Tuning
+	return w.standing(m) > 0 && mind.Wariness(m.Wary[e.ID], t) < t.War.WaryMax
+}
+
 // answerCall is an ally deciding whether to come: join at the front if it
 // has one, send relief if that helps and home stays safe, or not come.
 func (w *World) answerCall(m, v, a *Civ) {
@@ -366,7 +377,7 @@ func (w *World) answerCall(m, v, a *Civ) {
 		return
 	}
 	p := w.pactWith(m, v)
-	if len(w.front(m, a)) > 0 {
+	if len(w.front(m, a)) > 0 && w.arms(m, a) {
 		if wr := w.declare(m, a, because("pact").By(v)); wr != nil && p != nil {
 			wr.Pact, wr.Principal = p.ID, v.ID
 		}
@@ -466,7 +477,7 @@ func (w *World) warEnded(wr *War) {
 		}
 		return
 	}
-	if wr.Result != "peace" && wr.Result != "capitulation" {
+	if wr.Result != "peace" && wr.Result != "capitulation" && wr.Result != "terms" {
 		return
 	}
 	pr := w.Civs[wr.Principal]

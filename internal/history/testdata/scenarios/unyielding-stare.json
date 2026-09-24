@@ -1,0 +1,10 @@
+{
+  "name": "unyielding-stare",
+  "ticks": 120,
+  "peoples": [
+    {"name": "Stone", "traits": ["unyielding"], "worlds": 2, "ships": 6},
+    {"name": "Iron", "traits": ["unyielding"], "worlds": 2, "ships": 6, "dist": 35}
+  ],
+  "bonds": [{"a": "Stone", "b": "Iron"}],
+  "wars": [{"by": "Stone", "on": "Iron", "cause": "pact"}]
+}

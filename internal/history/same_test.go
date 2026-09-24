@@ -20,10 +20,12 @@ import (
 // past a continuity the wearing, the ways setting and a dark age read,
 // and the upload got its filter; and at leaders (step 9), where a
 // people can follow a named leader and faces the succession when it is
-// lost. A refactor that must not
+// lost; and at the war council (step 10, stage 1), where each side of
+// every war presses, holds or sues, wars have aims and end on terms, and
+// will follows the fighting. A refactor that must not
 // change behaviour keeps it green; a step that changes the sim on purpose
 // re-pins it and says so in its commit.
-const sameHistoryDigest = "a9cc20df87729b1cd184d59f6d45bcb266f85fe01d5310dc63669090a8631e54"
+const sameHistoryDigest = "49485fa7154c503a1fa81e2108be9d1b70c6233eaa1baa9147229acf082a01ec"
 
 func historyDigest(w *World) string {
 	h := sha256.New()

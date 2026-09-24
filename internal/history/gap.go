@@ -54,8 +54,8 @@ func (w *World) ledger(c *Civ) (losses []mind.Loss, stars []int, behind []int) {
 		}
 		f := w.Events[t.Fact]
 		ago := float64(w.Now-f.Year) / 1000
-		if ago > k.HuntWindow || !w.lossOf(c, f) {
-			continue
+		if ago > k.HuntWindow || (c.HuntEnded != 0 && f.Year <= c.HuntEnded) || !w.lossOf(c, f) {
+			continue // a hunt closed on a hole spends the losses that made it: a new hunt wants new losses
 		}
 		s := &w.G.Stars[f.Star]
 		for range max(1, f.N) { // a waking is as many losses as worlds it took
@@ -91,6 +91,12 @@ func (w *World) deduce(c *Civ) {
 	e := w.Civs[behind[0]]
 	if !e.Active() || c.Truce[e.ID] > w.Now {
 		return
+	}
+	if c.Wary[e.ID] >= w.Cfg.Tuning.Kinds.HuntWary {
+		return // hunts that came to nothing, often enough: the hole is let be
+	}
+	if c.posture() == mind.Pacifist && !w.inReach(e, c.Home) {
+		return // what the hole holds does not reach the home: a pacifist has nothing to hunt it for (drainHunt)
 	}
 	if wr := w.warBetween(c.ID, e.ID); wr != nil {
 		if wr.Gap != nil {

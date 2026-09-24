@@ -1,0 +1,10 @@
+{
+  "name": "far-conqueror",
+  "ticks": 300,
+  "stars": 80,
+  "peoples": [
+    {"name": "Khan", "traits": ["conqueror"], "worlds": 1, "ships": 2, "mil": 10, "knows": ["slow_interstellar"], "reach": 1},
+    {"name": "Meek", "traits": ["pacifist"], "worlds": 1, "ships": 0, "dist": 30}
+  ],
+  "bonds": [{"a": "Khan", "b": "Meek", "grudge": 1}, {"a": "Meek", "b": "Khan", "unknown": true}]
+}

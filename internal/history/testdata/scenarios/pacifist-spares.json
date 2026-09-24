@@ -1,0 +1,9 @@
+{
+  "name": "pacifist-spares",
+  "ticks": 300,
+  "peoples": [
+    {"name": "Warden", "traits": ["pacifist"], "leader": "unyielding", "worlds": 3, "ships": 6},
+    {"name": "Meek", "traits": ["pacifist"], "worlds": 1, "ships": 0, "dist": 8}
+  ],
+  "bonds": [{"a": "Warden", "b": "Meek", "grudge": 1, "claims": true}]
+}

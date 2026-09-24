@@ -15,10 +15,10 @@ type Appraisal struct {
 }
 
 // strength is what c brings against e, in levels: its level at home, its
-// miracles, its manned ships, its allies who would actually join, less
-// what its other wars take.
+// miracles, its manned ships and those already out against e, its allies
+// who would actually join, less what its other wars take.
 func (w *World) strength(c, e *Civ) float64 {
-	in := mind.StrengthInput{Mil: c.Mil, Bonus: c.warBonus(), Ships: w.standing(c) + w.bodyGuns(c)} // the body is what a world fights with
+	in := mind.StrengthInput{Mil: c.Mil, Bonus: c.warBonus(), Ships: w.standing(c) + w.bodyGuns(c) + w.outAgainst(c, e)} // the body is what a world fights with
 	for _, pid := range c.Pacts {
 		p := w.Pacts[pid]
 		if p.Over || p.Kind == Defensive && !c.Wars[e.ID] {
@@ -37,6 +37,17 @@ func (w *World) strength(c, e *Civ) float64 {
 		}
 	}
 	return mind.Strength(in, w.Cfg.Tuning)
+}
+
+// outAgainst is c's ships on campaign against e, kept.
+func (w *World) outAgainst(c, e *Civ) int {
+	n := 0
+	for _, x := range w.fleetsOf(c) {
+		if x.Kind == Campaign && x.Target == e.ID && !x.Returning && !x.LaidUp {
+			n += x.Ships
+		}
+	}
+	return n
 }
 
 // appraise estimates c's fight against e at a world: the nearest front
@@ -125,12 +136,27 @@ func (w *World) bar(c, e *Civ) (bar float64, wants, far bool) {
 		Posture: c.posture(), Hates: c.hates(e), Grudge: c.Grudge[e.ID] > 0 || e.Embargo[c.ID], Aloft: c.Aloft, NoShips: w.standing(c) == 0 && w.bodyGuns(c) == 0, Wis: c.Wis,
 		Claim: w.claims(c, e), Kin: w.kin(c, e) && !w.feud(c, e),
 		Stiff: c.Stiff, Fought: c.Fought[e.ID] > 0, Sailed: c.Tally.Fleets > 0,
+		Appetite: mind.Appetite(c.Appetite, w.Cfg.Tuning), Wary: c.Wary[e.ID],
 	}, w.Cfg.Tuning)
 }
 
-// explain logs a decision's reason under -ai.
+// explain logs a decision's reason under -ai, and hands it to a
+// watcher's hook (Config.Reason) when one is set.
 func (w *World) explain(c *Civ, what string, d interface{ Why() string }) {
+	if w.tracing() {
+		w.reason(c, what, d.Why())
+	}
+}
+
+// tracing says whether anyone is listening for reasons: -ai, or a hook.
+func (w *World) tracing() bool { return w.Cfg.TraceAI || w.Cfg.Reason != nil }
+
+// reason is one decision's reason, to the hook and under -ai to the log.
+func (w *World) reason(c *Civ, what, why string) {
+	if w.Cfg.Reason != nil {
+		w.Cfg.Reason(w, c, what, why)
+	}
 	if w.Cfg.TraceAI {
-		w.event(KReason, c, nil, -1, P{"what": what, "why": d.Why()})
+		w.event(KReason, c, nil, -1, P{"what": what, "why": why})
 	}
 }

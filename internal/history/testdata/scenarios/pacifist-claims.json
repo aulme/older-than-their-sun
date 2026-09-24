@@ -1,0 +1,12 @@
+{
+  "name": "pacifist-claims",
+  "ticks": 300,
+  "peoples": [
+    {"name": "Elder", "traits": ["pacifist"], "worlds": 3, "ships": 4},
+    {"name": "Younger", "traits": ["pacifist"], "worlds": 3, "ships": 4, "dist": 10}
+  ],
+  "bonds": [
+    {"a": "Elder", "b": "Younger", "claims": true},
+    {"a": "Younger", "b": "Elder", "claims": true}
+  ]
+}

@@ -154,20 +154,39 @@ func Appraise(in AppraiseInput, t *Tuning) Appraisal {
 
 // BarInput is what sets the odds a people needs before it strikes.
 type BarInput struct {
-	Posture string
-	Hates   bool // a xenophobe against the different
-	Grudge  bool // holds a grudge against the target
-	Aloft   bool // a horde fights from where it is, never by fleet
-	NoShips bool // not a ship manned: nothing to strike with
-	Wis     float64
-	Claim   bool    // the target holds a world of the old realm this people came out of: wanted whatever the posture but a pacifist's; see history's sunder.go
-	Kin     bool    // the target is kin with no grudge between them: never wanted on posture alone
-	Stiff   float64 // this people's stiffness; see history's ossify.go
-	Fought  bool    // this people has fought the target before
-	Sailed  bool    // this people has sent a fleet before
+	Posture  string
+	Hates    bool // a xenophobe against the different
+	Grudge   bool // holds a grudge against the target
+	Aloft    bool // a horde fights from where it is, never by fleet
+	NoShips  bool // not a ship manned: nothing to strike with
+	Wis      float64
+	Claim    bool    // the target holds a world of the old realm this people came out of: wanted whatever the posture but a pacifist's; see history's sunder.go
+	Kin      bool    // the target is kin with no grudge between them: never wanted on posture alone
+	Stiff    float64 // this people's stiffness; see history's ossify.go
+	Fought   bool    // this people has fought the target before
+	Sailed   bool    // this people has sent a fleet before
+	Appetite float64 // worlds taken of late: the bar's discount; see Appetite
+	Wary     float64 // the wars it came off worst in against the target, fading; see WarTuning.WaryBar
 }
 
-// Bar is the odds a posture needs before it strikes, whether it would
+// Bar is the posture's bar (barOf), less the appetite of a people that
+// keeps winning and more the warier it is of a people that beat it. The
+// wariness can lift the bar past certainty: a people that has come off
+// worst against another often enough does not go to war with it again,
+// however sure of winning it believes itself.
+func Bar(in BarInput, t *Tuning) (bar float64, wants, far bool) {
+	bar, wants, far = barOf(in, t)
+	if wants {
+		bar = min(1, max(0, bar-in.Appetite)) + Wariness(in.Wary, t)
+	}
+	return
+}
+
+// Wariness is what the wars come off worst in against a people add to
+// the bars against it.
+func Wariness(wary float64, t *Tuning) float64 { return min(t.War.WaryMax, t.War.WaryBar*wary) }
+
+// barOf is the odds a posture needs before it strikes, whether it would
 // strike at all, and whether it would send a fleet beyond the front to do
 // it. A grudge lowers the bar less the wiser the people: the grudge is
 // counted at its price, not ignored. A claim on what the target holds is
@@ -176,7 +195,7 @@ type BarInput struct {
 // same two-thousand-year war five hundred times over (plan step 19); kin
 // with no grudge are never wanted on posture alone. A stiff people prefers the wars it has
 // fought before, and one set past the point of a first fleet sends none.
-func Bar(in BarInput, t *Tuning) (bar float64, wants, far bool) {
+func barOf(in BarInput, t *Tuning) (bar float64, wants, far bool) {
 	b := &t.Bar
 	if in.NoShips || in.Posture == Pacifist {
 		return 0, false, false

@@ -643,6 +643,7 @@ type War struct {
 	Over      bool       `json:"over"`
 	Cause     string     `json:"cause"`
 	CauseOf   int        `json:"cause_of"`
+	Aim       string     `json:"aim,omitempty"`
 	Named     int        `json:"named"`
 	Nth       int        `json:"nth"`
 	Will      [2]float64 `json:"will"`

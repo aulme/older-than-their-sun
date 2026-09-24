@@ -1,0 +1,9 @@
+{
+  "name": "conqueror",
+  "ticks": 60,
+  "peoples": [
+    {"name": "Khan", "traits": ["conqueror"], "worlds": 3, "ships": 14},
+    {"name": "Meek", "traits": ["pacifist"], "worlds": 3, "ships": 3, "dist": 10}
+  ],
+  "bonds": [{"a": "Khan", "b": "Meek"}]
+}

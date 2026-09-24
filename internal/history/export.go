@@ -192,7 +192,7 @@ func (w *World) exportState() *record.State {
 	}
 	for _, wr := range w.Wars {
 		r := &record.War{
-			ID: wr.ID, Sides: wr.Sides, Began: wr.Began, Ended: wr.Ended, Over: wr.Over, Cause: wr.Cause, CauseOf: wr.CauseOf, Named: wr.Named, Nth: wr.Nth,
+			ID: wr.ID, Sides: wr.Sides, Began: wr.Began, Ended: wr.Ended, Over: wr.Over, Cause: wr.Cause, CauseOf: wr.CauseOf, Aim: wr.Aim, Named: wr.Named, Nth: wr.Nth,
 			Will: wr.Will, Taken: wr.Taken, Glassed: wr.Glassed, Lost: wr.Lost, Result: wr.Result, Pact: wr.Pact, Principal: wr.Principal, Hire: wr.Hire,
 		}
 		if wr.Gap != nil {

@@ -1,0 +1,19 @@
+{
+  "name": "pact-cascade",
+  "ticks": 200,
+  "stars": 60,
+  "peoples": [
+    {"name": "Crown", "traits": ["unyielding"], "worlds": 3, "ships": 10},
+    {"name": "Rival", "traits": ["unyielding"], "worlds": 3, "ships": 10, "near": "Crown", "dist": 14},
+    {"name": "Ward", "traits": ["unyielding"], "worlds": 2, "ships": 0, "near": "Rival", "dist": 9},
+    {"name": "Kin", "traits": ["unyielding"], "worlds": 2, "ships": 0, "near": "Crown", "dist": 9}
+  ],
+  "bonds": [
+    {"a": "Crown", "b": "Ward", "pact": "defence"},
+    {"a": "Rival", "b": "Kin", "pact": "defence"},
+    {"a": "Crown", "b": "Rival", "grudge": 1},
+    {"a": "Rival", "b": "Crown", "grudge": 1},
+    {"a": "Ward", "b": "Rival"}, {"a": "Ward", "b": "Kin"}, {"a": "Crown", "b": "Kin"}
+  ],
+  "wars": [{"by": "Rival", "on": "Crown", "cause": "old_quarrel"}]
+}

@@ -43,8 +43,8 @@ func (w *World) flows(c *Civ) {
 // sending may be keeping fed.
 func (w *World) direct(c *Civ, uses []flow.Use, rareChanged bool) {
 	d := w.order(c)
-	if w.Cfg.TraceAI && !sameOrder(c.Order, d.Order) {
-		w.event(KReason, c, nil, -1, P{"what": "direction", "why": d.Why()})
+	if w.tracing() && !sameOrder(c.Order, d.Order) {
+		w.reason(c, "direction", d.Why())
 	}
 	c.Order = d.Order
 	a := flow.Direct(c.Income, uses, d.Order)

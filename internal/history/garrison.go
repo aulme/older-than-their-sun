@@ -170,15 +170,13 @@ func (w *World) guardWith(c *Civ, star, n int) *Expedition {
 }
 
 // muster orders a campaign of n ships to gather at the holding nearest
-// its target, declaring the war if none runs: the guards nearest the
-// holding send what they have until the count is covered.
+// its target: the guards nearest the holding send what they have until
+// the count is covered. The war, if none runs, is declared when the
+// fleet sails: a muster that stands down has started nothing.
 func (w *World) muster(c, e *Civ, world int, cause reason, n int) {
 	star, _ := w.nearest(c, world)
 	c.Muster = &Muster{Star: star, Ships: n, Target: e.ID, World: world, Cause: cause, Since: w.Now}
 	c.Tally.Musters++
-	if w.warBetween(c.ID, e.ID) == nil {
-		w.declare(c, e, cause)
-	}
 	have := 0
 	if g := w.guardAt(c, star); g != nil && !g.LaidUp {
 		have = g.Ships
@@ -222,7 +220,7 @@ func (w *World) musterStep(c *Civ) {
 	}
 	coming := w.comingTo(c, m.Star)
 	holds := false
-	if e.Active() && w.holds(e, m.World) && w.warBetween(c.ID, e.ID) != nil {
+	if e.Active() && e.Free() && w.holds(e, m.World) && (w.warBetween(c.ID, e.ID) != nil || c.Truce[e.ID] <= w.Now) {
 		if k := w.sizeAt(c, e, m.World); k.Send {
 			holds = true
 			m.Ships = k.Share
@@ -233,6 +231,9 @@ func (w *World) musterStep(c *Civ) {
 	switch {
 	case ch.Launch:
 		c.Muster = nil
+		if w.warBetween(c.ID, e.ID) == nil && w.openWar(c, e, m.Cause, m.World) == nil {
+			return
+		}
 		w.launch(c, Campaign, e, m.World, m.Ships)
 	case ch.StandDown:
 		c.Muster = nil

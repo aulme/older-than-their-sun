@@ -1,0 +1,9 @@
+{
+  "name": "waking",
+  "ticks": 300,
+  "peoples": [
+    {"name": "Gaia", "mods": ["planetary"], "traits": ["conqueror"], "knows": ["agriculture"]},
+    {"name": "Settlers", "traits": ["expansionist"], "worlds": 4, "ships": 3, "dist": 5}
+  ],
+  "bonds": [{"a": "Gaia", "b": "Settlers"}]
+}

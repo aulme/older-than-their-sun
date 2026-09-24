@@ -13,8 +13,8 @@ func Report(ss []*Shape) []string {
 	var out []string
 	add := func(f string, a ...any) { out = append(out, fmt.Sprintf(f, a...)) }
 
-	add("| seed | peoples | wars | fought | short | long | long fought | old enemies | loops | widest | world wars | border | cold | quiet | proxy | waves | first/pair | wars/kpt | index | Myr | took |")
-	add("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|")
+	add("| seed | peoples | wars | fleet wars | fought | short | long | long fought/carried | old enemies | loops | widest | world wars | border | cold | quiet | proxy | waves | first/pair | wars/kpt | index | Myr | took |")
+	add("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|")
 	for _, s := range ss {
 		f := fought(s.Wars)
 		sh, lg, lf := lengths(f)
@@ -28,13 +28,13 @@ func Report(ss []*Shape) []string {
 		if s.Capped {
 			capped = " capped"
 		}
-		add("| %d | %d | %d | %d | %s | %s | %s | %d | %d | %d/%d | %d | %s | %d | %d | %d/%d/%d | %d | %.3f | %.2f | %.2f | %.0f%s | %s |",
-			s.Seed, s.Peoples, len(s.Wars), len(f), pct(sh, len(f)), pct(lg, len(f)), frac(lf), old, loops, wide.Peak, wide.Fronts, worldWars(s.Systems),
+		add("| %d | %d | %d | %d | %d | %s | %s | %s | %d | %d | %d/%d | %d | %s | %d | %d | %d/%d/%d | %d | %.3f | %.2f | %.2f | %.0f%s | %s |",
+			s.Seed, s.Peoples, len(s.Wars), len(fleetWars(s.Wars)), len(f), pct(sh, len(f)), pct(lg, len(f)), frac(lf)+"/"+frac(longCarried(f)), old, loops, wide.Peak, wide.Fronts, worldWars(s.Systems),
 			pct(b.border, b.large), s.Cold, s.Quiet, s.VassalWars, s.MasterIn, s.Proxy, len(s.Waves), ratio(s.First, s.Pairs), ratio(1000*len(s.Wars), s.PeopleTicks),
 			s.Decline.Index, s.Ages, capped, s.Took.Round(time.Second))
 	}
 	add("")
-	add("Short: fought wars of %d ticks or under; long: %d or over; long fought: the median share of a long war's ticks with a battle. Old enemies: pairs with %d fought wars or more; loops: pairs with more than %d wars. Widest: the most peoples at war at once in one system of wars, and its fronts with a battle; world wars: systems of %d peoples or more at once on %d fought fronts or more. Border: of the wars between realms of %d worlds or more, the share over within %d ticks with a world or two taken. Cold: pairs that have fought, both large, at peace %d kyr or more with an incident (a short war or a battle with no war); quiet: as long with none. Proxy: wars between vassals of different masters / a master's ships in them / the masters not at war. Waves: peoples that took worlds from %d peoples or more within %d kyr. Wars/kpt: wars per thousand people-ticks.",
+	add("Fleet wars: wars between two peoples that send fleets; fought: wars with a battle. Short: fought wars of %d ticks or under; long: %d or over; long fought/carried: the median share of a long war's ticks with a battle, and with a battle or a campaign in flight. Old enemies: pairs with %d fought wars or more; loops: pairs with more than %d wars. Widest: the most peoples at war at once in one system of wars, and its fronts with a battle; world wars: systems of %d peoples or more at once on %d fought fronts or more. Border: of the wars between realms of %d worlds or more, the share over within %d ticks with a world or two taken. Cold: pairs that have fought, both large, at peace %d kyr or more with an incident (a short war or a battle with no war); quiet: as long with none. Proxy: wars between vassals of different masters / a master's ships in them / the masters not at war. Waves: peoples that took worlds from %d peoples or more within %d kyr. Wars/kpt: wars per thousand people-ticks.",
 		shortTicks, longTicks, oldWars, loopWars, worldPeak, worldFront, large, shortTicks, coldSpan/1000, waveFrom, waveSpan/1000)
 
 	var all []*War
@@ -76,9 +76,9 @@ func Report(ss []*Shape) []string {
 	}
 
 	add("")
-	add("**1 Short and long.** %d wars, %d fought (%s). Fought wars by length in ticks: %s. Short %s, long %s; the median long war has battles in %s of its ticks.",
-		len(all), len(f), pct(len(f), len(all)), quartiles(ints(f, func(w *War) int { return w.Ticks })), pct(countW(f, func(w *War) bool { return w.Ticks <= shortTicks }), len(f)),
-		pct(countW(f, func(w *War) bool { return w.Ticks >= longTicks }), len(f)), frac(longFought(f)))
+	add("**1 Short and long.** %d wars, %d of them between two peoples that send fleets; %d fought (%s of those, %s of all). Fought wars by length in ticks: %s. Short %s, long %s; the median long war has battles in %s of its ticks, and is carried (a battle, or a campaign in flight) in %s.",
+		len(all), len(fleetWars(all)), len(f), pct(len(f), len(fleetWars(all))), pct(len(f), len(all)), quartiles(ints(f, func(w *War) int { return w.Ticks })), pct(countW(f, func(w *War) bool { return w.Ticks <= shortTicks }), len(f)),
+		pct(countW(f, func(w *War) bool { return w.Ticks >= longTicks }), len(f)), frac(longFought(f)), frac(longCarried(f)))
 	add("Every war by length: %s; unfought wars: %s.", quartiles(ints(all, func(w *War) int { return w.Ticks })), quartiles(ints(unfought(all), func(w *War) int { return w.Ticks })))
 
 	old, loops := 0, 0
@@ -100,7 +100,7 @@ func Report(ss []*Shape) []string {
 		len(sys), histogram(peaks, []int{2, 3, 4, 6, 8, 12}), worldWars(sys), seeds(func(s *Shape) bool { return worldWars(s.Systems) > 0 }), len(ss), widest(sys, 5))
 
 	b := border(all)
-	add("**4 Border disputes.** %d wars between realms of %d worlds or more: %s. Those over the cause \"a border\": %d.", b.large, large, b.kinds(), b.cause)
+	add("**4 Border disputes.** %d wars between realms of %d worlds or more: %s. Those for a world (the aim, or before the record held it the cause \"a border\"): %d.", b.large, large, b.kinds(), b.cause)
 
 	add("**5 Cold wars.** %d pairs with a cold war, in %d of %d seeds; %d quiet pairs. Battles fought in no war between their two: %d. The build-up between them is not in the record until stage 3.",
 		cold, seeds(func(s *Shape) bool { return s.Cold > 0 }), len(ss), quiet, stray)
@@ -146,6 +146,19 @@ func fought(ws []*War) []*War {
 	return out
 }
 
+// fleetWars is the wars between two peoples that send fleets: the rest
+// are a living world's, a sleeper's or an unmaking's blow at a people
+// that cannot answer it with a fleet, and no battle is fought in them.
+func fleetWars(ws []*War) []*War {
+	var out []*War
+	for _, w := range ws {
+		if w.Fleets {
+			out = append(out, w)
+		}
+	}
+	return out
+}
+
 func unfought(ws []*War) []*War {
 	var out []*War
 	for _, w := range ws {
@@ -177,6 +190,20 @@ func longFought(f []*War) float64 {
 	for _, w := range f {
 		if w.Ticks >= longTicks {
 			xs = append(xs, float64(w.BattleTicks)/float64(w.Ticks))
+		}
+	}
+	return median(xs)
+}
+
+// longCarried is the median share of a long fought war's ticks with a
+// battle or a campaign in flight: the war carried, a season a tick. The
+// gate reads this (settled 2026-09-24: a fleet on its way is the war
+// being fought, not the stare).
+func longCarried(f []*War) float64 {
+	var xs []float64
+	for _, w := range f {
+		if w.Ticks >= longTicks {
+			xs = append(xs, float64(w.CarriedTicks)/float64(w.Ticks))
 		}
 	}
 	return median(xs)
@@ -228,7 +255,7 @@ func border(ws []*War) borders {
 			continue
 		}
 		b.large++
-		if w.Cause == "border" {
+		if w.Aim == "world" || (w.Aim == "" && w.Cause == "border") {
 			b.cause++
 		}
 		k := "long"

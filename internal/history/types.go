@@ -175,6 +175,11 @@ type Civ struct {
 	Fought     map[int]int     // wars fought with each
 	Watched    map[int]bool    // looked at hard and left alone, until beliefs change
 	Asked      map[int]Year    // when each was last offered a pact
+	Yoked      map[int]Year    // when each was last weighed for vassalage without a war; see warcouncil.go
+	Appetite   float64         // worlds taken in war of late, halving: momentum; see warcouncil.go
+	Wary       map[int]float64 // the wars it came off worst in against each, fading slower than a grudge; see endWar
+	HuntEnded  Year            // when its last hunt ended: the losses before it were that hunt's evidence, spent; see gap.go
+	Yields     map[int]int     // times it yielded to each; see capitulate
 	Scouted    map[int]Year    // when a scout last reported on each
 	Ridden     map[int]bool    // for parasites: peoples taken as hosts
 	Charted    map[int]Year    // stars read: worlds and who is on them known; see explore.go
@@ -565,7 +570,11 @@ type Config struct {
 	// run, for a measurement that wants the state of the galaxy as the
 	// age goes by. It draws nothing and writes nothing, so a sampled
 	// run is the same history as an unsampled one.
-	Sample  func(*World)
+	Sample func(*World)
+	// Reason, when set, is handed every decision's reason as it is
+	// made, as -ai logs it but without the log: what a watcher keeps
+	// (watch.go). Like Sample it draws and writes nothing.
+	Reason  func(w *World, c *Civ, what, why string)
 	Debug   bool         // log the state of the galaxy every million years
 	TraceAI bool         // log every council's reasoning
 	Profile bool         // log each phase's time every million years
@@ -638,10 +647,11 @@ type World struct {
 	Fathomings []Fathoming // every understanding reached, for the batch; see wisdom.go
 	Legacies   []*Legacy
 	Traces     []Trace
-	Events     []*Event      // what happened, as it happened, by id; see lore.go
-	Chronicle  []*Event      // the same in the order it is told, and by year once the run is over
-	notes      []*Event      // the silent events of the run, placed after the told ones at the end; see notes.go
-	factsAt    map[int][]int // facts by star
+	Events     []*Event        // what happened, as it happened, by id; see lore.go
+	Chronicle  []*Event        // the same in the order it is told, and by year once the run is over
+	notes      []*Event        // the silent events of the run, placed after the told ones at the end; see notes.go
+	factsAt    map[int][]int   // facts by star
+	openWars   map[[2]int]*War // the war open between each pair; see warBetween
 	// war and diplomacy
 	Wars        []*War
 	Leaders     []*Leader   // every leader that rose, by id; see leaders.go

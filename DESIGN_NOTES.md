@@ -624,6 +624,7 @@ The decline is still the fertility clock (`specs/proposals/decline.md` is the dr
 
 ## Decision log
 
+- 2026-09-24: The war council (plan step 10, stage 1; `specs/proposals/war.md`, "As built (stage 1)", to be absorbed at step 16): every war has an aim from its cause and every side of it a council that presses, holds or sues from what it believes; will follows the fighting, and a tick nobody fights costs both sides; wars end in a yield to the winner's aim, in terms (worlds, tribute, an artifact, vassalage, peace on the lines), or as before; the winner's grudge is settled and the loser grows wary, enough to stop going back; a large realm offers vassalage before it strikes a small neighbour; momentum lowers the bars of a people that keeps taking worlds. A fleet in flight counts as the war being carried in the gate; three rows (long wars in most seeds, border disputes, the side declared on striking back) are left to a tuning pass. Two debugging tools came with it: scenarios (`cmd/scenario`, a small world from a spec, told as its councils reason) and watchers (`Watch`, detectors inside a run that dump what led to a loop).
 - 2026-09-16: Galaxy idea is primary. Fairy idea is backup.
 - 2026-09-16: Design notes kept in this Markdown file. Conceptual stuff only.
 - 2026-09-16: Two-pass history simulation agreed: coarse deep-time pass, then fine recent-history pass.

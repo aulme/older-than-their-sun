@@ -337,7 +337,7 @@ func (w *World) shipwright(c *Civ) {
 	if n := w.ships(c); n > c.PeakShips {
 		c.PeakShips = n
 	}
-	if w.Cfg.TraceAI && want.Ships != have {
+	if w.tracing() && want.Ships != have {
 		w.explain(c, "ships", want)
 	}
 }

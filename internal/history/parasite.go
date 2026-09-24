@@ -120,8 +120,8 @@ func (w *World) freed(h, rider *Civ) {
 // tryRide is a parasite on a channel event: its council on the people at
 // the other end, and the attempt if it says so.
 func (w *World) tryRide(c, e *Civ, roadKey string) {
-	if c.Own < 0 || !c.Active() || !e.Active() || e.Own >= 0 || e.Master == c.ID {
-		return
+	if c.Own < 0 || !c.Active() || !e.Active() || e.Own >= 0 || e.Master == c.ID || e.Barred[c.ID] {
+		return // a people that caught it once has shut its doors to it for good
 	}
 	p := w.Plagues[c.Own]
 	if p.Kind != roads[roadKey].Kind || !w.catchable(e, p) {
@@ -187,6 +187,9 @@ func (w *World) rideAll(c *Civ) {
 // converted is a world of a host that failed the toll going over to the
 // parasite: the home ridden, a colony a host-world.
 func (w *World) converted(rider, c *Civ, p *Plague, s int) {
+	if s == c.Home && c.Master >= 0 && c.Master != rider.ID {
+		return // already another's: one rider at a time wears a people
+	}
 	if s == c.Home {
 		w.event(KRidden, rider, c, c.Home, P{}).Plague = p.ID
 		w.ride(rider, c)

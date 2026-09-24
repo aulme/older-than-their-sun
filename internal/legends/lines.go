@@ -1249,6 +1249,45 @@ var lineFns = map[record.Kind]func(v *view, e *record.Event) string{
 		}
 		return "The {S} and the {O} make peace, {why:why}, after {warspan}. " + terms
 	},
+	record.FSettled: func(v *view, e *record.Event) string {
+		switch e.Str("terms") {
+		case "worlds":
+			return "The {S} sue the {O} for peace and cede {N:worlds}, after {warspan}. The {O} accept."
+		case "tribute":
+			return "The {S} sue the {O} for peace and pay tribute in {res:flow} for {for:span}, after {warspan}. The {O} accept."
+		case "artifact":
+			return "The {S} buy their peace from the {O} with {source:source}, after {warspan}."
+		case "vassal":
+			return "The {S} sue the {O} for peace, and bend the knee rather than be broken, after {warspan}. They are vassals now."
+		}
+		terms := "Neither side is sure who won."
+		switch net := e.Int("net"); {
+		case net > 0:
+			terms = "The {S} keep what they took."
+		case net < 0:
+			terms = "The {O} keep what they took."
+		}
+		return "The {S} offer the {O} peace on the lines as they stand, and the {O} accept, after {warspan}. " + terms
+	},
+	record.KTermsRefused: func(v *view, e *record.Event) string {
+		switch e.Str("terms") {
+		case "worlds":
+			return "The {S} offer the {O} worlds for peace. The {O} refuse."
+		case "tribute":
+			return "The {S} offer the {O} tribute for peace. The {O} refuse."
+		case "artifact":
+			return "The {S} offer the {O} a treasure for peace. The {O} refuse."
+		case "vassal":
+			return "The {S} offer to bend the knee to the {O}. The {O} want more than that."
+		}
+		return "The {S} offer the {O} peace on the lines as they stand. The {O} refuse."
+	},
+	record.KYoke: func(v *view, e *record.Event) string {
+		if e.Str("answer") == "accepted" {
+			return "The {S} demand that the {O} bend the knee, and the {O}, who could not win the war that refusing would bring, bend it. They are vassals now."
+		}
+		return "The {S} demand that the {O} bend the knee. The {O} refuse."
+	},
 	record.KYielded: func(v *view, e *record.Event) string {
 		if e.Str("outcome") == "vassal" {
 			return "The {S} yield to the {O} and bend the knee, after {warspan}. They are vassals now."

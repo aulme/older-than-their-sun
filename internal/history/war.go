@@ -3,18 +3,21 @@ package history
 import (
 	"sort"
 
+	"worldgen/internal/mind"
 	"worldgen/internal/species"
 	"worldgen/internal/tech"
 )
 
-// A war is an object with a front, a duration and a will per side. The
-// front is the overlap: each side's worlds within the other's reach, where
-// a campaign can be sent and what the appraisal looks at. Worlds change
-// hands only by a fleet at them (battle.go). Will drains with time, twice
-// as fast while nobody's fleet is against the other, and moves with each
-// world taken; when it runs out there is peace, or capitulation, and a
-// record that makes the next war between the two different from the
-// first.
+// A war is an object with a front, an aim, a duration and a will per
+// side. The front is the overlap: each side's worlds within the other's
+// reach, where a campaign can be sent and what the appraisal looks at.
+// Worlds change hands only by a fleet at them (battle.go). What each side
+// does about the war is its war council's (warcouncil.go): press, hold or
+// sue. Will follows the war: battles won and worlds taken raise it, losses
+// lower it, and a tick nobody fights in costs both sides. When one side's
+// runs out it yields what the other's aim asks; when both do there is
+// peace; terms accepted end it sooner; and the record makes the next war
+// between the two different from the first.
 
 // War is one war between two peoples.
 type War struct {
@@ -37,7 +40,17 @@ type War struct {
 	Contested map[int]int
 	Called    map[int]bool // allies already called to this war
 	Hire      int          // the contract this war was declared for, or -1; see contract.go
-	Gap       *Gap         // set for a hunt: the first side fights a region, not a people it can name; see gap.go
+	Aim       string       // what the declarer went to war for; see warcouncil.go
+	Summon    [2]bool      // a side's war council is called this tick
+	Verdict   [2]mind.WarChoice
+	Why       [2]string // each side's last verdict in a word (mind.WarVerdict.Key), for the watch
+	Offered   [2]Year   // when each side last offered terms
+	Battles   int       // battles fought in it
+	Beaten    [2]int    // battles each side lost the roll in
+	Winner    int       // the people the other yielded to, or -1
+	Seized    [2][]int  // the worlds each side took in it
+	Fought    Year      // the year of the last
+	Gap       *Gap      // set for a hunt: the first side fights a region, not a people it can name; see gap.go
 	// the slights of the war: see slight.go
 	Slights    map[int]float64 // the slight each partner of the target took at the declaration
 	Sent       map[int]float64 // what the target was sending each the tick before
@@ -54,14 +67,14 @@ func (wr *War) side(id int) int {
 
 // warBetween finds the active war between two peoples, or nil.
 func (w *World) warBetween(a, b int) *War {
-	for i := len(w.Wars) - 1; i >= 0; i-- {
-		wr := w.Wars[i]
-		if !wr.Over && ((wr.Sides[0] == a && wr.Sides[1] == b) || (wr.Sides[0] == b && wr.Sides[1] == a)) {
-			return wr
-		}
+	if wr := w.openWars[warKey(a, b)]; wr != nil && !wr.Over {
+		return wr
 	}
 	return nil
 }
+
+// warKey is the index of the open wars: a pair has one open at a time.
+func warKey(a, b int) [2]int { return [2]int{min(a, b), max(a, b)} }
 
 // front is e's worlds within c's reach measured from c's nearest holding,
 // nearest first. Only these can be struck.
@@ -138,6 +151,7 @@ func (w *World) initialWill(c, e *Civ, attacker bool) float64 {
 	if !attacker && w.inReach(e, c.Home) {
 		will += 0.7 // the home is at stake
 	}
+	will += w.Cfg.Tuning.War.AppetiteWill * c.Appetite // a people that keeps winning goes to war gladly
 	if c.Aloft {
 		will *= 0.5 // a horde's peace is leaving
 	}
@@ -152,14 +166,19 @@ func (w *World) declare(c, e *Civ, cause reason) *War {
 	if !c.Active() || !e.Active() || c == e {
 		return nil
 	}
+	if (!c.Free() || !e.Free()) && cause.key != "ledger_hole" {
+		return nil // a held people is its master's to make war with or for; a hunt cannot know whose it is
+	}
 	if e.Asleep {
 		w.rouse(e, nil) // a war brought to a sleeper wakes it; the strike it wakes with is its own council's
 	}
 	c.Fought[e.ID]++
 	e.Fought[c.ID]++
-	wr := &War{ID: len(w.Wars), Sides: [2]int{c.ID, e.ID}, Began: w.Now, Cause: cause.key, CauseOf: cause.by, Nth: c.Fought[e.ID], Named: -1, Pact: -1, Principal: -1, Hire: -1, Contested: map[int]int{}, Called: map[int]bool{},
+	wr := &War{ID: len(w.Wars), Sides: [2]int{c.ID, e.ID}, Began: w.Now, Cause: cause.key, CauseOf: cause.by, Nth: c.Fought[e.ID], Named: -1, Pact: -1, Principal: -1, Hire: -1, Winner: -1, Contested: map[int]int{}, Called: map[int]bool{},
 		Slights: map[int]float64{}, Sent: map[int]float64{}, Slighted: map[int]float64{}, SlightTold: map[int]bool{}}
+	wr.Aim = w.aimOf(c, e, cause.key)
 	wr.Will = [2]float64{w.initialWill(c, e, true), w.initialWill(e, c, false)}
+	wr.Summon[1] = true // the side declared on answers
 	w.addWar(wr)
 	c.Wars[e.ID], e.Wars[c.ID] = true, true
 	w.stir(c) // a war is not still
@@ -211,6 +230,10 @@ func (w *World) tickWars() {
 			w.endWar(wr, "fall")
 			continue
 		}
+		if (!a.Free() || !b.Free()) && wr.Gap == nil {
+			w.endWar(wr, "held") // a side passed under a master: what it had to fight with and to yield is the master's now
+			continue
+		}
 		for i := 0; i < 2 && !wr.Over; i++ {
 			w.drain(wr, i)
 		}
@@ -222,25 +245,80 @@ func (w *World) tickWars() {
 	}
 }
 
-// drain is what a tick of war costs a side's will.
+// drain is what a tick of war costs a side's will: a tick nobody fought
+// in, an armed peace in all but name, costs both sides, the more the
+// longer nobody has fought and the more so past fifty thousand years; a
+// fleet on its way is the war not yet begun. The
+// home threatened stiffens the resolve; a total aim that cannot reach the
+// enemy's home tires. The unyielding tire slowest, and a pacifist whose
+// home is safe has nothing to fight for.
 func (w *World) drain(wr *War, i int) {
+	c, e := w.Civs[wr.Sides[i]], w.Civs[wr.Sides[1-i]]
+	if wr.Gap != nil {
+		w.drainHunt(wr, i)
+		return
+	}
+	t := &w.Cfg.Tuning.War
+	if c.posture() == mind.Pacifist && !w.inReach(e, c.Home) {
+		wr.Will[i] = 0 // nothing worth fighting for
+		return
+	}
+	if wr.Battles > 0 && w.Now-wr.Fought < Year(w.dt*1000) {
+		return // fought this tick
+	}
+	if w.fleetInFlight(c, e) || w.fleetInFlight(e, c) {
+		return // a fleet is on its way; nobody tires of a war that has not begun
+	}
+	idle := float64(w.Now-max(wr.Began, wr.Fought)) / 1000
+	d := t.Idle * w.dt * (1 + idle/t.IdleRamp)
+	if w.Now-wr.Began > 50_000 {
+		d *= 2
+	}
+	switch c.posture() {
+	case mind.Unyielding:
+		d *= t.IdleUnyielding
+	case mind.Vengeful:
+		d *= 0.5
+	case mind.Conqueror:
+		if wr.Taken[i] > wr.Lost[i] {
+			d *= 0.7
+		}
+	}
+	if c.hates(e) {
+		d *= 0.25
+	}
+	aim := wr.aim(i)
+	switch {
+	case w.inReach(e, c.Home):
+		d *= t.HomeResolve
+	case (aim == mind.AimSubmission || aim == mind.AimEnding) && !w.canStrikeHome(c, e):
+		d *= t.FarAim
+	}
+	wr.Will[i] -= d
+}
+
+// drainHunt is a hunt's will: a hunt has no battle to fight and no enemy
+// to treat with, so it runs on the clock it always did, twice as fast
+// with no fleet out, half as fast with one at a base, not at all while
+// one is on its way; see gap.go.
+func (w *World) drainHunt(wr *War, i int) {
 	c, e := w.Civs[wr.Sides[i]], w.Civs[wr.Sides[1-i]]
 	d := 0.05 * w.dt
 	if w.Now-wr.Began > 50_000 {
 		d *= 2
 	}
 	switch c.posture() {
-	case "unyielding":
-		d = 0
-	case "vengeful":
+	case mind.Unyielding:
+		d *= w.Cfg.Tuning.War.IdleUnyielding // the unyielding tire of a hunt too, only slower
+	case mind.Vengeful:
 		d *= 0.5
-	case "conqueror":
+	case mind.Conqueror:
 		if wr.Taken[i] > wr.Lost[i] {
 			d *= 0.7
 		}
-	case "pacifist":
+	case mind.Pacifist:
 		if !w.inReach(e, c.Home) {
-			wr.Will[i] = 0 // nothing worth fighting for
+			wr.Will[i] = 0
 			return
 		}
 	}
@@ -249,14 +327,17 @@ func (w *World) drain(wr *War, i int) {
 	}
 	switch {
 	case w.fleetInFlight(c, e) || w.fleetInFlight(e, c):
-		d = 0 // a fleet is on its way; nobody tires of a war that has not begun
+		d = 0
 	case w.hasFleetAgainst(c, e) || w.hasFleetAgainst(e, c):
 		d *= 0.5
 	default:
-		d *= 2 // nobody's fleet is against the other: a war nobody sends ships to ends quickly
+		d *= 2
 	}
 	wr.Will[i] -= d
 }
+
+// summon calls both sides' war councils: something in the war has changed.
+func (w *World) summon(wr *War) { wr.Summon = [2]bool{true, true} }
 
 // takeWorld is a world with nothing left in its sky to hold it: conquered,
 // glassed or converted, by the winner's nature; the home falling is its
@@ -334,6 +415,9 @@ func (w *World) takeWorld(wr *War, c, e *Civ, t int) {
 	wr.Lost[1-i]++
 	c.Tally.Taken++
 	e.Tally.Lost++
+	c.Appetite++ // appetite grows with eating
+	wr.Seized[i] = append(wr.Seized[i], t)
+	w.summon(wr)
 	wr.Will[i] += 0.3
 	switch e.posture() {
 	case "conqueror", "unyielding":
@@ -368,6 +452,7 @@ func boolKeys(m map[int]int) map[int]bool {
 
 // homeFalls is the last defence of a home broken.
 func (w *World) homeFalls(wr *War, c, e *Civ) {
+	wr.Winner = c.ID // however it ends, spared or held or burned, the war is the taker's
 	if e.nomad() && e.Reach >= 1 && !e.Aloft {
 		w.takeSky(e, because("lose_home_to").At(e.Home).By(c))
 		w.endWar(wr, "peace")
@@ -560,26 +645,101 @@ func (w *World) yield(wr *War, li int) {
 	case w.canTreat(wr):
 	case !l.Fathomed[v.ID]:
 		return // the offer would mean nothing: the war goes on until the other side tires too
+	case w.canStrikeHome(v, l) && len(w.fleetFront(v, l)) > 0:
+		return // a truce asked with the enemy's fleet already in reach of the home is not given: it comes on
 	default:
 		w.truce(wr, l, v)
 		return
 	}
 	if len(w.front(v, l)) == 0 && len(w.fleetFront(v, l)) == 0 {
+		wr.Winner = v.ID // it gave up with nothing the other could take: a war lost all the same
 		w.peace(wr, because("tired_one").By(l))
 		return
 	}
 	w.capitulate(wr, l, v)
 }
 
-// capitulate cedes the front, and the home too if it lies in reach.
+// capitulate is the loser yielding what the winner's aim asks, capped by
+// what the winner holds in reach: a world or two for a border or
+// redress, tribute where the winner takes it, the front and the home for
+// submission or the end. The side declared on, winning, keeps what it
+// took; an ally wins its principal's war or nothing. A people that has
+// yielded to the same power more than a few times before bends the knee.
 func (w *World) capitulate(wr *War, l, v *Civ) {
-	if w.tribute(wr, l, v) {
+	vi := wr.side(v.ID)
+	wr.Winner = v.ID
+	if l.Yields == nil {
+		l.Yields = map[int]int{}
+	}
+	if l.Yields[v.ID]++; l.Yields[v.ID] > w.Cfg.Tuning.War.Yields && w.bends(l) && v.Own < 0 && !v.hates(l) && !v.Has("pacifist") {
+		// a people that keeps yielding to the same power is its client in all but name, and now in name
+		w.event(KYielded, l, v, -1, P{"outcome": "vassal"}).with(w.warSpanP(wr))
+		w.vassal(v, l)
+		w.endWar(wr, "vassal")
 		return
 	}
+	switch aim := wr.aim(vi); aim {
+	case mind.AimHold, mind.AimDefence:
+		w.peace(wr, because("tired_one").By(l))
+		return
+	case mind.AimWorld, mind.AimRedress, mind.AimTribute:
+		if w.tribute(wr, l, v) {
+			return // the aim sets what is asked; a winner that takes tribute takes it in tribute
+		}
+		limit := 1
+		if aim != mind.AimWorld {
+			limit = 2
+		}
+		if n := w.cede(wr, l, v, limit); l.Active() {
+			w.factN(FYield, v, l, -1, n).with(P{"way": "ceded"}).with(w.warSpanP(wr))
+			w.endWar(wr, "capitulation")
+		}
+		return
+	}
+	// a total aim: the winner's gains and a little more, and the home if it
+	// can be had; tribute only from a home out of reach, and never to the
+	// hating, who want the loser gone
+	if !w.canStrikeHome(v, l) && !v.hates(l) && w.tribute(wr, l, v) {
+		return
+	}
+	n := w.cede(wr, l, v, wr.Taken[vi]+wr.Glassed[vi]+2)
+	if !l.Active() {
+		return
+	}
+	if !w.canStrikeHome(v, l) {
+		w.factN(FYield, v, l, -1, n).with(P{"way": "ceded"}).with(w.warSpanP(wr))
+		w.endWar(wr, "capitulation")
+		return
+	}
+	switch {
+	case v.hates(l):
+		w.fact(FScoured, v, l, l.Home).with(P{"way": "yielded"})
+		w.setBio(l.Home, BioNone)
+		w.endCiv(l, Extinct, because("scoured_by").At(l.Home).By(v))
+		w.endWar(wr, "extinction")
+	case v.Has("pacifist"):
+		w.factN(FYield, v, l, -1, 0).with(P{"way": "took"}).with(w.warSpanP(wr))
+		w.endWar(wr, "capitulation")
+	case v.Own >= 0:
+		w.event(KYielded, l, v, -1, P{"outcome": "ridden"}).with(w.warSpanP(wr))
+		w.ride(v, l)
+		w.endWar(wr, "enslaved")
+	case l.Has("submissive") || v.Dials.Greed < 0.3 || l.Has("swarming") || !l.Species.Profile().Can(species.Reseats):
+		w.event(KYielded, l, v, -1, P{"outcome": "vassal"}).with(w.warSpanP(wr))
+		w.vassal(v, l)
+		w.endWar(wr, "vassal")
+	default:
+		w.event(KYielded, l, v, -1, P{"outcome": "enslaved"}).with(w.warSpanP(wr))
+		w.enslave(v, l)
+		w.endWar(wr, "enslaved")
+	}
+}
+
+// cede hands up to limit of l's front worlds to v, the home never, and
+// says how many went; the war ends as destroyed if l did not survive it.
+func (w *World) cede(wr *War, l, v *Civ, limit int) int {
 	vi := wr.side(v.ID)
 	ceded := 0
-	// the winner's gains and a little more; the rest of the front is safe by the truce
-	limit := wr.Taken[vi] + wr.Glassed[vi] + 2
 	for _, t := range append(w.front(v, l), w.fleetFront(v, l)...) {
 		if t == l.Home || ceded >= limit || !contains(l.Systems, t) {
 			continue
@@ -597,35 +757,8 @@ func (w *World) capitulate(wr *War, l, v *Civ) {
 	l.Tally.Capitulated = true
 	if !l.Active() {
 		w.endWar(wr, "destroyed")
-		return
 	}
-	if !w.canStrikeHome(v, l) {
-		w.factN(FYield, v, l, -1, ceded).with(P{"way": "ceded"}).with(w.warSpanP(wr))
-		w.endWar(wr, "capitulation")
-		return
-	}
-	switch {
-	case v.hates(l):
-		w.fact(FScoured, v, l, l.Home).with(P{"way": "yielded"})
-		w.setBio(l.Home, BioNone)
-		w.endCiv(l, Extinct, because("scoured_by").At(l.Home).By(v))
-		w.endWar(wr, "extinction")
-	case v.Has("pacifist"):
-		w.factN(FYield, v, l, -1, ceded).with(P{"way": "took"}).with(w.warSpanP(wr))
-		w.endWar(wr, "capitulation")
-	case v.Own >= 0:
-		w.event(KYielded, l, v, -1, P{"outcome": "ridden"}).with(w.warSpanP(wr))
-		w.ride(v, l)
-		w.endWar(wr, "enslaved")
-	case l.Has("submissive") || v.Dials.Greed < 0.3 || l.Has("swarming") || !l.Species.Profile().Can(species.Reseats):
-		w.event(KYielded, l, v, -1, P{"outcome": "vassal"}).with(w.warSpanP(wr))
-		w.vassal(v, l)
-		w.endWar(wr, "vassal")
-	default:
-		w.event(KYielded, l, v, -1, P{"outcome": "enslaved"}).with(w.warSpanP(wr))
-		w.enslave(v, l)
-		w.endWar(wr, "enslaved")
-	}
+	return ceded
 }
 
 // peace ends a war with nobody yielding.
@@ -693,13 +826,42 @@ func (w *World) endWar(wr *War, result string) {
 	}
 	delete(a.Wars, b.ID)
 	delete(b.Wars, a.ID)
+	if wr.Gap != nil {
+		a.HuntEnded = w.Now
+	}
 	truce := Year(5000 + w.R.IntN(10000))
 	a.Truce[b.ID] = w.Now + truce
 	b.Truce[a.ID] = w.Now + truce
-	a.resent(b.ID, 0.3+0.3*float64(wr.Lost[0]))
-	b.resent(a.ID, 0.3+0.3*float64(wr.Lost[1]))
-	b.resent(a.ID, 0.5) // being struck first is the deeper wrong
-	w.renew(a, 0.1)     // a war fought to its end is something new
+	gained := func(i int) bool { return wr.Taken[i]+wr.Glassed[i] > 0 }
+	// ahead: the side the other yielded to, or with nobody yielding one
+	// that has what it went for and gave up less than it took
+	ahead := func(i int) bool {
+		return wr.Winner == wr.Sides[i] || (wr.Winner < 0 && wr.aimMet(i) && wr.Taken[i]+wr.Glassed[i] > wr.Lost[i])
+	}
+	for i, c := range []*Civ{a, b} {
+		worst := wr.Winner == wr.Sides[1-i] || (wr.Winner != c.ID && (wr.Lost[i] > wr.Taken[i] || (wr.Beaten[i] > wr.Beaten[1-i] && wr.Taken[i] <= wr.Lost[i])))
+		if worst || (i == 0 && !gained(0) && !ahead(0)) {
+			if c.Wary == nil {
+				c.Wary = map[int]float64{}
+			}
+			c.Wary[wr.Sides[1-i]]++ // it came off worst, or went to war for nothing: the next war with them is weighed harder
+		}
+	}
+	if wr.Winner >= 0 {
+		w.renounce(w.Civs[wr.Winner], w.Civs[wr.Sides[1-wr.side(wr.Winner)]])
+	}
+	if ahead(0) {
+		delete(a.Grudge, b.ID) // the wrong is avenged
+	} else {
+		a.resent(b.ID, 0.3+0.3*float64(wr.Lost[0]))
+	}
+	if ahead(1) {
+		delete(b.Grudge, a.ID)
+	} else {
+		b.resent(a.ID, 0.3+0.3*float64(wr.Lost[1]))
+		b.resent(a.ID, 0.5) // being struck first is the deeper wrong
+	}
+	w.renew(a, 0.1) // a war fought to its end is something new
 	w.renew(b, 0.1)
 	w.spent(wr) // the long sleep, for a side with nothing left it wants
 	w.warEnded(wr)

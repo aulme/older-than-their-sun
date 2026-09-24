@@ -294,3 +294,23 @@ func TestVial(t *testing.T) {
 		t.Error("the vial's scar does not lock the craft")
 	}
 }
+
+// TestRiderBarred: a people that caught a rider at it once has shut its
+// doors to it, and the rider does not try it again through them. The
+// loop was a rider in a hurry for a second host tried every tick, each
+// attempt caught and each a war the realm could not fight.
+func TestRiderBarred(t *testing.T) {
+	w, _, rider, p := woken(t, 30, plague.Memetic)
+	b := w.Civs[1]
+	w.poisoned(rider, b, p, false)
+	if !b.Barred[rider.ID] {
+		t.Fatal("the caught rider is not barred")
+	}
+	tries := rider.Tally.Attempts
+	for range 20 {
+		w.tryRide(rider, b, "signal")
+	}
+	if rider.Tally.Attempts != tries {
+		t.Errorf("the rider tried %d times through shut doors", rider.Tally.Attempts-tries)
+	}
+}

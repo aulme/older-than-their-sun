@@ -32,6 +32,7 @@ type JudgeInput struct {
 	Vengeful  bool // against the grudge target the cost is not counted
 	Compelled bool // honour compels a lower bar this council
 	Wis       float64
+	Wary      float64 // the wars it came off worst in against this enemy: honour does not compel what experience forbids
 }
 
 // Verdict is the judgment on one enemy.
@@ -64,9 +65,10 @@ func (v Verdict) Why() string {
 // partner that sends raises it. The vengeful act on their hope against the
 // grudge target unless they are wise enough to count what revenge costs.
 func Judge(in JudgeInput, t *Tuning) Verdict {
-	v := Verdict{Bar: min(1, max(0, in.Bar-in.Appraisal.Prize)), Acted: in.Appraisal.Acted, Low: in.Appraisal.Low, High: in.Appraisal.High}
+	w := Wariness(in.Wary, t) // in the bar already, and past certainty if it is large
+	v := Verdict{Bar: min(1, max(0, in.Bar-w-in.Appraisal.Prize)) + w, Acted: in.Appraisal.Acted, Low: in.Appraisal.Low, High: in.Appraisal.High}
 	if in.Compelled {
-		v.Bar = min(v.Bar, t.Council.Compelled)
+		v.Bar = min(v.Bar, t.Council.Compelled+w)
 	}
 	if in.Front == 0 && !in.Far {
 		return v

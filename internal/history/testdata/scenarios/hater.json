@@ -1,0 +1,9 @@
+{
+  "name": "hater",
+  "ticks": 300,
+  "peoples": [
+    {"name": "Purist", "traits": ["xenophobic", "opportunist"], "worlds": 3, "ships": 12},
+    {"name": "Machine", "kind": "machine", "traits": ["defensive"], "worlds": 3, "ships": 10, "dist": 10}
+  ],
+  "bonds": [{"a": "Purist", "b": "Machine"}]
+}

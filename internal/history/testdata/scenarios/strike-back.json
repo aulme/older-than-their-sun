@@ -1,0 +1,10 @@
+{
+  "name": "strike-back",
+  "ticks": 20,
+  "peoples": [
+    {"name": "Greed", "traits": ["opportunist"], "worlds": 2, "ships": 4},
+    {"name": "Wall", "traits": ["defensive"], "worlds": 3, "ships": 20, "dist": 12}
+  ],
+  "bonds": [{"a": "Greed", "b": "Wall"}],
+  "wars": [{"by": "Greed", "on": "Wall", "cause": "border"}]
+}

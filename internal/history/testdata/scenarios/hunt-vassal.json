@@ -1,0 +1,10 @@
+{
+  "name": "hunt-vassal",
+  "ticks": 200,
+  "peoples": [
+    {"name": "Hunter", "traits": ["defensive"], "worlds": 3, "ships": 30},
+    {"name": "Lord", "traits": ["defensive"], "worlds": 2, "ships": 10, "dist": 12},
+    {"name": "Unseen", "mods": ["antimemetic"], "traits": ["opportunist"], "worlds": 1, "ships": 3, "near": "Hunter", "dist": 8, "master": "Lord", "vassal": true}
+  ],
+  "bonds": [{"a": "Hunter", "b": "Unseen", "unmet": true}, {"a": "Hunter", "b": "Lord"}]
+}

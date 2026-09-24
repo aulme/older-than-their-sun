@@ -1,6 +1,7 @@
 package history
 
 import (
+	"math"
 	"testing"
 
 	"worldgen/internal/species"
@@ -253,27 +254,37 @@ func TestMuster(t *testing.T) {
 	}
 }
 
-// TestNoFleetDrainsDouble: a war with nobody's fleet against the other
-// drains will twice as fast; one with a fleet at a base half as fast.
-func TestNoFleetDrainsDouble(t *testing.T) {
+// TestIdleDrains: a tick nobody fights in costs will; a tick with a
+// battle, or with a fleet on its way, costs nothing; a home within the
+// enemy's reach halves the cost.
+func TestIdleDrains(t *testing.T) {
 	w, c, e, colony := twoPeoples(t, 58)
+	idle := w.Cfg.Tuning.War.Idle
+	e.Reach = 0 // the declarer's home is safe
 	wr := w.declare(c, e, because("border"))
 	wr.Will = [2]float64{5, 5}
 	w.drain(wr, 0)
-	if d := 5 - wr.Will[0]; d < 0.0999 || d > 0.1001 {
-		t.Errorf("a war with no fleet drained %.3f, want 0.1: twice the base", d)
+	if d := 5 - wr.Will[0]; math.Abs(d-idle) > 1e-9 {
+		t.Errorf("an idle tick drained %.3f, want %.3f", d, idle)
 	}
-	x := campaignAt(w, c, e, colony, 1)
+	wr.Will = [2]float64{5, 5}
+	w.drain(wr, 1) // the side declared on: its home is in the declarer's reach
+	if d := 5 - wr.Will[1]; math.Abs(d-idle*w.Cfg.Tuning.War.HomeResolve) > 1e-9 {
+		t.Errorf("an idle tick with the home threatened drained %.3f, want %.3f", d, idle*w.Cfg.Tuning.War.HomeResolve)
+	}
+	wr.Battles, wr.Fought = 1, w.Now
 	wr.Will = [2]float64{5, 5}
 	w.drain(wr, 0)
-	if d := 5 - wr.Will[0]; d < 0.0249 || d > 0.0251 {
-		t.Errorf("a war with a fleet at a base drained %.3f, want 0.025", d)
+	if wr.Will[0] != 5 {
+		t.Errorf("a tick with a battle drained %.3f", 5-wr.Will[0])
 	}
-	x.Over = true
-	c.Muster = &Muster{Target: e.ID}
-	wr.Will = [2]float64{5, 5}
+	wr.Fought = w.Now - 5000
+	w.guardAt(c, c.Home).Ships += 1
+	if x := w.launch(c, Campaign, e, colony, 1); x == nil {
+		t.Fatal("no fleet")
+	}
 	w.drain(wr, 0)
-	if d := 5 - wr.Will[0]; d < 0.0249 || d > 0.0251 {
-		t.Errorf("a war with a muster gathering drained %.3f, want 0.025", d)
+	if wr.Will[0] != 5 {
+		t.Errorf("a tick with a fleet on its way drained %.3f", 5-wr.Will[0])
 	}
 }

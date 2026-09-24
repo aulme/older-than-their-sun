@@ -1,7 +1,7 @@
 {
   "_": [
     "The reasons the record gives: why a people fell or ended, why it left a star or came to rest, why a war began and how it ended, what a blast was, what a people became. The simulation stores the key; the view renders the text with the ids beside it: {C} the people named (by), {O} the other side, {T} the star (at), {P} the plague, {B} the blast, {L} the remain, {filter} the filter's name.",
-    "causes: what a fact's cause or why is, keyed; the text follows 'They' for an ending, a fall or a dark age, and stands alone for a leaving, a resting, a cut-off or a peace. blasts: what a blast event was, by its way. becomings: what a transformed people became (Civ.Into). war_causes and war_results: why a war was declared and how it ended. betrayals: the shape of a broken faith.",
+    "causes: what a fact's cause or why is, keyed; the text follows 'They' for an ending, a fall or a dark age, and stands alone for a leaving, a resting, a cut-off or a peace. blasts: what a blast event was, by its way. becomings: what a transformed people became (Civ.Into). war_causes and war_results: why a war was declared and how it ended; a war cause's aim is what the war is for (world, tribute, submission, redress, ending, defence), which decides what winning is and what terms are asked. betrayals: the shape of a broken faith.",
     "Every term here is a technical term: a phrase a reader who never saw this project understands or can search for, never a coinage."
   ],
   "causes": [
@@ -137,24 +137,27 @@
     {"key": "believed", "text": "something that believed", "desc": "taken by a memetic plague"}
   ],
   "war_causes": [
-    {"key": "extermination", "text": "extermination"},
-    {"key": "old_quarrel", "text": "the old quarrel"},
-    {"key": "embargo", "text": "the embargo"},
-    {"key": "opportunity", "text": "opportunity"},
-    {"key": "conquest", "text": "conquest"},
-    {"key": "revenge", "text": "revenge"},
-    {"key": "border", "text": "a border"},
-    {"key": "coin", "text": "the {C}'s coin"},
-    {"key": "sleep_disturbed", "text": "the disturbing of its sleep"},
-    {"key": "betrayal", "text": "betrayal"},
-    {"key": "ledger_hole", "text": "the hole in the ledger"},
-    {"key": "pact", "text": "their pact with the {C}"},
-    {"key": "sundering", "text": "the sundering"},
-    {"key": "waking", "text": "the waking"},
-    {"key": "unmaking", "text": "the unmaking"},
-    {"key": "poisoning", "text": "the poisoning"}
+    {"key": "extermination", "text": "extermination", "aim": "ending"},
+    {"key": "old_quarrel", "text": "the old quarrel", "aim": "redress"},
+    {"key": "embargo", "text": "the embargo", "aim": "world"},
+    {"key": "opportunity", "text": "opportunity", "aim": "tribute"},
+    {"key": "conquest", "text": "conquest", "aim": "submission"},
+    {"key": "revenge", "text": "revenge", "aim": "redress"},
+    {"key": "border", "text": "a border", "aim": "world"},
+    {"key": "coin", "text": "the {C}'s coin", "aim": "world"},
+    {"key": "sleep_disturbed", "text": "the disturbing of its sleep", "aim": "world"},
+    {"key": "betrayal", "text": "betrayal", "aim": "world"},
+    {"key": "ledger_hole", "text": "the hole in the ledger", "aim": "ending"},
+    {"key": "pact", "text": "their pact with the {C}", "aim": "defence"},
+    {"key": "sundering", "text": "the sundering", "aim": "world"},
+    {"key": "waking", "text": "the waking", "aim": "world"},
+    {"key": "unmaking", "text": "the unmaking", "aim": "ending"},
+    {"key": "poisoning", "text": "the poisoning", "aim": "redress"},
+    {"key": "defiance", "text": "their refusal to bend the knee", "aim": "submission"}
   ],
   "war_results": [
+    {"key": "terms", "text": "terms"},
+    {"key": "held", "text": "a side passing under a master"},
     {"key": "hire_ended", "text": "the hire ended"},
     {"key": "hire_sold", "text": "the hire sold"},
     {"key": "tribute", "text": "tribute"},

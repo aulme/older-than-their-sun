@@ -1,0 +1,11 @@
+{
+  "name": "border",
+  "ticks": 40,
+  "stars": 120,
+  "peoples": [
+    {"name": "West", "traits": ["opportunist"], "worlds": 8, "ships": 20, "mil": 8},
+    {"name": "East", "traits": ["defensive"], "worlds": 8, "ships": 16, "mil": 8, "dist": 22}
+  ],
+  "bonds": [{"a": "West", "b": "East"}],
+  "wars": [{"by": "West", "on": "East", "cause": "border"}]
+}

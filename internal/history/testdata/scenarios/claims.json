@@ -1,0 +1,12 @@
+{
+  "name": "claims",
+  "ticks": 300,
+  "peoples": [
+    {"name": "Elder", "traits": ["vengeful"], "worlds": 3, "ships": 6},
+    {"name": "Younger", "traits": ["defensive"], "worlds": 3, "ships": 6, "dist": 10}
+  ],
+  "bonds": [
+    {"a": "Elder", "b": "Younger", "claims": true, "grudge": 0.5},
+    {"a": "Younger", "b": "Elder", "claims": true, "grudge": 0.5}
+  ]
+}

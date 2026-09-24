@@ -331,9 +331,11 @@ func (w *World) inheritWar(wr *War, old, h *Civ) {
 		return
 	}
 	i := wr.side(old.ID)
-	nw := &War{ID: len(w.Wars), Sides: [2]int{h.ID, e.ID}, Began: wr.Began, Cause: wr.Cause, CauseOf: wr.CauseOf, Nth: 1, Named: -1, Pact: -1, Principal: -1, Hire: -1, Contested: map[int]int{}, Called: map[int]bool{},
+	nw := &War{ID: len(w.Wars), Sides: [2]int{h.ID, e.ID}, Began: wr.Began, Cause: wr.Cause, CauseOf: wr.CauseOf, Nth: 1, Named: -1, Pact: -1, Principal: -1, Hire: -1, Winner: -1, Contested: map[int]int{}, Called: map[int]bool{},
 		Slights: map[int]float64{}, Sent: map[int]float64{}, Slighted: map[int]float64{}, SlightTold: map[int]bool{}}
 	nw.Will = [2]float64{wr.Will[i], wr.Will[1-i]}
+	nw.Aim = wr.aim(i) // the heir goes on with the old side's aim, or holds
+	nw.Summon = [2]bool{true, true}
 	w.addWar(nw)
 	h.Wars[e.ID], e.Wars[h.ID] = true, true
 	h.Fought[e.ID], e.Fought[h.ID] = 1, e.Fought[h.ID]+1

@@ -238,6 +238,14 @@ func (w *World) forgive(c *Civ) {
 			c.Grudge[id] = g
 		}
 	}
+	wary := math.Pow(w.Cfg.Tuning.War.WaryDecay, w.dt)
+	for id, g := range c.Wary {
+		if g *= wary; g < t.GrudgeFloor {
+			delete(c.Wary, id)
+		} else {
+			c.Wary[id] = g
+		}
+	}
 }
 
 func init() {

@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"worldgen/internal/record"
+	"worldgen/internal/species"
 )
 
 // The thresholds the patterns are read at. They are the proposal's.
@@ -33,22 +34,25 @@ const (
 // joined to it: its battles, the campaigns each side sent, the size and
 // the masters of its sides when it began.
 type War struct {
-	ID          int
-	Sides       [2]int // the declarer first
-	Began, End  record.Year
-	Over        bool
-	Ticks       int // its length in ticks, at least one
-	Battles     int
-	BattleTicks int    // ticks with a battle in them
-	Campaigns   [2]int // campaign fleets each side launched at the other while it lasted
-	Taken       int
-	Cause       string
-	Result      string
-	Worlds      [2]int  // each side's worlds when it began
-	Masters     [2]int  // each side's master when it began, -1 for free
-	Vassal      [2]bool // held as a vassal rather than a slave
-	Pact        int
-	Principal   int
+	ID           int
+	Sides        [2]int // the declarer first
+	Began, End   record.Year
+	Over         bool
+	Ticks        int // its length in ticks, at least one
+	Battles      int
+	BattleTicks  int    // ticks with a battle in them
+	CarriedTicks int    // ticks with a battle, or a campaign of either side in flight at the other: the war being carried
+	Campaigns    [2]int // campaign fleets each side launched at the other while it lasted
+	Taken        int
+	Cause        string
+	Aim          string // what the declarer went to war for, when the record says (stage 1 on)
+	Fleets       bool   // both sides send fleets: a war of fleets, not a living world's or a sleeper's blow against a people that cannot answer it
+	Result       string
+	Worlds       [2]int  // each side's worlds when it began
+	Masters      [2]int  // each side's master when it began, -1 for free
+	Vassal       [2]bool // held as a vassal rather than a slave
+	Pact         int
+	Principal    int
 }
 
 // Fought says whether a battle was fought in it.
@@ -160,9 +164,11 @@ func Read(r *record.Run) *Shape {
 	ridden := map[int][]record.Year{}
 	met := map[pair][]record.Year{}
 	warBound := map[pair][]record.Year{} // the years a war between the two ended
-	var taken []*record.Event
+	var taken, sent []*record.Event
 	for _, e := range r.Chronicle {
 		switch e.Kind {
+		case record.KFleetSent:
+			sent = append(sent, e)
 		case record.KWorldHeld, record.KWorldLost:
 			h := worlds[e.Subject]
 			n := 0
@@ -210,6 +216,11 @@ func Read(r *record.Run) *Shape {
 		}
 	}
 	worldsAt := func(c int, y record.Year) int { return at(worlds[c], y, 0) }
+	launches := map[int]bool{}
+	for _, sp := range st.Species {
+		launches[sp.ID] = species.Rebuild(sp.ID, sp.Sub, sp.Mods, sp.Channel, sp.Powers, sp.World, sp.Traits, sp.Made).Profile().Can(species.Launches)
+	}
+	sails := func(c int) bool { return launches[st.Civs[c].Species] }
 	masterAt := func(c int, y record.Year) int { return at(masters[c], y, -1) }
 	ended := func(c int) record.Year {
 		if cv := st.Civs[c]; cv.Ended > 0 {
@@ -223,7 +234,7 @@ func Read(r *record.Run) *Shape {
 	byPair := map[pair][]*War{}
 	for _, wr := range st.Wars {
 		w := &War{ID: wr.ID, Sides: wr.Sides, Began: wr.Began, End: wr.Ended, Over: wr.Over, Taken: wr.Taken[0] + wr.Taken[1],
-			Cause: wr.Cause, Result: wr.Result, Pact: wr.Pact, Principal: wr.Principal}
+			Cause: wr.Cause, Aim: wr.Aim, Result: wr.Result, Pact: wr.Pact, Principal: wr.Principal, Fleets: sails(wr.Sides[0]) && sails(wr.Sides[1])}
 		if !wr.Over {
 			w.End, w.Result = d.Present, "unfinished"
 		}
@@ -269,6 +280,28 @@ func Read(r *record.Run) *Shape {
 	}
 	for w, t := range ticks {
 		w.BattleTicks = len(t)
+	}
+	carried := map[*War]map[record.Year]bool{}
+	for w, t := range ticks {
+		carried[w] = map[record.Year]bool{}
+		for k := range t {
+			carried[w][k] = true
+		}
+	}
+	for _, e := range sent {
+		w := warOf(e.Subject, e.Object, e.Year)
+		if w == nil {
+			continue
+		}
+		if carried[w] == nil {
+			carried[w] = map[record.Year]bool{}
+		}
+		for k := e.Year / step; k <= min(e.Year+record.Year(e.Int("away")), w.End)/step; k++ {
+			carried[w][k] = true
+		}
+	}
+	for w, t := range carried {
+		w.CarriedTicks = len(t)
 	}
 	for _, x := range st.Fleets {
 		if x.Kind != "campaign" || x.Target < 0 {

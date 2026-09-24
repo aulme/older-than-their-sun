@@ -1,0 +1,9 @@
+{
+  "name": "vengeful-pacifist",
+  "ticks": 300,
+  "peoples": [
+    {"name": "Avenger", "traits": ["vengeful"], "worlds": 2, "ships": 6},
+    {"name": "Meek", "traits": ["pacifist"], "worlds": 1, "ships": 6, "dist": 10}
+  ],
+  "bonds": [{"a": "Avenger", "b": "Meek", "grudge": 1.5}]
+}

@@ -340,6 +340,13 @@ func (w *World) campaign(x *Expedition) {
 	} else {
 		t = w.nearestOf(e, x.Base, fleetHop, x.Base)
 	}
+	if t < 0 && w.Owner[x.Base] == c.ID && x.Base != c.Home {
+		// a conquered world is a base: the fleet stays as its guard, and
+		// the next campaign is the council's to send from there
+		w.summon(w.warBetween(c.ID, e.ID))
+		w.mergeInto(x, x.Base)
+		return
+	}
 	if t < 0 {
 		w.resolve(x)
 		return

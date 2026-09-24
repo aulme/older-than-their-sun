@@ -38,6 +38,7 @@ func main() {
 	cpuprofile := flag.String("cpuprofile", "", "write a CPU profile of the run to this file")
 	wearEvery := flag.Int("wear", 4, "how many ticks apart a people's telling is put through the wearing; the rate is compounded over the gap, so a tale wears as often (see specs/plan.md step 6)")
 	at := flag.String("at", "sol", "where in the galaxy: a named place, a feature such as \"Cygnus X-1\", or x,y,z in kpc (see -map)")
+	watch := flag.String("watch", "", "run the watchers (loop pairs, masters changing hands, endless wars, war-count jumps) and write what they catch to this file")
 	mapOnly := flag.Bool("map", false, "print a chart of the galaxy, the laws from centre to rim, and the named places, then exit")
 	flag.Parse()
 	if *cpuprofile != "" {
@@ -87,6 +88,15 @@ func main() {
 	if cfg.Tuning, err = mind.Configure(*tuning, tunes); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(2)
+	}
+	if *watch != "" {
+		f, err := os.Create(*watch)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		defer f.Close()
+		history.DefaultWatch(f).Attach(&cfg)
 	}
 	w := history.Generate(*seed, cfg)
 	r := writer.Run(w, *at)

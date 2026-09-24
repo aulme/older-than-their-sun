@@ -160,6 +160,7 @@ var civSteps = []civStep{
 	{"intel", (*World).intelStep},
 	{"leaders", (*World).leaderStep},
 	{"council", (*World).council},
+	{"warCouncils", (*World).warCouncils},
 	{"hunts", (*World).huntStep},
 	{"contracting", (*World).contracting},
 	{"garrison", (*World).garrison},
@@ -174,7 +175,7 @@ var civSteps = []civStep{
 // offers nothing and banks no research. See ossify.go.
 var offSteps = map[string]bool{
 	"shipwright": true, "research": true, "eldritch": true, "expand": true, "build": true, "explore": true,
-	"council": true, "contracting": true, "uplift": true,
+	"council": true, "warCouncils": true, "contracting": true, "uplift": true,
 }
 
 // insertCivStep puts s after the step named after, or at the end if there

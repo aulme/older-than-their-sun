@@ -661,6 +661,7 @@ Everything with a yield: a world, a belt, a giant, a star, a feature's reach, a 
 | `over` | bool | (**D**: `war_over`) |
 | `cause` | key | in `causes.json`'s war causes (**D**: `war_opened`) |
 | `cause_of` | id | the people the cause names, or -1 |
+| `aim` | string | what the declarer went to war for: `world`, `tribute`, `submission`, `redress`, `ending` or `defence` (the cause's `aim` in `causes.json`, total for the hating and raised to submission by a conqueror); the side declared on holds |
 | `named` | id | the star the war is named for, or -1 |
 | `nth` | int | the nth war between these two |
 | `will` | [2 numbers] | each side's will |

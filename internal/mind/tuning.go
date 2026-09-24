@@ -52,6 +52,7 @@ type Tuning struct {
 	Ossify     OssifyTuning
 	Continuity ContinuityTuning
 	Leaders    LeaderTuning
+	War        WarTuning
 	Decline    DeclineTuning
 	Kinds      KindsTuning
 	Plague     plague.Tuning // the plagues' own numbers, kept here so one table tunes everything
@@ -93,6 +94,54 @@ type BarTuning struct {
 	GrudgeDiscount float64 // off the bar when there is a grudge
 	StiffNew       float64 // what a stiff people adds to the bar per point of stiffness past one against a people it never fought: it prefers the wars it knows
 	StiffNoFirst   float64 // stiffness from which a people that never sent a fleet sends none
+}
+
+// WarTuning: the war council, will, terms and momentum; see war.go.
+type WarTuning struct {
+	Cadence         float64 // war councils a thousand years for a side nothing has summoned
+	PressDeclarer   float64 // the odds the declarer needs to send another campaign
+	PressDefend     float64 // the side declared on, to carry the war to the declarer
+	PressAlly       float64 // an ally joined by pact
+	PressHate       float64 // the hating, whatever their place
+	Retake          float64 // off the side declared on's bar when it has lost more than it took
+	Bold            float64 // off the bar for the conqueror, the vengeful and the unyielding; on it for an opportunist struck first
+	SueBase         float64 // a side that has seen the war begin sues below these odds
+	SueFear         float64 // and this much higher per point of fear
+	SueMax          float64 // at most
+	SueWill         float64 // a side sues below this will
+	OfferEvery      float64 // years between one side's offers in a war
+	AcceptWill      float64 // below this will the terms look better
+	Tired           float64 // by this much per point of will below it
+	AcceptGreed     float64 // pressing on weighs this much more per point of greed
+	AcceptConqueror float64 // and this much more for a conqueror
+	AcceptSlack     float64 // what terms are worth beyond their share of the aim: the war over
+	NoPress         float64 // and this much more to a side that would not press on
+	IdleSue         float64 // ticks with no battle after which a side that will not press sues
+	BuildWait       float64 // and this many times as long for a side waiting on its docks for a fleet it would send
+	Idle            float64 // will a tick nobody fights in costs each side
+	IdleUnyielding  float64 // the share of it the unyielding pay
+	IdleRamp        float64 // ticks without a battle over which the idle cost doubles, and goes on growing: a war nobody fights fades
+	HomeResolve     float64 // the idle cost times this when the home is threatened
+	FarAim          float64 // and times this when the home is safe and a total aim is out of reach
+	ShipLoss        float64 // will lost per share of the ships a side had in a battle and lost
+	LeaderLost      float64 // will lost in every war when the leader falls
+	LeaderWon       float64 // will gained when a battle the leader rides in is won
+	YokeOdds        float64 // a realm offers vassalage when it acts on odds this good
+	YokeSize        float64 // and holds this many times the worlds of the one it offers to
+	YokeWorlds      float64 // and at least this many
+	YokeBar         float64 // the small people bends below these odds of holding its home
+	YokeFear        float64 // and this much higher per point of fear
+	YokeMeek        float64 // and this much higher for the submissive
+	YokeAgain       float64 // years before an offer refused or not made is made again
+	Appetite        float64 // off the bars per world taken of late
+	AppetiteMax     float64 // at most
+	AppetiteHalf    float64 // years in which the appetite halves
+	AppetiteWill    float64 // will a war starts with per point of appetite past the bar's
+	TruceWorld      float64 // years of truce per world given up in terms
+	WaryBar         float64 // on the bars against a people, per war come off worst in against it
+	WaryMax         float64 // at most
+	WaryDecay       float64 // what the wariness keeps per thousand years: slower than a grudge, since a beating is remembered longer than a wrong
+	Yields          int     // yields to the same power after which the next makes the loser its vassal
 }
 
 // CouncilTuning: when a people decides, and how boldly.
@@ -524,6 +573,7 @@ type KindsTuning struct {
 	HuntRadius  float64 // light years: the losses that are one hole
 	HuntWindow  float64 // thousand years: how far back the ledger is read
 	HuntEmpty   float64 // thousand years a hunted region must have held nothing before the hunt gives up
+	HuntWary    float64 // hunts come off worst in against the people behind a hole, fading, after which it is not hunted again
 }
 
 // HeedInput is a people told to leave a world by a living world that
@@ -627,12 +677,21 @@ func Default() *Tuning {
 			Diff: 1, Push: 1.5, Doubling: 0.5, Forking: 2,
 			MadWar: 0.005, MadCrime: 0.02, MadPurge: 0.5, MadBreak: 0.1,
 		},
+		War: WarTuning{
+			Cadence: 0.5, PressDeclarer: 0.5, PressDefend: 0.55, PressAlly: 0.55, PressHate: 0.3, Retake: 0.1, Bold: 0.1,
+			SueBase: 0.1, SueFear: 0.2, SueMax: 0.35, SueWill: 0.15, OfferEvery: 3000,
+			AcceptWill: 0.4, Tired: 1, AcceptGreed: 0.3, AcceptConqueror: 0.2, AcceptSlack: 0.2, NoPress: 0.5, IdleSue: 3, BuildWait: 3,
+			Idle: 0.1, IdleUnyielding: 0.5, IdleRamp: 5, HomeResolve: 0.5, FarAim: 1.5, ShipLoss: 0.2, LeaderLost: 0.3, LeaderWon: 0.1,
+			YokeOdds: 0.85, YokeSize: 3, YokeWorlds: 5, YokeBar: 0.3, YokeFear: 0.3, YokeMeek: 0.2, YokeAgain: 30_000,
+			Appetite: 0.03, AppetiteMax: 0.15, AppetiteHalf: 20_000, AppetiteWill: 0.1,
+			TruceWorld: 3000, WaryBar: 0.1, WaryMax: 0.8, WaryDecay: 0.998, Yields: 2,
+		},
 		Decline: DeclineTuning{BirthWindow: 2, WaningBar: 0.35, EndBar: 0.55, HoldMyr: 1},
 		Kinds: KindsTuning{
 			Appear: 0.0005, Deepen: 0.0005, Tithe: 0.1, TitheGrudge: 0.01, TitheHazard: 0.01, WoundWear: 0.001, Mirror: 0.5, MirrorWis: 2,
 			WakingBase: -1, WakingMil: 0.5, WakingYoung: 1, Demand: 3, UnmakeRest: 3000, HeedGap: 0.1, HeedMeek: 0.5, HeedProud: 0.5, HeedGrudge: 0.2,
 			Eat: 0.005, EatOut: 1_000_000, Listen: 0.001, SeedShare: 0.1,
-			Drift: 0.003, DriftWorld: 200, DriftCure: 3, HuntLosses: 3, HuntRadius: 20, HuntWindow: 50, HuntEmpty: 20,
+			Drift: 0.003, DriftWorld: 200, DriftCure: 3, HuntLosses: 3, HuntRadius: 20, HuntWindow: 50, HuntEmpty: 20, HuntWary: 3,
 		},
 		Plague: plague.Default(),
 		Wisdom: WisdomTuning{Tail: 0.08, GrudgeFade: 10, VengefulBelow: 7, Compulsion: 0.08, Folly: 0.04, ThreatSeal: 0.3, AboveEras: 2, AboveWield: 0.07, AboveSeal: 0.2, LeapMargin: -1.5, LeapBar: 6, LeapNoise: 1.5, TeachWeaker: 0, BrokerRate: 0.02},

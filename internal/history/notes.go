@@ -257,11 +257,18 @@ func (w *World) listened(l *Legacy, c *Civ) {
 // addWar is a war declared or inherited: its sides and its cause.
 func (w *World) addWar(wr *War) {
 	w.Wars = append(w.Wars, wr)
+	if w.openWars == nil {
+		w.openWars = map[[2]int]*War{}
+	}
+	w.openWars[warKey(wr.Sides[0], wr.Sides[1])] = wr
 	w.note(KWarOpened, w.Civs[wr.Sides[0]], w.Civs[wr.Sides[1]], -1, P{"war": wr.ID, "cause": wr.Cause})
 }
 
 // warOver is a war ended, with its result.
 func (w *World) warOver(wr *War, result string) {
+	if w.openWars[warKey(wr.Sides[0], wr.Sides[1])] == wr {
+		delete(w.openWars, warKey(wr.Sides[0], wr.Sides[1]))
+	}
 	w.note(KWarOver, w.Civs[wr.Sides[0]], w.Civs[wr.Sides[1]], -1, P{"war": wr.ID, "result": result})
 }
 

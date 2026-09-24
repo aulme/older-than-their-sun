@@ -1,0 +1,10 @@
+{
+  "name": "riders",
+  "ticks": 150,
+  "keep": ["plagues"],
+  "peoples": [
+    {"name": "Host", "traits": ["defensive"], "worlds": 2, "ships": 4},
+    {"name": "Other", "traits": ["defensive"], "worlds": 2, "ships": 4, "dist": 8}
+  ],
+  "bonds": [{"a": "Host", "b": "Other", "trade": true}]
+}

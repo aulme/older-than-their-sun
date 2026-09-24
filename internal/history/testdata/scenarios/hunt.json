@@ -1,0 +1,9 @@
+{
+  "name": "hunt",
+  "ticks": 300,
+  "peoples": [
+    {"name": "Hunter", "traits": ["defensive"], "worlds": 3, "ships": 30},
+    {"name": "Unseen", "mods": ["antimemetic"], "traits": ["opportunist"], "worlds": 1, "ships": 3, "dist": 8}
+  ],
+  "bonds": [{"a": "Hunter", "b": "Unseen", "unmet": true}]
+}

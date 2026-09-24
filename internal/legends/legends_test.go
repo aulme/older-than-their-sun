@@ -37,12 +37,14 @@ import (
 // count a tick old. Kept as the telling changes, it is the count now,
 // and three peoples of this seed cross eight. Not an event of the
 // chronicle moved, here or in seed 11. Re-pinned at continuity (step
-// 8), which changes every history on purpose, and at leaders (step 9),
-// which does too and gives the chronicle and the tellings named figures.
+// 8), which changes every history on purpose, at leaders (step 9),
+// which does too and gives the chronicle and the tellings named figures,
+// and at the war council (step 10, stage 1), where every war is under a
+// council and ends on terms, and the chronicle tells the settlements.
 // A step that must not change what the view prints keeps it green; one
 // that changes the view or the history on purpose re-pins it and says
 // so in its commit.
-const sameLegendsDigest = "1b8861baf042dafef3907d164d0060c00840ac08193b3cf8b1cf1465aa67d73f"
+const sameLegendsDigest = "e1585949aa771901fa4607dc4585f0d57bd0478fc5d9cd97b048c2542ffc394e"
 
 // run is seed 5 at 200 stars, written to a directory and read back, so
 // that the view is tested on the files alone.

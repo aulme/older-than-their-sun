@@ -113,6 +113,7 @@ type (
 		Key  string `json:"key"`
 		Text string `json:"text"`
 		Desc string `json:"desc"`
+		Aim  string `json:"aim"` // a war cause's: what the war is for; see warcouncil.go
 	}
 	originDef struct {
 		Key     string `json:"key"`

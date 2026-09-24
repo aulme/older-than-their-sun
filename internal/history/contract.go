@@ -1005,8 +1005,8 @@ func (w *World) answerOffer(to, from *Civ, m *Message) {
 	what := "asked by the " + from.Tok() + " for " + gives.key() + " for " + gets.key()
 	if why := w.refuses(to, gives, from); why != "" {
 		k.State = Refused
-		if w.Cfg.TraceAI {
-			w.event(KReason, to, nil, -1, P{"what": what, "why": why})
+		if w.tracing() {
+			w.reason(to, what, why)
 		}
 		return
 	}
@@ -1421,28 +1421,14 @@ func (w *World) taughtNode(to, from *Civ, m *Message) {
 // years, when the winner is the kind that takes tribute over worlds and
 // the loser has anything to pay. Returns whether it was written.
 func (w *World) tribute(wr *War, l, v *Civ) bool {
-	t := w.Cfg.Tuning.Contract
-	if t.TributeLength <= 0 || !mind.TakesTribute(mind.TributeInput{Posture: v.posture(), Fixation: v.Morality.Object}) {
+	if w.Cfg.Tuning.Contract.TributeLength <= 0 || !mind.TakesTribute(mind.TributeInput{Posture: v.posture(), Fixation: v.Morality.Object}) {
 		return false
 	}
-	if !l.Species.Profile().Can(species.Trades) || !v.Species.Profile().Can(species.Trades) {
+	if _, amt := w.tributeOf(l, v); amt <= 0 {
 		return false // nothing the sim counts to pay with, or to take
 	}
-	spare := w.spare(l)
-	best, bestSpare := flow.O, 0.0
-	for _, k := range flow.Kinds {
-		if spare[k] > bestSpare {
-			best, bestSpare = k, spare[k]
-		}
-	}
-	if bestSpare <= 0.1 {
-		return false
-	}
-	k := w.newContract(l, v, Term{Kind: mind.TermPeace, Target: v.ID}, Term{Kind: mind.TermFlow, Res: best, Amount: bestSpare * w.transportCap(l)}, v)
-	k.Length = t.TributeLength
-	k.State, k.Formed, k.Until, k.Tribute = Running, w.Now, w.Now+Year(t.TributeLength*1000), true
-	l.Tally.Tributes++
-	w.fact(FTribute, l, v, -1).with(P{"res": best, "for": k.Until - w.Now}).with(w.warSpanP(wr))
+	k := w.tributeTo(l, v)
+	w.fact(FTribute, l, v, -1).with(P{"res": k.Pay.Res, "for": k.Until - w.Now}).with(w.warSpanP(wr))
 	w.endWar(wr, "tribute")
 	peaceStart(w, k, v, l, k.Ask)
 	return true

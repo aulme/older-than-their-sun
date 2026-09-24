@@ -1,7 +1,7 @@
 # War: how peoples fight, and how a war ends
 
-**Status:** Draft (2026-09-23). Placed in `specs/plan.md` as steps 10 and 11, after `leaders.md` (a leader at the front is one of the things a war council reads) and before `empires.md`, whose conquest wave and coalitions ride on the machinery here and whose tuning pass is read against the wars this leaves. Read by `art.md` (a war is most of the circumstances worth making anything about) and `miracles.md`.
-**Last updated:** 2026-09-23
+**Status:** Stages 0 and 1 built (2026-09-24); stages 2 and 3 open. Placed in `specs/plan.md` as steps 10 and 11, after `leaders.md` (a leader at the front is one of the things a war council reads) and before `empires.md`, whose conquest wave and coalitions ride on the machinery here and whose tuning pass is read against the wars this leaves. Read by `art.md` (a war is most of the circumstances worth making anything about) and `miracles.md`.
+**Last updated:** 2026-09-24
 
 ## Problem
 
@@ -177,8 +177,8 @@ Every pattern is read from the record by a measurement that exists before anythi
 
 | pattern | measured as | baseline (stage 0) | wanted |
 |---|---|---|---|
-| 1 short and long | fought wars (a battle in them) by length in ticks; the share of a long war's ticks with a battle | 28% of wars fought; of those 26% at three ticks or under, 42% at twelve and over; the median long war fought in 6% of its ticks; short under a quarter in 8 seeds, long in 2 | 60% of wars fought or more; a quarter or more short and a quarter or more long, in total and in most seeds; the median long war fought in a third of its ticks or more |
-| 2 old enemies | pairs with three fought wars or more and twenty wars or fewer, the wars separated by peace (a pair has one war open at a time) | 111 pairs, in 18 seeds; 25 loop pairs (more than twenty wars), the most 117 | some in most seeds, a hundred or more over the batch; loop pairs none |
+| 1 short and long | fought wars (a battle in them) by length in ticks; the share of a long war's ticks carried: a battle, or a campaign in flight (settled 2026-09-24) | 28% of wars fought; of those 26% at three ticks or under, 42% at twelve and over; the median long war fought in 6% of its ticks; short under a quarter in 8 seeds, long in 2 | 60% of wars fought or more; a quarter or more short and a quarter or more long, in total and in most seeds; the median long war carried in a third of its ticks or more |
+| 2 old enemies | pairs with three fought wars or more and twenty wars or fewer, the wars separated by peace (a pair has one war open at a time) | 111 pairs, in 18 seeds; 25 loop pairs (more than twenty wars), the most 117 | some in most seeds, a hundred or more over the batch (the count is stage 2's to raise: stage 1's settled grudges lower it, accepted 2026-09-24); loop pairs none |
 | 3 world wars | systems of wars joined by a shared people while both were open, read at their widest moment: peoples at war at once, fronts with a battle | 13 of eight peoples or more on three fought fronts or more, in 6 seeds; the widest 22 peoples on 5 fronts | at least one in most seeds |
 | 4 border disputes | wars between realms of five worlds or more when it began, over within three ticks, one or two worlds taken; the aim once stage 1 records it | 2180 such wars: 61% short and unfought, 33% long, border disputes 5% | the most common kind of war between large realms, a third of them or more |
 | 5 cold wars | pairs that have fought, both large, at peace with each other fifty thousand years or more with an incident in the stretch (a short war, or a battle with no war); each building toward the other, once stage 3 records the rival watched | 78 pairs, in 4 seeds, all without the build-up; 429 quiet pairs | some in most seeds, with the build-up |
@@ -204,6 +204,7 @@ And the health of it, printed beside, with its baseline:
 **Stage 1: the war council, will, aims and terms.** Press, hold, sue for each side of each war; will that follows the war; the aim column and `War.Aim`; terms as contracts, the ceded world, vassalage and the artifact as new terms; the offer of vassalage without a war; every war under a council however it began; momentum. Patterns 1, 4 and 7's machinery.
 - *Shifts the histories*, everywhere.
 - *Testable*: a side that believes it is winning presses and one that fears it sues, on fixed inputs to the mind; a defender strikes back; a limited war ends when its world is taken and the terms are accepted; will rises with a battle won and falls with one lost; the side declared on can win; an inherited war gets campaigns.
+- *Done*: see "As built (stage 1)"; three of the gate's rows are left to the tuning at the end.
 
 **Stage 2: allies and old enemies.** The ally's aim, its own council, the cascade read and tuned; the rivalry, its lower bar and its escalating aim. Patterns 2 and 3.
 
@@ -232,6 +233,42 @@ Stages 0 and 1 are plan step 10; stages 2 and 3 are plan step 11. Each regenerat
 - **What the record cannot yet say** is printed as such: a war's aim (stage 1, `War.Aim`; until then a border dispute is read by its size, length and the worlds taken), the build-up of a cold war (stage 3's rival watched), and the tribute's rate, its movement and the ticks paid short (stage 3). Each stage that adds one exports it and extends the reader, so the row reads the thing itself.
 - **What the baseline says the stages must fix**, beyond the patterns: only 28% of wars see a battle, the side declared on never strikes back (1% of fought wars), and a long war is fought in 6% of its ticks — the stare the review found, now counted.
 
+## As built (stage 1)
+
+The war council, will, aims and terms, as `internal/mind/war.go` (the judgments) and `internal/history/warcouncil.go` (the gathering and the executing), every number in `mind.Tuning.War`. The choices made on the way:
+
+- **The aim** is a column on `causes.json`'s war causes, raised to ending for the hating and to submission for a conqueror, and `War.Aim` is exported (`FORMAT.md`). A conqueror whose first fleet sails for a border world and not the home fights for that world. The side declared on holds, and presses to retake what it lost (`aimTarget` reads the worlds it lost that the enemy still holds).
+- **The council** sits on the ordinary cadence (`Cadence` 0.5 a tick) and whenever the war summons it: a battle, a world taken or lost, a leader fallen, the side declared on at the declaration. It presses at its bar (declarer 0.5, side declared on 0.55 less 0.1 once it has lost more than it took, an ally 0.55, the hating 0.3; the conqueror, the vengeful and the unyielding 0.1 bolder), holds, or sues: with its aim met (peace on the lines), its will under 0.15, afraid below 0.1 + 0.2 × fear odds once the war has begun, or three ticks with nobody fighting and no fleet it would send (nine while its docks build the fleet it wants). The unyielding and the hating never sue. A campaign out is the council waiting.
+- **Strength counts the ships out** against the enemy (`outAgainst`), so a people that sends most of its fleet does not read itself beaten the tick it sails.
+- **Terms**: the side that sues offers the first of what the other's aim wants that it has — worlds (never the home, never to a horde), tribute, a mobile artifact, vassalage (not from the unyielding, a conqueror or what cannot be held) — or peace on the lines. The other answers from the terms' worth to its aim against its odds of taking the rest, its greed and a conqueror's hunger, its will, and whether it would press at all. Accepted terms are a fact (`settled`), refused ones an event (`terms_refused`), a truce three thousand years longer per world given up, and claims on what was settled renounced. **Who won**: peace on the lines offered with the offerer's aim met is the offerer's; anything else offered is the war bought off, and the side that took it won.
+- **Will** moves with the fighting: a battle won or lost, ships lost against ships had (`ShipLoss`), a leader winning at the front or falling, worlds taken and lost. A tick nobody fights costs 0.1, growing with the ticks since the last battle (`IdleRamp` 5) and doubled after fifty thousand years; the unyielding pay half, the home threatened halves it, a total aim that cannot reach the home pays half again; a fleet in flight stops it. Hunts keep the old clock.
+- **How a war ends**: a side's will spent is a yield to what the other's aim asks (a world or two, tribute, the home for a total aim), or peace with the other named winner when it has nothing the other could take; a home taken, however it ends, is the taker's war; a people that yields to the same power three times bends as its vassal; a war with a side that has passed under a master ends `held`; and no war is declared on or by a held people, but a hunt, whose hunter cannot know whose it is.
+- **After**: the side ahead (the winner, or with nobody yielding the side with its aim met and more taken than lost) has its grudge settled; the others resent as before. The loser, and a declarer that gained nothing, grows **wary** of the other: 0.1 on its bars per war, up to 0.8, fading at 0.2% a thousand years; the wariness can lift a bar past certainty, so a people beaten often enough does not go to war with that enemy again however sure it is.
+- **Vassalage without a war** (`yoke`): a conqueror or opportunist of five worlds or more and three times the other's, about to strike at odds of 0.85 or better, offers first; the small people bends below 0.3 + 0.3 × fear (0.2 more for the submissive), and a refusal is the cause `defiance`.
+- **Momentum**: each world taken adds a point of appetite, halving every twenty thousand years; it takes 0.03 a point off the bars (0.15 at most) and adds 0.1 a point to the will a war starts with. A conquered world with no next target in a hop keeps the fleet as its guard, and the council sends the next campaign from there. The muster declares its war when the fleet sails, not when it is called.
+- **Allies** keep the old answer until stage 2, with one damper: an ally goes to war in its own name only with ships to send and not wary of the enemy to the limit (`arms`); otherwise it answers as an ally with no front does. A seed's cascade of 77 wars in a tick between shipless allies came from that.
+- **Loops cut with the scenarios and the watchers** (`specs/notes/war-stage1-handover.md` has the list): a hunt on another's vassal ended at once and declared again (160 in a seed); a spared home told as a peace with no winner; the winner's grudge renewed at the war's end; a vengeful people bought off with its grudge left standing; a rider trying a people that had barred it; hunts on the same hole from the same evidence (a closed hunt spends it, `Civ.HuntEnded`; a pacifist hunts nothing that does not reach its home; a hunter three times worsted lets the hole be, `Kinds.HuntWary`).
+- **The tools**: `cmd/scenario` and `internal/history/scenario.go` build a small world from a spec and tell a run of it; the specs in `internal/history/testdata/scenarios` are regression tests on five seeds. `internal/history/watch.go` runs detectors inside `Generate` (a loop pair, a people passed between masters, an endless war, a jump in wars) and dumps each catch with the reasons that led there (`Config.Reason`, every decision's reason without the `-ai` log); `TestWarShape` takes `WAR_WATCH=dir` and `WAR_TUNE=G.F=v,...`, and `worldgen` takes `-watch`. The watch also tallies what each tick of a long fought war was.
+
+The gate on twenty seeds at 400 stars, against stage 0:
+
+| | stage 0 | stage 1 | wanted |
+|---|---|---|---|
+| fought | 28% of all wars | 64% of fleet wars (57% of all) | 60% ✓ |
+| short / long of fought, in total | 26% / 42% | 35% / 28% | a quarter each ✓ |
+| short / long, in most seeds | 8 / 2 seeds | 14 / 8 of 20 | 14 each: short ✓, long ✗ |
+| a long war's ticks carried (battles alone) | (6%) | 34% (18%) | a third ✓ |
+| old enemies; loop pairs | 111 pairs, 18 seeds; 25 | 127 pairs, 17 seeds; 0 (the most wars of a pair 17) | ✓ |
+| world wars | 13, 6 seeds | 27, 6 seeds | stage 2's |
+| border disputes | 5% | 25% (long 60%) | a third, the most common ✗ |
+| conquest waves | 3, 1 seed | 53, 5 seeds | 5+, 3+ seeds ✓ |
+| side declared on strikes back | 1% | 16% | a third ✗ |
+| how wars end | truce 2% | terms 31%, a side's fall 21%, enslaved 14%, peace 10%, exhaustion 6%, held 6%, truce 1% | truce a minority, defeat and terms common ✓ |
+| the age | 38 / 48 / 56 Myr | 33 / 42 / 47 Myr, none capped | ✓ |
+| run time | 1h30m | 1h37m | within 2× ✓ |
+
+What the ticks of a long fought war were: fought 23%, a fleet in flight 20%, a side waiting on its docks for the fleet it wants about a quarter, a side with its aim met offering the lines and refused about a tenth.
+
 ## Settled in review (2026-09-23)
 
 - **The time scale.** A war stays one war; a long one is a string of campaigning seasons a tick each, and a tick nobody fights in costs both sides, so staring ends in terms. The gate reads battles per tick of war.
@@ -240,9 +277,23 @@ Stages 0 and 1 are plan step 10; stages 2 and 3 are plan step 11. Each regenerat
 - **Vassals and slaves.** Defeat is slavery, usually. Vassalage is the compromise a losing side offers, and what a large realm offers a small neighbour that would clearly lose a war to it.
 - **Vassalage is protection for a price.** The vassal pays a standing tribute of a share of its whole income, which in lean times it must put before its own needs or risk its patron's anger; an attack on it is an offence to the patron, who joins the war, sends ships, or stays out and pays for it in renown and in the vassal's loyalty; and the guarantee deters, so a small people does not dare strike a great power's client.
 
+## Settled at stage 1 (2026-09-24)
+
+- **A fleet on its way is the war being fought.** A long war's ticks are read as carried when a battle is fought in them or a campaign of either side is in flight at the other; a flight of centuries at sail is a campaigning season as much as the battle at its end. The instrument prints both shares, battles alone and carried.
+- **Old enemies fall at stage 1, and that is accepted for now.** The war council settles the winner's grudge (the winner of a spared home, of a yield, of terms bought off), so fewer pairs come back to the same quarrel; the rivalry that brings them back is stage 2's, and the row is read there.
+
 ## Open questions
 
 - **Whether a vassal's leash reaches its master's rivals only when the master consents**, or whenever the vassal's own council reads the target as fair game.
 - **Momentum's strength before `empires.md`**: enough to make a winning realm keep going, not so much that one conqueror takes every seed before the cycle is tuned.
-- **What a war council costs.** One per side per war per tick on the cadence; seed 8's cascade had 1551 wars.
-- **Whether the muster should declare at the launch** instead of at its start: today a people announces a war and then spends three ticks gathering, which is the warning a real mobilisation gives, but it also makes the side declared on wait three ticks for a war it could already be fighting.
+- ~~**What a war council costs.**~~ Answered at stage 1: the twenty seeds ran in 1h37m against stage 0's 1h30m; the cost that mattered was the linear war lookup, now indexed by pair.
+- ~~**Whether the muster should declare at the launch**~~ Answered at stage 1: it does; a muster that stands down has started nothing.
+
+## Tuning left for later
+
+Stage 1 was landed with three of its rows short, to be tuned with the scenarios and the watch's tally rather than knob by knob: at twelve seeds two batches of near-identical rules differ by more than one number moves the result (two knob batches were tried and dropped; see the handover note), so each is to be worked through its mechanism and read on twenty seeds.
+
+- **Long wars in most seeds** (8 of 20; wanted 14): long wars are a quarter of fought wars in total but concentrated in the seeds with many peoples.
+- **Border disputes** (25% of the wars between large realms; wanted a third and the most common kind): a border war between two large realms settles by a ceded world at tick four or five, just past the row's three, because a side waits three idle ticks before it sues and sits on the cadence; and 60% of large realms' wars run long.
+- **The side declared on striking back** (16% of fought wars; wanted a third): it reads its odds against the declarer, which picked the fight, and seldom clears its bar.
+- **Old enemies and the long war's battles** were settled at stage 1 (above) and are to be improved later too: the rivalry at stage 2, and battles in a long war's ticks beyond the fleets in flight.
